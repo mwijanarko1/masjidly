@@ -1,0 +1,6 @@
+# Xcode / Swift
+**/xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store
