@@ -1,0 +1,199 @@
+{
+  "page": {
+    "name": "Prayer Times Home",
+    "type": "mobile_home_page",
+    "platform": "iOS/Android",
+    "theme": {
+      "mode": "dark",
+      "primaryColor": "#D98A2B",
+      "secondaryColor": "#0B1726",
+      "accentColor": "#F6C15A",
+      "background": {
+        "type": "gradient",
+        "colors": [
+          "#0A1220",
+          "#12385A",
+          "#2F75D6"
+        ],
+        "style": "soft_blur"
+      },
+      "visualStyle": [
+        "rounded glass cards",
+        "soft shadows",
+        "warm glow",
+        "large typography",
+        "Islamic prayer-focused iconography"
+      ]
+    },
+    "layout": {
+      "safeArea": true,
+      "padding": 24,
+      "sections": [
+        "top_bar",
+        "status_chip",
+        "hero_prayer_card",
+        "quick_info_row",
+        "today_schedule_carousel"
+      ]
+    }
+  },
+  "topBar": {
+    "leftAction": {
+      "type": "icon_button",
+      "icon": "settings",
+      "style": "outlined_circle"
+    },
+    "center": {
+      "type": "location_label",
+      "icon": "location_pin",
+      "text": "London, UK"
+    },
+    "rightAction": {
+      "type": "icon_button",
+      "icon": "more_vertical"
+    }
+  },
+  "statusChip": {
+    "label": "Athan Status",
+    "value": "Active",
+    "indicator": {
+      "type": "dot",
+      "color": "#58D66D"
+    },
+    "style": {
+      "background": "rgba(255, 255, 255, 0.12)",
+      "border": "rgba(255, 255, 255, 0.25)"
+    }
+  },
+  "heroPrayerCard": {
+    "currentPrayer": {
+      "name": "Maghrib",
+      "time": "18:45",
+      "remainingText": "2h 30m left for Isha"
+    },
+    "date": {
+      "gregorian": "Monday, 17 May 2021",
+      "hijri": "5 Shawwal 1442 AH"
+    },
+    "illustration": {
+      "type": "city_sunset",
+      "description": "A glowing sunset behind a London skyline silhouette inside a rounded glass panel.",
+      "elements": [
+        "large sun",
+        "warm orange sky",
+        "city skyline",
+        "soft inner glow"
+      ]
+    },
+    "style": {
+      "background": "linear-gradient(180deg, #B96B24, #5B2D16)",
+      "cornerRadius": 32,
+      "shadow": "warm_outer_glow",
+      "textColor": "#FFFFFF"
+    }
+  },
+  "quickInfo": [
+    {
+      "label": "Qibla",
+      "value": "121\u00b0 SE",
+      "icon": "kaaba_compass"
+    },
+    {
+      "label": "Athan",
+      "value": "On",
+      "icon": "speaker"
+    },
+    {
+      "label": "Current Local",
+      "value": "16:15",
+      "icon": "clock"
+    }
+  ],
+  "todaySchedule": {
+    "sectionTitle": "Today",
+    "trailingAction": {
+      "label": "Timetable",
+      "icon": "chevron_right"
+    },
+    "display": "horizontal_carousel",
+    "items": [
+      {
+        "prayer": "Fajr",
+        "time": "04:12",
+        "icon": "sunrise",
+        "state": "default"
+      },
+      {
+        "prayer": "Dhuhr",
+        "time": "12:15",
+        "icon": "sun",
+        "state": "default"
+      },
+      {
+        "prayer": "Asr",
+        "time": "15:45",
+        "icon": "cloud_moon",
+        "state": "default"
+      },
+      {
+        "prayer": "Maghrib",
+        "time": "18:45",
+        "icon": "crescent_moon",
+        "state": "selected",
+        "style": {
+          "background": "#D98A2B",
+          "glow": true
+        }
+      },
+      {
+        "prayer": "Isha",
+        "time": "20:15",
+        "icon": "crescent_moon",
+        "state": "upcoming"
+      }
+    ]
+  },
+  "navigation": {
+    "primaryActions": [
+      {
+        "name": "Open detailed timetable",
+        "trigger": "tap_timetable"
+      },
+      {
+        "name": "Change location",
+        "trigger": "tap_location"
+      },
+      {
+        "name": "Open settings",
+        "trigger": "tap_settings"
+      },
+      {
+        "name": "Toggle athan",
+        "trigger": "tap_athan_card"
+      },
+      {
+        "name": "Open qibla compass",
+        "trigger": "tap_qibla_card"
+      }
+    ]
+  },
+  "accessibility": {
+    "largeTextPriority": [
+      "current prayer time",
+      "current prayer name",
+      "remaining time"
+    ],
+    "contrast": "high on dark background",
+    "voiceLabels": {
+      "currentPrayer": "Maghrib at 18:45. Two hours and thirty minutes left for Isha.",
+      "athanStatus": "Athan status active.",
+      "qibla": "Qibla direction 121 degrees south east."
+    }
+  },
+  "contentRules": {
+    "currentPrayerHighlight": "The active prayer should be visually selected in the Today carousel.",
+    "nextPrayerCountdown": "The hero card should show the next prayer countdown below the current prayer name.",
+    "locationAware": "Prayer times, local time, and qibla direction should update based on the selected city.",
+    "adhanStatus": "Athan status should be shown near the top of the page."
+  }
+}

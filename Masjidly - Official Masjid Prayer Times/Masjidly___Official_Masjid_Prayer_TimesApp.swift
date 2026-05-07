@@ -1,27 +1,14 @@
-//___FILEHEADER___
-
 import SwiftUI
-import SwiftData
 
 @main
-struct ___PACKAGENAME:identifier___App: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+struct Masjidly___Official_Masjid_Prayer_TimesApp: App {
+    @State private var env = AppEnvironment()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            HomeView(model: env.homeViewModel)
+                .environment(env.settings)
+                .environment(env.settingsViewModel)
         }
-        .modelContainer(sharedModelContainer)
     }
 }
