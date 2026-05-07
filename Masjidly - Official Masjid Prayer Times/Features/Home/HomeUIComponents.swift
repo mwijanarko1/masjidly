@@ -26,26 +26,40 @@ struct StatusChip: View {
 }
 
 struct HeroIllustration: View {
-    let theme: HomeDesign.TimeTheme
-    
-    var body: some View {
-        ZStack {
-            // Placeholder for the main 3D illustration
-            RoundedRectangle(cornerRadius: 32)
-                .fill(Color.black.opacity(0.05))
-                .overlay(
-                    VStack(spacing: 8) {
-                        Image(systemName: theme == .night || theme == .dawn ? "moon.stars.fill" : "sun.max.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(HomeDesign.Colors.secondary.opacity(0.3))
-                        Text("Illustration Placeholder")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(HomeDesign.Colors.secondary.opacity(0.3))
-                    }
-                )
-                .frame(width: 200, height: 160)
+    /// Next salat name from `NextPrayerCountdownResult.nextName` (e.g. Fajr, Dhuhr, Jummah, Asr).
+    let nextPrayerName: String
+
+    private var assetName: String {
+        switch nextPrayerName {
+        case "Fajr": "FajrIllustration"
+        case "Dhuhr", "Jummah": "DhuhrIllustration"
+        case "Asr": "AsrIllustration"
+        case "Maghrib": "MaghribIllustration"
+        case "Isha": "IshaIllustration"
+        default: "FajrIllustration"
         }
-        .frame(height: 200)
+    }
+
+    private var accessibilityLabelText: String {
+        switch nextPrayerName {
+        case "Fajr": "Fajr illustration"
+        case "Dhuhr": "Dhuhr illustration"
+        case "Jummah": "Jummah illustration"
+        case "Asr": "Asr illustration"
+        case "Maghrib": "Maghrib illustration"
+        case "Isha": "Isha illustration"
+        default: "Prayer illustration"
+        }
+    }
+
+    var body: some View {
+        Image(assetName)
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .frame(width: 200, height: 160)
+            .accessibilityLabel(accessibilityLabelText)
+            .frame(height: 200)
     }
 }
 
@@ -112,7 +126,7 @@ struct PrayerCarouselItem: View {
                 .foregroundColor(isSelected ? .white : HomeDesign.Colors.primary)
             
             Image(systemName: icon)
-                .font(.system(size: 24))
+                .font(.system(size: 34, weight: .medium))
                 .foregroundColor(isSelected ? .white : HomeDesign.Colors.accent)
                 .symbolVariant(.fill)
             

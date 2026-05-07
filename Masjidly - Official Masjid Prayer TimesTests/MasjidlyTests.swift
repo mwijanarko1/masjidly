@@ -104,14 +104,3 @@ struct SettingsStoreTests {
         #expect(s.uses24HourTime == true)
     }
 }
-
-    var mosques: [Mosque] = []
-    var monthly: MonthPrayerData?
-    var ramadan: RamadanPrayerData?
-    var dst: UkDstCalendar?
-
-    func listMosques() async throws -> [Mosque] { mosques }
-    func getMonthlyPrayerTimes(mosqueSlug: String, month: MonthName, year: Int) async throws -> MonthPrayerData? { monthly }
-    func getRamadanTimetable(mosqueSlug: String, date: String?) async throws -> RamadanPrayerData? { ramadan }
-    func getUkDstDates() async throws -> UkDstCalendar? { dst }
-}

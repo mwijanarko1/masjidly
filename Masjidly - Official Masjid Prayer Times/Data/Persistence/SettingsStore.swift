@@ -13,36 +13,40 @@ final class SettingsStore: SettingsPersisting {
         case notificationsJSON
     }
 
+    /// Stored fields so `@Observable` tracks mutations; UserDefaults syncs in `didSet`.
     var selectedMosqueId: String? {
-        get { defaults.string(forKey: Key.selectedMosqueId.rawValue) }
-        set { defaults.set(newValue, forKey: Key.selectedMosqueId.rawValue) }
+        didSet { defaults.set(selectedMosqueId, forKey: Key.selectedMosqueId.rawValue) }
     }
 
     var selectedMosqueSlug: String? {
-        get { defaults.string(forKey: Key.selectedMosqueSlug.rawValue) }
-        set { defaults.set(newValue, forKey: Key.selectedMosqueSlug.rawValue) }
+        didSet { defaults.set(selectedMosqueSlug, forKey: Key.selectedMosqueSlug.rawValue) }
     }
 
     var uses24HourTime: Bool {
-        get {
-            if defaults.object(forKey: Key.uses24HourTime.rawValue) == nil { return false }
-            return defaults.bool(forKey: Key.uses24HourTime.rawValue)
-        }
-        set { defaults.set(newValue, forKey: Key.uses24HourTime.rawValue) }
+        didSet { defaults.set(uses24HourTime, forKey: Key.uses24HourTime.rawValue) }
     }
 
     var notifications: NotificationSettings {
-        get {
-            guard let data = defaults.data(forKey: Key.notificationsJSON.rawValue),
-                  let v = try? JSONDecoder().decode(NotificationSettings.self, from: data) else {
-                return NotificationSettings()
-            }
-            return v
-        }
-        set {
-            if let data = try? JSONEncoder().encode(newValue) {
+        didSet {
+            if let data = try? JSONEncoder().encode(notifications) {
                 defaults.set(data, forKey: Key.notificationsJSON.rawValue)
             }
+        }
+    }
+
+    init() {
+        selectedMosqueId = defaults.string(forKey: Key.selectedMosqueId.rawValue)
+        selectedMosqueSlug = defaults.string(forKey: Key.selectedMosqueSlug.rawValue)
+        if defaults.object(forKey: Key.uses24HourTime.rawValue) == nil {
+            uses24HourTime = false
+        } else {
+            uses24HourTime = defaults.bool(forKey: Key.uses24HourTime.rawValue)
+        }
+        if let data = defaults.data(forKey: Key.notificationsJSON.rawValue),
+           let v = try? JSONDecoder().decode(NotificationSettings.self, from: data) {
+            notifications = v
+        } else {
+            notifications = NotificationSettings()
         }
     }
 }

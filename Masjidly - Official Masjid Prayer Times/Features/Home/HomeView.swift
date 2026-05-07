@@ -6,7 +6,6 @@ struct HomeView: View {
     @Environment(SettingsViewModel.self) private var settingsViewModel
 
     @State private var showingSettings = false
-    @State private var showingMosquePicker = false
     @State private var showingTimetable = false
 
     private var currentTheme: HomeDesign.TimeTheme {
@@ -34,7 +33,7 @@ struct HomeView: View {
                     
                     if let d = model.displayedPrayerTimes, let next = model.nextCountdown {
                         VStack(spacing: 0) {
-                            HeroIllustration(theme: currentTheme)
+                            HeroIllustration(nextPrayerName: next.nextName)
                             
                             HeroContent(
                                 prayerName: next.nextName,
@@ -96,14 +95,11 @@ struct HomeView: View {
             
             Spacer()
             
-            // Centered Location
+            // Centered mosque dropdown
             Menu {
                 ForEach(model.mosques) { mosque in
                     Button {
-                        model.selectedMosque = mosque
-                        settings.selectedMosqueId = mosque.id
-                        settings.selectedMosqueSlug = mosque.slug
-                        Task { try? await model.refreshPrayerPayload(for: mosque) }
+                        selectMosque(mosque)
                     } label: {
                         HStack {
                             Text(mosque.name)
@@ -114,12 +110,26 @@ struct HomeView: View {
                     }
                 }
             } label: {
-                VStack(spacing: 4) {
+                HStack(spacing: 8) {
                     Text(model.selectedMosque?.name ?? "Select Mosque")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(HomeDesign.Colors.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(HomeDesign.Colors.secondary)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.white)
+                .clipShape(Capsule())
+                .customShadow(HomeDesign.Shadows.softCard)
+                .overlay(Capsule().stroke(Color(hex: "F0F0F0"), lineWidth: 1))
             }
+            .accessibilityIdentifier("HomeMosquePicker")
+            .accessibilityLabel(Text("Current mosque"))
+            .accessibilityHint(Text("Shows a menu to change mosque"))
             
             Spacer()
             
@@ -140,33 +150,13 @@ struct HomeView: View {
         .padding(.horizontal, 24)
     }
 
-    private var mosquePickerSheet: some View {
-        NavigationStack {
-            List(model.mosques) { mosque in
-                Button {
-                    model.selectedMosque = mosque
-                    settings.selectedMosqueId = mosque.id
-                    settings.selectedMosqueSlug = mosque.slug
-                    Task { 
-                        try? await model.refreshPrayerPayload(for: mosque)
-                        showingMosquePicker = false
-                    }
-                } label: {
-                    HStack {
-                        Text(mosque.name)
-                        Spacer()
-                        if model.selectedMosque?.id == mosque.id {
-                            Image(systemName: "checkmark")
-                                .foregroundColor(.accentColor)
-                        }
-                    }
-                }
-                .foregroundColor(.primary)
-            }
-            .navigationTitle("Select Mosque")
-            .toolbar {
-                Button("Cancel") { showingMosquePicker = false }
-            }
+    private func selectMosque(_ mosque: Mosque) {
+        model.selectedMosque = mosque
+        settings.selectedMosqueId = mosque.id
+        settings.selectedMosqueSlug = mosque.slug
+        Task {
+            try? await model.refreshPrayerPayload(for: mosque)
+            await model.resyncNotificationsIfNeeded()
         }
     }
 
@@ -259,3 +249,17 @@ struct HomeView: View {
         settings.uses24HourTime ? t : PrayerTimesEngine.formatTo12Hour(t)
     }
 }
+
+#Preview {
+    let settings = SettingsStore()
+    let repo = ConvexPrayerRepository(service: ConvexService())
+    let scheduler = PrayerNotificationScheduler(repository: repo)
+    let homeVM = HomeViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
+    let settingsVM = SettingsViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
+    return NavigationStack {
+        HomeView(model: homeVM)
+            .environment(settings)
+            .environment(settingsVM)
+    }
+}
+

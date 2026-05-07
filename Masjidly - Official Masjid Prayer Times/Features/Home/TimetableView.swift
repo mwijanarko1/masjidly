@@ -15,6 +15,29 @@ struct TimetableView: View {
         static let headerPrayerCol: CGFloat = 55
     }
 
+    private var primaryTextColor: Color {
+        timeTheme == .weather ? HomeDesign.Colors.primary : .white
+    }
+
+    private var secondaryTextColor: Color {
+        timeTheme == .weather ? HomeDesign.Colors.secondary : .white.opacity(0.7)
+    }
+
+    private var dividerColor: Color {
+        timeTheme == .weather ? Color.black.opacity(0.08) : Color.white.opacity(0.12)
+    }
+
+    private var cardBackground: some View {
+        ZStack {
+            if timeTheme == .weather {
+                Color.white
+            } else {
+                Color(hex: "0A1220").opacity(0.85)
+                HomeDesign.Colors.glassBackground.opacity(0.1)
+            }
+        }
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -48,10 +71,10 @@ struct TimetableView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(monthData.month.capitalized)
                     .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(primaryTextColor)
                 Text(mosqueName)
                     .font(.system(size: 15, weight: .regular))
-                    .foregroundStyle(Color.white.opacity(0.6))
+                    .foregroundStyle(secondaryTextColor)
             }
             Spacer(minLength: 8)
             Button {
@@ -59,7 +82,7 @@ struct TimetableView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.white.opacity(0.92))
+                    .foregroundStyle(primaryTextColor.opacity(0.8))
                     .frame(width: 44, height: 44)
                     .background(Circle().fill(HomeDesign.Colors.glassBackground))
                     .overlay(
@@ -80,7 +103,7 @@ struct TimetableView: View {
                 .background(Color.black.opacity(0.15))
 
             Divider()
-                .background(Color.white.opacity(0.08))
+                .background(dividerColor)
 
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -91,21 +114,14 @@ struct TimetableView: View {
 
                         if index < monthData.prayerTimes.count - 1 {
                             Divider()
-                                .background(Color.white.opacity(0.06))
+                                .background(dividerColor)
                                 .padding(.leading, Layout.cardPadding)
                         }
                     }
                 }
             }
         }
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color(hex: "0A1220").opacity(0.78))
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(HomeDesign.Colors.glassBackground)
-            }
-        )
+        .background(cardBackground)
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(HomeDesign.Colors.glassBorder, lineWidth: 1)
@@ -145,7 +161,7 @@ struct TimetableView: View {
     private func headerCell(_ title: String, width: CGFloat) -> some View {
         Text(title)
             .font(.system(size: 13, weight: .medium))
-            .foregroundStyle(Color.white.opacity(0.55))
+            .foregroundStyle(secondaryTextColor.opacity(0.7))
             .frame(width: width, alignment: .leading)
     }
 
@@ -157,7 +173,7 @@ struct TimetableView: View {
     private func rowCell(_ text: String, width: CGFloat, emphasis: CellEmphasis = .secondary) -> some View {
         Text(text)
             .font(.system(size: 15, weight: emphasis == .primary ? .semibold : .regular))
-            .foregroundStyle(emphasis == .primary ? Color.white : Color.white.opacity(0.92))
+            .foregroundStyle(emphasis == .primary ? primaryTextColor : primaryTextColor.opacity(0.9))
             .frame(width: width, alignment: .leading)
             .lineLimit(1)
             .minimumScaleFactor(0.75)
