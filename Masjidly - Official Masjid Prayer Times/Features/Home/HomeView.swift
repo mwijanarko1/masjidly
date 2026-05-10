@@ -206,7 +206,7 @@ struct HomeView: View {
                 .background(Circle().fill(Color.white.opacity(0.18)))
         }
         .buttonStyle(.plain)
-        .onboardingHighlight(onboarding.currentStep == .openSettings)
+        .onboardingHighlight(onboarding.currentStep == .openSettings, timeTheme: currentTheme)
         .accessibilityLabel(Text(homeLS("accessibility.settings", locale: locale)))
     }
 
@@ -222,7 +222,7 @@ struct HomeView: View {
                 .background(Circle().fill(Color.white.opacity(0.18)))
         }
         .buttonStyle(.plain)
-        .onboardingHighlight(onboarding.currentStep == .openTimetable)
+        .onboardingHighlight(onboarding.currentStep == .openTimetable, timeTheme: currentTheme)
         .accessibilityLabel(Text(homeLS("accessibility.timetable", locale: locale)))
     }
 

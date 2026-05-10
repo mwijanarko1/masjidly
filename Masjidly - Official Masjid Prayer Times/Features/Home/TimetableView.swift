@@ -101,6 +101,7 @@ struct TimetableView: View {
                 }
             }
         }
+        .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
         .onAppear {
             let today = currentDayOfSystem
             if currentMonthData.prayerTimes.contains(where: { $0.date == today }) {
@@ -212,7 +213,7 @@ struct TimetableView: View {
                     .background(Circle().fill(timeTheme.textColor.opacity(0.1)))
             }
             .buttonStyle(.plain)
-            .onboardingHighlight(onboarding.currentStep == .closeTimetable)
+            .onboardingHighlight(onboarding.currentStep == .closeTimetable, timeTheme: timeTheme)
             .accessibilityIdentifier("Onboarding.TimetableClose")
             .accessibilityLabel(Text(ttLS("timetable.close_a11y", locale: locale)))
         }

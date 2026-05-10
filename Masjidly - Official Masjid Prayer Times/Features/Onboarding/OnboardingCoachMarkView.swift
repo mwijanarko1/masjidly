@@ -73,15 +73,16 @@ struct OnboardingCoachMarkView: View {
 
 struct OnboardingHighlightModifier: ViewModifier {
     let isHighlighted: Bool
+    let timeTheme: HomeDesign.TimeTheme
 
     func body(content: Content) -> some View {
         content
             .overlay {
                 if isHighlighted {
                     Circle()
-                        .stroke(.white.opacity(0.8), lineWidth: 1.5)
+                        .stroke(timeTheme.textColor.opacity(0.8), lineWidth: 1.5)
                         .padding(-6)
-                        .shadow(color: .white.opacity(0.3), radius: 8)
+                        .shadow(color: timeTheme.textColor.opacity(0.3), radius: 8)
                         .allowsHitTesting(false)
                 }
             }
@@ -91,7 +92,7 @@ struct OnboardingHighlightModifier: ViewModifier {
 }
 
 extension View {
-    func onboardingHighlight(_ isHighlighted: Bool) -> some View {
-        modifier(OnboardingHighlightModifier(isHighlighted: isHighlighted))
+    func onboardingHighlight(_ isHighlighted: Bool, timeTheme: HomeDesign.TimeTheme) -> some View {
+        modifier(OnboardingHighlightModifier(isHighlighted: isHighlighted, timeTheme: timeTheme))
     }
 }

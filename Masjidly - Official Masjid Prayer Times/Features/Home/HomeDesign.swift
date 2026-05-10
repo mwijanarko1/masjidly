@@ -34,7 +34,7 @@ enum HomeDesign {
         
         var textColor: Color {
             switch self {
-            case .fajr, .isha, .tahajjud: return .white
+            case .fajr, .maghrib, .isha, .tahajjud: return .white
             default: return Color(hex: "111111")
             }
         }
@@ -46,7 +46,7 @@ enum HomeDesign {
         /// Onboarding / glass surfaces: dark skies use light frost + white type; day themes use milky glass + dark type.
         var usesLightForeground: Bool {
             switch self {
-            case .fajr, .isha, .tahajjud: return true
+            case .fajr, .maghrib, .isha, .tahajjud: return true
             default: return false
             }
         }

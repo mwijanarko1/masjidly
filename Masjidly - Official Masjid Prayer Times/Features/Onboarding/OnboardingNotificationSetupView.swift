@@ -70,7 +70,7 @@ struct OnboardingNotificationSetupView: View {
                                     }
                                 }
                                 .pickerStyle(.menu)
-                                .tint(timeTheme.usesLightForeground ? Color.white : HomeDesign.Colors.accent)
+                                .tint(timeTheme.textColor)
                                 .accessibilityIdentifier("Onboarding.AdhanReminderPicker")
                             }
 
@@ -85,7 +85,7 @@ struct OnboardingNotificationSetupView: View {
                                     }
                                 }
                                 .pickerStyle(.menu)
-                                .tint(timeTheme.usesLightForeground ? Color.white : HomeDesign.Colors.accent)
+                                .tint(timeTheme.textColor)
                                 .accessibilityIdentifier("Onboarding.IqamahReminderPicker")
                             }
                         }
@@ -114,6 +114,7 @@ struct OnboardingNotificationSetupView: View {
                 .toggleStyle(.switch)
                 .padding(24)
             }
+            .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
             .frame(maxWidth: 400, alignment: .leading)
             .padding(.horizontal, 24)
         }

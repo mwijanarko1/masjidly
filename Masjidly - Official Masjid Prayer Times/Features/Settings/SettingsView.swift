@@ -105,6 +105,8 @@ struct SettingsView: View {
             .navigationTitle(localized("settings.navigation.title"))
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbarColorScheme(timeTheme.usesLightForeground ? .dark : .light, for: .navigationBar)
+            .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -115,9 +117,9 @@ struct SettingsView: View {
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(timeTheme.textColor)
                             .padding(8)
-                            .background(Circle().fill(Color.white.opacity(0.1)))
+                            .background(Circle().fill(timeTheme.textColor.opacity(0.1)))
                     }
-                    .onboardingHighlight(onboarding.currentStep == .closeSettings)
+                    .onboardingHighlight(onboarding.currentStep == .closeSettings, timeTheme: timeTheme)
                     .accessibilityIdentifier("Onboarding.SettingsClose")
                 }
             }

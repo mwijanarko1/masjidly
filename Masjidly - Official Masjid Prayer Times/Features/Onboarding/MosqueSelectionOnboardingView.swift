@@ -42,7 +42,7 @@ struct MosqueSelectionOnboardingView: View {
                         }
                     }
                     .pickerStyle(.menu)
-                    .tint(timeTheme.usesLightForeground ? Color.white : HomeDesign.Colors.accent)
+                    .tint(timeTheme.textColor)
                     .font(HomeDesign.Typography.app(size: 18, weight: .medium))
                     .frame(maxWidth: .infinity)
                     .accessibilityIdentifier("Onboarding.MosquePicker")
@@ -61,6 +61,7 @@ struct MosqueSelectionOnboardingView: View {
                 }
                 .padding(24)
             }
+            .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
             .frame(maxWidth: 380)
             .padding(.horizontal, 24)
         }
