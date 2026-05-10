@@ -1,24 +1,40 @@
 import SwiftUI
 
 enum HomeDesign {
+    struct SkyTheme {
+        let baseColors: [Color]
+        let glowColor: Color?
+    }
+
     enum TimeTheme: String, CaseIterable {
         case fajr, sunrise, dhuhr, asr, maghrib, isha, tahajjud
         
-        var gradient: Gradient {
+        var sky: SkyTheme {
             switch self {
-            case .fajr: return Gradient(colors: [Color(hex: "DDF7FF"), Color(hex: "A9D8FF"), Color(hex: "B8A5F2"), Color(hex: "F5B9C8")])
-            case .sunrise: return Gradient(colors: [Color(hex: "DFFBFF"), Color(hex: "FFE8A3"), Color(hex: "FFB16D"), Color(hex: "F87878")])
-            case .dhuhr: return Gradient(colors: [Color(hex: "E8FAFF"), Color(hex: "8EDBFF"), Color(hex: "38BDF8")])
-            case .asr: return Gradient(colors: [Color(hex: "22D3EE"), Color(hex: "4ADEDE"), Color(hex: "B8EFAE"), Color(hex: "F6D98B")])
-            case .maghrib: return Gradient(colors: [Color(hex: "E9B7FF"), Color(hex: "F7A1D5"), Color(hex: "FF7C93"), Color(hex: "FFB066")])
-            case .isha: return Gradient(colors: [Color(hex: "111827"), Color(hex: "1E1B4B"), Color(hex: "060712")])
-            case .tahajjud: return Gradient(colors: [Color(hex: "0B1026"), Color(hex: "11143A"), Color(hex: "030712")])
+            case .fajr: 
+                return SkyTheme(baseColors: [Color(hex: "020326"), Color(hex: "06114F"), Color(hex: "0B1E6D"), Color(hex: "3B2A5A")], glowColor: Color(hex: "F08A4B"))
+            case .sunrise:
+                return SkyTheme(baseColors: [Color(hex: "6B7280"), Color(hex: "C084FC"), Color(hex: "FB923C"), Color(hex: "F59E0B")], glowColor: Color(hex: "FEF08A"))
+            case .dhuhr:
+                return SkyTheme(baseColors: [Color(hex: "E0F2FE"), Color(hex: "7DD3FC"), Color(hex: "38BDF8")], glowColor: Color(hex: "38BDF8").opacity(0.2))
+            case .asr:
+                return SkyTheme(baseColors: [Color(hex: "93C5FD"), Color(hex: "FDE68A"), Color(hex: "FDBA74")], glowColor: Color(hex: "D6B38A"))
+            case .maghrib:
+                return SkyTheme(baseColors: [Color(hex: "6D3FA9"), Color(hex: "A855F7"), Color(hex: "F472B6"), Color(hex: "FB7185")], glowColor: Color(hex: "F59E0B"))
+            case .isha:
+                return SkyTheme(baseColors: [Color(hex: "000000"), Color(hex: "020617"), Color(hex: "0F172A")], glowColor: Color(hex: "0F172A").opacity(0.4))
+            case .tahajjud:
+                return SkyTheme(baseColors: [Color(hex: "000000"), Color(hex: "01030A"), Color(hex: "020617")], glowColor: nil)
             }
+        }
+        
+        var gradient: Gradient {
+            Gradient(colors: sky.baseColors)
         }
         
         var textColor: Color {
             switch self {
-            case .isha, .tahajjud: return .white
+            case .fajr, .isha, .tahajjud: return .white
             default: return Color(hex: "111111")
             }
         }
@@ -26,12 +42,28 @@ enum HomeDesign {
         var iconColor: Color {
             return textColor
         }
+
+        /// Onboarding / glass surfaces: dark skies use light frost + white type; day themes use milky glass + dark type.
+        var usesLightForeground: Bool {
+            switch self {
+            case .fajr, .isha, .tahajjud: return true
+            default: return false
+            }
+        }
     }
 
     enum Typography {
-        /// Masjidly’s single voice: **SF Pro Rounded** — default to lighter weights so type matches thin line-art icons.
+        /// Masjidly’s single voice: **Comfortaa** — Matches the 3D, tubular, continuous rounded aesthetic of the logo perfectly.
         static func app(size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            Font.system(size: size, weight: weight, design: .rounded)
+            // Mapping weights to Comfortaa font files. Ensure Comfortaa is added to Info.plist.
+            let fontName: String
+            switch weight {
+            case .light, .thin, .ultraLight: fontName = "Comfortaa-Light"
+            case .medium, .semibold: fontName = "Comfortaa-Medium"
+            case .bold, .heavy, .black: fontName = "Comfortaa-Bold"
+            default: fontName = "Comfortaa-Regular"
+            }
+            return Font.custom(fontName, size: size)
         }
 
         /// Hero clock, prayer name, and other display lines.

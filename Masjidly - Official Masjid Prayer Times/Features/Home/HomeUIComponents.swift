@@ -255,31 +255,20 @@ struct PrayerSunPhaseIcon: View {
 
     // MARK: - Drawing
 
-    /// Fajr — Hidden sunrise: A horizontal line with a semicircle hidden below it (flat edge facing downward), plus two small stars above.
+    /// Fajr — Night's end: A single small star with a very thin horizontal line underneath it.
     private static func drawFajr(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
         let baseY = size.height * 0.62
-        let lineHalf: CGFloat = 30
-        let r: CGFloat = 12
+        let lineHalf: CGFloat = 16
 
-        // Horizon line
+        // Very thin horizontal line
         var horizon = Path()
         horizon.move(to: CGPoint(x: cx - lineHalf, y: baseY))
         horizon.addLine(to: CGPoint(x: cx + lineHalf, y: baseY))
-        context.stroke(horizon, with: .color(color), style: medium)
+        context.stroke(horizon, with: .color(color), style: thin)
 
-        // Semicircle hidden below the horizon (curve pointing up towards the line, flat edge down)
-        // Offset by +5 to ensure a clear gap between the curve and the horizon line
-        var sunStroke = Path()
-        sunStroke.addArc(center: CGPoint(x: cx, y: baseY + r + 5), radius: r, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
-        sunStroke.closeSubpath()
-        context.stroke(sunStroke, with: .color(color), style: medium)
-
-        // Two small stars above the line
-        let star1 = fourPointStarPath(cx: cx - 12, cy: baseY - 16, size: 5)
-        context.stroke(star1, with: .color(color), style: thin)
-        
-        let star2 = fourPointStarPath(cx: cx + 16, cy: baseY - 10, size: 3)
-        context.stroke(star2, with: .color(color), style: thin)
+        // Single small star above it
+        let star = fourPointStarPath(cx: cx, cy: baseY - 14, size: 6)
+        context.stroke(star, with: .color(color), style: thin)
     }
 
     /// Sunrise — Rising sun: A semicircle emerging above a horizontal line, with three short upward rays above it.
@@ -338,24 +327,25 @@ struct PrayerSunPhaseIcon: View {
         }
     }
 
-    /// Asr — Angled sun dial: A small vertical post with a diagonal line crossing from upper left to lower right.
+    /// Asr — Shadow marker: A short vertical line with a long diagonal shadow extending from its base.
     private static func drawAsr(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
         let cy = size.height * 0.48
-        let pillarH: CGFloat = 24
-        let top = cy - pillarH * 0.5
-        let bottom = cy + pillarH * 0.5
+        let bodyH: CGFloat = 14
+        let top = cy - bodyH * 0.5
+        let bottom = cy + bodyH * 0.5
+        let startX = cx - 10
 
-        // Vertical post
+        // Short vertical line (the body)
         var post = Path()
-        post.move(to: CGPoint(x: cx, y: top))
-        post.addLine(to: CGPoint(x: cx, y: bottom))
+        post.move(to: CGPoint(x: startX, y: top))
+        post.addLine(to: CGPoint(x: startX, y: bottom))
         context.stroke(post, with: .color(color), style: medium)
 
-        // Diagonal line crossing from upper left to lower right
-        var diag = Path()
-        diag.move(to: CGPoint(x: cx - 14, y: top + 4))
-        diag.addLine(to: CGPoint(x: cx + 14, y: bottom - 4))
-        context.stroke(diag, with: .color(color), style: thin)
+        // Long diagonal shadow line (length > body height)
+        var shadow = Path()
+        shadow.move(to: CGPoint(x: startX, y: bottom))
+        shadow.addLine(to: CGPoint(x: startX + 28, y: bottom + 8))
+        context.stroke(shadow, with: .color(color), style: thin)
     }
 
     /// Maghrib — Sunset arrow: A semicircle touching a horizontal line, with a small downward arrow above it pointing toward the horizon.
@@ -418,6 +408,8 @@ struct MinimalistPrayerPage: View {
     let selectedIndex: Int
     let totalCount: Int
     let onSelectPrayer: (Int) -> Void
+    var highlightedShortcutIndex: Int? = nil
+    var onShortcutTapped: ((Int) -> Void)? = nil
 
     @Environment(\.locale) private var locale
 
@@ -471,6 +463,7 @@ struct MinimalistPrayerPage: View {
 
     /// Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha — matches `HomeView` prayer order.
     private static let prayerShortcutLetters = ["F", "S", "D", "A", "M", "I"]
+    private static let prayerShortcutIdentifiers = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
     private func shortcutLetter(for index: Int) -> String {
         if index >= 0, index < Self.prayerShortcutLetters.count {
@@ -480,6 +473,13 @@ struct MinimalistPrayerPage: View {
             return String(prayerLabels[index].prefix(1)).uppercased()
         }
         return "?"
+    }
+
+    private func shortcutAccessibilityIdentifier(for index: Int) -> String {
+        guard index >= 0, index < Self.prayerShortcutIdentifiers.count else {
+            return "PrayerShortcut.\(index)"
+        }
+        return "PrayerShortcut.\(Self.prayerShortcutIdentifiers[index])"
     }
 
     private var prayerLetterPicker: some View {
@@ -500,6 +500,7 @@ struct MinimalistPrayerPage: View {
                                     let generator = UIImpactFeedbackGenerator(style: .light)
                                     generator.prepare()
                                     generator.impactOccurred()
+                                    onShortcutTapped?(index)
                                     onSelectPrayer(index)
                                 } label: {
                                     Text(letter)
@@ -509,7 +510,9 @@ struct MinimalistPrayerPage: View {
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
+                                .onboardingHighlight(highlightedShortcutIndex == index)
                                 .id(index)
+                                .accessibilityIdentifier(shortcutAccessibilityIdentifier(for: index))
                                 .accessibilityLabel(carouselA11yLabel(nameLabel: nameLabel, letter: letter, index: index))
                             }
                         }

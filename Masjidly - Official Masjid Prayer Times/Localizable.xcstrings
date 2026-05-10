@@ -4,6 +4,21 @@
     "" : {
 
     },
+    "%lld" : {
+
+    },
+    "5 min" : {
+
+    },
+    "10 min" : {
+
+    },
+    "15 min" : {
+
+    },
+    "30 min" : {
+
+    },
     "accessibility.settings" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -26,6 +41,9 @@
           }
         }
       }
+    },
+    "Adhan" : {
+
     },
     "app_language.arabic" : {
       "extractionState" : "stale",
@@ -164,6 +182,18 @@
           }
         }
       }
+    },
+    "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this." : {
+
+    },
+    "Choose your mosque" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Finish" : {
+
     },
     "home.iqamah_format" : {
       "extractionState" : "stale",
@@ -348,6 +378,18 @@
           }
         }
       }
+    },
+    "Iqamah" : {
+
+    },
+    "Masjidly will show official prayer and iqamah times for this mosque." : {
+
+    },
+    "Mosque" : {
+
+    },
+    "None" : {
+
     },
     "notification.asr_adhan" : {
       "extractionState" : "stale",
@@ -625,6 +667,9 @@
         }
       }
     },
+    "Prayer notifications" : {
+
+    },
     "prayer.asr" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -808,6 +853,9 @@
           }
         }
       }
+    },
+    "Reminder before adhan" : {
+
     },
     "settings.done" : {
       "extractionState" : "stale",

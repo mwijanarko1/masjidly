@@ -122,4 +122,228 @@ struct SettingsStoreTests {
         #expect(AppLanguage.arabic.isResolvedRightToLeft == true)
         #expect(AppLanguage.urdu.isResolvedRightToLeft == true)
     }
+
+    @Test @MainActor func onboardingCompletionPersists() {
+        let defaults = UserDefaults(suiteName: "SettingsStoreTests.onboardingCompletionPersists")!
+        defaults.removePersistentDomain(forName: "SettingsStoreTests.onboardingCompletionPersists")
+
+        let s = SettingsStore(defaults: defaults)
+        #expect(s.hasCompletedOnboarding == false)
+
+        s.hasCompletedOnboarding = true
+        #expect(SettingsStore(defaults: defaults).hasCompletedOnboarding == true)
+    }
+
+    @Test func notificationSettingsDecodesLegacyJSONWithChannelDefaults() throws {
+        let json = """
+        {"masterEnabled":true,"fajr":true,"dhuhrJummah":false,"asr":true,"maghrib":true,"isha":false}
+        """
+        let settings = try JSONDecoder().decode(NotificationSettings.self, from: Data(json.utf8))
+
+        #expect(settings.masterEnabled == true)
+        #expect(settings.adhanEnabled == true)
+        #expect(settings.iqamahEnabled == true)
+        #expect(settings.preAdhanReminderMinutes == nil)
+        #expect(settings.dhuhrJummah == false)
+        #expect(settings.isha == false)
+    }
+
+    @Test func notificationReminderMinutesRoundTrip() throws {
+        var settings = NotificationSettings()
+        settings.masterEnabled = true
+        settings.adhanEnabled = false
+        settings.iqamahEnabled = true
+        settings.preAdhanReminderMinutes = 10
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(NotificationSettings.self, from: data)
+
+        #expect(decoded.masterEnabled == true)
+        #expect(decoded.adhanEnabled == false)
+        #expect(decoded.iqamahEnabled == true)
+        #expect(decoded.preAdhanReminderMinutes == 10)
+    }
+}
+
+@Suite("Onboarding")
+@MainActor
+struct OnboardingFlowControllerTests {
+    @Test func startsAtMosqueSelectionWhenIncomplete() async {
+        let harness = OnboardingHarness()
+        harness.settings.hasCompletedOnboarding = false
+        harness.homeViewModel.mosques = harness.mosques
+
+        harness.controller.startIfNeeded()
+
+        #expect(harness.controller.currentStep == .chooseMosque)
+        #expect(harness.controller.isActive == true)
+    }
+
+    @Test func doesNotStartWhenCompleted() async {
+        let harness = OnboardingHarness()
+        harness.settings.hasCompletedOnboarding = true
+        harness.homeViewModel.mosques = harness.mosques
+
+        harness.controller.startIfNeeded()
+
+        #expect(harness.controller.currentStep == nil)
+        #expect(harness.controller.isActive == false)
+    }
+
+    @Test func choosingMosquePersistsSelectionAndStartsPrayerShortcuts() async {
+        let harness = OnboardingHarness()
+        harness.settings.hasCompletedOnboarding = false
+        harness.homeViewModel.mosques = harness.mosques
+        harness.settingsViewModel.mosques = harness.mosques
+        harness.controller.startIfNeeded()
+
+        await harness.controller.selectMosque(harness.mosques[1])
+
+        #expect(harness.settings.selectedMosqueId == "b")
+        #expect(harness.settings.selectedMosqueSlug == "mosque-b")
+        #expect(harness.controller.currentStep == .prayerShortcut(index: 0))
+    }
+
+    @Test func prayerShortcutStepsRequireExpectedIndex() {
+        let harness = OnboardingHarness()
+        harness.controller.currentStep = .prayerShortcut(index: 0)
+
+        harness.controller.handlePrayerShortcutTap(index: 3)
+        #expect(harness.controller.currentStep == .prayerShortcut(index: 0))
+
+        harness.controller.handlePrayerShortcutTap(index: 0)
+        #expect(harness.controller.currentStep == .prayerShortcut(index: 1))
+    }
+
+    @Test func guidedSurfaceStepsAdvanceInOrder() {
+        let harness = OnboardingHarness()
+        harness.controller.currentStep = .prayerShortcut(index: 5)
+
+        harness.controller.handlePrayerShortcutTap(index: 5)
+        #expect(harness.controller.currentStep == .openTimetable)
+
+        harness.controller.handleTimetableOpened()
+        #expect(harness.controller.currentStep == .closeTimetable)
+
+        harness.controller.handleTimetableClosed()
+        #expect(harness.controller.currentStep == .openSettings)
+
+        harness.controller.handleSettingsOpened()
+        #expect(harness.controller.currentStep == .closeSettings)
+
+        harness.controller.handleSettingsClosed()
+        #expect(harness.controller.currentStep == .notifications)
+    }
+
+    @Test func completingNotificationSetupSavesSettingsRequestsAuthorizationAndCompletes() async {
+        let harness = OnboardingHarness()
+        harness.homeViewModel.selectedMosque = harness.mosques[0]
+        harness.controller.currentStep = .notifications
+        harness.controller.notificationDraft = OnboardingNotificationDraft(
+            adhanEnabled: true,
+            iqamahEnabled: false,
+            preAdhanReminderMinutes: 10
+        )
+
+        await harness.controller.completeNotificationSetup()
+
+        #expect(harness.settings.hasCompletedOnboarding == true)
+        #expect(harness.settings.notifications.masterEnabled == true)
+        #expect(harness.settings.notifications.adhanEnabled == true)
+        #expect(harness.settings.notifications.iqamahEnabled == false)
+        #expect(harness.settings.notifications.preAdhanReminderMinutes == 10)
+        #expect(harness.scheduler.authorizationRequestCount == 1)
+        #expect(harness.scheduler.rescheduleCount == 1)
+        #expect(harness.controller.currentStep == nil)
+    }
+}
+
+@MainActor
+private final class OnboardingHarness {
+    let defaults: UserDefaults
+    let mosques: [Mosque]
+    let repository: MockPrayerRepository
+    let scheduler: MockPrayerNotificationScheduler
+    let settings: SettingsStore
+    let homeViewModel: HomeViewModel
+    let settingsViewModel: SettingsViewModel
+    let controller: OnboardingFlowController
+
+    init() {
+        let suiteName = "OnboardingHarness.\(UUID().uuidString)"
+        defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        mosques = [
+            Mosque(id: "a", name: "Mosque A", address: "", lat: 0, lng: 0, slug: "mosque-a", website: nil, isHidden: false),
+            Mosque(id: "b", name: "Mosque B", address: "", lat: 0, lng: 0, slug: "mosque-b", website: nil, isHidden: false),
+        ]
+        repository = MockPrayerRepository(mosques: mosques)
+        scheduler = MockPrayerNotificationScheduler()
+        settings = SettingsStore(defaults: defaults)
+        homeViewModel = HomeViewModel(repository: repository, settings: settings, notificationScheduler: scheduler)
+        settingsViewModel = SettingsViewModel(repository: repository, settings: settings, notificationScheduler: scheduler)
+        controller = OnboardingFlowController(
+            settings: settings,
+            homeViewModel: homeViewModel,
+            settingsViewModel: settingsViewModel,
+            notificationScheduler: scheduler
+        )
+    }
+}
+
+private final class MockPrayerRepository: PrayerRepository {
+    let mosques: [Mosque]
+
+    init(mosques: [Mosque]) {
+        self.mosques = mosques
+    }
+
+    func listMosques() async throws -> [Mosque] {
+        mosques
+    }
+
+    func getMonthlyPrayerTimes(mosqueSlug: String, month: MonthName, year: Int) async throws -> MonthPrayerData? {
+        MonthPrayerData(
+            month: "May 2026",
+            prayerTimes: [
+                PrayerTime(date: 10, fajr: "04:00", shurooq: "05:30", dhuhr: "13:00", asr: "18:00", maghrib: "21:00", isha: "22:30")
+            ],
+            iqamahTimes: [
+                IqamahTimeRange(dateRange: "1-31", fajr: "04:30", dhuhr: "13:30", asr: "18:30", maghrib: "sunset", isha: "23:00", jummah: "13:45")
+            ],
+            jummahIqamah: "13:45"
+        )
+    }
+
+    func getRamadanTimetable(mosqueSlug: String, date: String?) async throws -> RamadanPrayerData? {
+        nil
+    }
+
+    func getUkDstDates() async throws -> UkDstCalendar? {
+        UkDstCalendar(ukDstDates: [])
+    }
+}
+
+private final class MockPrayerNotificationScheduler: PrayerNotificationScheduling {
+    var authorizationRequestCount = 0
+    var rescheduleCount = 0
+    var cancelCount = 0
+
+    func requestAuthorizationIfNeeded() async throws -> Bool {
+        authorizationRequestCount += 1
+        return true
+    }
+
+    func rescheduleUpcomingPrayerNotifications(
+        mosque: Mosque,
+        days: Int,
+        settings: NotificationSettings,
+        locale: Locale
+    ) async throws {
+        rescheduleCount += 1
+    }
+
+    func cancelAllPrayerNotifications() async {
+        cancelCount += 1
+    }
 }

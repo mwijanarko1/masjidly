@@ -7,6 +7,7 @@ final class HomeViewModel {
     private let repository: any PrayerRepository
     private let settings: SettingsStore
     private let notificationScheduler: any PrayerNotificationScheduling
+    private let widgetSnapshotWriter: (any WidgetPrayerSnapshotWriting)?
 
     var mosques: [Mosque] = []
     var selectedMosque: Mosque?
@@ -28,11 +29,13 @@ final class HomeViewModel {
     init(
         repository: any PrayerRepository,
         settings: SettingsStore,
-        notificationScheduler: any PrayerNotificationScheduling
+        notificationScheduler: any PrayerNotificationScheduling,
+        widgetSnapshotWriter: (any WidgetPrayerSnapshotWriting)? = nil
     ) {
         self.repository = repository
         self.settings = settings
         self.notificationScheduler = notificationScheduler
+        self.widgetSnapshotWriter = widgetSnapshotWriter
     }
 
     func load() async {
@@ -53,6 +56,7 @@ final class HomeViewModel {
             settings.selectedMosqueId = mosque.id
             settings.selectedMosqueSlug = mosque.slug
             try await refreshPrayerPayload(for: mosque)
+            await refreshWidgetSnapshot(for: mosque)
             loadState = .loaded
         } catch {
             lastError = error.localizedDescription
@@ -104,6 +108,7 @@ final class HomeViewModel {
         loadState = .loading
         do {
             try await refreshPrayerPayload(for: m)
+            await refreshWidgetSnapshot(for: m)
             lastError = nil
             loadState = .loaded
         } catch {
@@ -124,10 +129,16 @@ final class HomeViewModel {
             mosques = MosqueDefaults.visibleMosques(full)
             do {
                 try await refreshPrayerPayload(for: m)
+                await refreshWidgetSnapshot(for: m)
             } catch {
                 lastError = error.localizedDescription
             }
         }
+    }
+
+    func refreshWidgetSnapshotForCurrentMosque() async {
+        guard let selectedMosque else { return }
+        await refreshWidgetSnapshot(for: selectedMosque)
     }
 
     func resyncNotificationsIfNeeded() async {
@@ -142,5 +153,14 @@ final class HomeViewModel {
             settings: n,
             locale: settings.resolvedLocale
         )
+    }
+
+    func fetchMonthData(mosqueSlug: String, month: Int, year: Int) async -> MonthPrayerData? {
+        guard let monthName = MonthName.from(monthNumber: month) else { return nil }
+        return try? await repository.getMonthlyPrayerTimes(mosqueSlug: mosqueSlug, month: monthName, year: year)
+    }
+
+    private func refreshWidgetSnapshot(for mosque: Mosque) async {
+        await widgetSnapshotWriter?.refreshSnapshot(for: mosque, days: 7)
     }
 }

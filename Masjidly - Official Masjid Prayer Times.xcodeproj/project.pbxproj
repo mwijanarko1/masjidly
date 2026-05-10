@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		74100D572FAB9EED00CFBC47 /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = 74100D562FAB9EED00CFBC47 /* ConvexMobile */; };
+		8A10E0012FB0000000000001 /* MasjidlyWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 8A10E0022FB0000000000001 /* MasjidlyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,12 +26,34 @@
 			remoteGlobalIDString = 74100D282FAB9EEA00CFBC47;
 			remoteInfo = "Masjidly - Official Masjid Prayer Times";
 		};
+		8A10E0032FB0000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 74100D212FAB9EEA00CFBC47 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A10E0042FB0000000000001;
+			remoteInfo = MasjidlyWidgets;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8A10E0052FB0000000000001 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				8A10E0012FB0000000000001 /* MasjidlyWidgets.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		74100D292FAB9EEA00CFBC47 /* Masjidly - Official Masjid Prayer Times.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Masjidly - Official Masjid Prayer Times.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		74100D382FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Masjidly - Official Masjid Prayer TimesTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		74100D422FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Masjidly - Official Masjid Prayer TimesUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8A10E0022FB0000000000001 /* MasjidlyWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MasjidlyWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -47,6 +70,11 @@
 		74100D452FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "Masjidly - Official Masjid Prayer TimesUITests";
+			sourceTree = "<group>";
+		};
+		8A10E0062FB0000000000001 /* MasjidlyWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MasjidlyWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -74,6 +102,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8A10E0072FB0000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -83,6 +118,7 @@
 				74100D2B2FAB9EEA00CFBC47 /* Masjidly - Official Masjid Prayer Times */,
 				74100D3B2FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesTests */,
 				74100D452FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests */,
+				8A10E0062FB0000000000001 /* MasjidlyWidgets */,
 				74100D2A2FAB9EEA00CFBC47 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -93,6 +129,7 @@
 				74100D292FAB9EEA00CFBC47 /* Masjidly - Official Masjid Prayer Times.app */,
 				74100D382FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesTests.xctest */,
 				74100D422FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests.xctest */,
+				8A10E0022FB0000000000001 /* MasjidlyWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -107,10 +144,12 @@
 				74100D252FAB9EEA00CFBC47 /* Sources */,
 				74100D262FAB9EEA00CFBC47 /* Frameworks */,
 				74100D272FAB9EEA00CFBC47 /* Resources */,
+				8A10E0052FB0000000000001 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				8A10E0082FB0000000000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				74100D2B2FAB9EEA00CFBC47 /* Masjidly - Official Masjid Prayer Times */,
@@ -169,6 +208,28 @@
 			productReference = 74100D422FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		8A10E0042FB0000000000001 /* MasjidlyWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A10E0092FB0000000000001 /* Build configuration list for PBXNativeTarget "MasjidlyWidgets" */;
+			buildPhases = (
+				8A10E00A2FB0000000000001 /* Sources */,
+				8A10E0072FB0000000000001 /* Frameworks */,
+				8A10E00B2FB0000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8A10E0062FB0000000000001 /* MasjidlyWidgets */,
+			);
+			name = MasjidlyWidgets;
+			packageProductDependencies = (
+			);
+			productName = MasjidlyWidgets;
+			productReference = 8A10E0022FB0000000000001 /* MasjidlyWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -189,6 +250,9 @@
 					74100D412FAB9EED00CFBC47 = {
 						CreatedOnToolsVersion = 26.4.1;
 						TestTargetID = 74100D282FAB9EEA00CFBC47;
+					};
+					8A10E0042FB0000000000001 = {
+						CreatedOnToolsVersion = 26.4.1;
 					};
 				};
 			};
@@ -214,6 +278,7 @@
 				74100D282FAB9EEA00CFBC47 /* Masjidly - Official Masjid Prayer Times */,
 				74100D372FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesTests */,
 				74100D412FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests */,
+				8A10E0042FB0000000000001 /* MasjidlyWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -234,6 +299,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		74100D402FAB9EED00CFBC47 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A10E00B2FB0000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -264,6 +336,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8A10E00A2FB0000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -276,6 +355,11 @@
 			isa = PBXTargetDependency;
 			target = 74100D282FAB9EEA00CFBC47 /* Masjidly - Official Masjid Prayer Times */;
 			targetProxy = 74100D432FAB9EED00CFBC47 /* PBXContainerItemProxy */;
+		};
+		8A10E0082FB0000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A10E0042FB0000000000001 /* MasjidlyWidgets */;
+			targetProxy = 8A10E0032FB0000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -406,6 +490,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Masjidly - Official Masjid Prayer Times/Masjidly.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WH4MT5Z44S;
@@ -443,6 +528,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Masjidly - Official Masjid Prayer Times/Masjidly.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WH4MT5Z44S;
@@ -559,6 +645,64 @@
 			};
 			name = Release;
 		};
+		8A10E00C2FB0000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = MasjidlyWidgets/MasjidlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WH4MT5Z44S;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "MasjidlyWidgetSupport/MasjidlyWidgets-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.Widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8A10E00D2FB0000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = MasjidlyWidgets/MasjidlyWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WH4MT5Z44S;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "MasjidlyWidgetSupport/MasjidlyWidgets-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.Widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -594,6 +738,15 @@
 			buildConfigurations = (
 				74100D532FAB9EED00CFBC47 /* Debug */,
 				74100D542FAB9EED00CFBC47 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8A10E0092FB0000000000001 /* Build configuration list for PBXNativeTarget "MasjidlyWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A10E00C2FB0000000000001 /* Debug */,
+				8A10E00D2FB0000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

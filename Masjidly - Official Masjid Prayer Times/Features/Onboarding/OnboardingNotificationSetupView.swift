@@ -1,0 +1,126 @@
+import SwiftUI
+
+struct OnboardingNotificationSetupView: View {
+    let timeTheme: HomeDesign.TimeTheme
+    @Binding var draft: OnboardingNotificationDraft
+    let isSaving: Bool
+    let onContinue: () -> Void
+
+    private let reminderOptions: [Int?] = [nil, 5, 10, 15, 30]
+
+    var body: some View {
+        ZStack {
+            // Airy, atmospheric background gradient
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(timeTheme.usesLightForeground ? 0.32 : 0.18),
+                    Color.black.opacity(timeTheme.usesLightForeground ? 0.16 : 0.08),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            OnboardingTutorialChrome.card(timeTheme: timeTheme) {
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Prayer notifications")
+                            .font(HomeDesign.Typography.app(size: 23, weight: .semibold))
+                            .foregroundStyle(timeTheme.textColor)
+                            .kerning(-0.5)
+
+                        Text("Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this.")
+                            .font(HomeDesign.Typography.app(size: 16, weight: .regular))
+                            .foregroundStyle(timeTheme.textColor.opacity(0.8))
+                            .lineSpacing(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    VStack(spacing: 20) {
+                        Toggle("Adhan", isOn: $draft.adhanEnabled)
+                            .font(HomeDesign.Typography.app(size: 18, weight: .medium))
+                            .tint(HomeDesign.Colors.accent)
+                            .foregroundStyle(timeTheme.textColor)
+                            .accessibilityIdentifier("Onboarding.AdhanToggle")
+
+                        Toggle("Iqamah", isOn: $draft.iqamahEnabled)
+                            .font(HomeDesign.Typography.app(size: 18, weight: .medium))
+                            .tint(HomeDesign.Colors.accent)
+                            .foregroundStyle(timeTheme.textColor)
+                            .accessibilityIdentifier("Onboarding.IqamahToggle")
+                        
+                        Divider()
+                            .background(timeTheme.textColor.opacity(0.12))
+                            .padding(.vertical, 4)
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Reminders")
+                                .font(HomeDesign.Typography.app(size: 16, weight: .semibold))
+                                .foregroundStyle(timeTheme.textColor.opacity(0.6))
+                                .kerning(0.5)
+
+                            HStack {
+                                Text("Before Adhan")
+                                    .font(HomeDesign.Typography.app(size: 16, weight: .regular))
+                                    .foregroundStyle(timeTheme.textColor)
+                                Spacer()
+                                Picker("Adhan Reminder", selection: $draft.preAdhanReminderMinutes) {
+                                    ForEach(reminderOptions, id: \.self) { minutes in
+                                        Text(reminderLabel(for: minutes)).tag(minutes)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .tint(timeTheme.usesLightForeground ? Color.white : HomeDesign.Colors.accent)
+                                .accessibilityIdentifier("Onboarding.AdhanReminderPicker")
+                            }
+
+                            HStack {
+                                Text("Before Iqamah")
+                                    .font(HomeDesign.Typography.app(size: 16, weight: .regular))
+                                    .foregroundStyle(timeTheme.textColor)
+                                Spacer()
+                                Picker("Iqamah Reminder", selection: $draft.preIqamahReminderMinutes) {
+                                    ForEach(reminderOptions, id: \.self) { minutes in
+                                        Text(reminderLabel(for: minutes)).tag(minutes)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .tint(timeTheme.usesLightForeground ? Color.white : HomeDesign.Colors.accent)
+                                .accessibilityIdentifier("Onboarding.IqamahReminderPicker")
+                            }
+                        }
+                    }
+
+                    Button {
+                        onContinue()
+                    } label: {
+                        Group {
+                            if isSaving {
+                                ProgressView()
+                                    .tint(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(HomeDesign.Colors.activeGradient, in: Capsule())
+                            } else {
+                                Text("Finish")
+                                    .onboardingPrimaryCapsule()
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isSaving)
+                    .accessibilityIdentifier("Onboarding.NotificationFinish")
+                }
+                .toggleStyle(.switch)
+                .padding(24)
+            }
+            .frame(maxWidth: 400, alignment: .leading)
+            .padding(.horizontal, 24)
+        }
+    }
+
+    private func reminderLabel(for minutes: Int?) -> String {
+        guard let minutes else { return "Off" }
+        return "\(minutes) min"
+    }
+}

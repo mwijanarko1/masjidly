@@ -13,6 +13,7 @@ protocol SettingsPersisting: AnyObject {
     var uses24HourTime: Bool { get set }
     var notifications: NotificationSettings { get set }
     var appLanguage: AppLanguage { get set }
+    var hasCompletedOnboarding: Bool { get set }
 }
 
 protocol PrayerNotificationScheduling: AnyObject {

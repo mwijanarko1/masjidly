@@ -9,6 +9,7 @@ struct Masjidly___Official_Masjid_Prayer_TimesApp: App {
             MasjidlyRootView(homeViewModel: env.homeViewModel)
                 .environment(env.settings)
                 .environment(env.settingsViewModel)
+                .environment(env.onboardingFlowController)
         }
     }
 }

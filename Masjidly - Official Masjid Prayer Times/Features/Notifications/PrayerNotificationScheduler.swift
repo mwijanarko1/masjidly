@@ -63,86 +63,122 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             let isFriday = weekday == 6
 
             if settings.fajr {
-                await scheduleIfNeeded(
+                await scheduleAdhanIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).fajr.adhan",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).fajr.adhan_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat("notification.fajr_adhan", locale: locale, args: [displayed.fajr]),
+                    prayerLabel: "Fajr",
                     civilDay: dayDate,
-                    hhmm: displayed.fajr
+                    hhmm: displayed.fajr,
+                    locale: locale
                 )
                 let iqT = PrayerTimesEngine.getIqamahTime(prayer: "fajr", adhanTime: displayed.fajr, iqamahTimes: iq)
-                await scheduleIfNeeded(
+                await scheduleIqamahIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).fajr.iqamah",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).fajr.iqamah_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat("notification.fajr_iqamah", locale: locale, args: [iqT]),
+                    prayerLabel: "Fajr",
                     civilDay: dayDate,
-                    hhmm: iqT
+                    hhmm: iqT,
+                    locale: locale
                 )
             }
 
             if settings.dhuhrJummah {
                 let adhanKey = isFriday ? "notification.jummah_adhan" : "notification.dhuhr_adhan"
-                await scheduleIfNeeded(
+                await scheduleAdhanIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).dhuhr.adhan",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).dhuhr.adhan_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat(adhanKey, locale: locale, args: [displayed.dhuhr]),
+                    prayerLabel: isFriday ? "Jummah" : "Dhuhr",
                     civilDay: dayDate,
-                    hhmm: displayed.dhuhr
+                    hhmm: displayed.dhuhr,
+                    locale: locale
                 )
                 let iqLabel = isFriday ? iq.jummah : PrayerTimesEngine.getIqamahTime(prayer: "dhuhr", adhanTime: displayed.dhuhr, iqamahTimes: iq)
                 let iqBodyKey = isFriday ? "notification.jummah" : "notification.dhuhr_iqamah"
-                await scheduleIfNeeded(
+                await scheduleIqamahIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).\(isFriday ? "jummah" : "dhuhr").iqamah",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).\(isFriday ? "jummah" : "dhuhr").iqamah_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat(iqBodyKey, locale: locale, args: [iqLabel]),
+                    prayerLabel: isFriday ? "Jummah" : "Dhuhr",
                     civilDay: dayDate,
-                    hhmm: iqLabel
+                    hhmm: iqLabel,
+                    locale: locale
                 )
             }
 
             if settings.asr {
-                await scheduleIfNeeded(
+                await scheduleAdhanIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).asr.adhan",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).asr.adhan_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat("notification.asr_adhan", locale: locale, args: [displayed.asr]),
+                    prayerLabel: "Asr",
                     civilDay: dayDate,
-                    hhmm: displayed.asr
+                    hhmm: displayed.asr,
+                    locale: locale
                 )
                 let iqT = PrayerTimesEngine.getIqamahTime(prayer: "asr", adhanTime: displayed.asr, iqamahTimes: iq)
-                await scheduleIfNeeded(
+                await scheduleIqamahIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).asr.iqamah",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).asr.iqamah_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat("notification.asr_iqamah", locale: locale, args: [iqT]),
+                    prayerLabel: "Asr",
                     civilDay: dayDate,
-                    hhmm: iqT
+                    hhmm: iqT,
+                    locale: locale
                 )
             }
 
             if settings.maghrib {
-                await scheduleIfNeeded(
+                await scheduleAdhanIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).maghrib.adhan",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).maghrib.adhan_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat("notification.maghrib_adhan", locale: locale, args: [displayed.maghrib]),
+                    prayerLabel: "Maghrib",
                     civilDay: dayDate,
-                    hhmm: displayed.maghrib
+                    hhmm: displayed.maghrib,
+                    locale: locale
                 )
                 let iqT = PrayerTimesEngine.getIqamahTime(prayer: "maghrib", adhanTime: displayed.maghrib, iqamahTimes: iq)
-                await scheduleIfNeeded(
+                await scheduleIqamahIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).maghrib.iqamah",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).maghrib.iqamah_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat("notification.maghrib_iqamah", locale: locale, args: [iqT]),
+                    prayerLabel: "Maghrib",
                     civilDay: dayDate,
-                    hhmm: iqT
+                    hhmm: iqT,
+                    locale: locale
                 )
             }
 
             if settings.isha {
-                await scheduleIfNeeded(
+                await scheduleAdhanIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).isha.adhan",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).isha.adhan_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat("notification.isha_adhan", locale: locale, args: [displayed.isha]),
+                    prayerLabel: "Isha",
                     civilDay: dayDate,
-                    hhmm: displayed.isha
+                    hhmm: displayed.isha,
+                    locale: locale
                 )
                 let iqT = PrayerTimesEngine.resolveIshaIqamahForDisplay(
                     slug: slug,
@@ -151,12 +187,16 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                     iqamahTimes: iq,
                     maghribAdhan: displayed.maghrib
                 )
-                await scheduleIfNeeded(
+                await scheduleIqamahIfEnabled(
+                    settings: settings,
                     id: "masjidly.prayer.\(slug).\(iso).isha.iqamah",
+                    reminderId: "masjidly.prayer.\(slug).\(iso).isha.iqamah_reminder",
                     title: mosque.name,
                     body: Self.localizedFormat("notification.isha_iqamah", locale: locale, args: [iqT]),
+                    prayerLabel: "Isha",
                     civilDay: dayDate,
-                    hhmm: iqT
+                    hhmm: iqT,
+                    locale: locale
                 )
             }
         }
@@ -169,6 +209,88 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             locale: locale
         )
         return String(format: template, locale: locale, arguments: args)
+    }
+
+    private func scheduleAdhanIfEnabled(
+        settings: NotificationSettings,
+        id: String,
+        reminderId: String,
+        title: String,
+        body: String,
+        prayerLabel: String,
+        civilDay: Date,
+        hhmm: String,
+        locale: Locale
+    ) async {
+        if settings.adhanEnabled {
+            await scheduleIfNeeded(id: id, title: title, body: body, civilDay: civilDay, hhmm: hhmm)
+        }
+        guard let minutes = settings.preAdhanReminderMinutes, minutes > 0 else { return }
+        await scheduleReminderIfNeeded(
+            id: reminderId,
+            title: title,
+            prayerLabel: prayerLabel,
+            eventLabel: "adhan",
+            minutesBefore: minutes,
+            civilDay: civilDay,
+            hhmm: hhmm,
+            locale: locale
+        )
+    }
+
+    private func scheduleIqamahIfEnabled(
+        settings: NotificationSettings,
+        id: String,
+        reminderId: String,
+        title: String,
+        body: String,
+        prayerLabel: String,
+        civilDay: Date,
+        hhmm: String,
+        locale: Locale
+    ) async {
+        if settings.iqamahEnabled {
+            await scheduleIfNeeded(id: id, title: title, body: body, civilDay: civilDay, hhmm: hhmm)
+        }
+        guard let minutes = settings.preIqamahReminderMinutes, minutes > 0 else { return }
+        await scheduleReminderIfNeeded(
+            id: reminderId,
+            title: title,
+            prayerLabel: prayerLabel,
+            eventLabel: "iqamah",
+            minutesBefore: minutes,
+            civilDay: civilDay,
+            hhmm: hhmm,
+            locale: locale
+        )
+    }
+
+    private func scheduleReminderIfNeeded(
+        id: String,
+        title: String,
+        prayerLabel: String,
+        eventLabel: String,
+        minutesBefore: Int,
+        civilDay: Date,
+        hhmm: String,
+        locale: Locale
+    ) async {
+        guard let targetDate = triggerDate(civilDay: civilDay, hhmm: hhmm),
+              let fire = Calendar(identifier: .gregorian).date(byAdding: .minute, value: -minutesBefore, to: targetDate),
+              fire > Date()
+        else { return }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        let c = cal.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = "\(prayerLabel) \(eventLabel) is in \(minutesBefore) minutes"
+        content.sound = .default
+        let trigger = UNCalendarNotificationTrigger(dateMatching: c, repeats: false)
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+        do {
+            try await center.add(request)
+        } catch {}
     }
 
     private func scheduleIfNeeded(id: String, title: String, body: String, civilDay: Date, hhmm: String) async {

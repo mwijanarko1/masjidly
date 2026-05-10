@@ -4,7 +4,7 @@ import Observation
 @Observable
 @MainActor
 final class SettingsStore: SettingsPersisting {
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
 
     private enum Key: String {
         case selectedMosqueId
@@ -12,6 +12,7 @@ final class SettingsStore: SettingsPersisting {
         case uses24HourTime
         case notificationsJSON
         case appLanguage
+        case hasCompletedOnboarding
     }
 
     /// Stored fields so `@Observable` tracks mutations; UserDefaults syncs in `didSet`.
@@ -39,12 +40,17 @@ final class SettingsStore: SettingsPersisting {
         didSet { defaults.set(appLanguage.rawValue, forKey: Key.appLanguage.rawValue) }
     }
 
+    var hasCompletedOnboarding: Bool {
+        didSet { defaults.set(hasCompletedOnboarding, forKey: Key.hasCompletedOnboarding.rawValue) }
+    }
+
     /// Locale for SwiftUI `\.locale` and notification strings.
     var resolvedLocale: Locale {
         appLanguage.resolvedLocale()
     }
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         selectedMosqueId = defaults.string(forKey: Key.selectedMosqueId.rawValue)
         selectedMosqueSlug = defaults.string(forKey: Key.selectedMosqueSlug.rawValue)
         if defaults.object(forKey: Key.uses24HourTime.rawValue) == nil {
@@ -63,6 +69,11 @@ final class SettingsStore: SettingsPersisting {
             appLanguage = v
         } else {
             appLanguage = .system
+        }
+        if defaults.object(forKey: Key.hasCompletedOnboarding.rawValue) == nil {
+            hasCompletedOnboarding = false
+        } else {
+            hasCompletedOnboarding = defaults.bool(forKey: Key.hasCompletedOnboarding.rawValue)
         }
     }
 }

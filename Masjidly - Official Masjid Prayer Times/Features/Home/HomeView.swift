@@ -8,6 +8,7 @@ struct HomeView: View {
     @Bindable var model: HomeViewModel
     @Environment(SettingsStore.self) private var settings
     @Environment(SettingsViewModel.self) private var settingsViewModel
+    @Environment(OnboardingFlowController.self) private var onboarding
     @Environment(\.locale) private var locale
 
     @State private var showingSettings = false
@@ -54,7 +55,9 @@ struct HomeView: View {
                         prayerLabels: labels,
                         selectedIndex: selectedPrayerIndex,
                         totalCount: prayers.count,
-                        onSelectPrayer: { selectedPrayerIndex = $0 }
+                        onSelectPrayer: { selectedPrayerIndex = $0 },
+                        highlightedShortcutIndex: highlightedPrayerShortcutIndex,
+                        onShortcutTapped: { onboarding.handlePrayerShortcutTap(index: $0) }
                     )
                     .onAppear {
                         if let nextName = model.nextCountdown?.nextName {
@@ -69,9 +72,7 @@ struct HomeView: View {
 
                 VStack {
                     HStack(alignment: .center) {
-                        // Symmetrical placeholder to ensure dateDisplay is perfectly centered
-                        Color.clear
-                            .frame(width: 44, height: 44)
+                        calendarButton
                             .padding(.leading, metrics.leadingChromeInset)
                         
                         Spacer()
@@ -94,6 +95,8 @@ struct HomeView: View {
         .accessibilityIdentifier("tabHome")
         .task {
             await model.load()
+            await settingsViewModel.load()
+            onboarding.startIfNeeded()
             await model.resyncNotificationsIfNeeded()
         }
         .onAppear {
@@ -103,32 +106,82 @@ struct HomeView: View {
             Task { await model.resyncNotificationsIfNeeded() }
         }
         .onChange(of: settings.appLanguage) { _, _ in
-            Task { await model.resyncNotificationsIfNeeded() }
-        }
-        .sheet(isPresented: $showingTimetable) {
-            if let monthData = model.monthData, let mosque = model.selectedMosque {
-                TimetableView(monthData: monthData, mosqueName: mosque.name, timeTheme: currentTheme)
+            Task {
+                await model.resyncNotificationsIfNeeded()
+                await model.refreshWidgetSnapshotForCurrentMosque()
             }
         }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(model: settingsViewModel, timeTheme: currentTheme)
+        .onChange(of: settings.uses24HourTime) { _, _ in
+            Task { await model.refreshWidgetSnapshotForCurrentMosque() }
+        }
+        .onChange(of: settings.selectedMosqueId) { _, _ in
+            Task { await model.applySelectionFromSettings() }
+        }
+        .onChange(of: settings.selectedMosqueSlug) { _, _ in
+            Task { await model.applySelectionFromSettings() }
+        }
+        .fullScreenCover(isPresented: $showingTimetable) {
+            if let monthData = model.monthData, let mosque = model.selectedMosque {
+                TimetableView(
+                    initialMonthData: monthData,
+                    mosqueName: mosque.name,
+                    mosqueSlug: mosque.slug,
+                    timeTheme: currentTheme,
+                    model: model,
+                    onDismiss: {
+                        onboarding.handleTimetableClosed()
+                    }
+                )
+            }
+        }
+        .fullScreenCover(isPresented: $showingSettings) {
+            SettingsView(
+                model: settingsViewModel,
+                timeTheme: currentTheme,
+                onDismiss: {
+                    onboarding.handleSettingsClosed()
+                }
+            )
                 .environment(settings)
+        }
+        .overlay {
+            onboardingOverlay
         }
     }
 
     @ViewBuilder
     private func backgroundLayer(metrics: HomeViewportMetrics) -> some View {
         let theme = currentActiveTheme(d: model.displayedPrayerTimes)
+        let sky = theme.sky
+        
         ZStack {
-            LinearGradient(gradient: theme.gradient, startPoint: .top, endPoint: .bottom)
-
-            Circle()
-                .fill(theme.iconColor.opacity(0.1))
-                .frame(width: metrics.backgroundGlowDiameter, height: metrics.backgroundGlowDiameter)
-                .offset(x: metrics.backgroundGlowOffsetX, y: metrics.backgroundGlowOffsetY)
-                .blur(radius: 80)
+            // 1. Base Atmospheric Sky
+            LinearGradient(
+                gradient: Gradient(colors: sky.baseColors),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            
+            // 2. Horizon Glow (Cinematic Lighting)
+            if let glow = sky.glowColor {
+                RadialGradient(
+                    colors: [glow.opacity(0.6), glow.opacity(0.3), .clear],
+                    center: UnitPoint(x: 0.5, y: 0.82),
+                    startRadius: 0,
+                    endRadius: metrics.height * 0.7
+                )
+                .blendMode(.screen)
+            }
+            
+            // 3. Subtle Light Wash (Top-down soft lighting)
+            LinearGradient(
+                colors: [Color.white.opacity(0.05), .clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .blendMode(.plusLighter)
         }
-        .animation(.easeInOut(duration: 0.5), value: selectedPrayerIndex)
+        .animation(.easeInOut(duration: 0.8), value: selectedPrayerIndex)
         .ignoresSafeArea()
     }
 
@@ -143,6 +196,7 @@ struct HomeView: View {
 
     private var settingsButton: some View {
         Button {
+            onboarding.handleSettingsOpened()
             showingSettings = true
         } label: {
             Image(systemName: "gearshape.fill")
@@ -152,7 +206,95 @@ struct HomeView: View {
                 .background(Circle().fill(Color.white.opacity(0.18)))
         }
         .buttonStyle(.plain)
+        .onboardingHighlight(onboarding.currentStep == .openSettings)
         .accessibilityLabel(Text(homeLS("accessibility.settings", locale: locale)))
+    }
+
+    private var calendarButton: some View {
+        Button {
+            onboarding.handleTimetableOpened()
+            showingTimetable = true
+        } label: {
+            Image(systemName: "calendar")
+                .font(HomeDesign.Typography.app(size: 20, weight: .light))
+                .foregroundColor(currentTheme.textColor)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(Color.white.opacity(0.18)))
+        }
+        .buttonStyle(.plain)
+        .onboardingHighlight(onboarding.currentStep == .openTimetable)
+        .accessibilityLabel(Text(homeLS("accessibility.timetable", locale: locale)))
+    }
+
+    @ViewBuilder
+    private var onboardingOverlay: some View {
+        switch onboarding.currentStep {
+        case .chooseMosque:
+            MosqueSelectionOnboardingView(
+                mosques: model.mosques,
+                timeTheme: currentTheme,
+                selectedMosqueId: Binding(
+                    get: { onboarding.selectedMosqueId },
+                    set: { onboarding.selectedMosqueId = $0 }
+                ),
+                onContinue: { mosque in
+                    Task { await onboarding.selectMosque(mosque) }
+                }
+            )
+        case .prayerShortcut(let index):
+            OnboardingCoachMarkView(
+                title: "Try the prayer shortcuts",
+                message: "Tap \(shortcutLetter(for: index)) to view that prayer time.",
+                timeTheme: currentTheme,
+                variant: .aboveShortcutRow
+            )
+            .allowsHitTesting(false)
+        case .openTimetable:
+            OnboardingCoachMarkView(
+                title: "Open the timetable",
+                message: "Tap the calendar button (top-left) to see the full timetable.",
+                timeTheme: currentTheme,
+                variant: .belowTopChrome
+            )
+            .allowsHitTesting(false)
+        case .closeTimetable:
+            EmptyView()
+        case .openSettings:
+            OnboardingCoachMarkView(
+                title: "Open Settings",
+                message: "Tap the settings button (top-right) to choose preferences.",
+                timeTheme: currentTheme,
+                variant: .belowTopChrome
+            )
+            .allowsHitTesting(false)
+        case .closeSettings:
+            EmptyView()
+        case .notifications:
+            OnboardingNotificationSetupView(
+                timeTheme: currentTheme,
+                draft: Binding(
+                    get: { onboarding.notificationDraft },
+                    set: { onboarding.notificationDraft = $0 }
+                ),
+                isSaving: onboarding.isCompletingNotifications,
+                onContinue: {
+                    Task { await onboarding.completeNotificationSetup() }
+                }
+            )
+        case nil:
+            EmptyView()
+        }
+    }
+
+    private var highlightedPrayerShortcutIndex: Int? {
+        guard case .prayerShortcut(let index) = onboarding.currentStep else { return nil }
+        return index
+    }
+
+    private func shortcutLetter(for index: Int) -> String {
+        let letters = ["F", "S", "D", "A", "M", "I"]
+        guard index >= 0, index < letters.count else { return "?" }
+        return letters[index]
     }
 
     private var dateDisplay: some View {
@@ -191,6 +333,7 @@ struct HomeView: View {
         settings.selectedMosqueSlug = mosque.slug
         Task {
             try? await model.refreshPrayerPayload(for: mosque)
+            await model.refreshWidgetSnapshotForCurrentMosque()
             await model.resyncNotificationsIfNeeded()
         }
     }
@@ -306,9 +449,16 @@ private struct HomeViewportMetrics: Sendable {
     let scheduler = PrayerNotificationScheduler(repository: repo)
     let homeVM = HomeViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
     let settingsVM = SettingsViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
+    let onboarding = OnboardingFlowController(
+        settings: settings,
+        homeViewModel: homeVM,
+        settingsViewModel: settingsVM,
+        notificationScheduler: scheduler
+    )
     return NavigationStack {
         MasjidlyRootView(homeViewModel: homeVM)
             .environment(settings)
             .environment(settingsVM)
+            .environment(onboarding)
     }
 }

@@ -1,12 +1,15 @@
 export const COLORS = {
-  primary: '#007AFF',
-  secondary: '#6B7280',
+  primary: '#1D2433',
+  secondary: '#9095A1',
+  accent: '#47A6FF',
+  accentDark: '#2E8DFF',
+  background: '#FFFFFF',
+  backgroundSecondary: '#F8F9FB',
+  text: '#1D2433',
+  textSecondary: '#9095A1',
   success: '#10B981',
   warning: '#F59E0B',
   error: '#EF4444',
-  background: '#FFFFFF',
-  text: '#1F2937',
-  textSecondary: '#6B7280',
 } as const;
 
 export const SPACING = {
@@ -19,22 +22,17 @@ export const SPACING = {
 } as const;
 
 export const FONT_SIZES = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 18,
-  xl: 20,
-  xxl: 24,
+  xs: 10,
+  sm: 13,
+  md: 17,
+  lg: 20,
+  xl: 24,
+  xxl: 28,
   xxxl: 32,
+  display: 96,
 } as const;
 
-/**
- * API base URL is read from the EXPO_PUBLIC_API_BASE_URL environment variable.
- * Set this in your `.env` file before running the app.
- * Example: EXPO_PUBLIC_API_BASE_URL=https://api.myapp.com
- */
-export const API_ENDPOINTS = {
-  baseURL: process.env['EXPO_PUBLIC_API_BASE_URL'] ?? '',
-  users: '/users',
-  posts: '/posts',
+export const MASJIDLY_CONSTANTS = {
+  DEFAULT_MOSQUE_SLUG: 'muslim-welfare-house',
+  SHEFFIELD_TIME_ZONE: 'Europe/London',
 } as const;
