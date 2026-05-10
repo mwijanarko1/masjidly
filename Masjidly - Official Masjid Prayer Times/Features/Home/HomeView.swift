@@ -1,70 +1,96 @@
 import SwiftUI
 
+private func homeLS(_ key: String, locale: Locale) -> String {
+    String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+}
+
 struct HomeView: View {
     @Bindable var model: HomeViewModel
     @Environment(SettingsStore.self) private var settings
     @Environment(SettingsViewModel.self) private var settingsViewModel
+    @Environment(\.locale) private var locale
 
     @State private var showingSettings = false
     @State private var showingTimetable = false
+    @State private var selectedPrayerIndex = 0
 
     private var currentTheme: HomeDesign.TimeTheme {
-        return .weather // Force weather theme for the new look
+        currentActiveTheme(d: model.displayedPrayerTimes)
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            // Background Base (Clean Light Theme)
-            ZStack {
-                LinearGradient(gradient: currentTheme.gradient, startPoint: .top, endPoint: .bottom)
-                
-                // Subtle Top Shine
-                Circle()
-                    .fill(Color(hex: "47A6FF").opacity(0.05))
-                    .frame(width: 400, height: 400)
-                    .offset(x: 200, y: -100)
-                    .blur(radius: 80)
-            }
-            .ignoresSafeArea()
-            VStack(spacing: 0) {
-                VStack(spacing: 32) { 
-                    headerBar
-                        .padding(.top, 60)
-                    
-                    if let d = model.displayedPrayerTimes, let next = model.nextCountdown {
-                        VStack(spacing: 0) {
-                            HeroIllustration(nextPrayerName: next.nextName)
-                            
-                            HeroContent(
-                                prayerName: next.nextName,
-                                prayerTime: formatTime(next.nextTime),
-                                countdown: "Updating",
-                                gregorianDate: gregorianLine(for: d.date),
-                                hijriDate: DateUtils.hijriDateString(for: Date())
-                            )
-                        }
-                        
-                        // Info Row (Prayer Stats)
-                        HStack(spacing: 16) {
-                            QuickInfoItem(icon: "sunrise.fill", value: formatTime(d.sunrise), label: "Sunrise")
-                            QuickInfoItem(icon: "person.2.fill", value: jamaahTime(for: next.nextName, times: d), label: "Jama'ah")
-                            QuickInfoItem(icon: "clock.arrow.2.circlepath", value: "05:15", label: "Next Change")
-                        }
-                        .padding(.horizontal, 24)
-                    }
-                }
-                
-                Spacer(minLength: 20)
-                
-                // Today Section
+        GeometryReader { geo in
+            let metrics = HomeViewportMetrics(geometry: geo)
+            ZStack(alignment: .bottom) {
+                backgroundLayer(metrics: metrics)
+
                 if let d = model.displayedPrayerTimes {
-                    todaySection(d: d)
-                        .padding(.bottom, 30)
+                    let prayers: [(canonical: String, time: String, theme: HomeDesign.TimeTheme)] = [
+                        ("Fajr", d.fajr, .fajr),
+                        ("Sunrise", d.sunrise, .sunrise),
+                        ("Dhuhr", d.dhuhr, .dhuhr),
+                        ("Asr", d.asr, .asr),
+                        ("Maghrib", d.maghrib, .maghrib),
+                        ("Isha", d.isha, .isha)
+                    ]
+                    let slug = model.selectedMosque?.slug ?? ""
+                    let prayer = prayers[selectedPrayerIndex]
+                    let adhanFormatted = formatTime(prayer.time)
+                    let iqSubtitle = iqamahSubtitleLine(
+                        prayerName: prayer.canonical,
+                        adhanRaw: prayer.time,
+                        daily: d,
+                        iq: model.iqamahTimes,
+                        mosqueSlug: slug
+                    )
+                    let displayName = PrayerLocalization.displayName(canonicalEnglish: prayer.canonical, locale: locale)
+                    let labels = prayers.map { PrayerLocalization.displayName(canonicalEnglish: $0.canonical, locale: locale) }
+
+                    MinimalistPrayerPage(
+                        prayerName: displayName,
+                        prayerTime: adhanFormatted,
+                        iqamahTime: iqSubtitle,
+                        theme: prayer.theme,
+                        prayerLabels: labels,
+                        selectedIndex: selectedPrayerIndex,
+                        totalCount: prayers.count,
+                        onSelectPrayer: { selectedPrayerIndex = $0 }
+                    )
+                    .onAppear {
+                        if let nextName = model.nextCountdown?.nextName {
+                            if let index = prayers.firstIndex(where: { $0.canonical == nextName }) {
+                                selectedPrayerIndex = index
+                            }
+                        }
+                    }
+                } else {
+                    ProgressView()
+                }
+
+                VStack {
+                    HStack(alignment: .center) {
+                        // Symmetrical placeholder to ensure dateDisplay is perfectly centered
+                        Color.clear
+                            .frame(width: 44, height: 44)
+                            .padding(.leading, metrics.leadingChromeInset)
+                        
+                        Spacer()
+                        
+                        dateDisplay
+                        
+                        Spacer()
+                        
+                        settingsButton
+                            .padding(.trailing, metrics.trailingChromeInset)
+                    }
+                    .padding(.top, metrics.topChromeInset)
+                    Spacer()
                 }
             }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
-            .ignoresSafeArea(edges: .top)
-            .navigationBarHidden(true)
+        .ignoresSafeArea()
+        .navigationBarHidden(true)
         .accessibilityIdentifier("tabHome")
         .task {
             await model.load()
@@ -76,78 +102,87 @@ struct HomeView: View {
         .onChange(of: settings.notifications.masterEnabled) { _, _ in
             Task { await model.resyncNotificationsIfNeeded() }
         }
+        .onChange(of: settings.appLanguage) { _, _ in
+            Task { await model.resyncNotificationsIfNeeded() }
+        }
         .sheet(isPresented: $showingTimetable) {
             if let monthData = model.monthData, let mosque = model.selectedMosque {
                 TimetableView(monthData: monthData, mosqueName: mosque.name, timeTheme: currentTheme)
             }
         }
         .sheet(isPresented: $showingSettings) {
-            SettingsView(model: settingsViewModel)
+            SettingsView(model: settingsViewModel, timeTheme: currentTheme)
                 .environment(settings)
         }
     }
 
-    private var headerBar: some View {
-        HStack {
-            // Placeholder for left balance
-            Spacer()
-                .frame(width: 48)
-            
-            Spacer()
-            
-            // Centered mosque dropdown
-            Menu {
-                ForEach(model.mosques) { mosque in
-                    Button {
-                        selectMosque(mosque)
-                    } label: {
-                        HStack {
-                            Text(mosque.name)
-                            if model.selectedMosque?.id == mosque.id {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text(model.selectedMosque?.name ?? "Select Mosque")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(HomeDesign.Colors.primary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(HomeDesign.Colors.secondary)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color.white)
-                .clipShape(Capsule())
-                .customShadow(HomeDesign.Shadows.softCard)
-                .overlay(Capsule().stroke(Color(hex: "F0F0F0"), lineWidth: 1))
-            }
-            .accessibilityIdentifier("HomeMosquePicker")
-            .accessibilityLabel(Text("Current mosque"))
-            .accessibilityHint(Text("Shows a menu to change mosque"))
-            
-            Spacer()
-            
-            // Right Settings Button
-            Button {
-                showingSettings = true
-            } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(HomeDesign.Colors.primary)
-                    .frame(width: 48, height: 48)
-                    .background(Color.white)
-                    .clipShape(Circle())
-                    .customShadow(HomeDesign.Shadows.softCard)
-                    .overlay(Circle().stroke(Color(hex: "F0F0F0"), lineWidth: 1))
-            }
+    @ViewBuilder
+    private func backgroundLayer(metrics: HomeViewportMetrics) -> some View {
+        let theme = currentActiveTheme(d: model.displayedPrayerTimes)
+        ZStack {
+            LinearGradient(gradient: theme.gradient, startPoint: .top, endPoint: .bottom)
+
+            Circle()
+                .fill(theme.iconColor.opacity(0.1))
+                .frame(width: metrics.backgroundGlowDiameter, height: metrics.backgroundGlowDiameter)
+                .offset(x: metrics.backgroundGlowOffsetX, y: metrics.backgroundGlowOffsetY)
+                .blur(radius: 80)
         }
-        .padding(.horizontal, 24)
+        .animation(.easeInOut(duration: 0.5), value: selectedPrayerIndex)
+        .ignoresSafeArea()
+    }
+
+    private func currentActiveTheme(d: DailyPrayerTimes?) -> HomeDesign.TimeTheme {
+        guard d != nil else { return .fajr }
+        let prayers: [HomeDesign.TimeTheme] = [.fajr, .sunrise, .dhuhr, .asr, .maghrib, .isha]
+        if selectedPrayerIndex < prayers.count {
+            return prayers[selectedPrayerIndex]
+        }
+        return .fajr
+    }
+
+    private var settingsButton: some View {
+        Button {
+            showingSettings = true
+        } label: {
+            Image(systemName: "gearshape.fill")
+                .font(HomeDesign.Typography.app(size: 20, weight: .light))
+                .foregroundColor(currentTheme.textColor)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(Color.white.opacity(0.18)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(homeLS("accessibility.settings", locale: locale)))
+    }
+
+    private var dateDisplay: some View {
+        VStack(alignment: .center, spacing: 2) {
+            Text(currentDateString.uppercased())
+                .font(HomeDesign.Typography.app(size: 13, weight: .semibold))
+                .kerning(1.0)
+                .foregroundColor(currentTheme.textColor.opacity(0.6))
+            
+            Text(currentHijriDateString.uppercased())
+                .font(HomeDesign.Typography.app(size: 10, weight: .medium))
+                .kerning(0.8)
+                .foregroundColor(currentTheme.textColor.opacity(0.4))
+        }
+    }
+
+    private var currentDateString: String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.dateFormat = "EEEE, d MMMM"
+        return formatter.string(from: Date())
+    }
+
+    private var currentHijriDateString: String {
+        let islamicCalendar = Calendar(identifier: .islamicUmmAlQura)
+        let formatter = DateFormatter()
+        formatter.calendar = islamicCalendar
+        formatter.locale = locale
+        formatter.dateFormat = "d MMMM yyyy"
+        return formatter.string(from: Date())
     }
 
     private func selectMosque(_ mosque: Mosque) {
@@ -160,93 +195,108 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
-    private func todaySection(d: DailyPrayerTimes) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Today")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(HomeDesign.Colors.primary)
-                Spacer()
-                Button {
-                    showingTimetable = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("7 days")
-                        Image(systemName: "chevron.right")
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(HomeDesign.Colors.secondary)
-                }
-            }
-            .padding(.horizontal, 24)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    let prayers = [
-                        ("Fajr", d.fajr, "sunrise.fill"),
-                        ("Dhuhr", d.dhuhr, "sun.max.fill"),
-                        ("Asr", d.asr, "cloud.sun.fill"),
-                        ("Maghrib", d.maghrib, "moon.stars.fill"),
-                        ("Isha", d.isha, "moon.fill")
-                    ]
-                    
-                    ForEach(prayers, id: \.0) { p in
-                        PrayerCarouselItem(
-                            name: p.0,
-                            time: formatTime(p.1),
-                            icon: p.2,
-                            isSelected: model.nextCountdown?.nextName == p.0
-                        )
-                    }
-                }
-                .padding(.horizontal, 24)
-            }
-        }
-    }
-
-    private func gregorianLine(for iso: String) -> String {
-        let parts = iso.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return iso }
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
-        guard let date = cal.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else {
-            return iso
-        }
-        let f = DateFormatter()
-        f.dateFormat = "EEE d MMM yyyy"
-        f.timeZone = PrayerTimesEngine.sheffieldTimeZone
-        return f.string(from: date)
-    }
-
-    private func jamaahTime(for prayer: String, times: DailyPrayerTimes) -> String {
-        guard let iq = model.iqamahTimes else { return "--:--" }
-        let adhan = switch prayer.lowercased() {
-            case "fajr": times.fajr
-            case "dhuhr", "jummah": times.dhuhr
-            case "asr": times.asr
-            case "maghrib": times.maghrib
-            case "isha": times.isha
-            default: ""
-        }
-        
-        let raw = if prayer.lowercased() == "isha" {
-            PrayerTimesEngine.resolveIshaIqamahForDisplay(
-                slug: model.selectedMosque?.slug ?? "",
-                date: Date(),
-                ishaAdhan: times.isha,
-                iqamahTimes: iq,
-                maghribAdhan: times.maghrib
-            )
-        } else {
-            PrayerTimesEngine.getIqamahTime(prayer: prayer, adhanTime: adhan, iqamahTimes: iq)
-        }
-        
-        return formatTime(raw)
-    }
-
     private func formatTime(_ t: String) -> String {
         settings.uses24HourTime ? t : PrayerTimesEngine.formatTo12Hour(t)
+    }
+
+    private func isFridayInSheffield(_ date: Date) -> Bool {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        return cal.component(.weekday, from: date) == 6
+    }
+
+    private func iqamahString(for prayerName: String, daily: DailyPrayerTimes, iq: DailyIqamahTimes?, mosqueSlug: String) -> String? {
+        guard let iq else { return nil }
+        let now = Date()
+        switch prayerName {
+        case "Fajr":
+            return PrayerTimesEngine.getIqamahTime(prayer: "fajr", adhanTime: daily.fajr, iqamahTimes: iq)
+        case "Sunrise":
+            return nil
+        case "Dhuhr":
+            if isFridayInSheffield(now) {
+                let j = iq.jummah.trimmingCharacters(in: .whitespacesAndNewlines)
+                return j.isEmpty ? nil : j
+            }
+            return PrayerTimesEngine.getIqamahTime(prayer: "dhuhr", adhanTime: daily.dhuhr, iqamahTimes: iq)
+        case "Asr":
+            return PrayerTimesEngine.getIqamahTime(prayer: "asr", adhanTime: daily.asr, iqamahTimes: iq)
+        case "Maghrib":
+            return PrayerTimesEngine.getIqamahTime(prayer: "maghrib", adhanTime: daily.maghrib, iqamahTimes: iq)
+        case "Isha":
+            return PrayerTimesEngine.resolveIshaIqamahForDisplay(
+                slug: mosqueSlug,
+                date: now,
+                ishaAdhan: daily.isha,
+                iqamahTimes: iq,
+                maghribAdhan: daily.maghrib
+            )
+        default:
+            return nil
+        }
+    }
+
+    /// Subtitle under adhan as localized `Iqamah: <time>`; when iqamah equals adhan, uses the same formatted string as the hero adhan.
+    private func iqamahSubtitleLine(
+        prayerName: String,
+        adhanRaw: String,
+        daily: DailyPrayerTimes,
+        iq: DailyIqamahTimes?,
+        mosqueSlug: String
+    ) -> String? {
+        guard let raw = iqamahString(for: prayerName, daily: daily, iq: iq, mosqueSlug: mosqueSlug) else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return nil }
+        let adhanFormatted = formatTime(adhanRaw)
+        let iqFormatted = formatTime(raw)
+        let displayTime = iqFormatted == adhanFormatted ? adhanFormatted : iqFormatted
+        let format = homeLS("home.iqamah_format", locale: locale)
+        return String(format: format, locale: locale, arguments: [displayTime])
+    }
+}
+
+// MARK: - Viewport-aware layout
+
+private struct HomeViewportMetrics: Sendable {
+    let width: CGFloat
+    let height: CGFloat
+    let safeTop: CGFloat
+    let safeBottom: CGFloat
+    let safeTrailing: CGFloat
+    let safeLeading: CGFloat
+
+    init(geometry: GeometryProxy) {
+        let s = geometry.size
+        width = s.width
+        height = s.height
+        safeTop = geometry.safeAreaInsets.top
+        safeBottom = geometry.safeAreaInsets.bottom
+        safeTrailing = geometry.safeAreaInsets.trailing
+        safeLeading = geometry.safeAreaInsets.leading
+    }
+
+    private var contentWidth: CGFloat { min(width, 560) }
+    private var compactHeight: Bool { height < 700 }
+    private var narrowWidth: Bool { width < 360 }
+
+    var backgroundGlowDiameter: CGFloat {
+        min(480, max(280, width * 1.05))
+    }
+
+    var backgroundGlowOffsetX: CGFloat { width * 0.48 }
+
+    var backgroundGlowOffsetY: CGFloat { -max(80, width * 0.22) }
+
+    var topChromeInset: CGFloat {
+        max(safeTop, 56) + 12
+    }
+
+    var trailingChromeInset: CGFloat {
+        max(safeTrailing, 20)
+    }
+
+    var leadingChromeInset: CGFloat {
+        max(safeLeading, 20)
     }
 }
 
@@ -257,9 +307,8 @@ struct HomeView: View {
     let homeVM = HomeViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
     let settingsVM = SettingsViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
     return NavigationStack {
-        HomeView(model: homeVM)
+        MasjidlyRootView(homeViewModel: homeVM)
             .environment(settings)
             .environment(settingsVM)
     }
 }
-

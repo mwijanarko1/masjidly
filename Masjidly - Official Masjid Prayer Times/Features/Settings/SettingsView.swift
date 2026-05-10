@@ -1,79 +1,78 @@
 import Observation
 import SwiftUI
 
+private func LS(_ key: String, locale: Locale) -> String {
+    String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+}
+
 struct SettingsView: View {
     @Bindable var model: SettingsViewModel
+    let timeTheme: HomeDesign.TimeTheme
     @Environment(SettingsStore.self) private var settings
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                settingsBackground
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        header
-
-                        if let err = model.loadError {
-                            errorBanner(err)
-                        }
-
-                        VStack(spacing: 16) {
-                            settingsSection(
-                                title: "Mosque",
-                                subtitle: "Choose the official timetable used across the app."
-                            ) {
-                                mosquePicker
-                            }
-
-                            settingsSection(
-                                title: "Display",
-                                subtitle: "Keep times easy to scan at a glance."
-                            ) {
-                                SettingsToggleRow(
-                                    icon: "clock",
-                                    title: "24-hour time",
-                                    subtitle: settings.uses24HourTime ? "Showing 18:45 style times" : "Showing 6:45 PM style times",
-                                    isOn: Bindable(settings).uses24HourTime
-                                )
-                            }
-
-                            settingsSection(
-                                title: "Notifications",
-                                subtitle: "Control prayer reminders for the selected mosque."
-                            ) {
-                                VStack(spacing: 10) {
-                                    SettingsToggleRow(
-                                        icon: "bell.badge",
-                                        title: "Prayer notifications",
-                                        subtitle: settings.notifications.masterEnabled ? "Reminders are active" : "All reminders are paused",
-                                        isOn: masterNotificationsBinding,
-                                        isPrimary: true
-                                    )
-
-                                    if settings.notifications.masterEnabled {
-                                        notificationRows
-                                            .transition(.opacity.combined(with: .move(edge: .top)))
-                                    }
-                                }
-                                .animation(.easeInOut(duration: 0.2), value: settings.notifications.masterEnabled)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 20)
-                    .padding(.bottom, 32)
+            List {
+                Section {
+                    mosquePicker
+                } header: {
+                    sectionHeader(localized("settings.section.mosque.title"))
                 }
+                .listRowBackground(Color.white.opacity(timeTheme == .isha || timeTheme == .tahajjud ? 0.05 : 0.4))
+
+                Section {
+                    languagePicker
+                } header: {
+                    sectionHeader(localized("settings.language.title"))
+                }
+                .listRowBackground(Color.white.opacity(timeTheme == .isha || timeTheme == .tahajjud ? 0.05 : 0.4))
+
+                Section {
+                    SettingsToggleRow(
+                        icon: "clock",
+                        title: localized("settings.time.24h.title"),
+                        isOn: Bindable(settings).uses24HourTime,
+                        timeTheme: timeTheme
+                    )
+                } header: {
+                    sectionHeader(localized("settings.section.display.title"))
+                }
+                .listRowBackground(Color.white.opacity(timeTheme == .isha || timeTheme == .tahajjud ? 0.05 : 0.4))
+
+                Section {
+                    SettingsToggleRow(
+                        icon: "bell.badge",
+                        title: localized("settings.notifications.master.title"),
+                        isOn: masterNotificationsBinding,
+                        timeTheme: timeTheme,
+                        isPrimary: true
+                    )
+
+                    if settings.notifications.masterEnabled {
+                        notificationRows
+                    }
+                } header: {
+                    sectionHeader(localized("settings.notifications.title"))
+                }
+                .listRowBackground(Color.white.opacity(timeTheme == .isha || timeTheme == .tahajjud ? 0.05 : 0.4))
             }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(settingsBackground)
+            .navigationTitle(localized("settings.navigation.title"))
+            .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(HomeDesign.Colors.accent)
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(timeTheme.textColor)
+                            .padding(8)
+                            .background(Circle().fill(Color.white.opacity(0.1)))
+                    }
                 }
             }
         }
@@ -83,114 +82,93 @@ struct SettingsView: View {
         }
     }
 
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(HomeDesign.Typography.app(size: 14, weight: .medium))
+            .foregroundColor(timeTheme.textColor.opacity(0.6))
+            .textCase(nil)
+            .padding(.leading, -16) // Align closer to the list edge
+    }
+
+    private func localized(_ key: String) -> String {
+        LS(key, locale: locale)
+    }
+
+    private var languagePicker: some View {
+        HStack {
+            Image(systemName: "globe")
+                .font(.system(size: 18, weight: .light))
+                .foregroundColor(timeTheme.textColor)
+                .frame(width: 24)
+            
+            Text(localized("settings.language.picker"))
+                .font(HomeDesign.Typography.app(size: 17, weight: .regular))
+                .foregroundColor(timeTheme.textColor)
+
+            Spacer()
+
+            Picker("", selection: Bindable(settings).appLanguage) {
+                ForEach(AppLanguage.allCases, id: \.self) { lang in
+                    Text(LS(lang.catalogOptionKey, locale: locale))
+                        .tag(lang)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(timeTheme.textColor)
+        }
+    }
+
     private var settingsBackground: some View {
         ZStack(alignment: .topTrailing) {
             LinearGradient(
-                gradient: HomeDesign.TimeTheme.weather.gradient,
+                gradient: timeTheme.gradient,
                 startPoint: .top,
                 endPoint: .bottom
             )
             Circle()
-                .fill(HomeDesign.Colors.accent.opacity(0.08))
-                .frame(width: 320, height: 320)
-                .blur(radius: 70)
-                .offset(x: 130, y: -120)
+                .fill(timeTheme.iconColor.opacity(0.12))
+                .frame(width: 420, height: 420)
+                .blur(radius: 80)
+                .offset(x: 150, y: -100)
         }
         .ignoresSafeArea()
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Settings")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundColor(HomeDesign.Colors.primary)
-                .accessibilityAddTraits(.isHeader)
 
-            Text("Manage your mosque, time format, and prayer reminders.")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(HomeDesign.Colors.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 12)
-    }
 
-    private func errorBanner(_ message: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(Color(hex: "D98A2B"))
 
-            Text(message)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(HomeDesign.Colors.primary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: "FFF5E6"))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(hex: "F6C15A").opacity(0.35), lineWidth: 1)
-        )
-    }
-
-    private func settingsSection<Content: View>(
-        title: String,
-        subtitle: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(HomeDesign.Colors.primary)
-
-                Text(subtitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(HomeDesign.Colors.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            content()
-                .padding(14)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(HomeDesign.Colors.glassBorder, lineWidth: 1)
-                )
-                .customShadow(HomeDesign.Shadows.softCard)
-        }
-    }
 
     private var mosquePicker: some View {
-        Picker("Mosque", selection: mosqueSelectionBinding) {
-            ForEach(model.mosques) { m in
-                Text(m.name).tag(m.id)
+        HStack {
+            Image(systemName: "mappin.and.ellipse")
+                .font(.system(size: 18, weight: .light))
+                .foregroundColor(timeTheme.textColor)
+                .frame(width: 24)
+            
+            Text(localized("settings.mosque.picker"))
+                .font(HomeDesign.Typography.app(size: 17, weight: .regular))
+                .foregroundColor(timeTheme.textColor)
+
+            Spacer()
+
+            Picker("", selection: mosqueSelectionBinding) {
+                ForEach(model.mosques) { m in
+                    Text(m.name).tag(m.id)
+                }
             }
+            .pickerStyle(.menu)
+            .tint(timeTheme.textColor)
         }
-        .pickerStyle(.menu)
-        .tint(HomeDesign.Colors.primary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityIdentifier("MosquePicker")
     }
 
     private var notificationRows: some View {
-        VStack(spacing: 0) {
-            NotificationToggleRow(title: "Fajr", isOn: binding(\.fajr))
-            SettingsDivider()
-            NotificationToggleRow(title: "Dhuhr / Jummah", isOn: binding(\.dhuhrJummah))
-            SettingsDivider()
-            NotificationToggleRow(title: "Asr", isOn: binding(\.asr))
-            SettingsDivider()
-            NotificationToggleRow(title: "Maghrib", isOn: binding(\.maghrib))
-            SettingsDivider()
-            NotificationToggleRow(title: "Isha", isOn: binding(\.isha))
+        Group {
+            NotificationToggleRow(title: localized("settings.notification.fajr"), isOn: binding(\.fajr), timeTheme: timeTheme)
+            NotificationToggleRow(title: localized("settings.notification.dhuhr_jummah"), isOn: binding(\.dhuhrJummah), timeTheme: timeTheme)
+            NotificationToggleRow(title: localized("settings.notification.asr"), isOn: binding(\.asr), timeTheme: timeTheme)
+            NotificationToggleRow(title: localized("settings.notification.maghrib"), isOn: binding(\.maghrib), timeTheme: timeTheme)
+            NotificationToggleRow(title: localized("settings.notification.isha"), isOn: binding(\.isha), timeTheme: timeTheme)
         }
-        .padding(.top, 2)
-        .background(Color(hex: "F8F9FB"))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var mosqueSelectionBinding: Binding<String> {
@@ -207,6 +185,8 @@ struct SettingsView: View {
             }
         )
     }
+
+
 
     private var masterNotificationsBinding: Binding<Bool> {
         Binding(
@@ -236,57 +216,46 @@ struct SettingsView: View {
 private struct SettingsToggleRow: View {
     let icon: String
     let title: String
-    let subtitle: String
     @Binding var isOn: Bool
+    let timeTheme: HomeDesign.TimeTheme
     var isPrimary = false
 
     var body: some View {
         Toggle(isOn: $isOn) {
-            HStack(spacing: 14) {
+            HStack(spacing: 16) {
                 Image(systemName: icon)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(isPrimary ? .white : HomeDesign.Colors.accent)
-                    .frame(width: 40, height: 40)
-                    .background(isPrimary ? HomeDesign.Colors.activeGradient : LinearGradient(colors: [Color(hex: "EEF7FF")], startPoint: .top, endPoint: .bottom))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundColor(timeTheme.textColor)
+                    .frame(width: 24, alignment: .center)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(HomeDesign.Colors.primary)
-
-                    Text(subtitle)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(HomeDesign.Colors.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text(title)
+                    .font(HomeDesign.Typography.app(size: 17, weight: .regular))
+                    .foregroundColor(timeTheme.textColor)
             }
         }
-        .tint(HomeDesign.Colors.accent)
-        .padding(.vertical, 4)
+        .tint(timeTheme.textColor)
     }
 }
 
 private struct NotificationToggleRow: View {
     let title: String
     @Binding var isOn: Bool
+    let timeTheme: HomeDesign.TimeTheme
 
     var body: some View {
         Toggle(title, isOn: $isOn)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundColor(HomeDesign.Colors.primary)
-            .tint(HomeDesign.Colors.accent)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .frame(minHeight: 48)
+            .font(HomeDesign.Typography.app(size: 17, weight: .regular))
+            .foregroundColor(timeTheme.textColor)
+            .tint(timeTheme.textColor)
+            .padding(.leading, 40)
     }
 }
 
-private struct SettingsDivider: View {
-    var body: some View {
-        Rectangle()
-            .fill(HomeDesign.Colors.glassBorder)
-            .frame(height: 1)
-            .padding(.leading, 14)
-    }
+#Preview {
+    let settings = SettingsStore()
+    let repo = ConvexPrayerRepository(service: ConvexService())
+    let scheduler = PrayerNotificationScheduler(repository: repo)
+    let model = SettingsViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
+    return SettingsView(model: model, timeTheme: .dhuhr)
+        .environment(settings)
 }

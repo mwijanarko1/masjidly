@@ -1,4 +1,9 @@
 import SwiftUI
+import UIKit
+
+private func componentLS(_ key: String, locale: Locale) -> String {
+    String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+}
 
 // MARK: - Components
 
@@ -17,7 +22,7 @@ struct StatusChip: View {
                 .frame(width: 6, height: 6)
                 .shadow(color: Color(hex: "58D66D").opacity(0.5), radius: 3)
         }
-        .font(.system(size: 13, weight: .medium))
+        .font(HomeDesign.Typography.app(size: 13, weight: .regular))
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Color.black.opacity(0.2))
@@ -28,6 +33,7 @@ struct StatusChip: View {
 struct HeroIllustration: View {
     /// Next salat name from `NextPrayerCountdownResult.nextName` (e.g. Fajr, Dhuhr, Jummah, Asr).
     let nextPrayerName: String
+    @Environment(\.locale) private var locale
 
     private var assetName: String {
         switch nextPrayerName {
@@ -41,25 +47,47 @@ struct HeroIllustration: View {
     }
 
     private var accessibilityLabelText: String {
-        switch nextPrayerName {
-        case "Fajr": "Fajr illustration"
-        case "Dhuhr": "Dhuhr illustration"
-        case "Jummah": "Jummah illustration"
-        case "Asr": "Asr illustration"
-        case "Maghrib": "Maghrib illustration"
-        case "Isha": "Isha illustration"
-        default: "Prayer illustration"
+        let key: String = switch nextPrayerName {
+        case "Fajr": "illustration.fajr"
+        case "Dhuhr": "illustration.dhuhr"
+        case "Jummah": "illustration.jummah"
+        case "Asr": "illustration.asr"
+        case "Maghrib": "illustration.maghrib"
+        case "Isha": "illustration.isha"
+        default: "illustration.prayer_generic"
         }
+        return componentLS(key, locale: locale)
     }
+
+    /// When nil, uses design defaults for narrow phone width.
+    var illustrationWidth: CGFloat?
+    var illustrationHeight: CGFloat?
+    var containerHeight: CGFloat?
+
+    init(
+        nextPrayerName: String,
+        illustrationWidth: CGFloat? = nil,
+        illustrationHeight: CGFloat? = nil,
+        containerHeight: CGFloat? = nil
+    ) {
+        self.nextPrayerName = nextPrayerName
+        self.illustrationWidth = illustrationWidth
+        self.illustrationHeight = illustrationHeight
+        self.containerHeight = containerHeight
+    }
+
+    private var resolvedImageWidth: CGFloat { illustrationWidth ?? 200 }
+    private var resolvedImageHeight: CGFloat { illustrationHeight ?? 160 }
+    private var resolvedContainerHeight: CGFloat { containerHeight ?? 200 }
 
     var body: some View {
         Image(assetName)
             .resizable()
             .interpolation(.high)
             .scaledToFit()
-            .frame(width: 200, height: 160)
+            .frame(width: resolvedImageWidth, height: resolvedImageHeight)
             .accessibilityLabel(accessibilityLabelText)
-            .frame(height: 200)
+            .frame(height: resolvedContainerHeight)
     }
 }
 
@@ -69,19 +97,28 @@ struct HeroContent: View {
     let countdown: String
     let gregorianDate: String
     let hijriDate: String
-    
+
+    var timeFontSize: CGFloat = 96
+    var nameFontSize: CGFloat = 28
+    var stackSpacing: CGFloat = 8
+
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: stackSpacing) {
             // Main Time
             Text(prayerTime)
-                .font(.system(size: 96, weight: .bold, design: .rounded))
+                .font(HomeDesign.Typography.app(size: timeFontSize, weight: .light))
                 .foregroundColor(HomeDesign.Colors.primary)
-            
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+
             Text(prayerName)
-                .font(.system(size: 28, weight: .medium))
+                .font(HomeDesign.Typography.app(size: nameFontSize, weight: .regular))
                 .foregroundColor(HomeDesign.Colors.secondary)
+                .minimumScaleFactor(0.85)
+                .lineLimit(2)
         }
         .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -93,15 +130,15 @@ struct QuickInfoItem: View {
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 24, weight: .medium))
+                .font(HomeDesign.Typography.app(size: 24, weight: .light))
                 .foregroundColor(HomeDesign.Colors.primary)
             
             VStack(spacing: 2) {
                 Text(value)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(HomeDesign.Typography.app(size: 16, weight: .medium))
                     .foregroundColor(HomeDesign.Colors.primary)
                 Text(label)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(HomeDesign.Typography.app(size: 12, weight: .regular))
                     .foregroundColor(HomeDesign.Colors.secondary)
             }
         }
@@ -118,23 +155,29 @@ struct PrayerCarouselItem: View {
     let time: String
     let icon: String
     let isSelected: Bool
-    
+
+    var cardWidth: CGFloat = 80
+    var cardHeight: CGFloat = 110
+    var timeFontSize: CGFloat = 14
+    var iconFontSize: CGFloat = 34
+    var nameFontSize: CGFloat = 12
+
     var body: some View {
         VStack(spacing: 8) {
             Text(time)
-                .font(.system(size: 14, weight: .bold))
+                .font(HomeDesign.Typography.app(size: timeFontSize, weight: .medium))
                 .foregroundColor(isSelected ? .white : HomeDesign.Colors.primary)
-            
+
             Image(systemName: icon)
-                .font(.system(size: 34, weight: .medium))
+                .font(HomeDesign.Typography.app(size: iconFontSize, weight: .light))
                 .foregroundColor(isSelected ? .white : HomeDesign.Colors.accent)
                 .symbolVariant(.fill)
-            
+
             Text(name)
-                .font(.system(size: 12, weight: .medium))
+                .font(HomeDesign.Typography.app(size: nameFontSize, weight: .regular))
                 .foregroundColor(isSelected ? .white : HomeDesign.Colors.secondary)
         }
-        .frame(width: 80, height: 110)
+        .frame(width: cardWidth, height: cardHeight)
         .background(
             ZStack {
                 if isSelected {
@@ -147,6 +190,347 @@ struct PrayerCarouselItem: View {
         )
         .cornerRadius(24)
         .customShadow(isSelected ? Shadow(color: .clear, radius: 0, x: 0, y: 0) : HomeDesign.Shadows.softCard)
+    }
+}
+
+/// Refined line-art sun/moon icons per prayer time — each icon uses filled shapes with subtle opacity,
+/// graduated ray patterns, and balanced proportions for a premium, elegant feel.
+struct PrayerSunPhaseIcon: View {
+    let theme: HomeDesign.TimeTheme
+    @Environment(\.locale) private var locale
+
+    private static let canvas = CGSize(width: 100, height: 88)
+
+    var body: some View {
+        Canvas { context, size in
+            let color = theme.iconColor
+            let thin = StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round)
+            let medium = StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)
+            let cx = size.width * 0.5
+
+            switch theme {
+            case .fajr:
+                Self.drawFajr(context: context, cx: cx, size: size, color: color, thin: thin, medium: medium)
+            case .sunrise:
+                Self.drawSunrise(context: context, cx: cx, size: size, color: color, thin: thin, medium: medium)
+            case .dhuhr:
+                Self.drawDhuhr(context: context, cx: cx, size: size, color: color, thin: thin, medium: medium)
+            case .asr:
+                Self.drawAsr(context: context, cx: cx, size: size, color: color, thin: thin, medium: medium)
+            case .maghrib:
+                Self.drawMaghrib(context: context, cx: cx, size: size, color: color, thin: thin, medium: medium)
+            case .isha, .tahajjud:
+                Self.drawIsha(context: context, cx: cx, size: size, color: color, thin: thin, medium: medium)
+            }
+        }
+        .frame(width: Self.canvas.width, height: Self.canvas.height)
+        .accessibilityLabel(accessibilityLabelText)
+    }
+
+    private var accessibilityLabelText: String {
+        let key: String = switch theme {
+        case .fajr: "sun_phase.dawn"
+        case .sunrise: "sun_phase.sunrise"
+        case .dhuhr: "sun_phase.midday"
+        case .asr: "sun_phase.afternoon"
+        case .maghrib: "sun_phase.sunset"
+        case .isha, .tahajjud: "sun_phase.crescent"
+        }
+        return componentLS(key, locale: locale)
+    }
+
+    // MARK: - Helpers
+
+    /// Draws a 4-point star/sparkle path.
+    private static func fourPointStarPath(cx: CGFloat, cy: CGFloat, size: CGFloat) -> Path {
+        var p = Path()
+        let c = size * 0.25 // control point offset
+        p.move(to: CGPoint(x: cx, y: cy - size))
+        p.addQuadCurve(to: CGPoint(x: cx + size, y: cy), control: CGPoint(x: cx + c, y: cy - c))
+        p.addQuadCurve(to: CGPoint(x: cx, y: cy + size), control: CGPoint(x: cx + c, y: cy + c))
+        p.addQuadCurve(to: CGPoint(x: cx - size, y: cy), control: CGPoint(x: cx - c, y: cy + c))
+        p.addQuadCurve(to: CGPoint(x: cx, y: cy - size), control: CGPoint(x: cx - c, y: cy - c))
+        return p
+    }
+
+    // MARK: - Drawing
+
+    /// Fajr — Hidden sunrise: A horizontal line with a semicircle hidden below it (flat edge facing downward), plus two small stars above.
+    private static func drawFajr(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
+        let baseY = size.height * 0.62
+        let lineHalf: CGFloat = 30
+        let r: CGFloat = 12
+
+        // Horizon line
+        var horizon = Path()
+        horizon.move(to: CGPoint(x: cx - lineHalf, y: baseY))
+        horizon.addLine(to: CGPoint(x: cx + lineHalf, y: baseY))
+        context.stroke(horizon, with: .color(color), style: medium)
+
+        // Semicircle hidden below the horizon (curve pointing up towards the line, flat edge down)
+        // Offset by +5 to ensure a clear gap between the curve and the horizon line
+        var sunStroke = Path()
+        sunStroke.addArc(center: CGPoint(x: cx, y: baseY + r + 5), radius: r, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+        sunStroke.closeSubpath()
+        context.stroke(sunStroke, with: .color(color), style: medium)
+
+        // Two small stars above the line
+        let star1 = fourPointStarPath(cx: cx - 12, cy: baseY - 16, size: 5)
+        context.stroke(star1, with: .color(color), style: thin)
+        
+        let star2 = fourPointStarPath(cx: cx + 16, cy: baseY - 10, size: 3)
+        context.stroke(star2, with: .color(color), style: thin)
+    }
+
+    /// Sunrise — Rising sun: A semicircle emerging above a horizontal line, with three short upward rays above it.
+    private static func drawSunrise(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
+        let baseY = size.height * 0.62
+        let r: CGFloat = 14
+        let lineHalf: CGFloat = 32
+
+        // Horizon line
+        var horizon = Path()
+        horizon.move(to: CGPoint(x: cx - lineHalf, y: baseY))
+        horizon.addLine(to: CGPoint(x: cx + lineHalf, y: baseY))
+        context.stroke(horizon, with: .color(color), style: medium)
+
+        // Semicircle stroke
+        var sunStroke = Path()
+        sunStroke.addArc(center: CGPoint(x: cx, y: baseY), radius: r, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+        context.stroke(sunStroke, with: .color(color), style: medium)
+
+        // Three rays above the sun (-135, -90, -45)
+        let gap: CGFloat = 6
+        let rayLen: CGFloat = 8
+        let angles: [Double] = [-135, -90, -45]
+        for deg in angles {
+            let rad = deg * .pi / 180
+            let startR = r + gap
+            let endR = r + gap + rayLen
+            var ray = Path()
+            ray.move(to: CGPoint(x: cx + cos(rad) * startR, y: baseY + sin(rad) * startR))
+            ray.addLine(to: CGPoint(x: cx + cos(rad) * endR, y: baseY + sin(rad) * endR))
+            context.stroke(ray, with: .color(color), style: medium)
+        }
+    }
+
+    /// Dhuhr — Sunburst: A circle with short straight rays around it.
+    private static func drawDhuhr(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
+        let cy = size.height * 0.48
+        let r: CGFloat = 12
+
+        // Circle stroke
+        var circle = Path()
+        circle.addEllipse(in: CGRect(x: cx - r, y: cy - r, width: 2 * r, height: 2 * r))
+        context.stroke(circle, with: .color(color), style: medium)
+
+        // 8 straight rays around
+        let gap: CGFloat = 6
+        let len: CGFloat = 8
+        for i in 0..<8 {
+            let angle = Double(i) * 45.0 * .pi / 180.0
+            let startR = r + gap
+            let endR = r + gap + len
+            var ray = Path()
+            ray.move(to: CGPoint(x: cx + cos(angle) * startR, y: cy + sin(angle) * startR))
+            ray.addLine(to: CGPoint(x: cx + cos(angle) * endR, y: cy + sin(angle) * endR))
+            context.stroke(ray, with: .color(color), style: medium)
+        }
+    }
+
+    /// Asr — Angled sun dial: A small vertical post with a diagonal line crossing from upper left to lower right.
+    private static func drawAsr(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
+        let cy = size.height * 0.48
+        let pillarH: CGFloat = 24
+        let top = cy - pillarH * 0.5
+        let bottom = cy + pillarH * 0.5
+
+        // Vertical post
+        var post = Path()
+        post.move(to: CGPoint(x: cx, y: top))
+        post.addLine(to: CGPoint(x: cx, y: bottom))
+        context.stroke(post, with: .color(color), style: medium)
+
+        // Diagonal line crossing from upper left to lower right
+        var diag = Path()
+        diag.move(to: CGPoint(x: cx - 14, y: top + 4))
+        diag.addLine(to: CGPoint(x: cx + 14, y: bottom - 4))
+        context.stroke(diag, with: .color(color), style: thin)
+    }
+
+    /// Maghrib — Sunset arrow: A semicircle touching a horizontal line, with a small downward arrow above it pointing toward the horizon.
+    private static func drawMaghrib(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
+        let baseY = size.height * 0.52
+        let r: CGFloat = 14
+        let lineHalf: CGFloat = 32
+
+        // Horizon line
+        var horizon = Path()
+        horizon.move(to: CGPoint(x: cx - lineHalf, y: baseY))
+        horizon.addLine(to: CGPoint(x: cx + lineHalf, y: baseY))
+        context.stroke(horizon, with: .color(color), style: medium)
+
+        // Semicircle sitting on the horizon
+        var sunStroke = Path()
+        sunStroke.addArc(center: CGPoint(x: cx, y: baseY), radius: r, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+        context.stroke(sunStroke, with: .color(color), style: medium)
+
+        // Downward arrow above the sun
+        let arrowY = baseY - r - 4
+        var arrow = Path()
+        // Vertical line
+        arrow.move(to: CGPoint(x: cx, y: arrowY - 8))
+        arrow.addLine(to: CGPoint(x: cx, y: arrowY))
+        // Arrow head
+        arrow.move(to: CGPoint(x: cx - 3, y: arrowY - 3))
+        arrow.addLine(to: CGPoint(x: cx, y: arrowY))
+        arrow.addLine(to: CGPoint(x: cx + 3, y: arrowY - 3))
+        
+        // Arrow stroke
+        context.stroke(arrow, with: .color(color), style: thin)
+    }
+
+    /// Isha — Night star: Three small outlined stars: one larger four-point star with two smaller dots or tiny stars beside it.
+    private static func drawIsha(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
+        let cy = size.height * 0.48
+
+        // One larger four-point star
+        let mainStar = fourPointStarPath(cx: cx - 4, cy: cy, size: 8)
+        context.stroke(mainStar, with: .color(color), style: medium)
+
+        // Two smaller dots or tiny stars beside it
+        let star2 = fourPointStarPath(cx: cx + 12, cy: cy - 6, size: 4)
+        context.stroke(star2, with: .color(color), style: thin)
+
+        let star3 = fourPointStarPath(cx: cx + 10, cy: cy + 8, size: 3)
+        context.stroke(star3, with: .color(color), style: thin)
+    }
+}
+
+struct MinimalistPrayerPage: View {
+    let prayerName: String
+    let prayerTime: String
+    /// Iqamah line below adhan (e.g. `Iqamah: 9:00pm`; repeats adhan time when iqamah is at adhan).
+    let iqamahTime: String?
+    let theme: HomeDesign.TimeTheme
+    /// Full prayer names (same order as shortcuts); used for accessibility.
+    let prayerLabels: [String]
+    let selectedIndex: Int
+    let totalCount: Int
+    let onSelectPrayer: (Int) -> Void
+
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+                .frame(height: 140)
+
+            PrayerSunPhaseIcon(theme: theme)
+                .padding(.bottom, 60)
+
+            VStack(spacing: 6) {
+                Text(prayerTime)
+                    .font(HomeDesign.Typography.primary(size: 88, weight: .light))
+                    .kerning(-1.76) // -0.02em * 88
+                    .foregroundColor(theme.textColor)
+                    .shadow(color: theme.textColor.opacity(0.1), radius: 10, x: 0, y: 5)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+
+                if let iq = iqamahTime, !iq.isEmpty {
+                    Text(iq)
+                        .font(HomeDesign.Typography.iqamahSubtitle(size: 26, weight: .regular))
+                        .tracking(0.6)
+                        .foregroundColor(theme.textColor.opacity(0.78))
+                        .minimumScaleFactor(0.65)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .accessibilityElement(children: .combine)
+
+            Spacer()
+
+            VStack(spacing: 24) {
+                Text(prayerName)
+                    .font(HomeDesign.Typography.primary(size: 36, weight: .regular))
+                    .kerning(-0.36) // -0.01em * 36
+                    .foregroundColor(theme.textColor)
+
+                prayerLetterPicker
+            }
+            .padding(.bottom, 160)
+        }
+    }
+
+    private func carouselA11yLabel(nameLabel: String, letter: String, index: Int) -> String {
+        let template = componentLS("carousel.a11y", locale: locale)
+        return String(format: template, locale: locale, arguments: [nameLabel, letter, index + 1, totalCount])
+    }
+
+    /// Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha — matches `HomeView` prayer order.
+    private static let prayerShortcutLetters = ["F", "S", "D", "A", "M", "I"]
+
+    private func shortcutLetter(for index: Int) -> String {
+        if index >= 0, index < Self.prayerShortcutLetters.count {
+            return Self.prayerShortcutLetters[index]
+        }
+        if index < prayerLabels.count {
+            return String(prayerLabels[index].prefix(1)).uppercased()
+        }
+        return "?"
+    }
+
+    private var prayerLetterPicker: some View {
+        ScrollViewReader { proxy in
+            GeometryReader { geo in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        Spacer(minLength: 0)
+                        HStack(spacing: 14) {
+                            ForEach(0..<totalCount, id: \.self) { index in
+                                let fallbackTemplate = componentLS("carousel.prayer_fallback", locale: locale)
+                                let nameLabel = index < prayerLabels.count
+                                    ? prayerLabels[index]
+                                    : String(format: fallbackTemplate, locale: locale, arguments: [index + 1])
+                                let letter = shortcutLetter(for: index)
+                                let isSelected = index == selectedIndex
+                                Button {
+                                    let generator = UIImpactFeedbackGenerator(style: .light)
+                                    generator.prepare()
+                                    generator.impactOccurred()
+                                    onSelectPrayer(index)
+                                } label: {
+                                    Text(letter)
+                                        .font(HomeDesign.Typography.app(size: 20, weight: isSelected ? .semibold : .regular))
+                                        .foregroundColor(theme.textColor.opacity(isSelected ? 1.0 : 0.38))
+                                        .frame(minWidth: 28, minHeight: 36)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .id(index)
+                                .accessibilityLabel(carouselA11yLabel(nameLabel: nameLabel, letter: letter, index: index))
+                            }
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 20)
+                    .frame(minWidth: geo.size.width)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .onChange(of: selectedIndex) { _, newValue in
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        proxy.scrollTo(newValue, anchor: .center)
+                    }
+                }
+                .onAppear {
+                    proxy.scrollTo(selectedIndex, anchor: .center)
+                }
+            }
+            .frame(height: 48)
+            .frame(maxWidth: .infinity)
+        }
     }
 }
 

@@ -139,7 +139,8 @@ final class HomeViewModel {
         try? await notificationScheduler.rescheduleUpcomingPrayerNotifications(
             mosque: mosque,
             days: 7,
-            settings: n
+            settings: n,
+            locale: settings.resolvedLocale
         )
     }
 }

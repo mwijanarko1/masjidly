@@ -112,7 +112,7 @@
   "todaySchedule": {
     "sectionTitle": "Today",
     "trailingAction": {
-      "label": "Timetable",
+      "label": "7 days",
       "icon": "chevron_right"
     },
     "display": "horizontal_carousel",
@@ -156,8 +156,8 @@
   "navigation": {
     "primaryActions": [
       {
-        "name": "Open detailed timetable",
-        "trigger": "tap_timetable"
+        "name": "Open detailed schedule",
+        "trigger": "tap_7_days"
       },
       {
         "name": "Change location",

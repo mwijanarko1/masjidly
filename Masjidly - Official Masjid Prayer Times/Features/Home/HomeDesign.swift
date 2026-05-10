@@ -1,32 +1,47 @@
 import SwiftUI
 
 enum HomeDesign {
-    enum TimeTheme {
-        case dawn, day, dusk, night, weather
+    enum TimeTheme: String, CaseIterable {
+        case fajr, sunrise, dhuhr, asr, maghrib, isha, tahajjud
         
         var gradient: Gradient {
             switch self {
-            case .dawn:
-                return Gradient(colors: [Color(hex: "4A5EAD"), Color(hex: "95669F")])
-            case .day:
-                return Gradient(colors: [Color(hex: "2F75D6"), Color(hex: "12385A")])
-            case .dusk:
-                return Gradient(colors: [Color(hex: "B96B24"), Color(hex: "5B2D16")])
-            case .night:
-                return Gradient(colors: [Color(hex: "0A1220"), Color(hex: "050810")])
-            case .weather:
-                return Gradient(colors: [Color.white, Color(hex: "F8F9FB")])
+            case .fajr: return Gradient(colors: [Color(hex: "DDF7FF"), Color(hex: "A9D8FF"), Color(hex: "B8A5F2"), Color(hex: "F5B9C8")])
+            case .sunrise: return Gradient(colors: [Color(hex: "DFFBFF"), Color(hex: "FFE8A3"), Color(hex: "FFB16D"), Color(hex: "F87878")])
+            case .dhuhr: return Gradient(colors: [Color(hex: "E8FAFF"), Color(hex: "8EDBFF"), Color(hex: "38BDF8")])
+            case .asr: return Gradient(colors: [Color(hex: "22D3EE"), Color(hex: "4ADEDE"), Color(hex: "B8EFAE"), Color(hex: "F6D98B")])
+            case .maghrib: return Gradient(colors: [Color(hex: "E9B7FF"), Color(hex: "F7A1D5"), Color(hex: "FF7C93"), Color(hex: "FFB066")])
+            case .isha: return Gradient(colors: [Color(hex: "111827"), Color(hex: "1E1B4B"), Color(hex: "060712")])
+            case .tahajjud: return Gradient(colors: [Color(hex: "0B1026"), Color(hex: "11143A"), Color(hex: "030712")])
             }
         }
         
-        var glowColor: Color {
+        var textColor: Color {
             switch self {
-            case .dawn: return Color(hex: "95669F").opacity(0.3)
-            case .day: return Color(hex: "2F75D6").opacity(0.3)
-            case .dusk: return Color(hex: "F6C15A").opacity(0.3)
-            case .night: return Color(hex: "4A5EAD").opacity(0.2)
-            case .weather: return Color(hex: "47A6FF").opacity(0.15)
+            case .isha, .tahajjud: return .white
+            default: return Color(hex: "111111")
             }
+        }
+        
+        var iconColor: Color {
+            return textColor
+        }
+    }
+
+    enum Typography {
+        /// Masjidly’s single voice: **SF Pro Rounded** — default to lighter weights so type matches thin line-art icons.
+        static func app(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+            Font.system(size: size, weight: weight, design: .rounded)
+        }
+
+        /// Hero clock, prayer name, and other display lines.
+        static func primary(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+            app(size: size, weight: weight)
+        }
+
+        /// Iqamah caption under the hero adhan — light weight to match thin line icons.
+        static func iqamahSubtitle(size: CGFloat = 26, weight: Font.Weight = .regular) -> Font {
+            app(size: size, weight: weight)
         }
     }
 

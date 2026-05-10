@@ -11,6 +11,7 @@ final class SettingsStore: SettingsPersisting {
         case selectedMosqueSlug
         case uses24HourTime
         case notificationsJSON
+        case appLanguage
     }
 
     /// Stored fields so `@Observable` tracks mutations; UserDefaults syncs in `didSet`.
@@ -34,6 +35,15 @@ final class SettingsStore: SettingsPersisting {
         }
     }
 
+    var appLanguage: AppLanguage {
+        didSet { defaults.set(appLanguage.rawValue, forKey: Key.appLanguage.rawValue) }
+    }
+
+    /// Locale for SwiftUI `\.locale` and notification strings.
+    var resolvedLocale: Locale {
+        appLanguage.resolvedLocale()
+    }
+
     init() {
         selectedMosqueId = defaults.string(forKey: Key.selectedMosqueId.rawValue)
         selectedMosqueSlug = defaults.string(forKey: Key.selectedMosqueSlug.rawValue)
@@ -47,6 +57,12 @@ final class SettingsStore: SettingsPersisting {
             notifications = v
         } else {
             notifications = NotificationSettings()
+        }
+        if let raw = defaults.string(forKey: Key.appLanguage.rawValue),
+           let v = AppLanguage(rawValue: raw) {
+            appLanguage = v
+        } else {
+            appLanguage = .system
         }
     }
 }

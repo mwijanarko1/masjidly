@@ -103,4 +103,23 @@ struct SettingsStoreTests {
         s.uses24HourTime = true
         #expect(s.uses24HourTime == true)
     }
+
+    @Test @MainActor func appLanguagePersists() {
+        let s = SettingsStore()
+        s.appLanguage = .urdu
+        #expect(s.appLanguage == .urdu)
+        let reloaded = SettingsStore()
+        #expect(reloaded.appLanguage == .urdu)
+        s.appLanguage = .system
+        #expect(SettingsStore().appLanguage == .system)
+    }
+
+    @Test func arabicAndUrduResolveRightToLeftLanguageMetadata() {
+        #expect(AppLanguage.english.resolvedLanguageCode == "en")
+        #expect(AppLanguage.arabic.resolvedLanguageCode == "ar")
+        #expect(AppLanguage.urdu.resolvedLanguageCode == "ur")
+        #expect(AppLanguage.english.isResolvedRightToLeft == false)
+        #expect(AppLanguage.arabic.isResolvedRightToLeft == true)
+        #expect(AppLanguage.urdu.isResolvedRightToLeft == true)
+    }
 }

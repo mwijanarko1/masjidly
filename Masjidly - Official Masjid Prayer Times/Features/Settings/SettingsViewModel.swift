@@ -45,7 +45,12 @@ final class SettingsViewModel {
         let n = settings.notifications
         if n.masterEnabled, let slug = settings.selectedMosqueSlug,
            let mosque = mosques.first(where: { $0.slug == slug }) ?? mosques.first(where: { $0.id == settings.selectedMosqueId }) {
-            try? await notificationScheduler.rescheduleUpcomingPrayerNotifications(mosque: mosque, days: 7, settings: n)
+            try? await notificationScheduler.rescheduleUpcomingPrayerNotifications(
+                mosque: mosque,
+                days: 7,
+                settings: n,
+                locale: settings.resolvedLocale
+            )
         } else {
             await notificationScheduler.cancelAllPrayerNotifications()
         }

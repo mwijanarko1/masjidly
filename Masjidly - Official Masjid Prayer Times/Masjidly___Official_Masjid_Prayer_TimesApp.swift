@@ -6,7 +6,7 @@ struct Masjidly___Official_Masjid_Prayer_TimesApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeView(model: env.homeViewModel)
+            MasjidlyRootView(homeViewModel: env.homeViewModel)
                 .environment(env.settings)
                 .environment(env.settingsViewModel)
         }

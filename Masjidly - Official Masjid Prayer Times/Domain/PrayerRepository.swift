@@ -12,6 +12,7 @@ protocol SettingsPersisting: AnyObject {
     var selectedMosqueSlug: String? { get set }
     var uses24HourTime: Bool { get set }
     var notifications: NotificationSettings { get set }
+    var appLanguage: AppLanguage { get set }
 }
 
 protocol PrayerNotificationScheduling: AnyObject {
@@ -19,7 +20,8 @@ protocol PrayerNotificationScheduling: AnyObject {
     func rescheduleUpcomingPrayerNotifications(
         mosque: Mosque,
         days: Int,
-        settings: NotificationSettings
+        settings: NotificationSettings,
+        locale: Locale
     ) async throws
     func cancelAllPrayerNotifications() async
 }

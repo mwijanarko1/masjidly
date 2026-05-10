@@ -25,7 +25,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
     func rescheduleUpcomingPrayerNotifications(
         mosque: Mosque,
         days: Int,
-        settings: NotificationSettings
+        settings: NotificationSettings,
+        locale: Locale
     ) async throws {
         await cancelAllPrayerNotifications()
         guard settings.masterEnabled else { return }
@@ -65,7 +66,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).fajr.adhan",
                     title: mosque.name,
-                    body: "Fajr adhan \(displayed.fajr)",
+                    body: Self.localizedFormat("notification.fajr_adhan", locale: locale, args: [displayed.fajr]),
                     civilDay: dayDate,
                     hhmm: displayed.fajr
                 )
@@ -73,25 +74,27 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).fajr.iqamah",
                     title: mosque.name,
-                    body: "Fajr iqamah \(iqT)",
+                    body: Self.localizedFormat("notification.fajr_iqamah", locale: locale, args: [iqT]),
                     civilDay: dayDate,
                     hhmm: iqT
                 )
             }
 
             if settings.dhuhrJummah {
+                let adhanKey = isFriday ? "notification.jummah_adhan" : "notification.dhuhr_adhan"
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).dhuhr.adhan",
                     title: mosque.name,
-                    body: isFriday ? "Jummah adhan \(displayed.dhuhr)" : "Dhuhr adhan \(displayed.dhuhr)",
+                    body: Self.localizedFormat(adhanKey, locale: locale, args: [displayed.dhuhr]),
                     civilDay: dayDate,
                     hhmm: displayed.dhuhr
                 )
                 let iqLabel = isFriday ? iq.jummah : PrayerTimesEngine.getIqamahTime(prayer: "dhuhr", adhanTime: displayed.dhuhr, iqamahTimes: iq)
+                let iqBodyKey = isFriday ? "notification.jummah" : "notification.dhuhr_iqamah"
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).\(isFriday ? "jummah" : "dhuhr").iqamah",
                     title: mosque.name,
-                    body: isFriday ? "Jummah \(iqLabel)" : "Dhuhr iqamah \(iqLabel)",
+                    body: Self.localizedFormat(iqBodyKey, locale: locale, args: [iqLabel]),
                     civilDay: dayDate,
                     hhmm: iqLabel
                 )
@@ -101,7 +104,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).asr.adhan",
                     title: mosque.name,
-                    body: "Asr adhan \(displayed.asr)",
+                    body: Self.localizedFormat("notification.asr_adhan", locale: locale, args: [displayed.asr]),
                     civilDay: dayDate,
                     hhmm: displayed.asr
                 )
@@ -109,7 +112,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).asr.iqamah",
                     title: mosque.name,
-                    body: "Asr iqamah \(iqT)",
+                    body: Self.localizedFormat("notification.asr_iqamah", locale: locale, args: [iqT]),
                     civilDay: dayDate,
                     hhmm: iqT
                 )
@@ -119,7 +122,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).maghrib.adhan",
                     title: mosque.name,
-                    body: "Maghrib adhan \(displayed.maghrib)",
+                    body: Self.localizedFormat("notification.maghrib_adhan", locale: locale, args: [displayed.maghrib]),
                     civilDay: dayDate,
                     hhmm: displayed.maghrib
                 )
@@ -127,7 +130,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).maghrib.iqamah",
                     title: mosque.name,
-                    body: "Maghrib iqamah \(iqT)",
+                    body: Self.localizedFormat("notification.maghrib_iqamah", locale: locale, args: [iqT]),
                     civilDay: dayDate,
                     hhmm: iqT
                 )
@@ -137,7 +140,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).isha.adhan",
                     title: mosque.name,
-                    body: "Isha adhan \(displayed.isha)",
+                    body: Self.localizedFormat("notification.isha_adhan", locale: locale, args: [displayed.isha]),
                     civilDay: dayDate,
                     hhmm: displayed.isha
                 )
@@ -151,12 +154,21 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 await scheduleIfNeeded(
                     id: "masjidly.prayer.\(slug).\(iso).isha.iqamah",
                     title: mosque.name,
-                    body: "Isha iqamah \(iqT)",
+                    body: Self.localizedFormat("notification.isha_iqamah", locale: locale, args: [iqT]),
                     civilDay: dayDate,
                     hhmm: iqT
                 )
             }
         }
+    }
+
+    private static func localizedFormat(_ catalogKey: String, locale: Locale, args: [CVarArg]) -> String {
+        let template = String(
+            localized: String.LocalizationValue(stringLiteral: catalogKey),
+            bundle: .main,
+            locale: locale
+        )
+        return String(format: template, locale: locale, arguments: args)
     }
 
     private func scheduleIfNeeded(id: String, title: String, body: String, civilDay: Date, hhmm: String) async {

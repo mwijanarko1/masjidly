@@ -1,5 +1,9 @@
 import SwiftUI
 
+private func ttLS(_ key: String, locale: Locale) -> String {
+    String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+}
+
 struct TimetableView: View {
     let monthData: MonthPrayerData
     let mosqueName: String
@@ -7,6 +11,7 @@ struct TimetableView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(SettingsStore.self) private var settings
+    @Environment(\.locale) private var locale
 
     private enum Layout {
         static let horizontalInset: CGFloat = 24
@@ -15,25 +20,29 @@ struct TimetableView: View {
         static let headerPrayerCol: CGFloat = 55
     }
 
+    private var isDarkTheme: Bool {
+        timeTheme == .isha || timeTheme == .tahajjud
+    }
+
     private var primaryTextColor: Color {
-        timeTheme == .weather ? HomeDesign.Colors.primary : .white
+        timeTheme.textColor
     }
 
     private var secondaryTextColor: Color {
-        timeTheme == .weather ? HomeDesign.Colors.secondary : .white.opacity(0.7)
+        isDarkTheme ? .white.opacity(0.7) : Color(hex: "9095A1")
     }
 
     private var dividerColor: Color {
-        timeTheme == .weather ? Color.black.opacity(0.08) : Color.white.opacity(0.12)
+        isDarkTheme ? Color.white.opacity(0.12) : Color.black.opacity(0.08)
     }
 
     private var cardBackground: some View {
         ZStack {
-            if timeTheme == .weather {
-                Color.white
-            } else {
+            if isDarkTheme {
                 Color(hex: "0A1220").opacity(0.85)
                 HomeDesign.Colors.glassBackground.opacity(0.1)
+            } else {
+                Color.white.opacity(0.9)
             }
         }
     }
@@ -48,7 +57,7 @@ struct TimetableView: View {
             .ignoresSafeArea()
 
             Circle()
-                .fill(timeTheme.glowColor)
+                .fill(timeTheme.iconColor.opacity(0.2))
                 .frame(width: 320, height: 320)
                 .blur(radius: 70)
                 .offset(x: -100, y: -140)
@@ -70,10 +79,10 @@ struct TimetableView: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(monthData.month.capitalized)
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(HomeDesign.Typography.app(size: 28, weight: .light))
                     .foregroundStyle(primaryTextColor)
                 Text(mosqueName)
-                    .font(.system(size: 15, weight: .regular))
+                    .font(HomeDesign.Typography.app(size: 15, weight: .regular))
                     .foregroundStyle(secondaryTextColor)
             }
             Spacer(minLength: 8)
@@ -81,7 +90,7 @@ struct TimetableView: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(HomeDesign.Typography.app(size: 14, weight: .light))
                     .foregroundStyle(primaryTextColor.opacity(0.8))
                     .frame(width: 44, height: 44)
                     .background(Circle().fill(HomeDesign.Colors.glassBackground))
@@ -91,7 +100,7 @@ struct TimetableView: View {
                     )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(Text("Close timetable"))
+            .accessibilityLabel(Text(ttLS("timetable.close_a11y", locale: locale)))
         }
     }
 
@@ -132,13 +141,13 @@ struct TimetableView: View {
 
     private var columnHeaders: some View {
         HStack(spacing: 0) {
-            headerCell("Date", width: Layout.headerIconCol)
-            headerCell("Fajr", width: Layout.headerPrayerCol)
-            headerCell("Shu", width: Layout.headerPrayerCol)
-            headerCell("Dhu", width: Layout.headerPrayerCol)
-            headerCell("Asr", width: Layout.headerPrayerCol)
-            headerCell("Mag", width: Layout.headerPrayerCol)
-            headerCell("Ish", width: Layout.headerPrayerCol)
+            headerCell(ttLS("timetable.header.date", locale: locale), width: Layout.headerIconCol)
+            headerCell(ttLS("timetable.header.fajr", locale: locale), width: Layout.headerPrayerCol)
+            headerCell(ttLS("timetable.header.shu", locale: locale), width: Layout.headerPrayerCol)
+            headerCell(ttLS("timetable.header.dhu", locale: locale), width: Layout.headerPrayerCol)
+            headerCell(ttLS("timetable.header.asr", locale: locale), width: Layout.headerPrayerCol)
+            headerCell(ttLS("timetable.header.mag", locale: locale), width: Layout.headerPrayerCol)
+            headerCell(ttLS("timetable.header.ish", locale: locale), width: Layout.headerPrayerCol)
         }
     }
 
@@ -160,7 +169,7 @@ struct TimetableView: View {
 
     private func headerCell(_ title: String, width: CGFloat) -> some View {
         Text(title)
-            .font(.system(size: 13, weight: .medium))
+            .font(HomeDesign.Typography.app(size: 13, weight: .regular))
             .foregroundStyle(secondaryTextColor.opacity(0.7))
             .frame(width: width, alignment: .leading)
     }
@@ -172,7 +181,7 @@ struct TimetableView: View {
 
     private func rowCell(_ text: String, width: CGFloat, emphasis: CellEmphasis = .secondary) -> some View {
         Text(text)
-            .font(.system(size: 15, weight: emphasis == .primary ? .semibold : .regular))
+            .font(HomeDesign.Typography.app(size: 15, weight: emphasis == .primary ? .medium : .regular))
             .foregroundStyle(emphasis == .primary ? primaryTextColor : primaryTextColor.opacity(0.9))
             .frame(width: width, alignment: .leading)
             .lineLimit(1)
@@ -192,7 +201,7 @@ struct TimetableView: View {
             jummahIqamah: "13:15"
         ),
         mosqueName: "Madina Masjid",
-        timeTheme: .dusk
+        timeTheme: .dhuhr
     )
     .environment(SettingsStore())
 }
