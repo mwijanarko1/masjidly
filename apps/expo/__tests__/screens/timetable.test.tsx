@@ -25,13 +25,8 @@ jest.mock("@/store/settings", () => ({
     selector({
       selectedMosqueSlug: "stored-mosque",
       uses24HourTime: false,
-      appLanguage: "system",
     })
   ),
-}));
-
-jest.mock("expo-localization", () => ({
-  getLocales: () => [{ languageTag: "en-GB", languageCode: "en" }],
 }));
 
 jest.mock("expo-linear-gradient", () => {
@@ -140,7 +135,11 @@ describe("TimetableScreen", () => {
     });
 
     render(<TimetableScreen />);
-    await waitFor(() => expect(screen.getByText("12:30pm \u00b7 1:00pm")).toBeTruthy());
+    await waitFor(() => {
+      expect(screen.getAllByText("Jummah").length).toBe(2);
+    });
+    expect(screen.getByText(/12:30\s*PM/i)).toBeTruthy();
+    expect(screen.getByText(/1:00\s*PM/i)).toBeTruthy();
     jest.useRealTimers();
   });
 
@@ -162,15 +161,21 @@ describe("TimetableScreen", () => {
   it("closes on xmark press", async () => {
     mockedGetMonthly.mockResolvedValue({
       month: "january",
-      prayerTimes: [],
-      iqamahTimes: [],
-      jummahIqamah: "",
+      prayerTimes: Array.from({ length: 31 }, (_, i) => ({
+        date: i + 1,
+        fajr: "05:00", shurooq: "06:30", dhuhr: "12:00",
+        asr: "15:00", maghrib: "17:00", isha: "19:00",
+      })),
+      iqamahTimes: [
+        { dateRange: "1-31", fajr: "05:15", dhuhr: "12:15", asr: "15:15", maghrib: "17:05", isha: "19:30", jummah: "12:30" },
+      ],
+      jummahIqamah: "12:30",
     });
 
     render(<TimetableScreen />);
     await waitFor(() => expect(mockedGetMonthly).toHaveBeenCalled());
 
-    const closeBtn = screen.getAllByRole("button")[0];
+    const closeBtn = screen.getByLabelText("Close timetable");
     fireEvent.press(closeBtn);
     expect(mockBack).toHaveBeenCalled();
   });

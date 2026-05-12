@@ -22,6 +22,7 @@ import {
   resolveIqamahTimesWithDstMapping,
   getNextPrayerAndCountdown,
   formatTo12Hour,
+  formatPrayerClockForDisplay,
   sheffieldNoonUTC,
   getDateInSheffield,
   isoDateString,
@@ -577,6 +578,22 @@ describe("PrayerTimesEngine", () => {
       expect(formatTo12Hour("After Maghrib")).toBe("After Maghrib");
       expect(formatTo12Hour("-")).toBe("-");
       expect(formatTo12Hour("")).toBe("");
+    });
+  });
+
+  describe("formatPrayerClockForDisplay", () => {
+    it("uses Arabic-Indic digits in 24h for ar locale", () => {
+      const s = formatPrayerClockForDisplay("13:05", true, "ar");
+      expect(s).not.toBe("13:05");
+      expect(/[\u0660-\u0669]/.test(s)).toBe(true);
+    });
+
+    it("keeps English digits for en-GB 24h", () => {
+      expect(formatPrayerClockForDisplay("09:30", true, "en-GB")).toMatch(/9/);
+    });
+
+    it("passes through non-clock strings", () => {
+      expect(formatPrayerClockForDisplay("sunset", false, "ar")).toBe("sunset");
     });
   });
 

@@ -4,20 +4,100 @@
     "" : {
 
     },
-    "%lld" : {
+    "%lld percent" : {
 
     },
     "5 min" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 دقائق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 min"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 منٹ"
+          }
+        }
+      }
     },
     "10 min" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 دقائق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 min"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 منٹ"
+          }
+        }
+      }
     },
     "15 min" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 دقيقة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 min"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 منٹ"
+          }
+        }
+      }
     },
     "30 min" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 دقيقة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 min"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 منٹ"
+          }
+        }
+      }
     },
     "accessibility.settings" : {
       "extractionState" : "stale",
@@ -43,13 +123,52 @@
       }
     },
     "Adhan" : {
-
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان"
+          }
+        }
+      }
     },
-    "Adhan reminder" : {
+    "Adhan playback progress" : {
 
     },
     "Adhan Reminder" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تذكير الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan Reminder"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان کی یاد دہانی"
+          }
+        }
+      }
     },
     "app_language.arabic" : {
       "extractionState" : "stale",
@@ -144,10 +263,50 @@
       }
     },
     "Before Adhan" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبل الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Adhan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان سے پہلے"
+          }
+        }
+      }
     },
     "Before Iqamah" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبل الإقامة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Iqamah"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقامت سے پہلے"
+          }
+        }
+      }
     },
     "carousel.a11y" : {
       "extractionState" : "stale",
@@ -196,16 +355,96 @@
       }
     },
     "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this." : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ما تريد أن يرسل ماسجدلي إشعارات عنه. سيظهر طلب إذن iOS بعد ذلك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منتخب کریں کہ آپ Masjidly سے کن چیزوں کی اطلاع چاہتے ہیں۔ اس کے بعد iOS اجازت کا پیغام ظاہر ہوگا۔"
+          }
+        }
+      }
     },
     "Choose your mosque" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر مسجدك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose your mosque"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اپنی مسجد منتخب کریں"
+          }
+        }
+      }
     },
     "Continue" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متابعة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جاری رکھیں"
+          }
+        }
+      }
     },
     "Finish" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنهاء"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مکمل کریں"
+          }
+        }
+      }
     },
     "home.iqamah_format" : {
       "extractionState" : "stale",
@@ -392,22 +631,119 @@
       }
     },
     "Iqamah" : {
-
-    },
-    "Iqamah reminder" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإقامة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقامت"
+          }
+        }
+      }
     },
     "Iqamah Reminder" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تذكير الإقامة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah Reminder"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقامت کی یاد دہانی"
+          }
+        }
+      }
     },
     "Masjidly will show official prayer and iqamah times for this mosque." : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيعرض ماسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly will show official prayer and iqamah times for this mosque."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly اس مسجد کے سرکاری نماز اور اقامت کے اوقات دکھائے گا۔"
+          }
+        }
+      }
     },
     "Mosque" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المسجد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mosque"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسجد"
+          }
+        }
+      }
     },
     "None" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدون"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کوئی نہیں"
+          }
+        }
+      }
     },
     "notification.asr_adhan" : {
       "extractionState" : "stale",
@@ -451,6 +787,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "عصر کی اقامت %@"
+          }
+        }
+      }
+    },
+    "notification.channel.adhan" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان"
+          }
+        }
+      }
+    },
+    "notification.channel.iqamah" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإقامة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقامت"
           }
         }
       }
@@ -685,8 +1067,585 @@
         }
       }
     },
-    "Prayer notifications" : {
+    "Off" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إيقاف"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بند"
+          }
+        }
+      }
+    },
+    "onboarding.close_settings.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضغط زر الإغلاق لإنهاء الإعداد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the close button to finish setup."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سیٹ اپ مکمل کرنے کے لیے بند کرنے کا بٹن ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "onboarding.close_settings.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أغلق الإعدادات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close Settings"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترتیبات بند کریں"
+          }
+        }
+      }
+    },
+    "onboarding.close_timetable.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضغط زر الإغلاق للعودة إلى أوقات الصلاة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the close button to return to the prayer times."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نماز کے اوقات پر واپس جانے کے لیے بند کرنے کا بٹن ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "onboarding.close_timetable.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أغلق الجدول"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close the timetable"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ٹائم ٹیبل بند کریں"
+          }
+        }
+      }
+    },
+    "onboarding.continue" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متابعة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جاری رکھیں"
+          }
+        }
+      }
+    },
+    "onboarding.explore_settings.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المسجد يحدد مصدر الأوقات. تنسيق 24 ساعة يغيّر شكل الساعات. الإشعارات: التفعيل الرئيسي ثم قناة الأذان والإقامة، مع تذكيرات اختيارية قبل كل منهما. مرّر لأسفل لرؤية كل الخيارات، ثم اضغط متابعة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mosque picks which masjid’s times you see. 24-hour time changes how clocks read. Notifications has a master switch; when on, you can enable adhan and iqamah alerts separately and set optional reminders before each. Scroll to skim everything, then tap Continue."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسجد سے اوقات کا ذریعہ طے ہوتا ہے۔ 24 گھنٹے والا وقت گھڑیوں کا انداز بدلتا ہے۔ نوٹیفیکیشنز میں ماسٹر سوئچ ہے؛ چالو ہونے پر اذان اور اقامت الگ سے چالو کر سکتے ہیں اور ہر سے پہلے یاد دہانی۔ نیچے سکرول کر کے دیکھ لیں، پھر جاری رکھیں پر ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "onboarding.explore_settings.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ماذا تفعل هذه الإعدادات؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What these settings do"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یہ ترتیبات کیا کرتی ہیں"
+          }
+        }
+      }
+    },
+    "onboarding.explore_timetable.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرّر صف الأيام أفقياً لاختيار يوم آخر. استخدم سهمي الشهر للانتقال بين الأشهر. مرّر قائمة الصلوات لذلك اليوم. عند الانتهاء، اضغط متابعة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swipe the date row sideways to pick another day. Use the month arrows to load other months. Scroll the prayer list for the selected day. When you’re done exploring, tap Continue."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخوں کی قطار کو سائیڈ سے سلائیڈ کر کے دوسرا دن چنیں۔ مہینے بدلنے کے لیے تیر والے بٹن استعمال کریں۔ منتخب دن کی نمازوں کی فہرست سکرول کریں۔ دیکھ لیں تو جاری رکھیں پر ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "onboarding.explore_timetable.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصفّح التواريخ والأشهر"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Browse dates and months"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخیں اور مہینے دیکھیں"
+          }
+        }
+      }
+    },
+    "onboarding.finish" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنهاء"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مکمل کریں"
+          }
+        }
+      }
+    },
+    "onboarding.mosque.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيعرض ماسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly will show official prayer and iqamah times for this mosque."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly اس مسجد کے سرکاری نماز اور اقامت کے اوقات دکھائے گا۔"
+          }
+        }
+      }
+    },
+    "onboarding.mosque.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر مسجدك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose your mosque"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اپنی مسجد منتخب کریں"
+          }
+        }
+      }
+    },
+    "onboarding.notifications.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ما تريد أن يرسل ماسجدلي إشعارات عنه. سيظهر طلب إذن iOS بعد ذلك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منتخب کریں کہ آپ Masjidly سے کن چیزوں کی اطلاع چاہتے ہیں۔ اس کے بعد iOS اجازت کا پیغام ظاہر ہوگا۔"
+          }
+        }
+      }
+    },
+    "onboarding.notifications.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إشعارات الصلاة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer notifications"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نماز کی اطلاعات"
+          }
+        }
+      }
+    },
+    "onboarding.qibla.allow_location" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Location Access"
+          }
+        }
+      }
+    },
+    "onboarding.qibla.later" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do It Later"
+          }
+        }
+      }
+    },
+    "onboarding.qibla.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يشير المثلث نحو القبلة. أدر هاتفك حتى يصطف مع اتجاه الصلاة عندما تكون جاهزًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The triangle points toward the Qibla. Rotate your phone until it lines up when you are ready to pray."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مثلث قبلہ کی طرف اشارہ کرتا ہے۔ نماز کے لیے تیار ہوں تو فون گھمائیں تاکہ یہ سیدھا ہو جائے۔"
+          }
+        }
+      }
+    },
+    "onboarding.qibla.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اتجاه القبلة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qibla direction"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبلہ کی سمت"
+          }
+        }
+      }
+    },
+    "onboarding.settings.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضغط زر الإعدادات أعلى اليمين لاختيار التفضيلات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the settings button (top-right) to choose preferences."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترجیحات منتخب کرنے کے لیے اوپر دائیں ترتیبات بٹن پر ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "onboarding.settings.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح الإعدادات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترتیبات کھولیں"
+          }
+        }
+      }
+    },
+    "onboarding.shortcut.message_format" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضغط %@ لعرض وقت تلك الصلاة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap %@ to view that prayer time."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اس نماز کا وقت دیکھنے کے لیے %@ پر ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "onboarding.shortcut.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جرّب اختصارات الصلاة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try the prayer shortcuts"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نماز کے شارٹ کٹس آزمائیں"
+          }
+        }
+      }
+    },
+    "onboarding.timetable.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضغط زر التقويم أعلى اليسار لرؤية الجدول الكامل."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the calendar button (top-left) to see the full timetable."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مکمل ٹائم ٹیبل دیکھنے کے لیے اوپر بائیں کیلنڈر بٹن پر ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "onboarding.timetable.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح الجدول"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the timetable"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ٹائم ٹیبل کھولیں"
+          }
+        }
+      }
+    },
+    "Pause adhan" : {
 
+    },
+    "Play adhan" : {
+
+    },
+    "Prayer notifications" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إشعارات الصلاة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer notifications"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نماز کی اطلاعات"
+          }
+        }
+      }
     },
     "prayer.asr" : {
       "extractionState" : "stale",
@@ -872,8 +1831,281 @@
         }
       }
     },
+    "qibla.icon_a11y" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مؤشر اتجاه القبلة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qibla direction indicator"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبلہ سمت کا اشارہ"
+          }
+        }
+      }
+    },
     "Reminders" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التذكيرات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminders"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یاد دہانیاں"
+          }
+        }
+      }
+    },
+    "review.enjoyment.love_it" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نعم، أحبه"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes, loving it"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جی ہاں، بہت پسند ہے"
+          }
+        }
+      }
+    },
+    "review.enjoyment.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملاحظاتك تساعدنا على تحسين أوقات الصلاة للجميع."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your feedback helps us improve prayer times for everyone."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آپ کی رائے ہمیں سب کے لیے نماز کے اوقات بہتر بنانے میں مدد دیتی ہے۔"
+          }
+        }
+      }
+    },
+    "review.enjoyment.not_really" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس كثيرًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not really"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زیادہ نہیں"
+          }
+        }
+      }
+    },
+    "review.enjoyment.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هل تحب التطبيق؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loving Masjidly?"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کیا آپ کو Masjidly پسند ہے؟"
+          }
+        }
+      }
+    },
+    "settings.adhan_sound.pause" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إيقاف مؤقت"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause adhan preview"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیش نظارہ روکیں"
+          }
+        }
+      }
+    },
+    "settings.adhan_sound.preview" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معاينة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview adhan sound"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان کی آواز سنیں"
+          }
+        }
+      }
+    },
+    "settings.contact.feedback.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ميزات جديدة وملاحظات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New features & feedback"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نئی خصوصیات اور رائے"
+          }
+        }
+      }
+    },
+    "settings.contact.prayer_times.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أوقات الصلاة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer times"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نماز کے اوقات"
+          }
+        }
+      }
+    },
+    "settings.development.test_review_prompt" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختبار طلب المراجعة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test review prompt"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جائزہ پرامپٹ ٹیسٹ کریں"
+          }
+        }
+      }
+    },
+    "settings.development.test_tutorial" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختبار الشرح"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test tutorial"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ٹیوٹوریل ٹیسٹ کریں"
+          }
+        }
+      }
     },
     "settings.done" : {
       "extractionState" : "stale",
@@ -1009,6 +2241,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "زبان"
+          }
+        }
+      }
+    },
+    "settings.location.allow" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Location"
+          }
+        }
+      }
+    },
+    "settings.location.open_settings" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open System Settings"
+          }
+        }
+      }
+    },
+    "settings.location.recovery.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable location access to see the Qibla compass direction."
           }
         }
       }
@@ -1289,6 +2554,247 @@
         }
       }
     },
+    "settings.qibla.enabled.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable Qiblah feature"
+          }
+        }
+      }
+    },
+    "settings.reminder.adhan_picker" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تذكير الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan Reminder"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان کی یاد دہانی"
+          }
+        }
+      }
+    },
+    "settings.reminder.before_adhan" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبل الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Adhan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان سے پہلے"
+          }
+        }
+      }
+    },
+    "settings.reminder.before_iqamah" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبل الإقامة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Iqamah"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقامت سے پہلے"
+          }
+        }
+      }
+    },
+    "settings.reminder.iqamah_picker" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تذكير الإقامة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah Reminder"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقامت کی یاد دہانی"
+          }
+        }
+      }
+    },
+    "settings.reminder.minutes_format" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld دقيقة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld منٹ"
+          }
+        }
+      }
+    },
+    "settings.reminder.none" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدون"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کوئی نہیں"
+          }
+        }
+      }
+    },
+    "settings.reminder.off" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إيقاف"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بند"
+          }
+        }
+      }
+    },
+    "settings.reminders.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التذكيرات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminders"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یاد دہانیاں"
+          }
+        }
+      }
+    },
+    "settings.section.contact.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اتصل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contact"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رابطہ"
+          }
+        }
+      }
+    },
+    "settings.section.development.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التطوير"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Development"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ڈیولپمنٹ"
+          }
+        }
+      }
+    },
     "settings.section.display.subtitle" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1335,6 +2841,17 @@
         }
       }
     },
+    "settings.section.location.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location"
+          }
+        }
+      }
+    },
     "settings.section.mosque.subtitle" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1377,6 +2894,201 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مسجد"
+          }
+        }
+      }
+    },
+    "settings.section.qibla.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qiblah"
+          }
+        }
+      }
+    },
+    "settings.sound.iqamah.handoff" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نغمة كلاسيكية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classic chime"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلاسک گھنٹی"
+          }
+        }
+      }
+    },
+    "settings.sound.iqamah.phone_ringtone" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نغمة الجهاز الافتراضية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default ringtone"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ڈیفالٹ رنگ ٹون"
+          }
+        }
+      }
+    },
+    "settings.sound.iqamah.standard_alert" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنبيه افتراضي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard alert"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معیاری الرٹ"
+          }
+        }
+      }
+    },
+    "settings.sound.iqamah.subtle" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نغمة خفيفة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subtle tone"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ہلکی آواز"
+          }
+        }
+      }
+    },
+    "settings.sound.reminder.handoff" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نغمة كلاسيكية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classic chime"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کلاسک گھنٹی"
+          }
+        }
+      }
+    },
+    "settings.sound.reminder.phone_ringtone" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نغمة الجهاز الافتراضية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default ringtone"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ڈیفالٹ رنگ ٹون"
+          }
+        }
+      }
+    },
+    "settings.sound.reminder.quiet" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نغمة هادئة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quiet tone"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "چپ آواز"
+          }
+        }
+      }
+    },
+    "settings.sound.reminder.standard_alert" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنبيه افتراضي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard alert"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معیاری الرٹ"
           }
         }
       }
@@ -1449,6 +3161,9 @@
           }
         }
       }
+    },
+    "Stop adhan" : {
+
     },
     "sun_phase.afternoon" : {
       "extractionState" : "stale",
@@ -1588,6 +3303,95 @@
         }
       }
     },
+    "support.mail.feedback.body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'd like to share the following idea or feedback:\n\n\n\nThanks,"
+          }
+        }
+      }
+    },
+    "support.mail.feedback.subject" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Ideas & feedback"
+          }
+        }
+      }
+    },
+    "support.mail.footer" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—\nMasjidly %@ (build %@)\niOS %@"
+          }
+        }
+      }
+    },
+    "support.mail.footer.mosque_line" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected mosque: %@"
+          }
+        }
+      }
+    },
+    "support.mail.prayer_times.body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'm writing about prayer times. Please see the details below.\n\nMosque:\nDate (or month):\nWhat looks wrong:\n\nThanks,"
+          }
+        }
+      }
+    },
+    "support.mail.prayer_times.subject" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Prayer times question"
+          }
+        }
+      }
+    },
+    "Test tutorial" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختبار الشرح"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test tutorial"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ٹیوٹوریل ٹیسٹ کریں"
+          }
+        }
+      }
+    },
     "timetable.close_a11y" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1611,13 +3415,36 @@
         }
       }
     },
+    "timetable.header.adhan" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان"
+          }
+        }
+      }
+    },
     "timetable.header.asr" : {
       "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "عص"
+            "value" : "العصر"
           }
         },
         "en" : {
@@ -1663,19 +3490,19 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ظه"
+            "value" : "الظهر"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dhu"
+            "value" : "Dhuhr"
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ظہ"
+            "value" : "ظہر"
           }
         }
       }
@@ -1686,7 +3513,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "فج"
+            "value" : "الفجر"
           }
         },
         "en" : {
@@ -1703,25 +3530,48 @@
         }
       }
     },
+    "timetable.header.iqamah" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإقامة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقامت"
+          }
+        }
+      }
+    },
     "timetable.header.ish" : {
       "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "عش"
+            "value" : "العشاء"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ish"
+            "value" : "Isha"
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "عش"
+            "value" : "عشاء"
           }
         }
       }
@@ -1732,19 +3582,42 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "مغ"
+            "value" : "المغرب"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mag"
+            "value" : "Maghrib"
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "مغ"
+            "value" : "مغرب"
+          }
+        }
+      }
+    },
+    "timetable.header.prayer" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصلاة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نماز"
           }
         }
       }
@@ -1755,19 +3628,19 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "شرو"
+            "value" : "الشروق"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shu"
+            "value" : "Sunrise"
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "شرو"
+            "value" : "طلوع آفتاب"
           }
         }
       }

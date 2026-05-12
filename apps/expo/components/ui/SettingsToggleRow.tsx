@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, Switch, Pressable } from "react-native";
-import { COLORS, SPACING, FONT_SIZES } from "@/constants";
+import { SPACING, FONT_SIZES } from "@/constants";
 
 export interface SettingsToggleRowProps {
   title: string;
@@ -8,6 +8,7 @@ export interface SettingsToggleRowProps {
   value: boolean;
   onValueChange: (value: boolean) => void;
   disabled?: boolean;
+  textColor: string;
 }
 
 export const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
@@ -16,6 +17,7 @@ export const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
   value,
   onValueChange,
   disabled = false,
+  textColor,
 }) => {
   return (
     <Pressable
@@ -26,18 +28,34 @@ export const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
       accessibilityState={{ checked: value, disabled }}
     >
       <View style={styles.textContainer}>
-        <Text style={[styles.title, disabled && styles.disabledText]}>{title}</Text>
+        <Text
+          style={[
+            styles.title,
+            disabled && styles.disabledText,
+            { color: textColor, fontFamily: "Comfortaa_400Regular" },
+          ]}
+        >
+          {title}
+        </Text>
         {subtitle ? (
-          <Text style={[styles.subtitle, disabled && styles.disabledText]}>{subtitle}</Text>
+          <Text
+            style={[
+              styles.subtitle,
+              disabled && styles.disabledText,
+              { color: textColor + "8C", fontFamily: "Comfortaa_400Regular" },
+            ]}
+          >
+            {subtitle}
+          </Text>
         ) : null}
       </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
         disabled={disabled}
-        trackColor={{ false: `${COLORS.secondary}40`, true: COLORS.accent }}
-        thumbColor={COLORS.background}
-        ios_backgroundColor={`${COLORS.secondary}40`}
+        trackColor={{ false: `${textColor}40`, true: "#47A6FF" }}
+        thumbColor={value ? "#FFFFFF" : "#F4F3F4"}
+        ios_backgroundColor={`${textColor}30`}
       />
     </Pressable>
   );
@@ -50,9 +68,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
-    backgroundColor: `${COLORS.background}80`,
-    borderRadius: 12,
-    marginBottom: SPACING.xs,
+    minHeight: 44,
   },
   textContainer: {
     flex: 1,
@@ -60,12 +76,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.primary,
-    fontWeight: "500",
   },
   subtitle: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.secondary,
     marginTop: 2,
   },
   disabledText: {

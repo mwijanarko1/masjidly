@@ -86,6 +86,41 @@ struct PrayerEngineTests {
         let day = PrayerTimesEngine.resolveTimetableDayForUkEmbeddedDst(calendarDay: 28, transitionDayInTable: 30, ukTransitionDay: 29, maxTableDay: 31)
         #expect(day == 29)
     }
+
+    @Test func formatPrayerTimeUsesLocaleForTwentyFourHour() {
+        let ar = Locale(identifier: "ar")
+        let s = PrayerTimesEngine.formatPrayerTimeForDisplay("13:05", uses24Hour: true, locale: ar)
+        #expect(s != "13:05")
+    }
+}
+
+@Suite("Qibla direction")
+struct QiblaDirectionTests {
+    @Test func sheffieldBearingPointsSoutheastTowardMakkah() {
+        let bearing = QiblaDirectionCalculator.bearingDegrees(
+            fromLatitude: 53.3811,
+            longitude: -1.4701
+        )
+
+        #expect(abs(bearing - 119.2) < 0.5)
+    }
+
+    @Test func indicatorRotationTracksLiveHeading() {
+        let rotation = QiblaDirectionCalculator.indicatorRotationDegrees(
+            qiblaBearing: 119.2,
+            heading: 100
+        )
+
+        #expect(abs(rotation - 19.2) < 0.5)
+    }
+
+    @Test func continuousRotationTakesShortestPathAcrossZeroDegrees() {
+        let clockwise = QiblaDirectionCalculator.continuousRotationDegrees(previous: 358, target: 2)
+        let counterClockwise = QiblaDirectionCalculator.continuousRotationDegrees(previous: 2, target: 358)
+
+        #expect(abs(clockwise - 362) < 0.5)
+        #expect(abs(counterClockwise - (-2)) < 0.5)
+    }
 }
 
 @Suite("Settings")
@@ -104,23 +139,17 @@ struct SettingsStoreTests {
         #expect(s.uses24HourTime == true)
     }
 
-    @Test @MainActor func appLanguagePersists() {
+    @Test @MainActor func appLanguagePersistsEnglishOnly() {
         let s = SettingsStore()
-        s.appLanguage = .urdu
-        #expect(s.appLanguage == .urdu)
+        s.appLanguage = .english
+        #expect(s.appLanguage == .english)
         let reloaded = SettingsStore()
-        #expect(reloaded.appLanguage == .urdu)
-        s.appLanguage = .system
-        #expect(SettingsStore().appLanguage == .system)
+        #expect(reloaded.appLanguage == .english)
     }
 
-    @Test func arabicAndUrduResolveRightToLeftLanguageMetadata() {
+    @Test func appLanguageMetadataIsEnglishOnly() {
         #expect(AppLanguage.english.resolvedLanguageCode == "en")
-        #expect(AppLanguage.arabic.resolvedLanguageCode == "ar")
-        #expect(AppLanguage.urdu.resolvedLanguageCode == "ur")
         #expect(AppLanguage.english.isResolvedRightToLeft == false)
-        #expect(AppLanguage.arabic.isResolvedRightToLeft == true)
-        #expect(AppLanguage.urdu.isResolvedRightToLeft == true)
     }
 
     @Test @MainActor func onboardingCompletionPersists() {
@@ -144,8 +173,6 @@ struct SettingsStoreTests {
         #expect(settings.adhanEnabled == true)
         #expect(settings.iqamahEnabled == true)
         #expect(settings.preAdhanReminderMinutes == nil)
-        #expect(settings.dhuhrJummah == false)
-        #expect(settings.isha == false)
     }
 
     @Test func notificationReminderMinutesRoundTrip() throws {
@@ -215,20 +242,48 @@ struct OnboardingFlowControllerTests {
         #expect(harness.controller.currentStep == .prayerShortcut(index: 1))
     }
 
+    @Test func qiblaDeferPathSetsHideCompassFlag() {
+        let harness = OnboardingHarness()
+        harness.controller.currentStep = .qibla
+        #expect(harness.settings.hideQiblaCompass == false)
+
+        harness.controller.completeQiblaOnboardingDeferringLocation()
+        #expect(harness.controller.currentStep == .openTimetable)
+        #expect(harness.settings.hideQiblaCompass == true)
+    }
+
+    @Test func completeQiblaOnboardingAllowingLocationRequestDoesNotSetHideCompass() {
+        let harness = OnboardingHarness()
+        harness.controller.currentStep = .qibla
+
+        harness.controller.completeQiblaOnboardingAllowingLocationRequest()
+        #expect(harness.controller.currentStep == .openTimetable)
+        #expect(harness.settings.hideQiblaCompass == false)
+    }
+
     @Test func guidedSurfaceStepsAdvanceInOrder() {
         let harness = OnboardingHarness()
         harness.controller.currentStep = .prayerShortcut(index: 5)
 
         harness.controller.handlePrayerShortcutTap(index: 5)
+        #expect(harness.controller.currentStep == .qibla)
+
+        harness.controller.completeQiblaOnboardingAllowingLocationRequest()
         #expect(harness.controller.currentStep == .openTimetable)
 
         harness.controller.handleTimetableOpened()
+        #expect(harness.controller.currentStep == .exploreTimetable)
+
+        harness.controller.acknowledgeTimetableExplore()
         #expect(harness.controller.currentStep == .closeTimetable)
 
         harness.controller.handleTimetableClosed()
         #expect(harness.controller.currentStep == .openSettings)
 
         harness.controller.handleSettingsOpened()
+        #expect(harness.controller.currentStep == .exploreSettings)
+
+        harness.controller.acknowledgeSettingsExplore()
         #expect(harness.controller.currentStep == .closeSettings)
 
         harness.controller.handleSettingsClosed()
@@ -256,6 +311,18 @@ struct OnboardingFlowControllerTests {
         #expect(harness.scheduler.rescheduleCount == 1)
         #expect(harness.controller.currentStep == nil)
     }
+
+    @Test func restartTutorialResetsHideQiblaCompass() {
+        let harness = OnboardingHarness()
+        harness.settings.hasCompletedOnboarding = true
+        harness.settings.hideQiblaCompass = true
+
+        harness.controller.restartTutorialFromDeveloperTools()
+
+        #expect(harness.settings.hasCompletedOnboarding == false)
+        #expect(harness.settings.hideQiblaCompass == false)
+        #expect(harness.controller.currentStep == .chooseMosque)
+    }
 }
 
 @MainActor
@@ -265,6 +332,7 @@ private final class OnboardingHarness {
     let repository: MockPrayerRepository
     let scheduler: MockPrayerNotificationScheduler
     let settings: SettingsStore
+    let diskCache: PrayerTimesDiskCache
     let homeViewModel: HomeViewModel
     let settingsViewModel: SettingsViewModel
     let controller: OnboardingFlowController
@@ -280,8 +348,9 @@ private final class OnboardingHarness {
         repository = MockPrayerRepository(mosques: mosques)
         scheduler = MockPrayerNotificationScheduler()
         settings = SettingsStore(defaults: defaults)
-        homeViewModel = HomeViewModel(repository: repository, settings: settings, notificationScheduler: scheduler)
-        settingsViewModel = SettingsViewModel(repository: repository, settings: settings, notificationScheduler: scheduler)
+        diskCache = PrayerTimesDiskCache()
+        homeViewModel = HomeViewModel(repository: repository, settings: settings, notificationScheduler: scheduler, diskCache: diskCache)
+        settingsViewModel = SettingsViewModel(repository: repository, settings: settings, notificationScheduler: scheduler, diskCache: diskCache)
         controller = OnboardingFlowController(
             settings: settings,
             homeViewModel: homeViewModel,
@@ -345,5 +414,77 @@ private final class MockPrayerNotificationScheduler: PrayerNotificationSchedulin
 
     func cancelAllPrayerNotifications() async {
         cancelCount += 1
+    }
+}
+
+@Suite("Disk cache")
+@MainActor
+struct PrayerTimesDiskCacheTests {
+    @Test func roundTripMosques() {
+        let cache = PrayerTimesDiskCache()
+        let mosques = [
+            Mosque(id: "a", name: "Alpha", address: "", lat: 0, lng: 0, slug: "alpha", website: nil, isHidden: false),
+            Mosque(id: "b", name: "Beta", address: "", lat: 0, lng: 0, slug: "beta", website: nil, isHidden: false),
+        ]
+        try? cache.saveMosques(mosques)
+        let loaded: [Mosque]? = cache.loadMosques()
+        #expect(loaded?.count == 2)
+        #expect(loaded?.first?.slug == "alpha")
+    }
+
+    @Test func roundTripMonthly() {
+        let cache = PrayerTimesDiskCache()
+        let data = MonthPrayerData(
+            month: "MAY",
+            prayerTimes: [
+                PrayerTime(date: 1, fajr: "03:00", shurooq: "05:00", dhuhr: "13:00", asr: "18:00", maghrib: "21:00", isha: "22:00")
+            ],
+            iqamahTimes: [],
+            jummahIqamah: "13:30"
+        )
+        try? cache.saveMonthly(slug: "test-masjid", month: "may", year: 2026, data: data)
+        let loaded: MonthPrayerData? = cache.loadMonthly(slug: "test-masjid", month: "may", year: 2026)
+        #expect(loaded?.prayerTimes.count == 1)
+        #expect(loaded?.jummahIqamah == "13:30")
+    }
+
+    @Test func roundTripRamadan() {
+        let cache = PrayerTimesDiskCache()
+        let data = RamadanPrayerData(
+            month: "Ramadan",
+            gregorianStart: "2026-02-17",
+            gregorianEnd: "2026-03-18",
+            prayerTimes: [
+                RamadanPrayerDay(ramadanDay: 1, gregorian: "2026-02-17", fajr: "05:30", shurooq: "06:00", dhuhr: "12:00", asr: "15:00", maghrib: "17:30", isha: "19:00")
+            ],
+            iqamahTimes: [],
+            jummahIqamah: "12:30"
+        )
+        try? cache.saveRamadan(slug: "test-masjid", date: "2026-02-17", data: data)
+        let loaded: RamadanPrayerData? = cache.loadRamadan(slug: "test-masjid", date: "2026-02-17")
+        #expect(loaded?.prayerTimes.first?.ramadanDay == 1)
+    }
+
+    @Test func roundTripUkDst() {
+        let cache = PrayerTimesDiskCache()
+        let dst = UkDstCalendar(ukDstDates: [
+            UkDstYear(year: 2026, startDate: "2026-03-29", endDate: "2026-10-25")
+        ])
+        try? cache.saveUkDst(dst)
+        let loaded: UkDstCalendar? = cache.loadUkDst()
+        #expect(loaded?.ukDstDates.first?.year == 2026)
+    }
+
+    @Test func loadMosquesReturnsNilWhenMissing() {
+        let cache = PrayerTimesDiskCache()
+        let mosques: [Mosque]? = cache.loadMosques()
+        #expect(mosques == nil)
+    }
+
+    @Test func safeFilenameReplacesPathSeparators() {
+        let unsafe = "../../etc/passwd"
+        let safe = PrayerTimesDiskCache.safe(unsafe)
+        #expect(!safe.contains("/"))
+        #expect(!safe.contains("."))
     }
 }

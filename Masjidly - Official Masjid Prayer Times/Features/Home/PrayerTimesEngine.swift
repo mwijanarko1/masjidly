@@ -649,6 +649,55 @@ enum PrayerTimesEngine {
         return m != nil
     }
 
+    /// Wall-clock instant on today's Sheffield calendar date (for locale-aware time formatting only).
+    private static func prayerWallClockDate(hour: Int, minute: Int, referenceNow: Date = Date()) -> Date? {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = sheffieldTimeZone
+        let ymd = getDateInSheffield(referenceNow)
+        return cal.date(from: DateComponents(year: ymd.year, month: ymd.month, day: ymd.day, hour: hour, minute: minute))
+    }
+
+    /// Formats an `HH:mm` prayer clock for UI using `locale` (digits, separators, AM/PM).
+    /// Non-clock strings (e.g. “sunset”) are returned unchanged.
+    static func formatPrayerTimeForDisplay(_ timeString: String, uses24Hour: Bool, locale: Locale) -> String {
+        guard isParseableTime(timeString) else { return timeString }
+        let p = timeString.split(separator: ":").compactMap { Int($0) }
+        guard p.count == 2, let date = prayerWallClockDate(hour: p[0], minute: p[1]) else { return timeString }
+        let f = DateFormatter()
+        f.locale = locale
+        f.timeZone = sheffieldTimeZone
+        if uses24Hour {
+            f.setLocalizedDateFormatFromTemplate("HHmm")
+        } else {
+            f.timeStyle = .short
+            f.dateStyle = .none
+        }
+        return f.string(from: date)
+    }
+
+    /// Hero clock uses separate `h:mm` + `a` strings so AM/PM sits tight; `formatPrayerTimeForDisplay` uses `DateFormatter` short style, whose NBSP between time and meridiem grows visually at large sizes.
+    static func formatPrayerTimeHeroParts(_ timeString: String, uses24Hour: Bool, locale: Locale) -> (clock: String, meridiem: String?) {
+        guard isParseableTime(timeString) else { return (timeString, nil) }
+        let p = timeString.split(separator: ":").compactMap { Int($0) }
+        guard p.count == 2, let date = prayerWallClockDate(hour: p[0], minute: p[1]) else { return (timeString, nil) }
+        if uses24Hour {
+            let f = DateFormatter()
+            f.locale = locale
+            f.timeZone = sheffieldTimeZone
+            f.setLocalizedDateFormatFromTemplate("HHmm")
+            return (f.string(from: date), nil)
+        }
+        let clockDF = DateFormatter()
+        clockDF.locale = locale
+        clockDF.timeZone = sheffieldTimeZone
+        clockDF.dateFormat = "h:mm"
+        let meridiemDF = DateFormatter()
+        meridiemDF.locale = locale
+        meridiemDF.timeZone = sheffieldTimeZone
+        meridiemDF.dateFormat = "a"
+        return (clockDF.string(from: date), meridiemDF.string(from: date))
+    }
+
     static func formatTo12Hour(_ timeString: String) -> String {
         if !isParseableTime(timeString) { return timeString }
         let p = timeString.split(separator: ":").compactMap { Int($0) }

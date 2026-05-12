@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "expo-rn-template",
-    "slug": "expo-rn-template",
-    "scheme": "exporntemplate",
+    "name": "Masjidly",
+    "slug": "masjidly",
+    "scheme": "masjidly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,9 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times"
     },
     "android": {
+      "package": "mikhailspeaks.masjidly",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

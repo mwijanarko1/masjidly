@@ -17,14 +17,14 @@ jest.mock("@/lib/hooks/useHomePrayerData", () => ({
   useHomePrayerData: jest.fn(),
 }));
 
-jest.mock("@/store/settings", () => ({
-  useSettingsStore: jest.fn((selector: any) =>
-    selector({ uses24HourTime: false, appLanguage: "system" })
-  ),
+jest.mock("@/lib/hooks/useQiblaDirection", () => ({
+  useQiblaDirection: jest.fn(() => ({ rotationDegrees: null, headingAvailable: false })),
 }));
 
-jest.mock("expo-localization", () => ({
-  getLocales: () => [{ languageTag: "en-GB", languageCode: "en" }],
+jest.mock("@/store/settings", () => ({
+  useSettingsStore: jest.fn((selector: any) =>
+    selector({ uses24HourTime: false })
+  ),
 }));
 
 jest.mock("expo-linear-gradient", () => {
@@ -56,8 +56,8 @@ jest.mock("lucide-react-native", () => ({
   Sunset: () => null,
 }));
 
-jest.mock("@/components/ui/PrayerCarousel", () => ({
-  PrayerCarousel: ({ onSelectPrayer }: any) => {
+jest.mock("@/components/ui/PrayerLetterPicker", () => ({
+  PrayerLetterPicker: ({ onSelectPrayer }: any) => {
     const React = require("react");
     const { Pressable, Text } = require("react-native");
     return React.createElement(Pressable, {
@@ -65,6 +65,14 @@ jest.mock("@/components/ui/PrayerCarousel", () => ({
       accessibilityLabel: "Dhuhr",
     }, React.createElement(Text, null, "Dhuhr"));
   },
+}));
+
+jest.mock("@/components/ui/QiblaPrayerIcon", () => ({
+  QiblaPrayerIcon: () => null,
+}));
+
+jest.mock("@/components/ui/PrayerSunPhaseIcon", () => ({
+  PrayerSunPhaseIcon: () => null,
 }));
 
 import { useHomePrayerData } from "@/lib/hooks/useHomePrayerData";
@@ -105,7 +113,7 @@ describe("HomeScreen", () => {
     });
 
     render(<HomeScreen />);
-    expect(screen.getByText("5:00am")).toBeTruthy();
+    expect(screen.getByText("5:00")).toBeTruthy();
     expect(screen.getByText("Fajr")).toBeTruthy();
   });
 
@@ -141,13 +149,14 @@ describe("HomeScreen", () => {
     });
 
     render(<HomeScreen />);
-    expect(screen.getByText("1:00pm")).toBeTruthy();
+    expect(screen.getByText("1:00")).toBeTruthy();
+    expect(screen.getByText(/^PM$/i)).toBeTruthy();
   });
 
   it("formats time in 24h when enabled", () => {
     const { useSettingsStore } = require("@/store/settings");
     useSettingsStore.mockImplementation((selector: any) =>
-      selector({ uses24HourTime: true, appLanguage: "system" })
+      selector({ uses24HourTime: true })
     );
 
     mockedUseHomePrayerData.mockReturnValue({
@@ -168,7 +177,7 @@ describe("HomeScreen", () => {
     expect(screen.getByText("13:00")).toBeTruthy();
   });
 
-  it("changes selected prayer via carousel", () => {
+  it("changes selected prayer via letter picker", () => {
     mockedUseHomePrayerData.mockReturnValue({
       loadState: "loaded",
       displayedPrayerTimes: {
@@ -205,8 +214,8 @@ describe("HomeScreen", () => {
 
     render(<HomeScreen />);
     fireEvent.press(screen.getByLabelText("Timetable screen"));
-    expect(mockPush).toHaveBeenCalledWith("/timetable");
+    expect(mockPush).toHaveBeenCalledWith({ pathname: "/timetable", params: { theme: "Fajr", mosqueName: "" } });
     fireEvent.press(screen.getByLabelText("Settings screen"));
-    expect(mockPush).toHaveBeenCalledWith("/settings");
+    expect(mockPush).toHaveBeenCalledWith({ pathname: "/settings", params: { theme: "Fajr" } });
   });
 });

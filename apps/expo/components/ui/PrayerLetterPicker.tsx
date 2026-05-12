@@ -1,0 +1,132 @@
+import React, { useRef, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Dimensions,
+} from "react-native";
+import { TutorialHighlight } from "@/components/onboarding/CoachMarkCard";
+import type { TimeTheme } from "@/lib/design/themes";
+import { getTextColor } from "@/lib/design/themes";
+
+export type PrayerName = "Fajr" | "Sunrise" | "Dhuhr" | "Asr" | "Maghrib" | "Isha";
+
+interface PrayerLetterPickerProps {
+  prayers: PrayerName[];
+  selectedPrayer: PrayerName;
+  onSelectPrayer: (prayer: PrayerName) => void;
+  theme: TimeTheme;
+  /** When set, wraps the button at this index in a pulsing tutorial highlight. */
+  highlightedPrayerIndex?: number;
+}
+
+const PRAYER_LETTERS: Record<PrayerName, string> = {
+  Fajr: "F",
+  Sunrise: "S",
+  Dhuhr: "D",
+  Asr: "A",
+  Maghrib: "M",
+  Isha: "I",
+};
+
+export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
+  prayers,
+  selectedPrayer,
+  onSelectPrayer,
+  theme,
+  highlightedPrayerIndex,
+}) => {
+  const scrollRef = useRef<ScrollView>(null);
+  const [screenW, setScreenW] = useState(
+    Dimensions.get("window").width
+  );
+  const textColor = getTextColor(theme);
+
+  useEffect(() => {
+    const sub = Dimensions.addEventListener("change", ({ window }) => {
+      setScreenW(window.width);
+    });
+    return () => sub?.remove();
+  }, []);
+
+  useEffect(() => {
+    const index = prayers.indexOf(selectedPrayer);
+    if (index >= 0 && scrollRef.current) {
+      const itemWidth = 28 + 14;
+      const offset = itemWidth * index - screenW / 2 + itemWidth / 2;
+      scrollRef.current.scrollTo({ x: Math.max(0, offset), animated: true });
+    }
+  }, [selectedPrayer, prayers, screenW]);
+
+  return (
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
+      <View style={[styles.row, { minWidth: screenW - 40 }]}>
+        {prayers.map((prayer, idx) => {
+          const isSelected = prayer === selectedPrayer;
+          const isHighlighted = highlightedPrayerIndex === idx;
+          const button = (
+            <Pressable
+              key={prayer}
+              onPress={() => onSelectPrayer(prayer)}
+              style={styles.button}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={prayer}
+            >
+              <Text
+                style={[
+                  styles.letter,
+                  {
+                    color: textColor + (isSelected ? "FF" : "61"),
+                    fontFamily: isSelected
+                      ? "Comfortaa_600SemiBold"
+                      : "Comfortaa_400Regular",
+                  },
+                ]}
+              >
+                {PRAYER_LETTERS[prayer]}
+              </Text>
+            </Pressable>
+          );
+
+          if (isHighlighted) {
+            return (
+              <TutorialHighlight key={prayer} isHighlighted size={44} color={textColor}>
+                {button}
+              </TutorialHighlight>
+            );
+          }
+          return button;
+        })}
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 14,
+  },
+  button: {
+    minWidth: 28,
+    minHeight: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  letter: {
+    fontSize: 20,
+  },
+});

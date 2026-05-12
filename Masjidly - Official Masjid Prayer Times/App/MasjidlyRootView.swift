@@ -1,15 +1,22 @@
 import SwiftUI
 
-/// Applies `\.locale` from `SettingsStore` so language changes take effect without relaunching.
+/// Applies English locale and LTR layout.
 struct MasjidlyRootView: View {
     let homeViewModel: HomeViewModel
-    @Environment(SettingsStore.self) private var settings
     @Environment(OnboardingFlowController.self) private var onboarding
 
     var body: some View {
         HomeView(model: homeViewModel)
-            .environment(\.locale, settings.resolvedLocale)
-            .environment(\.layoutDirection, settings.appLanguage.isResolvedRightToLeft ? .rightToLeft : .leftToRight)
+            .environment(\.locale, Locale(identifier: "en"))
+            .environment(\.layoutDirection, .leftToRight)
             .environment(onboarding)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                AdhanMiniPlayerBar(
+                    timeTheme: HomeDesign.TimeTheme.homeHeroTheme(
+                        displayedPrayerTimes: homeViewModel.displayedPrayerTimes,
+                        selectedPrayerIndex: homeViewModel.selectedPrayerIndex
+                    )
+                )
+            }
     }
 }

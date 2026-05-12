@@ -53,17 +53,9 @@ enum HomeDesign {
     }
 
     enum Typography {
-        /// Masjidly’s single voice: **Comfortaa** — Matches the 3D, tubular, continuous rounded aesthetic of the logo perfectly.
-        static func app(size: CGFloat, weight: Font.Weight = .regular) -> Font {
-            // Mapping weights to Comfortaa font files. Ensure Comfortaa is added to Info.plist.
-            let fontName: String
-            switch weight {
-            case .light, .thin, .ultraLight: fontName = "Comfortaa-Light"
-            case .medium, .semibold: fontName = "Comfortaa-Medium"
-            case .bold, .heavy, .black: fontName = "Comfortaa-Bold"
-            default: fontName = "Comfortaa-Regular"
-            }
-            return Font.custom(fontName, size: size)
+        /// Masjidly’s primary voice: **Gill Sans** — A timeless, premium sans-serif that balances modern minimalism with classic elegance.
+        static func app(size: CGFloat, weight: Font.Weight = .regular, name: String = "Gill Sans") -> Font {
+            Font.custom(name, size: size).weight(weight)
         }
 
         /// Hero clock, prayer name, and other display lines.
@@ -100,6 +92,16 @@ enum HomeDesign {
         static let warmGlow = Shadow(color: Colors.accent.opacity(0.3), radius: 20, x: 0, y: 10)
         static let softCard = Shadow(color: Color.black.opacity(0.04), radius: 15, x: 0, y: 8)
         static let intenseGlow = Shadow(color: Colors.accent.opacity(0.4), radius: 25, x: 0, y: 12)
+    }
+}
+
+extension HomeDesign.TimeTheme {
+    /// Sky / glass theme for the home prayer hero (matches `HomeView` carousel selection).
+    static func homeHeroTheme(displayedPrayerTimes: DailyPrayerTimes?, selectedPrayerIndex: Int) -> Self {
+        guard displayedPrayerTimes != nil else { return .fajr }
+        let prayers: [Self] = [.fajr, .sunrise, .dhuhr, .asr, .maghrib, .isha]
+        guard selectedPrayerIndex >= 0, selectedPrayerIndex < prayers.count else { return .fajr }
+        return prayers[selectedPrayerIndex]
     }
 }
 
@@ -154,5 +156,34 @@ extension Color {
             blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+}
+
+// MARK: - Dynamic Font Support
+
+struct AppFontNameKey: EnvironmentKey {
+    static let defaultValue: String = "Gill Sans"
+}
+
+extension EnvironmentValues {
+    var appFontName: String {
+        get { self[AppFontNameKey.self] }
+        set { self[AppFontNameKey.self] = newValue }
+    }
+}
+
+struct AppFontModifier: ViewModifier {
+    @Environment(\.appFontName) var fontName
+    let size: CGFloat
+    let weight: Font.Weight
+
+    func body(content: Content) -> some View {
+        content.font(HomeDesign.Typography.app(size: size, weight: weight, name: fontName))
+    }
+}
+
+extension View {
+    func appFont(size: CGFloat, weight: Font.Weight = .regular) -> some View {
+        modifier(AppFontModifier(size: size, weight: weight))
     }
 }

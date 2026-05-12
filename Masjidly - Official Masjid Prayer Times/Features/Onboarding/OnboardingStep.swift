@@ -3,9 +3,12 @@ import Foundation
 enum OnboardingStep: Equatable, Sendable {
     case chooseMosque
     case prayerShortcut(index: Int)
+    case qibla
     case openTimetable
+    case exploreTimetable
     case closeTimetable
     case openSettings
+    case exploreSettings
     case closeSettings
     case notifications
 }

@@ -257,7 +257,7 @@ struct PrayerSunPhaseIcon: View {
 
     /// Fajr — Night's end: A single small star with a very thin horizontal line underneath it.
     private static func drawFajr(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
-        let baseY = size.height * 0.62
+        let baseY = size.height * 0.61
         let lineHalf: CGFloat = 16
 
         // Very thin horizontal line
@@ -273,7 +273,7 @@ struct PrayerSunPhaseIcon: View {
 
     /// Sunrise — Rising sun: A semicircle emerging above a horizontal line, with three short upward rays above it.
     private static func drawSunrise(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
-        let baseY = size.height * 0.62
+        let baseY = size.height * 0.66
         let r: CGFloat = 14
         let lineHalf: CGFloat = 32
 
@@ -305,7 +305,7 @@ struct PrayerSunPhaseIcon: View {
 
     /// Dhuhr — Sunburst: A circle with short straight rays around it.
     private static func drawDhuhr(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
-        let cy = size.height * 0.48
+        let cy = size.height * 0.50
         let r: CGFloat = 12
 
         // Circle stroke
@@ -329,7 +329,7 @@ struct PrayerSunPhaseIcon: View {
 
     /// Asr — Shadow marker: A short vertical line with a long diagonal shadow extending from its base.
     private static func drawAsr(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
-        let cy = size.height * 0.48
+        let cy = size.height * 0.45
         let bodyH: CGFloat = 14
         let top = cy - bodyH * 0.5
         let bottom = cy + bodyH * 0.5
@@ -350,7 +350,7 @@ struct PrayerSunPhaseIcon: View {
 
     /// Maghrib — Sunset arrow: A semicircle touching a horizontal line, with a small downward arrow above it pointing toward the horizon.
     private static func drawMaghrib(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
-        let baseY = size.height * 0.52
+        let baseY = size.height * 0.65
         let r: CGFloat = 14
         let lineHalf: CGFloat = 32
 
@@ -382,7 +382,7 @@ struct PrayerSunPhaseIcon: View {
 
     /// Isha — Night star: Three small outlined stars: one larger four-point star with two smaller dots or tiny stars beside it.
     private static func drawIsha(context: GraphicsContext, cx: CGFloat, size: CGSize, color: Color, thin: StrokeStyle, medium: StrokeStyle) {
-        let cy = size.height * 0.48
+        let cy = size.height * 0.50
 
         // One larger four-point star
         let mainStar = fourPointStarPath(cx: cx - 4, cy: cy, size: 8)
@@ -403,6 +403,11 @@ struct MinimalistPrayerPage: View {
     /// Iqamah line below adhan (e.g. `Iqamah: 9:00pm`; repeats adhan time when iqamah is at adhan).
     let iqamahTime: String?
     let theme: HomeDesign.TimeTheme
+    /// When false (user deferred location in onboarding), show only the sun-phase icon without rings or pointer.
+    var showQiblaCompass: Bool = true
+    /// Device-relative rotation toward Qibla; nil until coordinates are known.
+    var qiblaRotationDegrees: Double? = nil
+    var qiblaOnboardingHighlighted: Bool = false
     /// Full prayer names (same order as shortcuts); used for accessibility.
     let prayerLabels: [String]
     let selectedIndex: Int
@@ -418,8 +423,15 @@ struct MinimalistPrayerPage: View {
             Spacer()
                 .frame(height: 140)
 
-            PrayerSunPhaseIcon(theme: theme)
-                .padding(.bottom, 60)
+            Group {
+                if showQiblaCompass {
+                    QiblaPrayerIcon(theme: theme, rotationDegrees: qiblaRotationDegrees, size: 120)
+                } else {
+                    PrayerSunPhaseIcon(theme: theme)
+                }
+            }
+            .onboardingHighlight(qiblaOnboardingHighlighted, timeTheme: theme)
+            .padding(.bottom, 60)
 
             VStack(spacing: 6) {
                 Text(prayerTime)

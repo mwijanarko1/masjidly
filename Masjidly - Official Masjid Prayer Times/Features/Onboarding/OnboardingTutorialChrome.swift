@@ -76,7 +76,7 @@ enum OnboardingTutorialChrome {
 extension View {
     /// Masjidly primary onboarding action — soft capsule, brand gradient (not system bordered pill).
     func onboardingPrimaryCapsule() -> some View {
-        self.font(HomeDesign.Typography.app(size: 16, weight: .semibold))
+        self.appFont(size: 16, weight: .semibold)
             .foregroundStyle(Color.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)

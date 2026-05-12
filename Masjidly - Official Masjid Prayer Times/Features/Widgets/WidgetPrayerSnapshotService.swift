@@ -82,7 +82,7 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
             mosque: WidgetMosqueSnapshot(id: mosque.id, name: mosque.name, slug: mosque.slug),
             days: daySnapshots,
             uses24HourTime: settings.uses24HourTime,
-            appLanguageRawValue: settings.appLanguage.rawValue
+            appLanguageRawValue: AppLanguage.english.rawValue
         )
     }
 

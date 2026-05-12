@@ -72,14 +72,30 @@ final class OnboardingFlowController {
     func handlePrayerShortcutTap(index: Int) {
         guard case .prayerShortcut(let expectedIndex) = currentStep, expectedIndex == index else { return }
         if expectedIndex >= 5 {
-            currentStep = .openTimetable
+            currentStep = .qibla
         } else {
             currentStep = .prayerShortcut(index: expectedIndex + 1)
         }
     }
 
+    func completeQiblaOnboardingAllowingLocationRequest() {
+        guard currentStep == .qibla else { return }
+        currentStep = .openTimetable
+    }
+
+    func completeQiblaOnboardingDeferringLocation() {
+        guard currentStep == .qibla else { return }
+        settings.hideQiblaCompass = true
+        currentStep = .openTimetable
+    }
+
     func handleTimetableOpened() {
         guard currentStep == .openTimetable else { return }
+        currentStep = .exploreTimetable
+    }
+
+    func acknowledgeTimetableExplore() {
+        guard currentStep == .exploreTimetable else { return }
         currentStep = .closeTimetable
     }
 
@@ -90,6 +106,11 @@ final class OnboardingFlowController {
 
     func handleSettingsOpened() {
         guard currentStep == .openSettings else { return }
+        currentStep = .exploreSettings
+    }
+
+    func acknowledgeSettingsExplore() {
+        guard currentStep == .exploreSettings else { return }
         currentStep = .closeSettings
     }
 
@@ -132,3 +153,23 @@ final class OnboardingFlowController {
         currentStep = nil
     }
 }
+
+#if DEBUG
+extension OnboardingFlowController {
+    /// Resets onboarding state so the full tutorial overlay can be exercised again from the home screen.
+    func restartTutorialFromDeveloperTools() {
+        settings.hasCompletedOnboarding = false
+        settings.hideQiblaCompass = false
+        if selectedMosqueId.isEmpty {
+            selectedMosqueId = settings.selectedMosqueId ?? homeViewModel.mosques.first?.id ?? settingsViewModel.mosques.first?.id ?? ""
+        }
+        notificationDraft = OnboardingNotificationDraft(
+            adhanEnabled: settings.notifications.adhanEnabled,
+            iqamahEnabled: settings.notifications.iqamahEnabled,
+            preAdhanReminderMinutes: settings.notifications.preAdhanReminderMinutes,
+            preIqamahReminderMinutes: settings.notifications.preIqamahReminderMinutes
+        )
+        currentStep = .chooseMosque
+    }
+}
+#endif

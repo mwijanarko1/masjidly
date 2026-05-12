@@ -1,5 +1,7 @@
 import Observation
 import SwiftUI
+import CoreLocation
+import UIKit
 
 private func LS(_ key: String, locale: Locale) -> String {
     String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
@@ -11,132 +13,187 @@ struct SettingsView: View {
     var onDismiss: (() -> Void)? = nil
     @Environment(SettingsStore.self) private var settings
     @Environment(OnboardingFlowController.self) private var onboarding
+    @Environment(AppReviewPromptCoordinator.self) private var reviewPrompt
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
+    @State private var locationAuthStatus: CLAuthorizationStatus = {
+        let manager = CLLocationManager()
+        return manager.authorizationStatus
+    }()
 
-    /// QuranScroll-style blending: same visual treatment as the screen behind each row — here the
-    /// prayer gradient shows through instead of painting lighter “cards” on top.
-    private var listRowBlend: Color { Color.clear }
-
-    /// Shared horizontal inset so every row lines up on the same vertical rails.
-    private var settingsRowInsets: EdgeInsets {
-        EdgeInsets(top: 12, leading: 22, bottom: 12, trailing: 22)
+    private var shouldShowLocationRecovery: Bool {
+        settings.hideQiblaCompass || locationAuthStatus == .denied || locationAuthStatus == .restricted
     }
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 24) {
+                settingsTitleHeaderRow
+
+                settingsSectionBlock(titleKey: "settings.section.mosque.title") {
                     mosquePickerRow
-                } header: {
-                    mosqueSectionHeader
+                        .padding(.vertical, 12)
                 }
-                .listRowInsets(settingsRowInsets)
-                .listRowBackground(listRowBlend)
 
-                Section {
-                    languagePickerRow
-                } header: {
-                    sectionCaption(localized("settings.language.title"))
-                }
-                .listRowInsets(settingsRowInsets)
-                .listRowBackground(listRowBlend)
-
-                Section {
+                settingsSectionBlock(titleKey: "settings.section.display.title") {
                     SettingsToggleRow(
                         title: localized("settings.time.24h.title"),
                         isOn: Bindable(settings).uses24HourTime,
                         timeTheme: timeTheme
                     )
-                } header: {
-                    sectionCaption(localized("settings.section.display.title"))
+                    .padding(.vertical, 12)
                 }
-                .listRowInsets(settingsRowInsets)
-                .listRowBackground(listRowBlend)
 
-                Section {
+                settingsSectionBlock(titleKey: "settings.section.qibla.title") {
                     SettingsToggleRow(
-                        title: localized("settings.notifications.master.title"),
-                        isOn: masterNotificationsBinding,
+                        title: localized("settings.qibla.enabled.title"),
+                        isOn: qiblaEnabledBinding,
                         timeTheme: timeTheme
                     )
-
-                    if settings.notifications.masterEnabled {
-                        NotificationToggleRow(title: "Adhan", isOn: notificationChannelBinding(\.adhanEnabled), timeTheme: timeTheme)
-                        NotificationToggleRow(title: "Iqamah", isOn: notificationChannelBinding(\.iqamahEnabled), timeTheme: timeTheme)
-                        adhanReminderPickerRow
-                        iqamahReminderPickerRow
-                        NotificationToggleRow(title: localized("settings.notification.fajr"), isOn: binding(\.fajr), timeTheme: timeTheme)
-                        NotificationToggleRow(title: localized("settings.notification.dhuhr_jummah"), isOn: binding(\.dhuhrJummah), timeTheme: timeTheme)
-                        NotificationToggleRow(title: localized("settings.notification.asr"), isOn: binding(\.asr), timeTheme: timeTheme)
-                        NotificationToggleRow(title: localized("settings.notification.maghrib"), isOn: binding(\.maghrib), timeTheme: timeTheme)
-                        NotificationToggleRow(title: localized("settings.notification.isha"), isOn: binding(\.isha), timeTheme: timeTheme)
-                    }
-                } header: {
-                    sectionCaption(localized("settings.notifications.title"))
+                    .padding(.vertical, 12)
                 }
-                .listRowInsets(settingsRowInsets)
-                .listRowBackground(listRowBlend)
+
+                if shouldShowLocationRecovery {
+                    settingsSectionBlock(titleKey: "settings.section.location.title") {
+                        locationRecoveryRow
+                            .padding(.vertical, 12)
+                    }
+                }
+
+                settingsSectionBlock(titleKey: "settings.notifications.title") {
+                    VStack(spacing: 0) {
+                        SettingsToggleRow(
+                            title: localized("settings.notifications.master.title"),
+                            isOn: masterNotificationsBinding,
+                            timeTheme: timeTheme
+                        )
+                        .padding(.vertical, 12)
+
+                        if settings.notifications.masterEnabled {
+                            settingsRowDivider
+                            NotificationToggleRow(title: localized("notification.channel.adhan"), isOn: notificationChannelBinding(\.adhanEnabled), timeTheme: timeTheme)
+                                .padding(.vertical, 12)
+                            settingsRowDivider
+                            NotificationToggleRow(title: localized("notification.channel.iqamah"), isOn: notificationChannelBinding(\.iqamahEnabled), timeTheme: timeTheme)
+                                .padding(.vertical, 12)
+                            settingsRowDivider
+                            adhanReminderPickerRow
+                                .padding(.vertical, 12)
+                            settingsRowDivider
+                            iqamahReminderPickerRow
+                                .padding(.vertical, 12)
+                        }
+                    }
+                }
+
+                settingsSectionBlock(titleKey: "settings.section.contact.title") {
+                    VStack(spacing: 10) {
+                        contactActionButton(
+                            title: localized("settings.contact.feedback.title")
+                        ) {
+                            openSupportEmail(.feedback)
+                        }
+                        contactActionButton(
+                            title: localized("settings.contact.prayer_times.title")
+                        ) {
+                            openSupportEmail(.prayerTimes)
+                        }
+                    }
+                }
 
                 #if DEBUG
-                Section {
-                    Button {
-                        print("[Settings] Test tutorial tapped (dev)")
-                    } label: {
-                        Text("Test tutorial")
-                            .font(HomeDesign.Typography.app(size: 17, weight: .regular))
-                            .foregroundColor(timeTheme.textColor)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                settingsSectionBlock(titleKey: "settings.section.development.title") {
+                    VStack(spacing: 10) {
+                        Button {
+                            onboarding.restartTutorialFromDeveloperTools()
+                            onDismiss?()
+                            dismiss()
+                        } label: {
+                            developmentChrome {
+                                Text(localized("settings.development.test_tutorial"))
+                                    .appFont(size: 17, weight: .medium)
+                                    .foregroundColor(timeTheme.textColor)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        .buttonStyle(.plain)
+
+                        ForEach(TestNotificationType.allCases, id: \.rawValue) { testType in
+                            Button {
+                                Task { await model.fireTestNotification(testType) }
+                            } label: {
+                                developmentChrome {
+                                    HStack(alignment: .center, spacing: 12) {
+                                        Text("Test \(testType.rawValue)")
+                                            .appFont(size: 17, weight: .medium)
+                                            .foregroundColor(timeTheme.textColor)
+                                        Spacer(minLength: 8)
+                                        Text(testDescription(testType))
+                                            .appFont(size: 13, weight: .regular)
+                                            .foregroundColor(timeTheme.textColor.opacity(0.55))
+                                            .multilineTextAlignment(.trailing)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Button {
+                            reviewPrompt.resetAndPresentEnjoymentPromptForTesting()
+                            onDismiss?()
+                            dismiss()
+                        } label: {
+                            developmentChrome {
+                                Text(localized("settings.development.test_review_prompt"))
+                                    .appFont(size: 17, weight: .medium)
+                                    .foregroundColor(timeTheme.textColor)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
-                    .listRowInsets(settingsRowInsets)
-                    .listRowBackground(listRowBlend)
-                } header: {
-                    sectionCaption("Development")
                 }
                 #endif
             }
-            // Plain style avoids the default inset-grouped gray capsules on top of our gradient.
-            .listStyle(.plain)
-            .listSectionSpacing(20)
-            .listRowSeparatorTint(timeTheme.textColor.opacity(0.18))
-            .scrollContentBackground(.hidden)
-            .background(settingsBackground)
-            .navigationTitle(localized("settings.navigation.title"))
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbarColorScheme(timeTheme.usesLightForeground ? .dark : .light, for: .navigationBar)
-            .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        onDismiss?()
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(timeTheme.textColor)
-                            .padding(8)
-                            .background(Circle().fill(timeTheme.textColor.opacity(0.1)))
-                    }
-                    .onboardingHighlight(onboarding.currentStep == .closeSettings, timeTheme: timeTheme)
-                    .accessibilityIdentifier("Onboarding.SettingsClose")
-                }
-            }
+            .padding(.horizontal, 22)
+            .padding(.bottom, 32)
         }
+        .scrollContentBackground(.hidden)
+        .background(settingsBackground)
+        .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
         .accessibilityIdentifier("tabSettings")
         .task {
             await model.load()
         }
+        .onAppear {
+            locationAuthStatus = CLLocationManager().authorizationStatus
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            locationAuthStatus = CLLocationManager().authorizationStatus
+        }
         .overlay {
-            if onboarding.currentStep == .closeSettings {
-                OnboardingCoachMarkView(
-                    title: "Close Settings",
-                    message: "Tap the close button to finish setup.",
-                    timeTheme: timeTheme,
-                    variant: .belowTopChrome
-                )
-                .allowsHitTesting(false)
+            Group {
+                if onboarding.currentStep == .exploreSettings {
+                    OnboardingCoachMarkView(
+                        title: localized("onboarding.explore_settings.title"),
+                        message: localized("onboarding.explore_settings.message"),
+                        timeTheme: timeTheme,
+                        variant: .floatingBottom,
+                        primaryButtonTitle: localized("onboarding.continue"),
+                        onPrimaryButton: { onboarding.acknowledgeSettingsExplore() },
+                        primaryButtonAccessibilityIdentifier: "Onboarding.SettingsExploreContinue"
+                    )
+                } else if onboarding.currentStep == .closeSettings {
+                    OnboardingCoachMarkView(
+                        title: localized("onboarding.close_settings.title"),
+                        message: localized("onboarding.close_settings.message"),
+                        timeTheme: timeTheme,
+                        variant: .belowTopChrome
+                    )
+                    .allowsHitTesting(false)
+                }
             }
         }
     }
@@ -145,42 +202,166 @@ struct SettingsView: View {
         LS(key, locale: locale)
     }
 
-    private var mosqueSectionHeader: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(localized("settings.section.mosque.title"))
-                .font(HomeDesign.Typography.app(size: 13, weight: .semibold))
-                .foregroundColor(timeTheme.textColor.opacity(0.52))
-                .textCase(.uppercase)
-                .tracking(0.4)
+    private var settingsTitleHeaderRow: some View {
+        HStack(alignment: .center, spacing: 16) {
+            Text(localized("settings.navigation.title"))
+                .appFont(size: 34, weight: .bold)
+                .foregroundColor(timeTheme.textColor)
                 .multilineTextAlignment(.leading)
-            Text(localized("settings.section.mosque.subtitle"))
-                .font(HomeDesign.Typography.app(size: 14, weight: .regular))
-                .foregroundColor(timeTheme.textColor.opacity(0.62))
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            Button {
+                onDismiss?()
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .appFont(size: 16, weight: .bold)
+                    .foregroundColor(timeTheme.textColor)
+                    .padding(8)
+                    .background(Circle().fill(timeTheme.textColor.opacity(0.1)))
+            }
+            .buttonStyle(.plain)
+            .onboardingHighlight(onboarding.currentStep == .closeSettings, timeTheme: timeTheme)
+            .accessibilityIdentifier("Onboarding.SettingsClose")
+        }
+        .padding(.bottom, 4)
+    }
+
+    private func settingsSectionBlock(titleKey: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionCaption(localized(titleKey))
+            content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 8)
-        .padding(.bottom, 4)
-        .textCase(nil)
+    }
+
+    private var settingsRowDivider: some View {
+        Rectangle()
+            .fill(timeTheme.textColor.opacity(0.18))
+            .frame(height: 0.5)
     }
 
     private func sectionCaption(_ title: String) -> some View {
         Text(title)
-            .font(HomeDesign.Typography.app(size: 13, weight: .semibold))
+            .appFont(size: 13, weight: .semibold)
             .foregroundColor(timeTheme.textColor.opacity(0.52))
             .textCase(.uppercase)
             .tracking(0.4)
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 8)
             .padding(.bottom, 4)
     }
+
+    @ViewBuilder
+    private var locationRecoveryRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(localized("settings.location.recovery.message"))
+                .appFont(size: 15, weight: .regular)
+                .foregroundColor(timeTheme.textColor.opacity(0.8))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                if locationAuthStatus == .notDetermined {
+                    let manager = CLLocationManager()
+                    manager.requestWhenInUseAuthorization()
+                    locationAuthStatus = .notDetermined
+                } else {
+                    UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
+                }
+            } label: {
+                Text(locationButtonLabel)
+                    .appFont(size: 16, weight: .semibold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(timeTheme.textColor.opacity(0.25))
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("Settings.LocationRecoveryAction")
+        }
+    }
+
+    private var locationButtonLabel: String {
+        switch locationAuthStatus {
+        case .notDetermined:
+            localized("settings.location.allow")
+        default:
+            localized("settings.location.open_settings")
+        }
+    }
+
+    private var qiblaEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { !settings.hideQiblaCompass },
+            set: { isEnabled in
+                settings.hideQiblaCompass = !isEnabled
+                if isEnabled, locationAuthStatus == .notDetermined {
+                    CLLocationManager().requestWhenInUseAuthorization()
+                    locationAuthStatus = CLLocationManager().authorizationStatus
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func insetListRowChrome<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(timeTheme.textColor.opacity(0.14))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(timeTheme.textColor.opacity(0.22), lineWidth: 1)
+            )
+    }
+
+    private func contactActionButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            insetListRowChrome {
+                Text(title)
+                    .appFont(size: 17, weight: .medium)
+                    .foregroundColor(timeTheme.textColor)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func openSupportEmail(_ category: MasjidlySupportMail.Category) {
+        let mosqueName: String? = {
+            guard let id = settings.selectedMosqueId else { return nil }
+            return model.mosques.first { $0.id == id }?.name
+        }()
+        let ctx = MasjidlySupportMail.currentContext(mosqueName: mosqueName)
+        guard let url = MasjidlySupportMail.mailtoURL(category: category, locale: locale, context: ctx) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    #if DEBUG
+    @ViewBuilder
+    private func developmentChrome<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        insetListRowChrome(content: content)
+    }
+
+    private func testDescription(_ type: TestNotificationType) -> String {
+        switch type {
+        case .adhan, .iqamah, .reminder: return "Instant"
+        case .all: return "3× instant"
+        }
+    }
+    #endif
 
     private var mosquePickerRow: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(localized("settings.mosque.picker"))
-                .font(HomeDesign.Typography.app(size: 17, weight: .regular))
+                .appFont(size: 17, weight: .regular)
                 .foregroundColor(timeTheme.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(1)
@@ -191,32 +372,9 @@ struct SettingsView: View {
 
             Picker("", selection: mosqueSelectionBinding) {
                 ForEach(model.mosques) { m in
-                    Text(m.name).tag(m.id)
-                }
-            }
-            .pickerStyle(.menu)
-            .tint(timeTheme.textColor)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .frame(minHeight: 44)
-    }
-
-    private var languagePickerRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(localized("settings.language.picker"))
-                .font(HomeDesign.Typography.app(size: 17, weight: .regular))
-                .foregroundColor(timeTheme.textColor)
-                .multilineTextAlignment(.leading)
-                .lineLimit(1)
-                .layoutPriority(1)
-                .fixedSize(horizontal: true, vertical: false)
-
-            Spacer(minLength: 12)
-
-            Picker("", selection: Bindable(settings).appLanguage) {
-                ForEach(AppLanguage.allCases, id: \.self) { lang in
-                    Text(LS(lang.catalogOptionKey, locale: locale))
-                        .tag(lang)
+                    Text(m.name)
+                        .appFont(size: 17)
+                        .tag(m.id)
                 }
             }
             .pickerStyle(.menu)
@@ -228,17 +386,17 @@ struct SettingsView: View {
 
     private var adhanReminderPickerRow: some View {
         HStack(alignment: .center, spacing: 16) {
-            Text("Adhan reminder")
-                .font(HomeDesign.Typography.app(size: 17, weight: .regular))
+            Text(localized("settings.reminder.before_adhan"))
+                .appFont(size: 17, weight: .regular)
                 .foregroundColor(timeTheme.textColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Picker("", selection: adhanReminderMinutesBinding) {
-                Text("None").tag(nil as Int?)
-                Text("5 min").tag(5 as Int?)
-                Text("10 min").tag(10 as Int?)
-                Text("15 min").tag(15 as Int?)
-                Text("30 min").tag(30 as Int?)
+                reminderOptionText(nil).tag(nil as Int?)
+                reminderOptionText(5).tag(5 as Int?)
+                reminderOptionText(10).tag(10 as Int?)
+                reminderOptionText(15).tag(15 as Int?)
+                reminderOptionText(30).tag(30 as Int?)
             }
             .pickerStyle(.menu)
             .tint(timeTheme.textColor)
@@ -249,17 +407,17 @@ struct SettingsView: View {
 
     private var iqamahReminderPickerRow: some View {
         HStack(alignment: .center, spacing: 16) {
-            Text("Iqamah reminder")
-                .font(HomeDesign.Typography.app(size: 17, weight: .regular))
+            Text(localized("settings.reminder.before_iqamah"))
+                .appFont(size: 17, weight: .regular)
                 .foregroundColor(timeTheme.textColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Picker("", selection: iqamahReminderMinutesBinding) {
-                Text("None").tag(nil as Int?)
-                Text("5 min").tag(5 as Int?)
-                Text("10 min").tag(10 as Int?)
-                Text("15 min").tag(15 as Int?)
-                Text("30 min").tag(30 as Int?)
+                reminderOptionText(nil).tag(nil as Int?)
+                reminderOptionText(5).tag(5 as Int?)
+                reminderOptionText(10).tag(10 as Int?)
+                reminderOptionText(15).tag(15 as Int?)
+                reminderOptionText(30).tag(30 as Int?)
             }
             .pickerStyle(.menu)
             .tint(timeTheme.textColor)
@@ -281,6 +439,17 @@ struct SettingsView: View {
                 Task { await model.selectMosque(m) }
             }
         )
+    }
+
+    private func reminderOptionText(_ minutes: Int?) -> some View {
+        let label: String
+        if let minutes {
+            let format = localized("settings.reminder.minutes_format")
+            label = String(format: format, locale: locale, arguments: [minutes])
+        } else {
+            label = localized("settings.reminder.none")
+        }
+        return Text(label).appFont(size: 17)
     }
 
     private var settingsBackground: some View {
@@ -359,17 +528,6 @@ struct SettingsView: View {
         )
     }
 
-    private func binding(_ keyPath: WritableKeyPath<NotificationSettings, Bool>) -> Binding<Bool> {
-        Binding(
-            get: { settings.notifications[keyPath: keyPath] },
-            set: { newValue in
-                var n = settings.notifications
-                n[keyPath: keyPath] = newValue
-                settings.notifications = n
-                Task { await model.onNotificationsChanged() }
-            }
-        )
-    }
 }
 
 private struct SettingsToggleRow: View {
@@ -380,7 +538,7 @@ private struct SettingsToggleRow: View {
     var body: some View {
         Toggle(isOn: $isOn) {
             Text(title)
-                .font(HomeDesign.Typography.app(size: 17, weight: .regular))
+                .appFont(size: 17, weight: .regular)
                 .foregroundColor(timeTheme.textColor)
                 .multilineTextAlignment(.leading)
         }
@@ -397,7 +555,7 @@ private struct NotificationToggleRow: View {
     var body: some View {
         Toggle(isOn: $isOn) {
             Text(title)
-                .font(HomeDesign.Typography.app(size: 17, weight: .regular))
+                .appFont(size: 17, weight: .regular)
                 .foregroundColor(timeTheme.textColor)
                 .multilineTextAlignment(.leading)
         }
@@ -410,15 +568,18 @@ private struct NotificationToggleRow: View {
     let settings = SettingsStore()
     let repo = ConvexPrayerRepository(service: ConvexService())
     let scheduler = PrayerNotificationScheduler(repository: repo)
-    let model = SettingsViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
-    let homeVM = HomeViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
+    let cache = PrayerTimesDiskCache()
+    let model = SettingsViewModel(repository: repo, settings: settings, notificationScheduler: scheduler, diskCache: cache)
+    let homeVM = HomeViewModel(repository: repo, settings: settings, notificationScheduler: scheduler, diskCache: cache)
     let onboarding = OnboardingFlowController(
         settings: settings,
         homeViewModel: homeVM,
         settingsViewModel: model,
         notificationScheduler: scheduler
     )
+    let review = AppReviewPromptCoordinator(settings: settings)
     return SettingsView(model: model, timeTheme: .dhuhr)
         .environment(settings)
         .environment(onboarding)
+        .environment(review)
 }

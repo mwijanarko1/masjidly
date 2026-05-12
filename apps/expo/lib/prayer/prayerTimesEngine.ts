@@ -33,6 +33,33 @@ export function sheffieldNoonUTC(year: number, month: number, day: number): Date
   return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
 
+/** Weekday for a civil calendar day in Europe/London (matches iOS TimetableView `isFriday`). */
+export function isFridaySheffieldCalendar(
+  year: number,
+  month: number,
+  dayOfMonth: number
+): boolean {
+  const anchor = new Date(Date.UTC(year, month - 1, dayOfMonth, 12, 0, 0));
+  const wd = new Intl.DateTimeFormat("en-GB", {
+    timeZone: SHEFFIELD_TIME_ZONE,
+    weekday: "short",
+  }).format(anchor);
+  return wd.toLowerCase().startsWith("f");
+}
+
+/** Current time as `HH:mm` in Europe/London for comparing with timetable adhān strings. */
+export function formatSystemHHMMSheffield(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: SHEFFIELD_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const h = parts.find((p) => p.type === "hour")?.value ?? "00";
+  const m = parts.find((p) => p.type === "minute")?.value ?? "00";
+  return `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
+}
+
 export function isoDateString(year: number, month: number, day: number): string {
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
@@ -771,6 +798,82 @@ function isParseableTime(t: string): boolean {
   if (t === "" || t === "-" || t === "\u2014" || t === "--:--") return false;
   if (/after maghrib|entry time|straight after/i.test(t)) return false;
   return /^\d{1,2}:\d{2}$/.test(t.trim());
+}
+
+/** Localized clock for `HH:mm` data (digits, separators, AM/PM). */
+export function formatPrayerClockForDisplay(
+  timeString: string,
+  uses24h: boolean,
+  locale: string
+): string {
+  if (!isParseableTime(timeString)) return timeString;
+  const m = /^(\d{1,2}):(\d{2})$/.exec(timeString.trim());
+  if (!m) return timeString;
+  const hour = parseInt(m[1], 10);
+  const minute = parseInt(m[2], 10);
+  const d = new Date(2000, 5, 15, hour, minute, 0, 0);
+  const opts: Intl.DateTimeFormatOptions = {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: !uses24h,
+  };
+  if (locale.startsWith("ar")) {
+    (opts as { numberingSystem?: string }).numberingSystem = "arab";
+  }
+  return new Intl.DateTimeFormat(locale, opts).format(d);
+}
+
+/**
+ * Splits a prayer time into hero clock and optional meridiem.
+ * For 12-hour locales this returns ("h:mm", "AM/PM") so the meridiem can be
+ * rendered tightly beside the clock. For 24-hour or unparseable times the
+ * meridiem is null.
+ */
+export function formatPrayerTimeHeroParts(
+  timeString: string,
+  uses24h: boolean,
+  locale: string
+): { clock: string; meridiem: string | null } {
+  if (!isParseableTime(timeString)) {
+    return { clock: timeString, meridiem: null };
+  }
+  const m = /^(\d{1,2}):(\d{2})$/.exec(timeString.trim());
+  if (!m) {
+    return { clock: timeString, meridiem: null };
+  }
+  const hour = parseInt(m[1], 10);
+  const minute = parseInt(m[2], 10);
+  const d = new Date(2000, 5, 15, hour, minute, 0, 0);
+
+  if (uses24h) {
+    const opts: Intl.DateTimeFormatOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    };
+    if (locale.startsWith("ar")) {
+      (opts as { numberingSystem?: string }).numberingSystem = "arab";
+    }
+    const clock = new Intl.DateTimeFormat(locale, opts).format(d);
+    return { clock, meridiem: null };
+  }
+
+  const parts = new Intl.DateTimeFormat(locale, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(d);
+
+  const clock = parts
+    .filter((p) => p.type !== "dayPeriod")
+    .map((p) => p.value)
+    .join("")
+    .trim();
+
+  const meridiemPart = parts.find((p) => p.type === "dayPeriod");
+  const meridiem = meridiemPart ? meridiemPart.value : null;
+
+  return { clock, meridiem };
 }
 
 export function formatTo12Hour(timeString: string): string {

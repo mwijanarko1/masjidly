@@ -162,15 +162,16 @@ struct MasjidlyPrayerWidgetView: View {
             ZStack {
                 AccessoryWidgetBackground()
                 Image(systemName: "exclamationmark")
-                    .font(.headline.weight(.semibold))
+                    .widgetFont(.headline)
+                    .fontWeight(.semibold)
             }
         case .accessoryRectangular:
             VStack(alignment: .leading, spacing: 2) {
                 Text("Masjidly")
-                    .font(.headline)
+                    .widgetFont(.headline)
                     .lineLimit(1)
                 Text("Open app to update")
-                    .font(.caption)
+                    .widgetFont(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -182,14 +183,14 @@ struct MasjidlyPrayerWidgetView: View {
     private var errorView: some View {
         VStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.title3)
+                .widgetFont(.title3)
                 .foregroundStyle(.white)
             Text("Prayer times unavailable")
-                .font(.caption.weight(.medium))
+                .widgetFont(size: 12, weight: .medium)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
             Text("Open app to update")
-                .font(.caption2)
+                .widgetFont(.caption2)
                 .foregroundStyle(.white.opacity(0.6))
         }
         .padding()
@@ -249,10 +250,10 @@ struct MasjidlyPrayerWidgetView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: entry.state.iconName)
-                    .font(.subheadline)
+                    .widgetFont(.subheadline)
                     .foregroundStyle(theme.textColor.opacity(0.8))
                 Text(entry.state.prayerName)
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .widgetFont(size: 14, weight: .medium)
                     .foregroundStyle(theme.textColor.opacity(0.8))
                     .lineLimit(1)
             }
@@ -260,14 +261,14 @@ struct MasjidlyPrayerWidgetView: View {
             Spacer(minLength: 0)
 
             Text(entry.state.adhanTime)
-                .font(.system(size: 36, weight: .light, design: .rounded))
+                .widgetFont(size: 36, weight: .light)
                 .foregroundStyle(theme.textColor)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.55)
 
             Text("Iqamah \(entry.state.iqamahTime)")
-                .font(.system(size: 12, weight: .regular, design: .rounded))
+                .widgetFont(size: 12, weight: .regular)
                 .foregroundStyle(theme.textColor.opacity(0.6))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -284,7 +285,7 @@ struct MasjidlyPrayerWidgetView: View {
     private func mediumView(theme: MasjidlyWidgetTheme.TimeTheme) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(currentDateMediumString.uppercased())
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .widgetFont(size: 10, weight: .semibold)
                 .kerning(1.0)
                 .foregroundStyle(theme.textColor.opacity(0.5))
             
@@ -293,7 +294,7 @@ struct MasjidlyPrayerWidgetView: View {
                 Text("Adhan").frame(maxWidth: .infinity, alignment: .center)
                 Text("Iqamah").frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .font(.system(size: 9, weight: .bold, design: .rounded))
+            .widgetFont(size: 9, weight: .bold)
             .foregroundStyle(theme.textColor.opacity(0.4))
             .textCase(.uppercase)
             
@@ -301,19 +302,21 @@ struct MasjidlyPrayerWidgetView: View {
                 ForEach(entry.state.rows.prefix(6)) { row in
                     HStack {
                         Text(row.name)
-                            .font(.system(size: 13, weight: row.isNext ? .bold : .regular, design: .rounded))
+                            .widgetFont(size: 13, weight: row.isNext ? .bold : .regular)
                             .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.35) : theme.textColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Text(row.adhan)
-                            .font(.system(size: 13, weight: row.isNext ? .bold : .semibold, design: .rounded).monospacedDigit())
+                            .widgetFont(size: 13, weight: row.isNext ? .bold : .semibold)
+                            .monospacedDigit()
                             .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.35) : theme.textColor)
                             .frame(maxWidth: .infinity, alignment: .center)
                         
                         HStack {
                             Spacer()
                             Text(row.iqamahs.first ?? "")
-                                .font(.system(size: 12, weight: .regular, design: .rounded).monospacedDigit())
+                                .widgetFont(size: 12, weight: .regular)
+                                .monospacedDigit()
                                 .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.2) : theme.textColor.opacity(0.6))
                         }
                         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -333,7 +336,7 @@ struct MasjidlyPrayerWidgetView: View {
     private func largeView(theme: MasjidlyWidgetTheme.TimeTheme) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(fullDateString.uppercased())
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .widgetFont(size: 11, weight: .semibold)
                 .kerning(1.0)
                 .foregroundStyle(theme.textColor.opacity(0.5))
             
@@ -343,19 +346,20 @@ struct MasjidlyPrayerWidgetView: View {
                     Image(systemName: entry.state.iconName)
                     Text(entry.state.prayerName)
                 }
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .widgetFont(size: 16, weight: .medium)
                 .foregroundStyle(theme.textColor.opacity(0.8))
                 
                 HStack(alignment: .lastTextBaseline) {
                     Text(entry.state.adhanTime)
-                        .font(.system(size: 44, weight: .light, design: .rounded))
+                        .widgetFont(size: 44, weight: .light)
                         .foregroundStyle(theme.textColor)
                         .monospacedDigit()
                     
                     Spacer()
                     
                     Text("Iqamah \(entry.state.iqamahTime)")
-                        .font(.system(size: 14, weight: .regular, design: .rounded).monospacedDigit())
+                        .widgetFont(size: 14, weight: .regular)
+                        .monospacedDigit()
                         .foregroundStyle(theme.textColor.opacity(0.6))
                 }
             }
@@ -370,7 +374,7 @@ struct MasjidlyPrayerWidgetView: View {
                 Text("Adhan").frame(maxWidth: .infinity, alignment: .center)
                 Text("Iqamah").frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .font(.system(size: 9, weight: .bold, design: .rounded))
+            .widgetFont(size: 9, weight: .bold)
             .foregroundStyle(theme.textColor.opacity(0.4))
             .textCase(.uppercase)
             
@@ -379,19 +383,21 @@ struct MasjidlyPrayerWidgetView: View {
                 ForEach(entry.state.rows) { row in
                     HStack(alignment: .top) {
                         Text(row.name)
-                            .font(.system(size: 15, weight: row.isNext ? .bold : .regular, design: .rounded))
+                            .widgetFont(size: 15, weight: row.isNext ? .bold : .regular)
                             .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.35) : theme.textColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Text(row.adhan)
-                            .font(.system(size: 15, weight: row.isNext ? .bold : .semibold, design: .rounded).monospacedDigit())
+                            .widgetFont(size: 15, weight: row.isNext ? .bold : .semibold)
+                            .monospacedDigit()
                             .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.35) : theme.textColor)
                             .frame(maxWidth: .infinity, alignment: .center)
                         
                         VStack(alignment: .trailing, spacing: 2) {
                             ForEach(row.iqamahs, id: \.self) { iq in
                                 Text(iq)
-                                    .font(.system(size: 14, weight: .regular, design: .rounded).monospacedDigit())
+                                    .widgetFont(size: 14, weight: .regular)
+                                    .monospacedDigit()
                                     .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.2) : theme.textColor.opacity(0.6))
                             }
                         }
@@ -424,26 +430,26 @@ struct MasjidlyPrayerWidgetView: View {
                 .padding(1)
             VStack(spacing: 0) {
                 Image(systemName: s.iconName)
-                    .font(.system(size: 11, weight: .semibold))
+                    .widgetFont(size: 11, weight: .semibold)
                     .symbolRenderingMode(.hierarchical)
                 if showCountdown {
                     Text(countdownAbbrev(until: until))
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .widgetFont(size: 15, weight: .semibold)
                         .monospacedDigit()
                         .minimumScaleFactor(0.7)
                         .lineLimit(1)
                     Text(s.prayerName)
-                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .widgetFont(size: 9, weight: .medium)
                         .lineLimit(1)
                         .minimumScaleFactor(0.65)
                 } else {
                     Text(s.adhanTime)
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .widgetFont(size: 14, weight: .semibold)
                         .monospacedDigit()
                         .minimumScaleFactor(0.65)
                         .lineLimit(1)
                     Text(s.prayerName)
-                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .widgetFont(size: 9, weight: .medium)
                         .lineLimit(1)
                         .minimumScaleFactor(0.65)
                 }
@@ -460,15 +466,15 @@ struct MasjidlyPrayerWidgetView: View {
         return VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Image(systemName: s.iconName)
-                    .font(.body.weight(.semibold))
+                    .widgetFont(size: 16, weight: .semibold)
                     .symbolRenderingMode(.hierarchical)
                 Text(s.prayerName)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .widgetFont(size: 17, weight: .semibold)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Spacer(minLength: 4)
                 Text(s.adhanTime)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .widgetFont(size: 17, weight: .bold)
                     .monospacedDigit()
                     .foregroundStyle(.primary)
                     .lineLimit(1)
@@ -476,11 +482,11 @@ struct MasjidlyPrayerWidgetView: View {
 
             HStack(spacing: 6) {
                 Text("Iqamah")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .widgetFont(size: 12, weight: .medium)
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 4)
                 Text(s.iqamahTime)
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .widgetFont(size: 13, weight: .medium)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -489,17 +495,18 @@ struct MasjidlyPrayerWidgetView: View {
             if hasFollowing {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text("↓")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .widgetFont(size: 12, weight: .medium)
                         .foregroundStyle(.tertiary)
                     Text(s.followingPrayerName)
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .widgetFont(size: 13, weight: .medium)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                     Text("·")
-                        .font(.caption.weight(.medium))
+                        .widgetFont(.caption)
+                        .fontWeight(.medium)
                         .foregroundStyle(.tertiary)
                     Text(s.followingAdhanTime)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .widgetFont(size: 13, weight: .semibold)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -601,6 +608,32 @@ enum MasjidlyWidgetTheme {
         case "tahajjud": return .tahajjud
         default: return .dhuhr
         }
+    }
+}
+
+extension View {
+    func widgetFont(size: CGFloat, weight: Font.Weight = .regular) -> some View {
+        self.font(.custom("Gill Sans", size: size).weight(weight))
+    }
+    
+    func widgetFont(_ style: Font) -> some View {
+        // Map common styles to Gill Sans sizes if possible, or just use custom
+        let size: CGFloat = switch style {
+        case .largeTitle: 34
+        case .title: 28
+        case .title2: 22
+        case .title3: 20
+        case .headline: 17
+        case .body: 17
+        case .callout: 16
+        case .subheadline: 15
+        case .footnote: 13
+        case .caption: 12
+        case .caption2: 11
+        default: 17
+        }
+        let weight: Font.Weight = (style == .headline) ? .semibold : .regular
+        return self.font(.custom("Gill Sans", size: size).weight(weight))
     }
 }
 

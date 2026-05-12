@@ -5,6 +5,7 @@ struct MosqueSelectionOnboardingView: View {
     let timeTheme: HomeDesign.TimeTheme
     @Binding var selectedMosqueId: String
     let onContinue: (Mosque) -> Void
+    @Environment(\.locale) private var locale
 
     var body: some View {
         ZStack {
@@ -22,28 +23,28 @@ struct MosqueSelectionOnboardingView: View {
             OnboardingTutorialChrome.card(timeTheme: timeTheme) {
                 VStack(spacing: 24) {
                     VStack(spacing: 10) {
-                        Text("Choose your mosque")
-                            .font(HomeDesign.Typography.app(size: 23, weight: .semibold))
+                        Text(localized("onboarding.mosque.title"))
+                            .appFont(size: 23, weight: .semibold)
                             .foregroundStyle(timeTheme.textColor)
                             .kerning(-0.5)
                             .multilineTextAlignment(.center)
 
-                        Text("Masjidly will show official prayer and iqamah times for this mosque.")
-                            .font(HomeDesign.Typography.app(size: 16, weight: .regular))
+                        Text(localized("onboarding.mosque.message"))
+                            .appFont(size: 16, weight: .regular)
                             .foregroundStyle(timeTheme.textColor.opacity(0.8))
                             .multilineTextAlignment(.center)
                             .lineSpacing(4)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
-                    Picker("Mosque", selection: $selectedMosqueId) {
+                    Picker(localized("settings.section.mosque.title"), selection: $selectedMosqueId) {
                         ForEach(mosques) { mosque in
                             Text(mosque.name).tag(mosque.id)
                         }
                     }
                     .pickerStyle(.menu)
                     .tint(timeTheme.textColor)
-                    .font(HomeDesign.Typography.app(size: 18, weight: .medium))
+                    .appFont(size: 18, weight: .medium)
                     .frame(maxWidth: .infinity)
                     .accessibilityIdentifier("Onboarding.MosquePicker")
 
@@ -51,7 +52,7 @@ struct MosqueSelectionOnboardingView: View {
                         guard let mosque = mosques.first(where: { $0.id == selectedMosqueId }) ?? mosques.first else { return }
                         onContinue(mosque)
                     } label: {
-                        Text("Continue")
+                        Text(localized("onboarding.continue"))
                             .onboardingPrimaryCapsule()
                     }
                     .buttonStyle(.plain)
@@ -65,5 +66,9 @@ struct MosqueSelectionOnboardingView: View {
             .frame(maxWidth: 380)
             .padding(.horizontal, 24)
         }
+    }
+
+    private func localized(_ key: String) -> String {
+        String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
     }
 }

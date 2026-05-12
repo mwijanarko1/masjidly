@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { getLocales } from "expo-localization";
 import { useSettingsStore } from "@/store/settings";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
 import { resolveSelectedMosque } from "@/lib/prayer/mosqueDefaults";
@@ -13,7 +12,6 @@ export function usePrayerNotifications(): void {
   const notifications = useSettingsStore((s) => s.notifications);
   const selectedMosqueId = useSettingsStore((s) => s.selectedMosqueId);
   const selectedMosqueSlug = useSettingsStore((s) => s.selectedMosqueSlug);
-  const appLanguage = useSettingsStore((s) => s.appLanguage);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,7 +33,7 @@ export function usePrayerNotifications(): void {
         );
         if (!mosque) return;
 
-        const locale = resolvedLanguageCode(appLanguage, getLocales()[0].languageTag);
+        const locale = resolvedLanguageCode();
         await rescheduleUpcomingPrayerNotifications({
           mosque,
           settings: notifications,
@@ -51,5 +49,18 @@ export function usePrayerNotifications(): void {
     return () => {
       cancelled = true;
     };
-  }, [notifications, selectedMosqueId, selectedMosqueSlug, appLanguage]);
+  }, [
+    notifications.masterEnabled,
+    notifications.adhanEnabled,
+    notifications.iqamahEnabled,
+    notifications.preAdhanReminderMinutes,
+    notifications.preIqamahReminderMinutes,
+    notifications.fajr,
+    notifications.dhuhrJummah,
+    notifications.asr,
+    notifications.maghrib,
+    notifications.isha,
+    selectedMosqueId,
+    selectedMosqueSlug,
+  ]);
 }

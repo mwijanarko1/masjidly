@@ -7,63 +7,164 @@ struct OnboardingCoachMarkView: View {
     let timeTheme: HomeDesign.TimeTheme
     /// Positions the hint card away from the controls users must tap.
     let variant: Variant
+    /// When set with `onPrimaryButton`, the dimmed backdrop absorbs stray taps so only the card (and its button) advances the flow.
+    let primaryButtonTitle: String?
+    let onPrimaryButton: (() -> Void)?
+    let primaryButtonAccessibilityIdentifier: String?
+
+    /// Optional secondary (lower-emphasis) button shown below the primary button.
+    let secondaryButtonTitle: String?
+    let onSecondaryButton: (() -> Void)?
+    let secondaryButtonAccessibilityIdentifier: String?
 
     enum Variant {
         /// Hint sits just under the top chrome (calendar / date / settings stay clear and tappable).
         case belowTopChrome
         /// Hint sits above the prayer-letter row so F–I shortcuts stay fully visible and tappable.
         case aboveShortcutRow
+        /// Hint sits under the Qibla rings, above the large adhan time.
+        case belowQiblaIcon
+        /// Hint pinned to the bottom; no dimming so the sheet behind stays fully interactive (timetable / settings explore).
+        case floatingBottom
+    }
+
+    init(
+        title: String,
+        message: String,
+        timeTheme: HomeDesign.TimeTheme,
+        variant: Variant,
+        primaryButtonTitle: String? = nil,
+        onPrimaryButton: (() -> Void)? = nil,
+        primaryButtonAccessibilityIdentifier: String? = nil,
+        secondaryButtonTitle: String? = nil,
+        onSecondaryButton: (() -> Void)? = nil,
+        secondaryButtonAccessibilityIdentifier: String? = nil
+    ) {
+        self.title = title
+        self.message = message
+        self.timeTheme = timeTheme
+        self.variant = variant
+        self.primaryButtonTitle = primaryButtonTitle
+        self.onPrimaryButton = onPrimaryButton
+        self.primaryButtonAccessibilityIdentifier = primaryButtonAccessibilityIdentifier
+        self.secondaryButtonTitle = secondaryButtonTitle
+        self.onSecondaryButton = onSecondaryButton
+        self.secondaryButtonAccessibilityIdentifier = secondaryButtonAccessibilityIdentifier
+    }
+
+    private var showsDimmingBackdrop: Bool {
+        variant != .floatingBottom
     }
 
     var body: some View {
-        GeometryReader { geo in
-            let topChrome = max(geo.safeAreaInsets.top, 56) + 12
-            let topCardInset = topChrome + 52
-            let shortcutReserve = geo.safeAreaInsets.bottom + min(260, max(200, geo.size.height * 0.31))
-
-            ZStack {
-                // Airy, atmospheric overlay instead of heavy black slab
-                Color.black.opacity(timeTheme.usesLightForeground ? 0.12 : 0.08)
-                    .ignoresSafeArea()
-                    .accessibilityHidden(true)
-
-                switch variant {
-                case .belowTopChrome:
-                    VStack(spacing: 0) {
-                        hintCard
-                            .padding(.horizontal, 24)
-                            .padding(.top, topCardInset)
-                        Spacer(minLength: 0)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-                case .aboveShortcutRow:
+        Group {
+            if variant == .floatingBottom {
+                ZStack {
+                    Color.clear
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .allowsHitTesting(false)
                     VStack(spacing: 0) {
                         Spacer(minLength: 0)
                         hintCard
                             .padding(.horizontal, 24)
-                            .padding(.bottom, shortcutReserve)
+                            .padding(.bottom, 12)
+                            .safeAreaPadding(.bottom, 8)
+                            .allowsHitTesting(true)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+            } else {
+                GeometryReader { geo in
+                    let topChrome = max(geo.safeAreaInsets.top, 56) + 12
+                    let topCardInset = topChrome + 52
+                    let shortcutReserve = geo.safeAreaInsets.bottom + min(260, max(200, geo.size.height * 0.31))
+                    let blocksBackground = showsDimmingBackdrop && (onPrimaryButton != nil && primaryButtonTitle != nil) || (onSecondaryButton != nil && secondaryButtonTitle != nil)
+
+                    ZStack {
+                        if showsDimmingBackdrop {
+                            Color.black.opacity(timeTheme.usesLightForeground ? 0.12 : 0.08)
+                                .ignoresSafeArea()
+                                .accessibilityHidden(true)
+                                .allowsHitTesting(blocksBackground)
+                        }
+
+                        switch variant {
+                        case .floatingBottom:
+                            EmptyView()
+                        case .belowTopChrome:
+                            VStack(spacing: 0) {
+                                hintCard
+                                    .padding(.horizontal, 24)
+                                    .padding(.top, topCardInset)
+                                Spacer(minLength: 0)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+                        case .aboveShortcutRow:
+                            VStack(spacing: 0) {
+                                Spacer(minLength: 0)
+                                hintCard
+                                    .padding(.horizontal, 24)
+                                    .padding(.bottom, shortcutReserve)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+
+                        case .belowQiblaIcon:
+                            VStack(spacing: 0) {
+                                Spacer()
+                                    .frame(height: max(geo.safeAreaInsets.top, 20) + geo.size.height * 0.28)
+                                hintCard
+                                    .padding(.horizontal, 24)
+                                Spacer(minLength: 0)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        }
+                    }
+                }
+                .allowsHitTesting(true)
             }
         }
     }
 
+    @ViewBuilder
     private var hintCard: some View {
         OnboardingTutorialChrome.card(timeTheme: timeTheme) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(title)
-                    .font(HomeDesign.Typography.app(size: 19, weight: .semibold))
+                    .appFont(size: 19, weight: .semibold)
                     .foregroundStyle(timeTheme.textColor)
                     .kerning(-0.2)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(message)
-                    .font(HomeDesign.Typography.app(size: 16, weight: .regular))
+                    .appFont(size: 16, weight: .regular)
                     .foregroundStyle(timeTheme.textColor.opacity(0.82))
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if let primaryButtonTitle, let onPrimaryButton {
+                    Button(action: onPrimaryButton) {
+                        Text(primaryButtonTitle)
+                            .onboardingPrimaryCapsule()
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 6)
+                    .accessibilityIdentifier(primaryButtonAccessibilityIdentifier ?? "Onboarding.CoachContinue")
+
+                    if let secondaryButtonTitle, let onSecondaryButton {
+                        Button(action: onSecondaryButton) {
+                            Text(secondaryButtonTitle)
+                                .appFont(size: 15, weight: .regular)
+                                .foregroundColor(timeTheme.textColor.opacity(0.7))
+                                .underline(true, color: timeTheme.textColor.opacity(0.3))
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 4)
+                        .accessibilityIdentifier(secondaryButtonAccessibilityIdentifier ?? "Onboarding.CoachSecondary")
+                    }
+                }
             }
             .frame(maxWidth: 360, alignment: .leading)
             .padding(24)

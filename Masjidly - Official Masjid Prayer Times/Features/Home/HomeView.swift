@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocation
 
 private func homeLS(_ key: String, locale: Locale) -> String {
     String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
@@ -9,86 +10,31 @@ struct HomeView: View {
     @Environment(SettingsStore.self) private var settings
     @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(OnboardingFlowController.self) private var onboarding
+    @Environment(AppReviewPromptCoordinator.self) private var reviewPrompt
     @Environment(\.locale) private var locale
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var showingSettings = false
     @State private var showingTimetable = false
-    @State private var selectedPrayerIndex = 0
+    @State private var qiblaDirectionProvider = QiblaDirectionProvider()
 
     private var currentTheme: HomeDesign.TimeTheme {
-        currentActiveTheme(d: model.displayedPrayerTimes)
+        HomeDesign.TimeTheme.homeHeroTheme(
+            displayedPrayerTimes: model.displayedPrayerTimes,
+            selectedPrayerIndex: model.selectedPrayerIndex
+        )
     }
 
     var body: some View {
+        homeChromeStack
+    }
+
+    @ViewBuilder
+    private var homeChromeStack: some View {
         GeometryReader { geo in
             let metrics = HomeViewportMetrics(geometry: geo)
-            ZStack(alignment: .bottom) {
-                backgroundLayer(metrics: metrics)
-
-                if let d = model.displayedPrayerTimes {
-                    let prayers: [(canonical: String, time: String, theme: HomeDesign.TimeTheme)] = [
-                        ("Fajr", d.fajr, .fajr),
-                        ("Sunrise", d.sunrise, .sunrise),
-                        ("Dhuhr", d.dhuhr, .dhuhr),
-                        ("Asr", d.asr, .asr),
-                        ("Maghrib", d.maghrib, .maghrib),
-                        ("Isha", d.isha, .isha)
-                    ]
-                    let slug = model.selectedMosque?.slug ?? ""
-                    let prayer = prayers[selectedPrayerIndex]
-                    let adhanFormatted = formatTime(prayer.time)
-                    let iqSubtitle = iqamahSubtitleLine(
-                        prayerName: prayer.canonical,
-                        adhanRaw: prayer.time,
-                        daily: d,
-                        iq: model.iqamahTimes,
-                        mosqueSlug: slug
-                    )
-                    let displayName = PrayerLocalization.displayName(canonicalEnglish: prayer.canonical, locale: locale)
-                    let labels = prayers.map { PrayerLocalization.displayName(canonicalEnglish: $0.canonical, locale: locale) }
-
-                    MinimalistPrayerPage(
-                        prayerName: displayName,
-                        prayerTime: adhanFormatted,
-                        iqamahTime: iqSubtitle,
-                        theme: prayer.theme,
-                        prayerLabels: labels,
-                        selectedIndex: selectedPrayerIndex,
-                        totalCount: prayers.count,
-                        onSelectPrayer: { selectedPrayerIndex = $0 },
-                        highlightedShortcutIndex: highlightedPrayerShortcutIndex,
-                        onShortcutTapped: { onboarding.handlePrayerShortcutTap(index: $0) }
-                    )
-                    .onAppear {
-                        if let nextName = model.nextCountdown?.nextName {
-                            if let index = prayers.firstIndex(where: { $0.canonical == nextName }) {
-                                selectedPrayerIndex = index
-                            }
-                        }
-                    }
-                } else {
-                    ProgressView()
-                }
-
-                VStack {
-                    HStack(alignment: .center) {
-                        calendarButton
-                            .padding(.leading, metrics.leadingChromeInset)
-                        
-                        Spacer()
-                        
-                        dateDisplay
-                        
-                        Spacer()
-                        
-                        settingsButton
-                            .padding(.trailing, metrics.trailingChromeInset)
-                    }
-                    .padding(.top, metrics.topChromeInset)
-                    Spacer()
-                }
-            }
-            .frame(width: geo.size.width, height: geo.size.height)
+            homeMainZStack(metrics: metrics)
+                .frame(width: geo.size.width, height: geo.size.height)
         }
         .ignoresSafeArea()
         .navigationBarHidden(true)
@@ -101,15 +47,36 @@ struct HomeView: View {
         }
         .onAppear {
             Task { await model.applySelectionFromSettings() }
+            reviewPrompt.recordLaunchIfNeeded()
+            reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
+                isOnboardingBlocking: enjoymentReviewFlowBlocked
+            )
+        }
+        .onChange(of: settings.hasCompletedOnboarding) { _, completed in
+            guard completed else { return }
+            reviewPrompt.recordLaunchIfNeeded()
+            reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
+                isOnboardingBlocking: enjoymentReviewFlowBlocked
+            )
+        }
+        .onChange(of: onboarding.isActive) { _, isActive in
+            guard !isActive else { return }
+            reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
+                isOnboardingBlocking: enjoymentReviewFlowBlocked
+            )
         }
         .onChange(of: settings.notifications.masterEnabled) { _, _ in
             Task { await model.resyncNotificationsIfNeeded() }
         }
-        .onChange(of: settings.appLanguage) { _, _ in
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
             Task {
+                await model.refreshFromNetworkIfStale()
                 await model.resyncNotificationsIfNeeded()
-                await model.refreshWidgetSnapshotForCurrentMosque()
             }
+            reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
+                isOnboardingBlocking: enjoymentReviewFlowBlocked
+            )
         }
         .onChange(of: settings.uses24HourTime) { _, _ in
             Task { await model.refreshWidgetSnapshotForCurrentMosque() }
@@ -120,38 +87,188 @@ struct HomeView: View {
         .onChange(of: settings.selectedMosqueSlug) { _, _ in
             Task { await model.applySelectionFromSettings() }
         }
-        .fullScreenCover(isPresented: $showingTimetable) {
-            if let monthData = model.monthData, let mosque = model.selectedMosque {
-                TimetableView(
-                    initialMonthData: monthData,
-                    mosqueName: mosque.name,
-                    mosqueSlug: mosque.slug,
-                    timeTheme: currentTheme,
-                    model: model,
-                    onDismiss: {
-                        onboarding.handleTimetableClosed()
-                    }
-                )
+        .onChange(of: model.selectedMosque) { _, newValue in
+            qiblaDirectionProvider.updateFallbackMosque(newValue)
+        }
+        .onChange(of: qiblaDirectionProvider.authorizationStatus) { _, newStatus in
+            if newStatus == .authorizedWhenInUse || newStatus == .authorizedAlways {
+                settings.hideQiblaCompass = false
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .masjidlyOpenTimetable)) { _ in
+            showingSettings = false
+            showingTimetable = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .masjidlyOpenSettingsMosque)) { _ in
+            showingTimetable = false
+            showingSettings = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .masjidlyFocusHomeTimes)) { _ in
+            showingTimetable = false
+            showingSettings = false
+        }
+        .fullScreenCover(isPresented: $showingTimetable) {
+            timetableFullScreen
+        }
         .fullScreenCover(isPresented: $showingSettings) {
-            SettingsView(
-                model: settingsViewModel,
+            settingsFullScreen
+        }
+        .enjoymentReviewAlert(
+            title: homeLS("review.enjoyment.title", locale: locale),
+            message: homeLS("review.enjoyment.message", locale: locale),
+            loveTitle: homeLS("review.enjoyment.love_it", locale: locale),
+            notReallyTitle: homeLS("review.enjoyment.not_really", locale: locale),
+            isPresented: Binding(
+                get: { reviewPrompt.showEnjoymentPrompt },
+                set: { reviewPrompt.showEnjoymentPrompt = $0 }
+            ),
+            onLoveIt: { reviewPrompt.userConfirmedEnjoymentPositive() },
+            onNotReally: { reviewPrompt.userConfirmedEnjoymentNegative() }
+        )
+    }
+
+    private func homeMainZStack(metrics: HomeViewportMetrics) -> AnyView {
+        AnyView(
+            ZStack(alignment: .bottom) {
+                backgroundLayer(metrics: metrics)
+
+                if let d = model.displayedPrayerTimes {
+                    homePrayerPage(for: d)
+                } else {
+                    ProgressView()
+                }
+
+                VStack {
+                    HStack(alignment: .center) {
+                        calendarButton
+                            .padding(.leading, metrics.leadingChromeInset)
+
+                        Spacer()
+
+                        dateDisplay
+
+                        Spacer()
+
+                        settingsButton
+                            .padding(.trailing, metrics.trailingChromeInset)
+                    }
+                    .padding(.top, metrics.topChromeInset)
+                    Spacer()
+                }
+
+                onboardingOverlay
+            }
+        )
+    }
+
+    private func homePrayerPage(for daily: DailyPrayerTimes) -> AnyView {
+        let prayers: [(canonical: String, time: String, theme: HomeDesign.TimeTheme)] = [
+            ("Fajr", daily.fajr, .fajr),
+            ("Sunrise", daily.sunrise, .sunrise),
+            ("Dhuhr", daily.dhuhr, .dhuhr),
+            ("Asr", daily.asr, .asr),
+            ("Maghrib", daily.maghrib, .maghrib),
+            ("Isha", daily.isha, .isha)
+        ]
+        let slug = model.selectedMosque?.slug ?? ""
+        let prayer = prayers[model.selectedPrayerIndex]
+        let heroParts = PrayerTimesEngine.formatPrayerTimeHeroParts(
+            prayer.time,
+            uses24Hour: settings.uses24HourTime,
+            locale: locale
+        )
+        let prayerTimeDisplay: String = {
+            if let meridiem = heroParts.meridiem, !meridiem.isEmpty {
+                return "\(heroParts.clock)\u{2009}\(meridiem)"
+            }
+            return heroParts.clock
+        }()
+        let iqSubtitle = iqamahSubtitleLine(
+            prayerName: prayer.canonical,
+            adhanRaw: prayer.time,
+            daily: daily,
+            iq: model.iqamahTimes,
+            mosqueSlug: slug
+        )
+        let displayName = PrayerLocalization.displayName(canonicalEnglish: prayer.canonical, locale: locale)
+        let labels = prayers.map { PrayerLocalization.displayName(canonicalEnglish: $0.canonical, locale: locale) }
+
+        return AnyView(
+            MinimalistPrayerPage(
+                prayerName: displayName,
+                prayerTime: prayerTimeDisplay,
+                iqamahTime: iqSubtitle,
+                theme: prayer.theme,
+                showQiblaCompass: !settings.hideQiblaCompass,
+                qiblaRotationDegrees: qiblaDirectionProvider.displayedRotationDegrees,
+                qiblaOnboardingHighlighted: onboarding.currentStep == .qibla,
+                prayerLabels: labels,
+                selectedIndex: model.selectedPrayerIndex,
+                totalCount: prayers.count,
+                onSelectPrayer: { model.selectedPrayerIndex = $0 },
+                highlightedShortcutIndex: highlightedPrayerShortcutIndex,
+                onShortcutTapped: { onboarding.handlePrayerShortcutTap(index: $0) }
+            )
+            .onAppear {
+                let deferAuth = !settings.hasCompletedOnboarding || settings.hideQiblaCompass
+                if settings.hideQiblaCompass {
+                    qiblaDirectionProvider.stop()
+                } else {
+                    qiblaDirectionProvider.start(fallbackMosque: model.selectedMosque, deferAuthorization: deferAuth)
+                }
+                if let nextName = model.nextCountdown?.nextName {
+                    if let index = prayers.firstIndex(where: { $0.canonical == nextName }) {
+                        model.selectedPrayerIndex = index
+                    }
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var timetableFullScreen: some View {
+        if let monthData = model.monthData, let mosque = model.selectedMosque {
+            TimetableView(
+                initialMonthData: monthData,
+                mosqueName: mosque.name,
+                mosqueSlug: mosque.slug,
                 timeTheme: currentTheme,
+                model: model,
                 onDismiss: {
-                    onboarding.handleSettingsClosed()
+                    onboarding.handleTimetableClosed()
                 }
             )
-                .environment(settings)
-        }
-        .overlay {
-            onboardingOverlay
+            .environment(onboarding)
+            .environment(\.locale, Locale(identifier: "en"))
+            .environment(\.layoutDirection, .leftToRight)
+            .environment(\.appFontName, settings.appFontName)
         }
     }
 
     @ViewBuilder
+    private var settingsFullScreen: some View {
+        SettingsView(
+            model: settingsViewModel,
+            timeTheme: currentTheme,
+            onDismiss: {
+                onboarding.handleSettingsClosed()
+            }
+        )
+        .environment(onboarding)
+        .environment(settings)
+        .environment(reviewPrompt)
+        .environment(\.locale, Locale(identifier: "en"))
+        .environment(\.layoutDirection, .leftToRight)
+        .environment(\.appFontName, settings.appFontName)
+    }
+
+    private var enjoymentReviewFlowBlocked: Bool {
+        onboarding.isActive || !settings.hasCompletedOnboarding
+    }
+
+    @ViewBuilder
     private func backgroundLayer(metrics: HomeViewportMetrics) -> some View {
-        let theme = currentActiveTheme(d: model.displayedPrayerTimes)
+        let theme = currentTheme
         let sky = theme.sky
         
         ZStack {
@@ -181,17 +298,8 @@ struct HomeView: View {
             )
             .blendMode(.plusLighter)
         }
-        .animation(.easeInOut(duration: 0.8), value: selectedPrayerIndex)
+        .animation(.easeInOut(duration: 0.8), value: model.selectedPrayerIndex)
         .ignoresSafeArea()
-    }
-
-    private func currentActiveTheme(d: DailyPrayerTimes?) -> HomeDesign.TimeTheme {
-        guard d != nil else { return .fajr }
-        let prayers: [HomeDesign.TimeTheme] = [.fajr, .sunrise, .dhuhr, .asr, .maghrib, .isha]
-        if selectedPrayerIndex < prayers.count {
-            return prayers[selectedPrayerIndex]
-        }
-        return .fajr
     }
 
     private var settingsButton: some View {
@@ -200,7 +308,7 @@ struct HomeView: View {
             showingSettings = true
         } label: {
             Image(systemName: "gearshape.fill")
-                .font(HomeDesign.Typography.app(size: 20, weight: .light))
+                .appFont(size: 20, weight: .light)
                 .foregroundColor(currentTheme.textColor)
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(Color.white.opacity(0.18)))
@@ -216,7 +324,7 @@ struct HomeView: View {
             showingTimetable = true
         } label: {
             Image(systemName: "calendar")
-                .font(HomeDesign.Typography.app(size: 20, weight: .light))
+                .appFont(size: 20, weight: .light)
                 .foregroundColor(currentTheme.textColor)
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(Color.white.opacity(0.18)))
@@ -243,30 +351,56 @@ struct HomeView: View {
             )
         case .prayerShortcut(let index):
             OnboardingCoachMarkView(
-                title: "Try the prayer shortcuts",
-                message: "Tap \(shortcutLetter(for: index)) to view that prayer time.",
+                title: homeLS("onboarding.shortcut.title", locale: locale),
+                message: String(
+                    format: homeLS("onboarding.shortcut.message_format", locale: locale),
+                    locale: locale,
+                    arguments: [shortcutLetter(for: index)]
+                ),
                 timeTheme: currentTheme,
                 variant: .aboveShortcutRow
             )
             .allowsHitTesting(false)
+        case .qibla:
+            OnboardingCoachMarkView(
+                title: homeLS("onboarding.qibla.title", locale: locale),
+                message: homeLS("onboarding.qibla.message", locale: locale),
+                timeTheme: currentTheme,
+                variant: .belowQiblaIcon,
+                primaryButtonTitle: homeLS("onboarding.qibla.allow_location", locale: locale),
+                onPrimaryButton: {
+                    qiblaDirectionProvider.requestWhenInUseAuthorizationIfNeeded()
+                    onboarding.completeQiblaOnboardingAllowingLocationRequest()
+                },
+                primaryButtonAccessibilityIdentifier: "Onboarding.QiblaAllow",
+                secondaryButtonTitle: homeLS("onboarding.qibla.later", locale: locale),
+                onSecondaryButton: {
+                    onboarding.completeQiblaOnboardingDeferringLocation()
+                },
+                secondaryButtonAccessibilityIdentifier: "Onboarding.QiblaLater"
+            )
         case .openTimetable:
             OnboardingCoachMarkView(
-                title: "Open the timetable",
-                message: "Tap the calendar button (top-left) to see the full timetable.",
+                title: homeLS("onboarding.timetable.title", locale: locale),
+                message: homeLS("onboarding.timetable.message", locale: locale),
                 timeTheme: currentTheme,
                 variant: .belowTopChrome
             )
             .allowsHitTesting(false)
+        case .exploreTimetable:
+            EmptyView()
         case .closeTimetable:
             EmptyView()
         case .openSettings:
             OnboardingCoachMarkView(
-                title: "Open Settings",
-                message: "Tap the settings button (top-right) to choose preferences.",
+                title: homeLS("onboarding.settings.title", locale: locale),
+                message: homeLS("onboarding.settings.message", locale: locale),
                 timeTheme: currentTheme,
                 variant: .belowTopChrome
             )
             .allowsHitTesting(false)
+        case .exploreSettings:
+            EmptyView()
         case .closeSettings:
             EmptyView()
         case .notifications:
@@ -300,12 +434,12 @@ struct HomeView: View {
     private var dateDisplay: some View {
         VStack(alignment: .center, spacing: 2) {
             Text(currentDateString.uppercased())
-                .font(HomeDesign.Typography.app(size: 13, weight: .semibold))
+                .appFont(size: 13, weight: .semibold)
                 .kerning(1.0)
                 .foregroundColor(currentTheme.textColor.opacity(0.6))
             
             Text(currentHijriDateString.uppercased())
-                .font(HomeDesign.Typography.app(size: 10, weight: .medium))
+                .appFont(size: 10, weight: .medium)
                 .kerning(0.8)
                 .foregroundColor(currentTheme.textColor.opacity(0.4))
         }
@@ -339,7 +473,7 @@ struct HomeView: View {
     }
 
     private func formatTime(_ t: String) -> String {
-        settings.uses24HourTime ? t : PrayerTimesEngine.formatTo12Hour(t)
+        PrayerTimesEngine.formatPrayerTimeForDisplay(t, uses24Hour: settings.uses24HourTime, locale: locale)
     }
 
     private func isFridayInSheffield(_ date: Date) -> Bool {
@@ -398,6 +532,25 @@ struct HomeView: View {
     }
 }
 
+private extension View {
+    func enjoymentReviewAlert(
+        title: String,
+        message: String,
+        loveTitle: String,
+        notReallyTitle: String,
+        isPresented: Binding<Bool>,
+        onLoveIt: @escaping () -> Void,
+        onNotReally: @escaping () -> Void
+    ) -> some View {
+        alert(title, isPresented: isPresented) {
+            Button(loveTitle, action: onLoveIt)
+            Button(notReallyTitle, role: .cancel, action: onNotReally)
+        } message: {
+            Text(message)
+        }
+    }
+}
+
 // MARK: - Viewport-aware layout
 
 private struct HomeViewportMetrics: Sendable {
@@ -447,18 +600,21 @@ private struct HomeViewportMetrics: Sendable {
     let settings = SettingsStore()
     let repo = ConvexPrayerRepository(service: ConvexService())
     let scheduler = PrayerNotificationScheduler(repository: repo)
-    let homeVM = HomeViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
-    let settingsVM = SettingsViewModel(repository: repo, settings: settings, notificationScheduler: scheduler)
+    let cache = PrayerTimesDiskCache()
+    let homeVM = HomeViewModel(repository: repo, settings: settings, notificationScheduler: scheduler, diskCache: cache)
+    let settingsVM = SettingsViewModel(repository: repo, settings: settings, notificationScheduler: scheduler, diskCache: cache)
     let onboarding = OnboardingFlowController(
         settings: settings,
         homeViewModel: homeVM,
         settingsViewModel: settingsVM,
         notificationScheduler: scheduler
     )
+    let review = AppReviewPromptCoordinator(settings: settings)
     return NavigationStack {
         MasjidlyRootView(homeViewModel: homeVM)
             .environment(settings)
             .environment(settingsVM)
             .environment(onboarding)
+            .environment(review)
     }
 }

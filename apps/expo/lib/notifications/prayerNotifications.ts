@@ -1,5 +1,14 @@
-import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import {
+  scheduleNotificationAsync,
+  SchedulableTriggerInputTypes,
+  getPermissionsAsync,
+  requestPermissionsAsync,
+  getAllScheduledNotificationsAsync,
+  cancelScheduledNotificationAsync,
+  setNotificationChannelAsync,
+  AndroidImportance,
+} from "@/lib/notifications/expoNotificationApi";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
 import {
   getDateInSheffield,
@@ -18,6 +27,14 @@ import type { NotificationSettings } from "@/store/settings";
 
 const IDENTIFIER_PREFIX = "masjidly.prayer.";
 const ANDROID_CHANNEL_ID = "prayer-times";
+
+const PRAYER_SCHEDULE_KEYS = {
+  fajr: "fajr",
+  dhuhrJummah: "dhuhr",
+  asr: "asr",
+  maghrib: "maghrib",
+  isha: "isha",
+} as const;
 
 function translate(key: TranslationKey, locale: string): string {
   return t(key, locale as "en" | "ar" | "ur");
@@ -71,21 +88,23 @@ async function scheduleIfNeeded(
   title: string,
   body: string,
   civilDay: Date,
-  hhmm: string
+  hhmm: string,
+  data: Record<string, string>
 ): Promise<void> {
   const fire = triggerDate(civilDay, hhmm);
   if (!fire || fire.getTime() <= Date.now()) return;
 
   try {
-    await Notifications.scheduleNotificationAsync({
+    await scheduleNotificationAsync({
       identifier: id,
       content: {
         title,
         body,
         sound: true,
+        data,
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        type: SchedulableTriggerInputTypes.DATE,
         date: fire,
         ...(Platform.OS === "android"
           ? { channelId: ANDROID_CHANNEL_ID }
@@ -97,20 +116,42 @@ async function scheduleIfNeeded(
   }
 }
 
+async function scheduleReminderIfNeeded(
+  id: string,
+  title: string,
+  body: string,
+  civilDay: Date,
+  hhmm: string,
+  minutesBefore: number,
+  data: Record<string, string>
+): Promise<void> {
+  const reminderTime = subtractMinutes(hhmm, minutesBefore);
+  if (!reminderTime) return;
+  await scheduleIfNeeded(id, title, body, civilDay, reminderTime, data);
+}
+
+function subtractMinutes(time: string, minutes: number): string | null {
+  const p = time.split(":").map((s) => parseInt(s.trim(), 10));
+  if (p.length !== 2 || Number.isNaN(p[0]) || Number.isNaN(p[1])) return null;
+  const total = p[0] * 60 + p[1] - minutes;
+  if (total < 0) return null;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 export async function requestNotificationAuthorizationIfNeeded(): Promise<boolean> {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  const { status: existingStatus } = await getPermissionsAsync();
   if (existingStatus === "granted") return true;
-  const { status } = await Notifications.requestPermissionsAsync();
+  const { status } = await requestPermissionsAsync();
   return status === "granted";
 }
 
 export async function cancelAllPrayerNotifications(): Promise<void> {
-  const pending = await Notifications.getAllScheduledNotificationsAsync();
+  const pending = await getAllScheduledNotificationsAsync();
   const ids = pending
     .map((n) => n.identifier)
     .filter((id) => id.startsWith(IDENTIFIER_PREFIX));
   for (const id of ids) {
-    await Notifications.cancelScheduledNotificationAsync(id);
+    await cancelScheduledNotificationAsync(id);
   }
 }
 
@@ -129,11 +170,18 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
   if (!granted) return;
 
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+    await setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
       name: "Prayer Times",
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: AndroidImportance.DEFAULT,
     });
   }
+
+  const { adhanEnabled, iqamahEnabled } = settings;
+  const reminderAdhan = settings.preAdhanReminderMinutes;
+  const reminderIqamah = settings.preIqamahReminderMinutes;
+
+  const isPrayerEnabled = (prayer: "fajr" | "dhuhrJummah" | "asr" | "maghrib" | "isha"): boolean =>
+    settings[prayer] === true;
 
   const ukDst = (await prayerRepository.getUkDstDates())?.ukDstDates ?? [];
   const slug = mosque.slug;
@@ -179,109 +227,254 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
       wdParts.find((p) => p.type === "weekday")?.value?.toLowerCase() ?? "";
     const isFriday = wdStr === "fri";
 
-    if (settings.fajr) {
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.fajr.adhan`,
-        mosque.name,
-        translate("notification.fajr_adhan", locale),
-        dayDate,
-        displayed.fajr
-      );
-      const iqT = getIqamahTime("fajr", displayed.fajr, iq);
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.fajr.iqamah`,
-        mosque.name,
-        translate("notification.fajr_iqamah", locale),
-        dayDate,
-        iqT
-      );
+    // Fajr
+    if (isPrayerEnabled("fajr")) {
+      if (adhanEnabled) {
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.fajr.adhan`,
+          mosque.name,
+          translate("notification.fajr_adhan", locale),
+          dayDate,
+          displayed.fajr,
+          { kind: "adhan", prayer: "fajr", mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderAdhan != null && reminderAdhan > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.fajr.adhan.reminder`,
+            mosque.name,
+            translate("notification.reminder.adhan", locale),
+            dayDate,
+            displayed.fajr,
+            reminderAdhan,
+            { kind: "reminder", reminderFor: "adhan", prayer: "fajr", mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
+      if (iqamahEnabled) {
+        const fajrIq = getIqamahTime("fajr", displayed.fajr, iq);
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.fajr.iqamah`,
+          mosque.name,
+          translate("notification.fajr_iqamah", locale),
+          dayDate,
+          fajrIq,
+          { kind: "iqamah", prayer: "fajr", mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderIqamah != null && reminderIqamah > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.fajr.iqamah.reminder`,
+            mosque.name,
+            translate("notification.reminder.iqamah", locale),
+            dayDate,
+            fajrIq,
+            reminderIqamah,
+            { kind: "reminder", reminderFor: "iqamah", prayer: "fajr", mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
     }
 
-    if (settings.dhuhrJummah) {
+    // Dhuhr / Jummah
+    if (isPrayerEnabled("dhuhrJummah")) {
       const adhanKey = isFriday
         ? "notification.jummah_adhan"
         : "notification.dhuhr_adhan";
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.dhuhr.adhan`,
-        mosque.name,
-        translate(adhanKey, locale),
-        dayDate,
-        displayed.dhuhr
-      );
-      const iqLabel = isFriday
-        ? iq.jummah
-        : getIqamahTime("dhuhr", displayed.dhuhr, iq);
-      const iqBodyKey = isFriday
-        ? "notification.jummah"
-        : "notification.dhuhr_iqamah";
-      const iqIdPrayer = isFriday ? "jummah" : "dhuhr";
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.${iqIdPrayer}.iqamah`,
-        mosque.name,
-        translate(iqBodyKey, locale),
-        dayDate,
-        iqLabel
-      );
+      if (adhanEnabled) {
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.dhuhr.adhan`,
+          mosque.name,
+          translate(adhanKey, locale),
+          dayDate,
+          displayed.dhuhr,
+          { kind: "adhan", prayer: isFriday ? "jummah" : "dhuhr", mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderAdhan != null && reminderAdhan > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.dhuhr.adhan.reminder`,
+            mosque.name,
+            translate("notification.reminder.adhan", locale),
+            dayDate,
+            displayed.dhuhr,
+            reminderAdhan,
+            { kind: "reminder", reminderFor: "adhan", prayer: isFriday ? "jummah" : "dhuhr", mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
+      if (iqamahEnabled) {
+        const iqLabel = isFriday
+          ? iq.jummah
+          : getIqamahTime("dhuhr", displayed.dhuhr, iq);
+        const iqBodyKey = isFriday
+          ? "notification.jummah"
+          : "notification.dhuhr_iqamah";
+        const iqIdPrayer = isFriday ? "jummah" : "dhuhr";
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.${iqIdPrayer}.iqamah`,
+          mosque.name,
+          translate(iqBodyKey, locale),
+          dayDate,
+          iqLabel,
+          { kind: "iqamah", prayer: iqIdPrayer, mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderIqamah != null && reminderIqamah > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.${iqIdPrayer}.iqamah.reminder`,
+            mosque.name,
+            translate("notification.reminder.iqamah", locale),
+            dayDate,
+            iqLabel,
+            reminderIqamah,
+            { kind: "reminder", reminderFor: "iqamah", prayer: iqIdPrayer, mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
     }
 
-    if (settings.asr) {
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.asr.adhan`,
-        mosque.name,
-        translate("notification.asr_adhan", locale),
-        dayDate,
-        displayed.asr
-      );
-      const iqT = getIqamahTime("asr", displayed.asr, iq);
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.asr.iqamah`,
-        mosque.name,
-        translate("notification.asr_iqamah", locale),
-        dayDate,
-        iqT
-      );
+    // Asr
+    if (isPrayerEnabled("asr")) {
+      if (adhanEnabled) {
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.asr.adhan`,
+          mosque.name,
+          translate("notification.asr_adhan", locale),
+          dayDate,
+          displayed.asr,
+          { kind: "adhan", prayer: "asr", mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderAdhan != null && reminderAdhan > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.asr.adhan.reminder`,
+            mosque.name,
+            translate("notification.reminder.adhan", locale),
+            dayDate,
+            displayed.asr,
+            reminderAdhan,
+            { kind: "reminder", reminderFor: "adhan", prayer: "asr", mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
+      if (iqamahEnabled) {
+        const asrIq = getIqamahTime("asr", displayed.asr, iq);
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.asr.iqamah`,
+          mosque.name,
+          translate("notification.asr_iqamah", locale),
+          dayDate,
+          asrIq,
+          { kind: "iqamah", prayer: "asr", mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderIqamah != null && reminderIqamah > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.asr.iqamah.reminder`,
+            mosque.name,
+            translate("notification.reminder.iqamah", locale),
+            dayDate,
+            asrIq,
+            reminderIqamah,
+            { kind: "reminder", reminderFor: "iqamah", prayer: "asr", mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
     }
 
-    if (settings.maghrib) {
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.maghrib.adhan`,
-        mosque.name,
-        translate("notification.maghrib_adhan", locale),
-        dayDate,
-        displayed.maghrib
-      );
-      const iqT = getIqamahTime("maghrib", displayed.maghrib, iq);
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.maghrib.iqamah`,
-        mosque.name,
-        translate("notification.maghrib_iqamah", locale),
-        dayDate,
-        iqT
-      );
+    // Maghrib
+    if (isPrayerEnabled("maghrib")) {
+      if (adhanEnabled) {
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.maghrib.adhan`,
+          mosque.name,
+          translate("notification.maghrib_adhan", locale),
+          dayDate,
+          displayed.maghrib,
+          { kind: "adhan", prayer: "maghrib", mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderAdhan != null && reminderAdhan > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.maghrib.adhan.reminder`,
+            mosque.name,
+            translate("notification.reminder.adhan", locale),
+            dayDate,
+            displayed.maghrib,
+            reminderAdhan,
+            { kind: "reminder", reminderFor: "adhan", prayer: "maghrib", mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
+      if (iqamahEnabled) {
+        const maghribIq = getIqamahTime("maghrib", displayed.maghrib, iq);
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.maghrib.iqamah`,
+          mosque.name,
+          translate("notification.maghrib_iqamah", locale),
+          dayDate,
+          maghribIq,
+          { kind: "iqamah", prayer: "maghrib", mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderIqamah != null && reminderIqamah > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.maghrib.iqamah.reminder`,
+            mosque.name,
+            translate("notification.reminder.iqamah", locale),
+            dayDate,
+            maghribIq,
+            reminderIqamah,
+            { kind: "reminder", reminderFor: "iqamah", prayer: "maghrib", mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
     }
 
-    if (settings.isha) {
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.isha.adhan`,
-        mosque.name,
-        translate("notification.isha_adhan", locale),
-        dayDate,
-        displayed.isha
-      );
-      const iqT = resolveIshaIqamahForDisplay(
-        slug,
-        dayDate,
-        displayed.isha,
-        iq,
-        displayed.maghrib
-      );
-      await scheduleIfNeeded(
-        `${IDENTIFIER_PREFIX}${slug}.${iso}.isha.iqamah`,
-        mosque.name,
-        translate("notification.isha_iqamah", locale),
-        dayDate,
-        iqT
-      );
+    // Isha
+    if (isPrayerEnabled("isha")) {
+      if (adhanEnabled) {
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.isha.adhan`,
+          mosque.name,
+          translate("notification.isha_adhan", locale),
+          dayDate,
+          displayed.isha,
+          { kind: "adhan", prayer: "isha", mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderAdhan != null && reminderAdhan > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.isha.adhan.reminder`,
+            mosque.name,
+            translate("notification.reminder.adhan", locale),
+            dayDate,
+            displayed.isha,
+            reminderAdhan,
+            { kind: "reminder", reminderFor: "adhan", prayer: "isha", mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
+      if (iqamahEnabled) {
+        const ishaIq = resolveIshaIqamahForDisplay(
+          slug,
+          dayDate,
+          displayed.isha,
+          iq,
+          displayed.maghrib
+        );
+        await scheduleIfNeeded(
+          `${IDENTIFIER_PREFIX}${slug}.${iso}.isha.iqamah`,
+          mosque.name,
+          translate("notification.isha_iqamah", locale),
+          dayDate,
+          ishaIq,
+          { kind: "iqamah", prayer: "isha", mosqueSlug: slug, isoDate: iso }
+        );
+        if (reminderIqamah != null && reminderIqamah > 0) {
+          await scheduleReminderIfNeeded(
+            `${IDENTIFIER_PREFIX}${slug}.${iso}.isha.iqamah.reminder`,
+            mosque.name,
+            translate("notification.reminder.iqamah", locale),
+            dayDate,
+            ishaIq,
+            reminderIqamah,
+            { kind: "reminder", reminderFor: "iqamah", prayer: "isha", mosqueSlug: slug, isoDate: iso }
+          );
+        }
+      }
     }
   }
 }

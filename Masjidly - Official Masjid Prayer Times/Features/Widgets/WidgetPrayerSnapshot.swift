@@ -119,21 +119,46 @@ enum WidgetPrayerResolver {
             now: now
         )
 
-        let adhan = adhanTime(for: next.nextName, prayers: day.prayers)
+        // Post-Isha wrap: when the next prayer is Fajr but today's Fajr wall clock has passed,
+        // load tomorrow's snapshot for the adhan/iqamah display values
+        let isFajrTomorrow: Bool = {
+            guard next.nextName == "Fajr", !next.isIqamah else { return false }
+            // Confirm today's Fajr has actually passed (differentiates post-Isha wrap from pre-Fajr)
+            var cal = Calendar(identifier: .gregorian)
+            cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+            let todayStart = cal.startOfDay(for: now)
+            let parts = day.prayers.fajr.split(separator: ":").compactMap { Int($0) }
+            guard parts.count == 2,
+                  let todayFajr = cal.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: todayStart)
+            else { return false }
+            return todayFajr <= now
+        }()
+        let morrowDay: WidgetPrayerDaySnapshot? = {
+            guard isFajrTomorrow else { return nil }
+            let tomorrowDate = Calendar(identifier: .gregorian).date(byAdding: .day, value: 1, to: now) ?? now
+            let tomorrow = PrayerTimesEngine.getDateInSheffield(tomorrowDate)
+            let tomorrowString = PrayerTimesEngine.isoDateString(year: tomorrow.year, month: tomorrow.month, day: tomorrow.day)
+            return snapshot.days.first(where: { $0.date == tomorrowString })
+        }()
+
+        let useDay = morrowDay ?? day
+
+        let adhan = adhanTime(for: next.nextName, prayers: useDay.prayers)
         let iqamah = iqamahTime(
             for: next.nextName,
-            prayers: day.prayers,
-            iqamah: day.iqamah,
+            prayers: useDay.prayers,
+            iqamah: useDay.iqamah,
             mosqueSlug: snapshot.mosque.slug,
             now: now
         )
+        let locale = snapshotLocale(from: snapshot.appLanguageRawValue)
 
         return WidgetPrayerState(
             kind: .content,
             mosqueName: snapshot.mosque.name,
             prayerName: next.nextName,
-            adhanTime: format(adhan, uses24HourTime: snapshot.uses24HourTime),
-            iqamahTime: format(iqamah, uses24HourTime: snapshot.uses24HourTime),
+            adhanTime: format(adhan, uses24HourTime: snapshot.uses24HourTime, locale: locale),
+            iqamahTime: format(iqamah, uses24HourTime: snapshot.uses24HourTime, locale: locale),
             isIqamah: next.isIqamah,
             generatedAt: snapshot.generatedAt
         )
@@ -181,7 +206,11 @@ enum WidgetPrayerResolver {
         }
     }
 
-    private static func format(_ time: String, uses24HourTime: Bool) -> String {
-        uses24HourTime ? time : PrayerTimesEngine.formatTo12Hour(time)
+    private static func snapshotLocale(from raw: String) -> Locale {
+        Locale(identifier: "en")
+    }
+
+    private static func format(_ time: String, uses24HourTime: Bool, locale: Locale) -> String {
+        PrayerTimesEngine.formatPrayerTimeForDisplay(time, uses24Hour: uses24HourTime, locale: locale)
     }
 }

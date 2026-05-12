@@ -55,6 +55,10 @@ The core calculation module (Swift enum / TypeScript namespace) that:
 - Formats times to 12-hour or 24-hour display
 - Handles Masjid Risalah special cases and summer Isha overrides
 
+## Qibla Direction
+
+The bearing from a location toward the Kaaba in Makkah. In the native iOS home screen, the Qibla indicator uses the device location and heading when permission is granted, and falls back to selected mosque coordinates when current location is unavailable.
+
 ## MonthPrayerData
 
 A month's worth of prayer times and iqamah ranges from Convex. Contains:

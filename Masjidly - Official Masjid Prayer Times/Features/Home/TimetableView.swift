@@ -4,6 +4,11 @@ private func ttLS(_ key: String, locale: Locale) -> String {
     String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
 }
 
+private enum TimetableTimeColumns {
+    /// Adhan / Iqamah — 65pt was too narrow for 12-hour strings (e.g. `10:07 PM`) at 18pt.
+    static let width: CGFloat = 94
+}
+
 struct TimetableView: View {
     @State private var currentMonthData: MonthPrayerData
     let initialMonthData: MonthPrayerData
@@ -111,14 +116,28 @@ struct TimetableView: View {
             }
         }
         .overlay {
-            if onboarding.currentStep == .closeTimetable {
-                OnboardingCoachMarkView(
-                    title: "Close the timetable",
-                    message: "Tap the close button to return to the prayer times.",
-                    timeTheme: timeTheme,
-                    variant: .belowTopChrome
-                )
-                .allowsHitTesting(false)
+            Group {
+                if onboarding.currentStep == .exploreTimetable {
+                    OnboardingCoachMarkView(
+                        title: ttLS("onboarding.explore_timetable.title", locale: locale),
+                        message: ttLS("onboarding.explore_timetable.message", locale: locale),
+                        timeTheme: timeTheme,
+                        variant: .floatingBottom,
+                        primaryButtonTitle: ttLS("onboarding.continue", locale: locale),
+                        onPrimaryButton: {
+                            onboarding.acknowledgeTimetableExplore()
+                        },
+                        primaryButtonAccessibilityIdentifier: "Onboarding.TimetableExploreContinue"
+                    )
+                } else if onboarding.currentStep == .closeTimetable {
+                    OnboardingCoachMarkView(
+                        title: ttLS("onboarding.close_timetable.title", locale: locale),
+                        message: ttLS("onboarding.close_timetable.message", locale: locale),
+                        timeTheme: timeTheme,
+                        variant: .belowTopChrome
+                    )
+                    .allowsHitTesting(false)
+                }
             }
         }
     }
@@ -129,25 +148,25 @@ struct TimetableView: View {
                 Task { await changeMonth(by: -1) }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(HomeDesign.Typography.app(size: 16, weight: .medium))
+                    .appFont(size: 16, weight: .medium)
                     .foregroundStyle(timeTheme.textColor)
                     .frame(width: 44, height: 44)
             }
             .disabled(isLoadingMonth)
             
             Spacer()
-            
-            Text(currentMonthData.month.capitalized)
-                .font(HomeDesign.Typography.app(size: 18, weight: .medium))
+
+            Text(monthSwitcherTitle)
+                .appFont(size: 18, weight: .medium)
                 .foregroundStyle(timeTheme.textColor)
-            
+
             Spacer()
             
             Button {
                 Task { await changeMonth(by: 1) }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(HomeDesign.Typography.app(size: 16, weight: .medium))
+                    .appFont(size: 16, weight: .medium)
                     .foregroundStyle(timeTheme.textColor)
                     .frame(width: 44, height: 44)
             }
@@ -193,12 +212,12 @@ struct TimetableView: View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(formattedSelectedDate(day: selectedDate))
-                    .font(HomeDesign.Typography.app(size: 24, weight: .light))
+                    .appFont(size: 24, weight: .light)
                     .foregroundStyle(timeTheme.textColor)
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
                 Text(mosqueName)
-                    .font(HomeDesign.Typography.app(size: 15, weight: .regular))
+                    .appFont(size: 15, weight: .regular)
                     .foregroundStyle(timeTheme.textColor.opacity(0.7))
             }
             Spacer()
@@ -207,9 +226,9 @@ struct TimetableView: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(HomeDesign.Typography.app(size: 14, weight: .light))
-                    .foregroundStyle(timeTheme.textColor.opacity(0.8))
-                    .frame(width: 44, height: 44)
+                    .appFont(size: 16, weight: .bold)
+                    .foregroundColor(timeTheme.textColor)
+                    .padding(8)
                     .background(Circle().fill(timeTheme.textColor.opacity(0.1)))
             }
             .buttonStyle(.plain)
@@ -229,13 +248,13 @@ struct TimetableView: View {
                         
                         VStack(spacing: 4) {
                             Text(shortWeekday(for: time.date).uppercased())
-                                .font(HomeDesign.Typography.app(size: 10, weight: .semibold))
+                                .appFont(size: 10, weight: .semibold)
                                 .foregroundStyle(isSelected ? timeTheme.textColor : timeTheme.textColor.opacity(0.4))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
 
-                            Text("\(time.date)")
-                                .font(HomeDesign.Typography.app(size: 20, weight: isSelected ? .medium : .regular))
+                            Text(localizedDayNumber(time.date))
+                                .appFont(size: 20, weight: isSelected ? .medium : .regular)
                                 .foregroundStyle(isSelected ? timeTheme.textColor : timeTheme.textColor.opacity(0.5))
                             
                             if isToday {
@@ -327,23 +346,23 @@ struct TimetableView: View {
 
         return VStack(spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                Text(ttLS("Prayer", locale: locale))
+                Text(ttLS("timetable.header.prayer", locale: locale))
                     .multilineTextAlignment(.leading)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text(ttLS("Adhan", locale: locale))
+                Text(ttLS("timetable.header.adhan", locale: locale))
                     .multilineTextAlignment(.trailing)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
-                    .frame(width: 65, alignment: .trailing)
-                Text(ttLS("Iqamah", locale: locale))
+                    .frame(width: TimetableTimeColumns.width, alignment: .trailing)
+                Text(ttLS("timetable.header.iqamah", locale: locale))
                     .multilineTextAlignment(.trailing)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
-                    .frame(width: 65, alignment: .trailing)
+                    .frame(width: TimetableTimeColumns.width, alignment: .trailing)
             }
-            .font(HomeDesign.Typography.app(size: 13, weight: .medium))
+            .appFont(size: 13, weight: .medium)
             .foregroundStyle(timeTheme.textColor.opacity(0.5))
             .padding(.horizontal, 24)
             .padding(.bottom, 4)
@@ -424,7 +443,7 @@ struct TimetableView: View {
 
         return HStack(alignment: .top, spacing: 12) {
             Text(name)
-                .font(HomeDesign.Typography.app(size: 18, weight: weight))
+                .appFont(size: 18, weight: weight)
                 .foregroundStyle(timeTheme.textColor.opacity(opacity))
                 .multilineTextAlignment(.leading)
                 .lineLimit(5)
@@ -434,14 +453,22 @@ struct TimetableView: View {
                 .layoutPriority(1)
 
             Text(adhanDisplay)
-                .font(HomeDesign.Typography.app(size: 18, weight: weight).monospacedDigit())
+                .appFont(size: 18, weight: weight)
+                .monospacedDigit()
                 .foregroundStyle(timeTheme.textColor.opacity(opacity * 0.75))
-                .frame(width: 65, alignment: .trailing)
-            
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+                .multilineTextAlignment(.trailing)
+                .frame(width: TimetableTimeColumns.width, alignment: .trailing)
+
             Text(iqamahDisplay)
-                .font(HomeDesign.Typography.app(size: 18, weight: iqamahWeight).monospacedDigit())
+                .appFont(size: 18, weight: iqamahWeight)
+                .monospacedDigit()
                 .foregroundStyle(timeTheme.textColor.opacity(opacity))
-                .frame(width: 65, alignment: .trailing)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+                .multilineTextAlignment(.trailing)
+                .frame(width: TimetableTimeColumns.width, alignment: .trailing)
         }
         .padding(.vertical, 16)
         .padding(.horizontal, 24)
@@ -451,12 +478,35 @@ struct TimetableView: View {
         )
     }
 
-    private func formatTime(_ t: String) -> String {
-        settings.uses24HourTime ? t : PrayerTimesEngine.formatTo12Hour(t)
+    private var monthSwitcherTitle: String {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        guard let d = cal.date(from: DateComponents(year: currentYear, month: currentMonth, day: 15)) else {
+            return currentMonthData.month.capitalized
+        }
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        formatter.setLocalizedDateFormatFromTemplate("yMMM")
+        return formatter.string(from: d)
     }
-    
+
+    private func localizedDayNumber(_ day: Int) -> String {
+        let n = NSNumber(value: day)
+        let f = NumberFormatter()
+        f.locale = locale
+        f.numberStyle = .none
+        return f.string(from: n) ?? "\(day)"
+    }
+
+    private func formatTime(_ t: String) -> String {
+        PrayerTimesEngine.formatPrayerTimeForDisplay(t, uses24Hour: settings.uses24HourTime, locale: locale)
+    }
+
     private func formatSystemTime() -> String {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = PrayerTimesEngine.sheffieldTimeZone
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: Date())
     }
@@ -520,10 +570,12 @@ private final class TimetablePreviewNotificationScheduler: PrayerNotificationSch
 
 #Preview {
     let settings = SettingsStore()
+    let cache = PrayerTimesDiskCache()
     let homeVM = HomeViewModel(
         repository: TimetablePreviewPrayerRepository(),
         settings: settings,
-        notificationScheduler: TimetablePreviewNotificationScheduler()
+        notificationScheduler: TimetablePreviewNotificationScheduler(),
+        diskCache: cache
     )
     return TimetableView(
         initialMonthData: MonthPrayerData(

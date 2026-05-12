@@ -3,13 +3,18 @@ import {
   cancelAllPrayerNotifications,
   requestNotificationAuthorizationIfNeeded,
 } from "@/lib/notifications/prayerNotifications";
-import * as Notifications from "expo-notifications";
+import * as ExpoNotificationApi from "@/lib/notifications/expoNotificationApi";
 import { Platform } from "react-native";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
 import type { Mosque, MonthPrayerData } from "@/types/prayer";
 import type { NotificationSettings } from "@/store/settings";
 
-jest.mock("expo-notifications", () => ({
+jest.mock("react-native", () => {
+  const { Platform } = jest.requireActual("react-native");
+  return { Platform: { ...Platform, OS: "ios" } };
+});
+
+jest.mock("@/lib/notifications/expoNotificationApi", () => ({
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
@@ -28,7 +33,7 @@ jest.mock("@/lib/prayer/prayerRepository", () => ({
   },
 }));
 
-const mockedNotifications = jest.mocked(Notifications);
+const mockedApi = jest.mocked(ExpoNotificationApi);
 const mockedRepository = jest.mocked(prayerRepository);
 
 function makeMosque(): Mosque {
@@ -79,6 +84,10 @@ function makeSettings(
 ): NotificationSettings {
   return {
     masterEnabled: true,
+    adhanEnabled: true,
+    iqamahEnabled: true,
+    preAdhanReminderMinutes: null,
+    preIqamahReminderMinutes: null,
     fajr: true,
     dhuhrJummah: true,
     asr: true,
@@ -91,13 +100,13 @@ function makeSettings(
 describe("prayerNotifications", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedNotifications.getPermissionsAsync.mockResolvedValue({
+    mockedApi.getPermissionsAsync.mockResolvedValue({
       status: "granted",
     } as any);
-    mockedNotifications.requestPermissionsAsync.mockResolvedValue({
+    mockedApi.requestPermissionsAsync.mockResolvedValue({
       status: "granted",
     } as any);
-    mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([]);
+    mockedApi.getAllScheduledNotificationsAsync.mockResolvedValue([]);
     mockedRepository.getUkDstDates.mockResolvedValue({ ukDstDates: [] });
     mockedRepository.getMonthlyPrayerTimes.mockResolvedValue(makeMonthlyData());
     mockedRepository.getRamadanTimetable.mockResolvedValue(null);
@@ -110,50 +119,50 @@ describe("prayerNotifications", () => {
 
   describe("requestNotificationAuthorizationIfNeeded", () => {
     it("returns true when already granted", async () => {
-      mockedNotifications.getPermissionsAsync.mockResolvedValue({
+      mockedApi.getPermissionsAsync.mockResolvedValue({
         status: "granted",
       } as any);
       const result = await requestNotificationAuthorizationIfNeeded();
       expect(result).toBe(true);
-      expect(mockedNotifications.requestPermissionsAsync).not.toHaveBeenCalled();
+      expect(mockedApi.requestPermissionsAsync).not.toHaveBeenCalled();
     });
 
     it("requests permission when not granted", async () => {
-      mockedNotifications.getPermissionsAsync.mockResolvedValue({
+      mockedApi.getPermissionsAsync.mockResolvedValue({
         status: "denied",
       } as any);
-      mockedNotifications.requestPermissionsAsync.mockResolvedValue({
+      mockedApi.requestPermissionsAsync.mockResolvedValue({
         status: "granted",
       } as any);
       const result = await requestNotificationAuthorizationIfNeeded();
       expect(result).toBe(true);
-      expect(mockedNotifications.requestPermissionsAsync).toHaveBeenCalled();
+      expect(mockedApi.requestPermissionsAsync).toHaveBeenCalled();
     });
   });
 
   describe("cancelAllPrayerNotifications", () => {
     it("cancels only Masjidly prayer identifiers", async () => {
-      mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([
+      mockedApi.getAllScheduledNotificationsAsync.mockResolvedValue([
         { identifier: "masjidly.prayer.test.2025-06-13.fajr.adhan" },
         { identifier: "other.app.notification" },
         { identifier: "masjidly.prayer.test.2025-06-13.fajr.iqamah" },
       ] as any);
       await cancelAllPrayerNotifications();
       expect(
-        mockedNotifications.cancelScheduledNotificationAsync
+        mockedApi.cancelScheduledNotificationAsync
       ).toHaveBeenCalledTimes(2);
       expect(
-        mockedNotifications.cancelScheduledNotificationAsync
+        mockedApi.cancelScheduledNotificationAsync
       ).toHaveBeenCalledWith("masjidly.prayer.test.2025-06-13.fajr.adhan");
       expect(
-        mockedNotifications.cancelScheduledNotificationAsync
+        mockedApi.cancelScheduledNotificationAsync
       ).toHaveBeenCalledWith("masjidly.prayer.test.2025-06-13.fajr.iqamah");
     });
   });
 
   describe("rescheduleUpcomingPrayerNotifications", () => {
     it("master off cancels and schedules nothing", async () => {
-      mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([
+      mockedApi.getAllScheduledNotificationsAsync.mockResolvedValue([
         { identifier: "masjidly.prayer.test.2025-06-13.fajr.adhan" },
       ] as any);
 
@@ -167,16 +176,16 @@ describe("prayerNotifications", () => {
       });
 
       expect(
-        mockedNotifications.cancelScheduledNotificationAsync
+        mockedApi.cancelScheduledNotificationAsync
       ).toHaveBeenCalled();
-      expect(mockedNotifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+      expect(mockedApi.scheduleNotificationAsync).not.toHaveBeenCalled();
     });
 
     it("master on requests permission", async () => {
-      mockedNotifications.getPermissionsAsync.mockResolvedValue({
+      mockedApi.getPermissionsAsync.mockResolvedValue({
         status: "denied",
       } as any);
-      mockedNotifications.requestPermissionsAsync.mockResolvedValue({
+      mockedApi.requestPermissionsAsync.mockResolvedValue({
         status: "granted",
       } as any);
 
@@ -191,7 +200,7 @@ describe("prayerNotifications", () => {
         locale: "en",
       });
 
-      expect(mockedNotifications.requestPermissionsAsync).toHaveBeenCalled();
+      expect(mockedApi.requestPermissionsAsync).toHaveBeenCalled();
     });
 
     it("each enabled prayer schedules adhan and iqamah", async () => {
@@ -207,7 +216,7 @@ describe("prayerNotifications", () => {
         days: 1,
       });
 
-      const calls = mockedNotifications.scheduleNotificationAsync.mock.calls;
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
       // Isha iqamah is "After Maghrib" in summer (unparseable), so only 9 scheduled
       expect(calls.length).toBe(9);
 
@@ -296,13 +305,111 @@ describe("prayerNotifications", () => {
         days: 1,
       });
 
-      const calls = mockedNotifications.scheduleNotificationAsync.mock.calls;
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
       // Asr disabled (2 fewer) + Isha iqamah skipped in summer (1 fewer) = 7
       expect(calls.length).toBe(7);
 
       expect(
         calls.some((call: any) => call[0].identifier.includes(".asr."))
       ).toBe(false);
+    });
+
+    it("adhan disabled skips all adhan notifications", async () => {
+      jest.useFakeTimers({ now: new Date("2025-06-13T00:00:00Z").getTime() });
+
+      const mosque = makeMosque();
+      const settings = makeSettings({ adhanEnabled: false });
+
+      await rescheduleUpcomingPrayerNotifications({
+        mosque,
+        settings,
+        locale: "en",
+        days: 1,
+      });
+
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
+      // Only iqamah notifications (5 prayers) - Isha iqamah skipped in summer
+      // = fajr iqamah + dhuhr/jummah iqamah + asr iqamah + maghrib iqamah = 4
+      expect(calls.length).toBe(4);
+
+      expect(
+        calls.every((call: any) => !call[0].identifier.includes(".adhan"))
+      ).toBe(true);
+    });
+
+    it("iqamah disabled skips all iqamah notifications", async () => {
+      jest.useFakeTimers({ now: new Date("2025-06-13T00:00:00Z").getTime() });
+
+      const mosque = makeMosque();
+      const settings = makeSettings({ iqamahEnabled: false });
+
+      await rescheduleUpcomingPrayerNotifications({
+        mosque,
+        settings,
+        locale: "en",
+        days: 1,
+      });
+
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
+      // Only adhan notifications (5 prayers)
+      expect(calls.length).toBe(5);
+
+      expect(
+        calls.every((call: any) => !call[0].identifier.includes(".iqamah"))
+      ).toBe(true);
+    });
+
+    it("reminder notifications are scheduled", async () => {
+      jest.useFakeTimers({ now: new Date("2025-06-13T00:00:00Z").getTime() });
+
+      const mosque = makeMosque();
+      const settings = makeSettings({
+        preAdhanReminderMinutes: 10,
+        preIqamahReminderMinutes: 15,
+      });
+
+      await rescheduleUpcomingPrayerNotifications({
+        mosque,
+        settings,
+        locale: "en",
+        days: 1,
+      });
+
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
+
+      const reminderCalls = calls.filter((call: any) =>
+        call[0].identifier.includes(".reminder")
+      );
+      // 5 adhan reminders + 4 iqamah reminders (isha iqamah skipped) = 9
+      expect(reminderCalls.length).toBe(9);
+    });
+
+    it("notification data payload includes kind, prayer, mosqueSlug, isoDate", async () => {
+      jest.useFakeTimers({ now: new Date("2025-06-13T00:00:00Z").getTime() });
+
+      const mosque = makeMosque();
+      const settings = makeSettings();
+
+      await rescheduleUpcomingPrayerNotifications({
+        mosque,
+        settings,
+        locale: "en",
+        days: 1,
+      });
+
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
+      const adhanCall = calls.find(
+        (call: any) => call[0].identifier === "masjidly.prayer.test-mosque.2025-06-13.fajr.adhan"
+      );
+      expect(adhanCall).toBeDefined();
+      expect(adhanCall![0].content.data).toEqual(
+        expect.objectContaining({
+          kind: "adhan",
+          prayer: "fajr",
+          mosqueSlug: "test-mosque",
+          isoDate: "2025-06-13",
+        })
+      );
     });
 
     it("Friday schedules Jummah copy", async () => {
@@ -318,7 +425,7 @@ describe("prayerNotifications", () => {
         days: 1,
       });
 
-      const calls = mockedNotifications.scheduleNotificationAsync.mock.calls;
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
 
       const dhuhrAdhan = calls.find(
         (call: any) =>
@@ -349,7 +456,7 @@ describe("prayerNotifications", () => {
         days: 1,
       });
 
-      const calls = mockedNotifications.scheduleNotificationAsync.mock.calls;
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
 
       expect(
         calls.some((call: any) => call[0].identifier.includes(".fajr."))
@@ -381,7 +488,7 @@ describe("prayerNotifications", () => {
         days: 1,
       });
 
-      const calls = mockedNotifications.scheduleNotificationAsync.mock.calls;
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
       for (const call of calls) {
         expect(call[0].identifier).toMatch(/^masjidly\.prayer\./);
       }
@@ -417,15 +524,15 @@ describe("prayerNotifications", () => {
         days: 1,
       });
 
-      expect(mockedNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+      expect(mockedApi.setNotificationChannelAsync).toHaveBeenCalledWith(
         "prayer-times",
         {
           name: "Prayer Times",
-          importance: mockedNotifications.AndroidImportance.DEFAULT,
+          importance: mockedApi.AndroidImportance.DEFAULT,
         }
       );
 
-      const calls = mockedNotifications.scheduleNotificationAsync.mock.calls;
+      const calls = mockedApi.scheduleNotificationAsync.mock.calls;
       const androidCall = calls[0] as any;
       expect(androidCall[0].trigger.channelId).toBe("prayer-times");
     });

@@ -1,39 +1,89 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { COLORS, SPACING, FONT_SIZES } from "@/constants";
-import { formatTo12Hour } from "@/lib/prayer/prayerTimesEngine";
+import { SPACING } from "@/constants";
+import { formatPrayerClockForDisplay } from "@/lib/prayer/prayerTimesEngine";
 
 export interface PrayerRowProps {
   name: string;
   adhan: string;
   iqamah: string;
-  highlighted?: boolean;
+  isNext?: boolean;
+  isPast?: boolean;
   uses24HourTime: boolean;
+  locale: string;
+  textColor: string;
 }
 
-function formatTime(time: string, uses24h: boolean): string {
-  if (!time || time === "-" || time === "\u2014") return "\u2014";
-  if (uses24h) return time;
-  return formatTo12Hour(time);
+function formatTime(time: string, uses24h: boolean, locale: string): string {
+  if (!time || time === "-" || time === "\u2014") return "-";
+  return formatPrayerClockForDisplay(time, uses24h, locale);
 }
 
 export const PrayerRow: React.FC<PrayerRowProps> = ({
   name,
   adhan,
   iqamah,
-  highlighted = false,
+  isNext = false,
+  isPast = false,
   uses24HourTime,
+  locale,
+  textColor,
 }) => {
+  const opacity = isPast ? 0.35 : 1.0;
+  const nameWeight = isNext ? "600" : "400";
+  const iqamahWeight = isNext ? "700" : "500";
+
   return (
-    <View style={[styles.row, highlighted && styles.rowHighlighted]}>
-      <Text style={[styles.cell, styles.nameCell]} numberOfLines={1}>
+    <View
+      style={[
+        styles.row,
+        isNext && {
+          backgroundColor: textColor + "14", // ~0.08 opacity
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.cell,
+          styles.nameCell,
+          {
+            color: textColor + Math.round(opacity * 255).toString(16).padStart(2, "0"),
+            fontFamily: isNext ? "Comfortaa_600SemiBold" : "Comfortaa_400Regular",
+          },
+        ]}
+        numberOfLines={1}
+      >
         {name}
       </Text>
-      <Text style={[styles.cell, styles.timeCell]} numberOfLines={1}>
-        {formatTime(adhan, uses24HourTime)}
+      <Text
+        style={[
+          styles.cell,
+          styles.timeCell,
+          {
+            color: textColor + Math.round(opacity * 0.75 * 255).toString(16).padStart(2, "0"),
+            fontFamily: isNext ? "Comfortaa_600SemiBold" : "Comfortaa_400Regular",
+          },
+        ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.78}
+      >
+        {formatTime(adhan, uses24HourTime, locale)}
       </Text>
-      <Text style={[styles.cell, styles.timeCell]} numberOfLines={1}>
-        {formatTime(iqamah, uses24HourTime)}
+      <Text
+        style={[
+          styles.cell,
+          styles.timeCell,
+          {
+            color: textColor + Math.round(opacity * 255).toString(16).padStart(2, "0"),
+            fontFamily: iqamahWeight === "700" ? "Comfortaa_700Bold" : "Comfortaa_500Medium",
+          },
+        ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.78}
+      >
+        {formatTime(iqamah, uses24HourTime, locale)}
       </Text>
     </View>
   );
@@ -43,24 +93,20 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: 12,
-  },
-  rowHighlighted: {
-    backgroundColor: `${COLORS.accent}15`,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
   },
   cell: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.primary,
+    fontSize: 18,
   },
   nameCell: {
     flex: 1,
-    fontWeight: "600",
   },
   timeCell: {
-    width: 80,
-    textAlign: "center",
-    color: COLORS.secondary,
+    width: 94,
+    maxWidth: 94,
+    textAlign: "right",
+    fontVariant: ["tabular-nums"],
   },
 });

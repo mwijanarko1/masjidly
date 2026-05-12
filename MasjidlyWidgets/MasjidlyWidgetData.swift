@@ -165,15 +165,21 @@ enum MasjidlyWidgetResolver {
             return .stale()
         }
 
+        let locale = snapshotLocale(from: snapshot.appLanguageRawValue)
+
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = sheffieldTimeZone
         let dayStart = calendar.startOfDay(for: now)
         let isFriday = calendar.component(.weekday, from: now) == 6
         
         func wallClockToday(_ time: String) -> Date? {
+            wallClockDay(time, on: dayStart)
+        }
+
+        func wallClockDay(_ time: String, on baseDate: Date) -> Date? {
             let parts = time.split(separator: ":").compactMap { Int($0) }
             guard parts.count == 2 else { return nil }
-            return calendar.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: dayStart)
+            return calendar.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: baseDate)
         }
 
         let jummahRaw = day.iqamah.jummah.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
@@ -206,18 +212,42 @@ enum MasjidlyWidgetResolver {
             }
         }
         
-        let next = prayersList[nextPrayerIndex]
+        // Post-Isha wrap detection — all today's prayers have passed, so "next" is tomorrow's Fajr
+        let isNextFajrTomorrow = nextPrayerIndex == 0 && (prayersList[0].adhanDate ?? now) <= now
+
+        let morrowDay: MasjidlyWidgetDaySnapshot? = {
+            guard isNextFajrTomorrow else { return nil }
+            let tomorrowString = isoDateString(for: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
+            return snapshot.days.first(where: { $0.date == tomorrowString })
+        }()
+
+        let next: ResolvedPrayer = {
+            if isNextFajrTomorrow, let morrow = morrowDay {
+                return ResolvedPrayer(
+                    id: "fajr",
+                    name: "Fajr",
+                    adhan: morrow.prayers.fajr,
+                    iqamahs: [resolveIqamah("fajr", adhan: morrow.prayers.fajr, iqamah: morrow.iqamah)],
+                    adhanDate: wallClockDay(morrow.prayers.fajr, on: calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart)
+                )
+            }
+            return prayersList[nextPrayerIndex]
+        }()
 
         var targetDate = next.adhanDate
         if nextPrayerIndex == 0, let d = targetDate, d <= now {
             targetDate = calendar.date(byAdding: .day, value: 1, to: d)
         }
 
+        let nextWallClockBase: Date = isNextFajrTomorrow
+            ? (calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart)
+            : dayStart
+
         let rawIqamahsForNext: [String] = {
             if isFriday, next.id == "dhuhr" {
                 return jummahIqamahs
             }
-            return [resolveIqamah(next.id, adhan: next.adhan, iqamah: day.iqamah)]
+            return [resolveIqamah(next.id, adhan: next.adhan, iqamah: isNextFajrTomorrow ? (morrowDay?.iqamah ?? day.iqamah) : day.iqamah)]
         }()
 
         let displayIqamahRaw = nextDisplayIqamahRaw(
@@ -226,10 +256,10 @@ enum MasjidlyWidgetResolver {
             rawIqamahs: rawIqamahsForNext,
             adhan: next.adhan,
             now: now,
-            wallClock: { wallClockToday($0) }
+            wallClock: { wallClockDay($0, on: nextWallClockBase) }
         )
 
-        let iqamahDate = wallClockToday(displayIqamahRaw)
+        let iqamahDate = wallClockDay(displayIqamahRaw, on: nextWallClockBase)
 
         let progressStartDate: Date? = {
             if nextPrayerIndex > 0, let prev = prayersList[nextPrayerIndex - 1].adhanDate {
@@ -243,7 +273,24 @@ enum MasjidlyWidgetResolver {
 
         let (followingName, followingAdhanRaw, followingIqamahRaw): (String, String, String) = {
             if nextPrayerIndex < prayersList.count - 1 {
-                let f = prayersList[nextPrayerIndex + 1]
+                let nextIdx = nextPrayerIndex
+                // When wrapping to tomorrow's Fajr, the "following" prayer is tomorrow's Dhuhr
+                if isNextFajrTomorrow, let morrow = morrowDay {
+                    let morrowStart = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
+                    let fDhuhrAdhan = morrow.prayers.dhuhr
+                    let fDhuhrIqamah = isFriday
+                        ? nextDisplayIqamahRaw(
+                            prayerId: "dhuhr",
+                            isFriday: true,
+                            rawIqamahs: jummahIqamahs,
+                            adhan: fDhuhrAdhan,
+                            now: now,
+                            wallClock: { wallClockDay($0, on: morrowStart) }
+                        )
+                        : resolveIqamah("dhuhr", adhan: fDhuhrAdhan, iqamah: morrow.iqamah)
+                    return (isFriday ? "Jumu'ah" : "Dhuhr", fDhuhrAdhan, fDhuhrIqamah)
+                }
+                let f = prayersList[nextIdx + 1]
                 let iq = f.id == "dhuhr" && isFriday
                     ? nextDisplayIqamahRaw(
                         prayerId: "dhuhr",
@@ -266,13 +313,31 @@ enum MasjidlyWidgetResolver {
 
         let rows: [MasjidlyWidgetPrayerRow] = prayersList.enumerated().map { i, p in
             let isNext = i == nextPrayerIndex
-            let isPassed = !isNext && ((p.adhanDate ?? now) <= now) && (nextPrayerIndex != 0 || i != 0)
+            let isPassed: Bool
+
+            if isNextFajrTomorrow, i == 0 {
+                // Fajr row shows tomorrow's times when we've wrapped
+                isPassed = false
+            } else {
+                isPassed = !isNext && ((p.adhanDate ?? now) <= now) && (nextPrayerIndex != 0 || i != 0)
+            }
+
+            // Override row data with morrow when wrapping to tomorrow's Fajr
+            let rowAdhan: String
+            let rowIqamahs: [String]
+            if isNextFajrTomorrow, i == 0, let morrow = morrowDay {
+                rowAdhan = morrow.prayers.fajr
+                rowIqamahs = [resolveIqamah("fajr", adhan: morrow.prayers.fajr, iqamah: morrow.iqamah)]
+            } else {
+                rowAdhan = p.adhan
+                rowIqamahs = p.iqamahs
+            }
 
             return MasjidlyWidgetPrayerRow(
                 id: p.id,
                 name: p.name,
-                adhan: format(p.adhan, uses24HourTime: snapshot.uses24HourTime),
-                iqamahs: p.iqamahs.map { format($0, uses24HourTime: snapshot.uses24HourTime) },
+                adhan: format(rowAdhan, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
+                iqamahs: rowIqamahs.map { format($0, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now) },
                 isPassed: isPassed,
                 isNext: isNext
             )
@@ -284,16 +349,16 @@ enum MasjidlyWidgetResolver {
             kind: .content,
             mosqueName: snapshot.mosque.name,
             prayerName: next.name,
-            adhanTime: format(next.adhan, uses24HourTime: snapshot.uses24HourTime),
-            iqamahTime: format(displayIqamahRaw, uses24HourTime: snapshot.uses24HourTime),
+            adhanTime: format(next.adhan, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
+            iqamahTime: format(displayIqamahRaw, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
             targetDate: targetDate,
             progressStartDate: progressStartDate,
             iqamahDate: iqamahDate,
             extraJummahCount: extraJummahCount,
             rows: rows,
             followingPrayerName: followingName,
-            followingAdhanTime: followingAdhanRaw.isEmpty ? "" : format(followingAdhanRaw, uses24HourTime: snapshot.uses24HourTime),
-            followingIqamahTime: followingIqamahRaw.isEmpty ? "" : format(followingIqamahRaw, uses24HourTime: snapshot.uses24HourTime)
+            followingAdhanTime: followingAdhanRaw.isEmpty ? "" : format(followingAdhanRaw, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
+            followingIqamahTime: followingIqamahRaw.isEmpty ? "" : format(followingIqamahRaw, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now)
         )
     }
 
@@ -373,12 +438,35 @@ enum MasjidlyWidgetResolver {
         return time.range(of: #"^(\d{1,2}):(\d{2})$"#, options: .regularExpression) != nil
     }
 
-    private static func format(_ time: String, uses24HourTime: Bool) -> String {
-        guard !uses24HourTime, isParseableTime(time) else { return time }
+    private static func snapshotLocale(from raw: String) -> Locale {
+        Locale(identifier: "en")
+    }
+
+    private static func prayerWallClockDate(hour: Int, minute: Int, reference: Date) -> Date? {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = sheffieldTimeZone
+        let parts = cal.dateComponents([.year, .month, .day], from: reference)
+        return cal.date(from: DateComponents(
+            year: parts.year, month: parts.month, day: parts.day,
+            hour: hour, minute: minute
+        ))
+    }
+
+    private static func format(_ time: String, uses24HourTime: Bool, locale: Locale, reference: Date) -> String {
+        guard isParseableTime(time) else { return time }
         let parts = time.split(separator: ":").compactMap { Int($0) }
-        guard parts.count == 2 else { return time }
-        let suffix = parts[0] >= 12 ? "pm" : "am"
-        let hour = parts[0] % 12 == 0 ? 12 : parts[0] % 12
-        return String(format: "%d:%02d%@", hour, parts[1], suffix)
+        guard parts.count == 2, let date = prayerWallClockDate(hour: parts[0], minute: parts[1], reference: reference) else {
+            return time
+        }
+        let f = DateFormatter()
+        f.locale = locale
+        f.timeZone = sheffieldTimeZone
+        if uses24HourTime {
+            f.setLocalizedDateFormatFromTemplate("HHmm")
+        } else {
+            f.timeStyle = .short
+            f.dateStyle = .none
+        }
+        return f.string(from: date)
     }
 }

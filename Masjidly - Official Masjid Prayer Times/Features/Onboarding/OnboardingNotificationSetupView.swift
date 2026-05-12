@@ -5,6 +5,7 @@ struct OnboardingNotificationSetupView: View {
     @Binding var draft: OnboardingNotificationDraft
     let isSaving: Bool
     let onContinue: () -> Void
+    @Environment(\.locale) private var locale
 
     private let reminderOptions: [Int?] = [nil, 5, 10, 15, 30]
 
@@ -24,27 +25,27 @@ struct OnboardingNotificationSetupView: View {
             OnboardingTutorialChrome.card(timeTheme: timeTheme) {
                 VStack(alignment: .leading, spacing: 24) {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Prayer notifications")
-                            .font(HomeDesign.Typography.app(size: 23, weight: .semibold))
+                        Text(localized("onboarding.notifications.title"))
+                            .appFont(size: 23, weight: .semibold)
                             .foregroundStyle(timeTheme.textColor)
                             .kerning(-0.5)
 
-                        Text("Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this.")
-                            .font(HomeDesign.Typography.app(size: 16, weight: .regular))
+                        Text(localized("onboarding.notifications.message"))
+                            .appFont(size: 16, weight: .regular)
                             .foregroundStyle(timeTheme.textColor.opacity(0.8))
                             .lineSpacing(4)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
                     VStack(spacing: 20) {
-                        Toggle("Adhan", isOn: $draft.adhanEnabled)
-                            .font(HomeDesign.Typography.app(size: 18, weight: .medium))
+                        Toggle(localized("notification.channel.adhan"), isOn: $draft.adhanEnabled)
+                            .appFont(size: 18, weight: .medium)
                             .tint(HomeDesign.Colors.accent)
                             .foregroundStyle(timeTheme.textColor)
                             .accessibilityIdentifier("Onboarding.AdhanToggle")
 
-                        Toggle("Iqamah", isOn: $draft.iqamahEnabled)
-                            .font(HomeDesign.Typography.app(size: 18, weight: .medium))
+                        Toggle(localized("notification.channel.iqamah"), isOn: $draft.iqamahEnabled)
+                            .appFont(size: 18, weight: .medium)
                             .tint(HomeDesign.Colors.accent)
                             .foregroundStyle(timeTheme.textColor)
                             .accessibilityIdentifier("Onboarding.IqamahToggle")
@@ -54,17 +55,17 @@ struct OnboardingNotificationSetupView: View {
                             .padding(.vertical, 4)
 
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Reminders")
-                                .font(HomeDesign.Typography.app(size: 16, weight: .semibold))
+                            Text(localized("settings.reminders.title"))
+                                .appFont(size: 16, weight: .semibold)
                                 .foregroundStyle(timeTheme.textColor.opacity(0.6))
                                 .kerning(0.5)
 
                             HStack {
-                                Text("Before Adhan")
-                                    .font(HomeDesign.Typography.app(size: 16, weight: .regular))
+                                Text(localized("settings.reminder.before_adhan"))
+                                    .appFont(size: 16, weight: .regular)
                                     .foregroundStyle(timeTheme.textColor)
                                 Spacer()
-                                Picker("Adhan Reminder", selection: $draft.preAdhanReminderMinutes) {
+                                Picker(localized("settings.reminder.adhan_picker"), selection: $draft.preAdhanReminderMinutes) {
                                     ForEach(reminderOptions, id: \.self) { minutes in
                                         Text(reminderLabel(for: minutes)).tag(minutes)
                                     }
@@ -75,11 +76,11 @@ struct OnboardingNotificationSetupView: View {
                             }
 
                             HStack {
-                                Text("Before Iqamah")
-                                    .font(HomeDesign.Typography.app(size: 16, weight: .regular))
+                                Text(localized("settings.reminder.before_iqamah"))
+                                    .appFont(size: 16, weight: .regular)
                                     .foregroundStyle(timeTheme.textColor)
                                 Spacer()
-                                Picker("Iqamah Reminder", selection: $draft.preIqamahReminderMinutes) {
+                                Picker(localized("settings.reminder.iqamah_picker"), selection: $draft.preIqamahReminderMinutes) {
                                     ForEach(reminderOptions, id: \.self) { minutes in
                                         Text(reminderLabel(for: minutes)).tag(minutes)
                                     }
@@ -102,7 +103,7 @@ struct OnboardingNotificationSetupView: View {
                                     .padding(.vertical, 16)
                                     .background(HomeDesign.Colors.activeGradient, in: Capsule())
                             } else {
-                                Text("Finish")
+                                Text(localized("onboarding.finish"))
                                     .onboardingPrimaryCapsule()
                             }
                         }
@@ -121,7 +122,12 @@ struct OnboardingNotificationSetupView: View {
     }
 
     private func reminderLabel(for minutes: Int?) -> String {
-        guard let minutes else { return "Off" }
-        return "\(minutes) min"
+        guard let minutes else { return localized("settings.reminder.off") }
+        let format = localized("settings.reminder.minutes_format")
+        return String(format: format, locale: locale, arguments: [minutes])
+    }
+
+    private func localized(_ key: String) -> String {
+        String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
     }
 }
