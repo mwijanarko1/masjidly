@@ -19,10 +19,12 @@ export interface SettingsState {
   selectedMosqueId?: string;
   selectedMosqueSlug?: string;
   uses24HourTime: boolean;
+  hideQiblaCompass: boolean;
   hasCompletedOnboarding: boolean;
   notifications: NotificationSettings;
   setSelectedMosque: (id: string, slug: string) => void;
   setUses24HourTime: (v: boolean) => void;
+  setHideQiblaCompass: (v: boolean) => void;
   setHasCompletedOnboarding: (v: boolean) => void;
   setNotificationMaster: (v: boolean) => void;
   setAdhanEnabled: (v: boolean) => void;
@@ -53,6 +55,7 @@ const initialState: Omit<
   SettingsState,
   | "setSelectedMosque"
   | "setUses24HourTime"
+  | "setHideQiblaCompass"
   | "setHasCompletedOnboarding"
   | "setNotificationMaster"
   | "setAdhanEnabled"
@@ -65,6 +68,7 @@ const initialState: Omit<
   selectedMosqueId: undefined,
   selectedMosqueSlug: undefined,
   uses24HourTime: false,
+  hideQiblaCompass: false,
   hasCompletedOnboarding: false,
   notifications: defaultNotifications,
 };
@@ -110,6 +114,7 @@ export const useSettingsStore = create<SettingsState>()(
       setSelectedMosque: (id, slug) =>
         set({ selectedMosqueId: id, selectedMosqueSlug: slug }),
       setUses24HourTime: (v) => set({ uses24HourTime: v }),
+      setHideQiblaCompass: (v) => set({ hideQiblaCompass: v }),
       setHasCompletedOnboarding: (v) => set({ hasCompletedOnboarding: v }),
       setNotificationMaster: (v) =>
         set((state) => ({

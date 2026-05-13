@@ -72,10 +72,12 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
+    flexShrink: 1,
     marginRight: SPACING.sm,
   },
   title: {
     fontSize: FONT_SIZES.md,
+    flexShrink: 1,
   },
   subtitle: {
     fontSize: FONT_SIZES.sm,

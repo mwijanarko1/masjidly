@@ -9,6 +9,11 @@ import {
   setNotificationChannelAsync,
   AndroidImportance,
 } from "@/lib/notifications/expoNotificationApi";
+
+// Notification category identifiers (iOS parity with PrayerNotificationContent.CategoryID)
+const CATEGORY_ADHAN = "masjidly.category.adhan";
+const CATEGORY_IQAMAH = "masjidly.category.iqamah";
+const CATEGORY_REMINDER = "masjidly.category.reminder";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
 import {
   getDateInSheffield,
@@ -83,25 +88,86 @@ function triggerDate(civilDay: Date, hhmm: string): Date | null {
   return dateInSheffield(year, month, day, p[0], p[1]);
 }
 
+// ── iOS-matching notification content builders ──
+
+/**
+ * Capitalize first letter.
+ */
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Prayer display name matching iOS PrayerNotificationContent.prayerDisplayName().
+ * Uses "Jumu\u2019ah" for Friday dhuhr.
+ */
+function prayerDisplayName(prayer: string, isFriday: boolean): string {
+  if (prayer === "dhuhr" && isFriday) return "Jumu\u2019ah";
+  return capitalize(prayer);
+}
+
+/**
+ * Compute the iOS-matching notification title & body from schedule data.
+ */
+function iOSNotificationContent(data: Record<string, string>, body: string): { title: string; body: string } {
+  const kind = data.kind;
+  const prayer = data.prayer ?? "";
+  const isFriday = data.prayer === "jummah" || data.prayer === "jummah";
+
+  switch (kind) {
+    case "adhan": {
+      // iOS: title = "Fajr Adhan", body = "Tap to hear adhan."
+      const name = prayer === "jummah" ? "Jumu\u2019ah" : capitalize(prayer);
+      return { title: `${name} Adhan`, body: "Tap to hear adhan." };
+    }
+    case "iqamah": {
+      // iOS: title = "Fajr Iqamah", body = "Iqamah for Fajr is now."
+      const name = prayer === "jummah" ? "Jumu\u2019ah" : capitalize(prayer);
+      return { title: `${name} Iqamah`, body: `Iqamah for ${name} is now.` };
+    }
+    case "reminder": {
+      const reminderFor = data.reminderFor ?? "adhan";
+      const pName = capitalize(prayer);
+      const minutes = data.reminderMinutes ? parseInt(data.reminderMinutes, 10) : 0;
+      if (reminderFor === "iqamah") {
+        // iOS: title = "Fajr Iqamah soon", body = "Iqamah in 10 min."
+        return { title: `${pName} Iqamah soon`, body: `Iqamah in ${minutes} min.` };
+      }
+      // iOS: title = "Fajr soon", body = "Adhan in 10 min."
+      return { title: `${pName} soon`, body: `Adhan in ${minutes} min.` };
+    }
+    default:
+      return { title: body, body }; // Fallback
+  }
+}
+
 async function scheduleIfNeeded(
   id: string,
   title: string,
   body: string,
   civilDay: Date,
   hhmm: string,
-  data: Record<string, string>
+  data: Record<string, string>,
+  categoryIdentifier?: string
 ): Promise<void> {
   const fire = triggerDate(civilDay, hhmm);
   if (!fire || fire.getTime() <= Date.now()) return;
+
+  // Infer category from data.kind when not explicitly provided (iOS parity)
+  const cat = categoryIdentifier ?? categoryIdForKind(data.kind);
+
+  // iOS parity: auto-compute title & body from data.kind / data.prayer / data.reminderFor
+  const ios = iOSNotificationContent(data, body);
 
   try {
     await scheduleNotificationAsync({
       identifier: id,
       content: {
-        title,
-        body,
+        title: ios.title,
+        body: ios.body,
         sound: true,
         data,
+        ...(cat ? { categoryIdentifier: cat } : {}),
       },
       trigger: {
         type: SchedulableTriggerInputTypes.DATE,
@@ -116,6 +182,16 @@ async function scheduleIfNeeded(
   }
 }
 
+/** Map notification kind to category identifier, matching iOS PrayerNotificationContent.registerCategories(). */
+function categoryIdForKind(kind?: string): string | undefined {
+  switch (kind) {
+    case "adhan": return CATEGORY_ADHAN;
+    case "iqamah": return CATEGORY_IQAMAH;
+    case "reminder": return CATEGORY_REMINDER;
+    default: return undefined;
+  }
+}
+
 async function scheduleReminderIfNeeded(
   id: string,
   title: string,
@@ -123,11 +199,14 @@ async function scheduleReminderIfNeeded(
   civilDay: Date,
   hhmm: string,
   minutesBefore: number,
-  data: Record<string, string>
+  data: Record<string, string>,
+  categoryIdentifier?: string
 ): Promise<void> {
+  // Include reminder minutes in data so iOSNotificationContent can use it
+  const dataWithMinutes = { ...data, reminderMinutes: String(minutesBefore) };
   const reminderTime = subtractMinutes(hhmm, minutesBefore);
   if (!reminderTime) return;
-  await scheduleIfNeeded(id, title, body, civilDay, reminderTime, data);
+  await scheduleIfNeeded(id, title, body, civilDay, reminderTime, dataWithMinutes, categoryIdentifier);
 }
 
 function subtractMinutes(time: string, minutes: number): string | null {
@@ -170,10 +249,14 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
   if (!granted) return;
 
   if (Platform.OS === "android") {
-    await setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-      name: "Prayer Times",
-      importance: AndroidImportance.DEFAULT,
-    });
+    try {
+      await setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+        name: "Prayer Times",
+        importance: AndroidImportance.DEFAULT,
+      });
+    } catch {
+      // Android Expo Go may not support notification channels; fail gracefully.
+    }
   }
 
   const { adhanEnabled, iqamahEnabled } = settings;

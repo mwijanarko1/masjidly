@@ -22,13 +22,15 @@ jest.mock("@/lib/prayer/prayerRepository", () => ({
 const mockSetSelectedMosque = jest.fn();
 const mockSetUses24HourTime = jest.fn();
 const mockSetNotificationMaster = jest.fn();
-const mockSetNotificationPrayer = jest.fn();
+const mockSetHideQiblaCompass = jest.fn();
 
 jest.mock("@/store/settings", () => {
   const makeState = () => ({
     selectedMosqueId: "1",
     selectedMosqueSlug: "mosque-a",
     uses24HourTime: false,
+    hideQiblaCompass: false,
+    hasCompletedOnboarding: true,
     notifications: {
       masterEnabled: false,
       adhanEnabled: true,
@@ -43,12 +45,15 @@ jest.mock("@/store/settings", () => {
     },
     setSelectedMosque: mockSetSelectedMosque,
     setUses24HourTime: mockSetUses24HourTime,
+    setHideQiblaCompass: mockSetHideQiblaCompass,
+    setHasCompletedOnboarding: jest.fn(),
     setNotificationMaster: mockSetNotificationMaster,
-    setNotificationPrayer: mockSetNotificationPrayer,
     setAdhanEnabled: jest.fn(),
     setIqamahEnabled: jest.fn(),
     setPreAdhanReminderMinutes: jest.fn(),
     setPreIqamahReminderMinutes: jest.fn(),
+    setNotificationPrayer: jest.fn(),
+    resetSettings: jest.fn(),
   });
   const useSettingsStore = jest.fn((selector?: any) => {
     const state = makeState();
@@ -75,9 +80,19 @@ jest.mock("@/components/ui/AtmosphericSkyBackground", () => ({
   AtmosphericSkyBackground: () => null,
 }));
 
+jest.mock("@/lib/notifications/expoNotificationApi", () => ({
+  scheduleNotificationAsync: jest.fn(),
+  SchedulableTriggerInputTypes: { TIME_INTERVAL: "timeInterval", DATE: "date" },
+  getPermissionsAsync: jest.fn().mockResolvedValue({ status: "granted" }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: "granted" }),
+  cancelScheduledNotificationAsync: jest.fn(),
+  getAllScheduledNotificationsAsync: jest.fn().mockResolvedValue([]),
+}));
+
 jest.mock("@/lib/notifications/prayerNotifications", () => ({
   cancelAllPrayerNotifications: jest.fn(),
   rescheduleUpcomingPrayerNotifications: jest.fn(),
+  requestNotificationAuthorizationIfNeeded: jest.fn().mockResolvedValue(true),
 }));
 
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
@@ -112,52 +127,25 @@ describe("SettingsScreen", () => {
     expect(mockSetUses24HourTime).toHaveBeenCalledWith(true);
   });
 
+  it("toggles Qibla compass", async () => {
+    render(<SettingsScreen />);
+    await waitFor(() => expect(screen.getByTestId("settings-mosque-picker")).toBeTruthy());
+
+    const toggles = screen.getAllByRole("switch");
+    // Index 1 = Qibla toggle (after 24h at index 0)
+    expect(toggles.length).toBeGreaterThanOrEqual(2);
+    fireEvent(toggles[1], "valueChange", false);
+    expect(mockSetHideQiblaCompass).toHaveBeenCalledWith(true);
+  });
+
   it("toggles notification master", async () => {
     render(<SettingsScreen />);
     await waitFor(() => expect(screen.getByTestId("settings-mosque-picker")).toBeTruthy());
 
     const toggles = screen.getAllByRole("switch");
-    expect(toggles.length).toBeGreaterThanOrEqual(2);
-
-    fireEvent(toggles[1], "valueChange", true);
+    // Index 2 = notification master toggle (after 24h and qibla)
+    expect(toggles.length).toBeGreaterThanOrEqual(3);
+    fireEvent(toggles[2], "valueChange", true);
     expect(mockSetNotificationMaster).toHaveBeenCalledWith(true);
-  });
-
-  it("shows per-prayer toggles when master enabled", async () => {
-    // Re-mock with masterEnabled: true
-    jest.doMock("@/store/settings", () => {
-      const state = {
-        selectedMosqueId: "1",
-        selectedMosqueSlug: "mosque-a",
-        uses24HourTime: false,
-        notifications: {
-          masterEnabled: true,
-          fajr: true,
-          dhuhrJummah: true,
-          asr: true,
-          maghrib: true,
-          isha: true,
-        },
-        setSelectedMosque: mockSetSelectedMosque,
-        setUses24HourTime: mockSetUses24HourTime,
-        setNotificationMaster: mockSetNotificationMaster,
-        setNotificationPrayer: mockSetNotificationPrayer,
-      };
-      const useSettingsStore = jest.fn((selector?: any) => {
-        if (typeof selector === "function") return selector(state);
-        return state;
-      });
-      useSettingsStore.getState = () => state;
-      return { useSettingsStore };
-    });
-
-    // Re-render with updated mock
-    const { rerender } = render(<SettingsScreen />);
-    rerender(<SettingsScreen />);
-
-    await waitFor(() => {
-      // All toggles should be present including per-prayer ones
-      expect(screen.getAllByRole("switch").length).toBeGreaterThanOrEqual(2);
-    });
   });
 });

@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useEffect } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Platform } from "react-native";
 import { useFonts } from "expo-font";
 import {
   Comfortaa_300Light,
@@ -13,7 +13,97 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MasjidlyConvexProvider } from "@/lib/convex/client";
 import { useRouter } from "expo-router";
 import { COLORS } from "@/constants";
+import { playAdhan } from "@/lib/audio/AdhanSoundPlayer";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Notification categories & action identifiers (iOS parity)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CATEGORY = {
+  adhan: "masjidly.category.adhan",
+  iqamah: "masjidly.category.iqamah",
+  reminder: "masjidly.category.reminder",
+} as const;
+
+const ACTION = {
+  viewTimes: "masjidly.action.view_times",
+  snoozeReminder: "masjidly.action.snooze_reminder",
+  viewMosque: "masjidly.action.view_mosque",
+  openTimetable: "masjidly.action.open_timetable",
+  dismiss: "masjidly.action.dismiss",
+} as const;
+
+/**
+ * Register notification categories with action buttons, matching iOS
+ * `PrayerNotificationContent.registerCategories()`.
+ */
+function useNotificationCategories() {
+  useEffect(() => {
+    import("expo-notifications/build/setNotificationCategoryAsync")
+      .then(({ setNotificationCategoryAsync }) =>
+        Promise.all([
+          setNotificationCategoryAsync(CATEGORY.adhan, [
+            { identifier: ACTION.viewTimes, buttonTitle: "View times", options: { opensAppToForeground: true } },
+            { identifier: ACTION.snoozeReminder, buttonTitle: "Snooze reminder", options: {} },
+          ]),
+          setNotificationCategoryAsync(CATEGORY.iqamah, [
+            { identifier: ACTION.viewMosque, buttonTitle: "View mosque", options: { opensAppToForeground: true } },
+            { identifier: ACTION.openTimetable, buttonTitle: "Open timetable", options: { opensAppToForeground: true } },
+          ]),
+          setNotificationCategoryAsync(CATEGORY.reminder, [
+            { identifier: ACTION.openTimetable, buttonTitle: "Open timetable", options: { opensAppToForeground: true } },
+            { identifier: ACTION.dismiss, buttonTitle: "Dismiss", options: { destructive: true } },
+          ]),
+        ])
+      )
+      .catch(() => {
+        // Notification categories unavailable in this environment
+      });
+  }, []);
+}
+
+/**
+ * Present foreground notifications as banners with sound (iOS parity for
+ * `UNUserNotificationCenterDelegate.willPresent` → `.banner, .list, .sound`).
+ */
+function useNotificationHandler() {
+  useEffect(() => {
+    // Configure audio for adhan playback (iOS parity: .playback with duckOthers)
+    import("expo-audio").then((EA) => {
+      EA.setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: true,
+        interruptionMode: "duckOthers",
+      }).catch(() => {});
+    }).catch(() => {});
+
+    import("expo-notifications/build/NotificationsHandler")
+      .then(({ setNotificationHandler }) => {
+        setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+          }),
+        });
+      })
+      .catch(() => {
+        // setNotificationHandler unavailable in this environment
+      });
+  }, []);
+}
+
+/**
+ * Handle notification taps + action button presses, matching iOS
+ * `MasjidlyNotificationDelegate.userNotificationCenter(_:didReceive:)`.
+ *
+ * - Default tap on adhan notification → navigates to home
+ * - View Times → navigates to home
+ * - Open Timetable → navigates to timetable
+ * - View Mosque → navigates to settings
+ * - Snooze → re-schedules the same notification in 10 minutes
+ * - Dismiss → no-op
+ */
 function useNotificationResponseListener() {
   const router = useRouter();
   useEffect(() => {
@@ -23,20 +113,62 @@ function useNotificationResponseListener() {
       .then((NotificationsEmitter) => {
         subscription =
           NotificationsEmitter.addNotificationResponseReceivedListener(
-          (response: any) => {
-            const data = response.notification.request.content.data;
-            if (!data || typeof data !== "object") return;
-            const kind = data.kind;
-            if (kind === "adhan" || kind === "iqamah") {
-              router.replace("/");
-            } else if (kind === "reminder") {
-              const prayer = data.prayer;
-              if (prayer === "jummah" || prayer === "dhuhr") {
-                router.replace("/timetable");
-              } else {
-                router.replace("/");
-              }
+          async (response: any) => {
+            const { actionIdentifier } = response;
+            const notification = response.notification;
+            const data = notification.request.content.data ?? {};
+            const kind: string | undefined = data.kind;
+
+            // ── Dismiss ──
+            if (actionIdentifier === ACTION.dismiss || actionIdentifier === "__DISMISS__") {
+              return;
             }
+
+            // ── Snooze ──
+            if (actionIdentifier === ACTION.snoozeReminder) {
+              try {
+                const { scheduleNotificationAsync, SchedulableTriggerInputTypes } =
+                  await import("@/lib/notifications/expoNotificationApi");
+                const base = notification.request.content;
+                const id = `masjidly.snooze.${Date.now()}.${Math.random().toString(36).slice(2)}`;
+                await scheduleNotificationAsync({
+                  identifier: id,
+                  content: {
+                    title: base.title ?? "",
+                    body: base.body ?? "",
+                    sound: base.sound ?? true,
+                    data: base.data ?? {},
+                    ...(Platform.OS === "ios" ? { categoryIdentifier: base.categoryIdentifier ?? CATEGORY.reminder } : {}),
+                  },
+                  trigger: {
+                    type: SchedulableTriggerInputTypes.TIME_INTERVAL,
+                    seconds: 600,
+                  },
+                });
+              } catch {
+                // Snooze failed silently
+              }
+              return;
+            }
+
+            // ── Open Timetable ──
+            if (actionIdentifier === ACTION.openTimetable || actionIdentifier === "__default__" && kind === "reminder") {
+              router.replace("/timetable");
+              return;
+            }
+
+            // ── View Mosque ──
+            if (actionIdentifier === ACTION.viewMosque) {
+              router.replace("/settings");
+              return;
+            }
+
+            // ── Default: adhan/iqamah tap or "View Times" → home ──
+            // On iOS, tapping an adhan notification plays the adhan in-app
+            if (kind === "adhan") {
+              await playAdhan(1);
+            }
+            router.replace("/");
           }
         );
       })
@@ -50,7 +182,13 @@ function useNotificationResponseListener() {
   }, [router]);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Root Layout
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function RootLayout() {
+  useNotificationCategories();
+  useNotificationHandler();
   useNotificationResponseListener();
 
   const [fontsLoaded] = useFonts({

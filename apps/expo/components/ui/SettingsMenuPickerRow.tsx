@@ -176,8 +176,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FONT_SIZES.md,
-    flexShrink: 0,
-    maxWidth: "42%",
+    flexShrink: 1,
+    marginRight: 4,
   },
   valueWrap: {
     flex: 1,

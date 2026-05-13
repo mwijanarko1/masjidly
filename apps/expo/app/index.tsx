@@ -16,6 +16,7 @@ import { useHomePrayerData } from "@/lib/hooks/useHomePrayerData";
 import { useQiblaDirection } from "@/lib/hooks/useQiblaDirection";
 import { PrayerLetterPicker, type PrayerName } from "@/components/ui/PrayerLetterPicker";
 import { QiblaPrayerIcon } from "@/components/ui/QiblaPrayerIcon";
+import { AdhanMiniPlayerBar } from "@/components/ui/AdhanMiniPlayerBar";
 import { useSettingsStore } from "@/store/settings";
 import { useOnboardingStore } from "@/store/onboarding";
 import { TutorialOverlay } from "@/components/onboarding/TutorialOverlay";
@@ -405,6 +406,8 @@ export default function HomeScreen() {
             </Pressable>
           ) : null}
         </View>
+
+        <AdhanMiniPlayerBar textColor={textColor} />
 
       </SafeAreaView>
 

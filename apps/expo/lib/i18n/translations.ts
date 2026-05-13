@@ -59,6 +59,15 @@ export type TranslationKey =
   | "settings.reminder.30min"
   | "settings.reminder.before_adhan"
   | "settings.reminder.before_iqamah"
+  | "settings.section.qibla.title"
+  | "settings.qibla.enabled.title"
+  | "settings.section.location.title"
+  | "settings.location.recovery.message"
+  | "settings.location.allow"
+  | "settings.location.open_settings"
+  | "settings.section.contact.title"
+  | "settings.contact.feedback.title"
+  | "settings.contact.prayer_times.title"
   | "accessibility.settings"
   | "accessibility.timetable";
 
@@ -126,6 +135,15 @@ export const translations: Translations = {
     "settings.reminder.30min": "30 min",
     "settings.reminder.before_adhan": "Before Adhan",
     "settings.reminder.before_iqamah": "Before Iqamah",
+    "settings.section.qibla.title": "Qibla",
+    "settings.qibla.enabled.title": "Show Qibla Compass",
+    "settings.section.location.title": "Location",
+    "settings.location.recovery.message": "Qibla direction requires location access. Enable location services to use the compass.",
+    "settings.location.allow": "Allow Location Access",
+    "settings.location.open_settings": "Open Settings",
+    "settings.section.contact.title": "Contact",
+    "settings.contact.feedback.title": "Send Feedback",
+    "settings.contact.prayer_times.title": "Report Prayer Time Issues",
     "accessibility.settings": "Settings screen",
     "accessibility.timetable": "Timetable screen",
   },
@@ -190,6 +208,15 @@ export const translations: Translations = {
     "settings.reminder.30min": "30 دقيقة",
     "settings.reminder.before_adhan": "قبل الأذان",
     "settings.reminder.before_iqamah": "قبل الإقامة",
+    "settings.section.qibla.title": "القبلة",
+    "settings.qibla.enabled.title": "إظهار بوصلة القبلة",
+    "settings.section.location.title": "الموقع",
+    "settings.location.recovery.message": "اتجاه القبلة يتطلب الوصول إلى الموقع. فعّل خدمات الموقع لاستخدام البوصلة.",
+    "settings.location.allow": "السماح بالوصول إلى الموقع",
+    "settings.location.open_settings": "فتح الإعدادات",
+    "settings.section.contact.title": "الاتصال",
+    "settings.contact.feedback.title": "إرسال ملاحظات",
+    "settings.contact.prayer_times.title": "الإبلاغ عن مشاكل في أوقات الصلاة",
     "accessibility.settings": "شاشة الإعدادات",
     "accessibility.timetable": "جدول المواقيت",
   },
@@ -254,6 +281,15 @@ export const translations: Translations = {
     "settings.reminder.30min": "30 منٹ",
     "settings.reminder.before_adhan": "اذان سے پہلے",
     "settings.reminder.before_iqamah": "اقامت سے پہلے",
+    "settings.section.qibla.title": "قبلہ",
+    "settings.qibla.enabled.title": "قبلہ کمپاس دکھائیں",
+    "settings.section.location.title": "مقام",
+    "settings.location.recovery.message": "قبلہ کی سمت کے لیے مقام کی رسائی درکار ہے۔ کمپاس استعمال کرنے کے لیے مقام کی خدمات فعال کریں۔",
+    "settings.location.allow": "مقام کی رسائی کی اجازت دیں",
+    "settings.location.open_settings": "ترتیبات کھولیں",
+    "settings.section.contact.title": "رابطہ",
+    "settings.contact.feedback.title": "رائے بھیجیں",
+    "settings.contact.prayer_times.title": "نماز کے اوقات کے مسائل کی اطلاع دیں",
     "accessibility.settings": "ترتیبات کی اسکرین",
     "accessibility.timetable": "نظام الاوقات",
   },
