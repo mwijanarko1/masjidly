@@ -1,6 +1,6 @@
-import React from "react";
-import { View } from "react-native";
-import Svg, { Circle, Path } from "react-native-svg";
+import React, { useMemo } from "react";
+import { View, Animated } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { PrayerSunPhaseIcon } from "./PrayerSunPhaseIcon";
 import type { TimeTheme } from "@/lib/design/themes";
 import { getIconColor } from "@/lib/design/themes";
@@ -8,6 +8,11 @@ import { getIconColor } from "@/lib/design/themes";
 interface QiblaPrayerIconProps {
   theme: TimeTheme;
   rotationDegrees?: number | null;
+  /**
+   * Animated.Value driven by useQiblaDirection.
+   * When provided, the pointer uses native-driver animation (matching iOS smoothness).
+   */
+  animatedRotation?: Animated.Value;
   size?: number;
 }
 
@@ -50,11 +55,25 @@ const QiblaPointerTriangle: React.FC<{ color: string; size: number }> = ({
 export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
   theme,
   rotationDegrees,
+  animatedRotation,
   size = 120,
 }) => {
   const color = getIconColor(theme);
   const scale = size / FRAME_SIZE;
   const offset = getQiblaRingContentOffset(theme);
+
+  // Memoized interpolation — must be stable across renders for native driver to track it.
+  // extrapolate: "extend" handles continuousRotation values that may exceed 360.
+  const rotateInterpolation = useMemo(() => {
+    if (!animatedRotation) return null;
+    return animatedRotation.interpolate({
+      inputRange: [0, 360],
+      outputRange: ["0deg", "360deg"],
+      extrapolate: "extend",
+    });
+  }, [animatedRotation]);
+
+  const hasPointer = animatedRotation != null || rotationDegrees != null;
 
   return (
     <View
@@ -98,9 +117,10 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
       >
         <PrayerSunPhaseIcon theme={theme} size={100 * scale} />
       </View>
-      {/* Qibla pointer — sits outside the compass ring, tip extends outward (iOS style) */}
-      {rotationDegrees != null && (
-        <View
+      {/* Qibla pointer — sits outside the compass ring, tip extends outward (iOS style).
+           Uses Animated.View for smooth rotation animation (matching iOS .easeOut). */}
+      {hasPointer && (
+        <Animated.View
           style={{
             position: "absolute",
             top: 0,
@@ -109,7 +129,11 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
             bottom: 0,
             justifyContent: "flex-start",
             alignItems: "center",
-            transform: [{ rotate: `${rotationDegrees}deg` }],
+            transform: [
+              {
+                rotate: rotateInterpolation ?? `${rotationDegrees}deg`,
+              },
+            ],
           }}
         >
           {/* Ring edge at y=4 (=(FRAME_SIZE−ringSize)/2). Triangle 12px tall, tip at top.
@@ -117,7 +141,7 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
           <View style={{ marginTop: -8 * scale }}>
             <QiblaPointerTriangle color={color} size={12 * scale} />
           </View>
-        </View>
+        </Animated.View>
       )}
     </View>
   );

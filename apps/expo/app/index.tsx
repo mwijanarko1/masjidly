@@ -228,7 +228,7 @@ export default function HomeScreen() {
   const textColor = getTextColor(theme);
   const usesLightForeground = getUsesLightForeground(theme);
 
-  const { rotationDegrees: qiblaRotation } = useQiblaDirection({
+  const { animatedRotation } = useQiblaDirection({
     fallbackMosque: selectedMosque,
     enabled: selectedMosque !== null,
   });
@@ -335,7 +335,7 @@ export default function HomeScreen() {
                 size={88}
                 color={textColor}
               >
-                <QiblaPrayerIcon theme={theme} rotationDegrees={qiblaRotation} />
+                <QiblaPrayerIcon theme={theme} animatedRotation={animatedRotation} />
               </TutorialHighlight>
             </View>
 
