@@ -53,6 +53,7 @@ final class SettingsViewModel {
     func selectMosque(_ mosque: Mosque) async {
         settings.selectedMosqueId = mosque.id
         settings.selectedMosqueSlug = mosque.slug
+        settings.selectedCityGroupingKey = mosque.cityGroupingKey
         await applyNotificationPolicy()
     }
 

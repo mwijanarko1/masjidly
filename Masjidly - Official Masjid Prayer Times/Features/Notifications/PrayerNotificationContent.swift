@@ -34,30 +34,34 @@ enum PrayerNotificationContent {
         case reminderBeforeIqamah
     }
 
-    static func registerCategories() {
+    private static func localized(_ key: String, locale: Locale) -> String {
+        LocaleBundle.string(forKey: key, locale: locale)
+    }
+
+    static func registerCategories(locale: Locale = .current) {
         let viewTimes = UNNotificationAction(
             identifier: ActionID.viewTimes,
-            title: "View times",
+            title: localized("notification.action.view_times", locale: locale),
             options: [.foreground]
         )
         let snooze = UNNotificationAction(
             identifier: ActionID.snoozeReminder,
-            title: "Snooze reminder",
+            title: localized("notification.action.snooze_reminder", locale: locale),
             options: []
         )
         let viewMosque = UNNotificationAction(
             identifier: ActionID.viewMosque,
-            title: "View mosque",
+            title: localized("notification.action.view_mosque", locale: locale),
             options: [.foreground]
         )
         let openTimetable = UNNotificationAction(
             identifier: ActionID.openTimetable,
-            title: "Open timetable",
+            title: localized("notification.action.open_timetable", locale: locale),
             options: [.foreground]
         )
         let dismiss = UNNotificationAction(
             identifier: ActionID.dismiss,
-            title: "Dismiss",
+            title: localized("notification.action.dismiss", locale: locale),
             options: [.destructive]
         )
 
@@ -83,35 +87,54 @@ enum PrayerNotificationContent {
         UNUserNotificationCenter.current().setNotificationCategories([adhan, iqamah, reminder])
     }
 
-    static func prayerDisplayName(prayerKey: String, isFriday: Bool) -> String {
+    static func prayerDisplayName(prayerKey: String, isFriday: Bool, locale: Locale = Locale(identifier: "en")) -> String {
         switch prayerKey {
-        case "fajr": return "Fajr"
-        case "dhuhr": return isFriday ? jumuahName : "Dhuhr"
-        case "asr": return "Asr"
-        case "maghrib": return "Maghrib"
-        case "isha": return "Isha"
+        case "fajr": return PrayerLocalization.displayName(canonicalEnglish: "Fajr", locale: locale)
+        case "dhuhr": return PrayerLocalization.displayName(canonicalEnglish: isFriday ? "Jummah" : "Dhuhr", locale: locale)
+        case "asr": return PrayerLocalization.displayName(canonicalEnglish: "Asr", locale: locale)
+        case "maghrib": return PrayerLocalization.displayName(canonicalEnglish: "Maghrib", locale: locale)
+        case "isha": return PrayerLocalization.displayName(canonicalEnglish: "Isha", locale: locale)
         default: return prayerKey.capitalized
         }
     }
 
-    static func adhanCopy(prayerKey: String, isFriday: Bool) -> (title: String, body: String) {
-        let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday)
-        return ("\(name) Adhan", "Tap to hear adhan.")
+    static func adhanCopy(prayerKey: String, isFriday: Bool, locale: Locale = Locale(identifier: "en")) -> (title: String, body: String) {
+        let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
+        let titleFormat = localized("notification.copy.adhan.title", locale: locale)
+        return (
+            String(format: titleFormat, locale: locale, arguments: [name]),
+            localized("notification.copy.adhan.body", locale: locale)
+        )
     }
 
-    static func iqamahCopy(prayerKey: String, isFriday: Bool) -> (title: String, body: String) {
-        let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday)
-        return ("\(name) Iqamah", "Iqamah for \(name) is now.")
+    static func iqamahCopy(prayerKey: String, isFriday: Bool, locale: Locale = Locale(identifier: "en")) -> (title: String, body: String) {
+        let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
+        let titleFormat = localized("notification.copy.iqamah.title", locale: locale)
+        let bodyFormat = localized("notification.copy.iqamah.body", locale: locale)
+        return (
+            String(format: titleFormat, locale: locale, arguments: [name]),
+            String(format: bodyFormat, locale: locale, arguments: [name])
+        )
     }
 
-    static func beforeAdhanReminderCopy(prayerKey: String, isFriday: Bool, minutes: Int) -> (title: String, body: String) {
-        let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday)
-        return ("\(name) soon", "Adhan in \(minutes) min.")
+    static func beforeAdhanReminderCopy(prayerKey: String, isFriday: Bool, minutes: Int, locale: Locale = Locale(identifier: "en")) -> (title: String, body: String) {
+        let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
+        let titleFormat = localized("notification.copy.before_adhan.title", locale: locale)
+        let bodyFormat = localized("notification.copy.before_adhan.body", locale: locale)
+        return (
+            String(format: titleFormat, locale: locale, arguments: [name]),
+            String(format: bodyFormat, locale: locale, arguments: [minutes])
+        )
     }
 
-    static func beforeIqamahReminderCopy(prayerKey: String, isFriday: Bool, minutes: Int) -> (title: String, body: String) {
-        let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday)
-        return ("\(name) Iqamah soon", "Iqamah in \(minutes) min.")
+    static func beforeIqamahReminderCopy(prayerKey: String, isFriday: Bool, minutes: Int, locale: Locale = Locale(identifier: "en")) -> (title: String, body: String) {
+        let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
+        let titleFormat = localized("notification.copy.before_iqamah.title", locale: locale)
+        let bodyFormat = localized("notification.copy.before_iqamah.body", locale: locale)
+        return (
+            String(format: titleFormat, locale: locale, arguments: [name]),
+            String(format: bodyFormat, locale: locale, arguments: [minutes])
+        )
     }
 
     /// Bundled adhan for **in-app playback** (not subject to the ~30s notification sound limit).

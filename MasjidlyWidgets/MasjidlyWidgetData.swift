@@ -1,5 +1,60 @@
 import Foundation
 
+/// Persisted in-app language selection shared by Settings, formatters, widgets, and notifications.
+enum AppLanguage: String, CaseIterable, Codable, Sendable, Identifiable {
+    case english
+    case arabic
+    case urdu
+    case indonesian
+
+    var id: String { rawValue }
+
+    var resolvedLanguageCode: String {
+        switch self {
+        case .english: return "en"
+        case .arabic: return "ar"
+        case .urdu: return "ur"
+        case .indonesian: return "id"
+        }
+    }
+
+    var isResolvedRightToLeft: Bool {
+        switch self {
+        case .arabic, .urdu: return true
+        case .english, .indonesian: return false
+        }
+    }
+
+    func resolvedLocale() -> Locale {
+        switch self {
+        case .english: return Locale(identifier: "en")
+        case .arabic: return Locale(identifier: "ar")
+        case .urdu: return Locale(identifier: "ur")
+        case .indonesian: return Locale(identifier: "id_ID")
+        }
+    }
+
+    var displayNameKey: String {
+        switch self {
+        case .english: return "settings.language.english"
+        case .arabic: return "settings.language.arabic"
+        case .urdu: return "settings.language.urdu"
+        case .indonesian: return "settings.language.indonesian"
+        }
+    }
+
+    init(persistedRawValue: String?) {
+        switch persistedRawValue {
+        case AppLanguage.english.rawValue, "en": self = .english
+        case AppLanguage.arabic.rawValue, "ar": self = .arabic
+        case AppLanguage.urdu.rawValue, "ur": self = .urdu
+        case AppLanguage.indonesian.rawValue, "id", "id-ID", "id_ID": self = .indonesian
+        default: self = .english
+        }
+    }
+}
+
+
 private enum MasjidlyWidgetSharedConfig {
     static let appGroupIdentifier = "group.mikhailspeaks.masjidly"
     static let snapshotKey = "widgetPrayerSnapshot.v1"
@@ -193,27 +248,50 @@ enum MasjidlyWidgetResolver {
             let adhanDate: Date?
         }
         
+        let lang = AppLanguage(persistedRawValue: snapshot.appLanguageRawValue)
+        let names = localizedPrayerNames(for: lang)
         let prayersList: [ResolvedPrayer] = [
-            ResolvedPrayer(id: "fajr", name: "Fajr", adhan: day.prayers.fajr, iqamahs: [resolveIqamah("fajr", adhan: day.prayers.fajr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.fajr)),
-            ResolvedPrayer(id: "dhuhr", name: isFriday ? "Jumu'ah" : "Dhuhr", adhan: day.prayers.dhuhr, iqamahs: isFriday ? jummahIqamahs : [resolveIqamah("dhuhr", adhan: day.prayers.dhuhr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.dhuhr)),
-            ResolvedPrayer(id: "asr", name: "Asr", adhan: day.prayers.asr, iqamahs: [resolveIqamah("asr", adhan: day.prayers.asr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.asr)),
-            ResolvedPrayer(id: "maghrib", name: "Maghrib", adhan: day.prayers.maghrib, iqamahs: [resolveIqamah("maghrib", adhan: day.prayers.maghrib, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.maghrib)),
-            ResolvedPrayer(id: "isha", name: "Isha", adhan: day.prayers.isha, iqamahs: [resolveIqamah("isha", adhan: day.prayers.isha, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.isha))
+            ResolvedPrayer(id: "fajr", name: names.fajr, adhan: day.prayers.fajr, iqamahs: [resolveIqamah("fajr", adhan: day.prayers.fajr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.fajr)),
+            ResolvedPrayer(id: "dhuhr", name: isFriday ? names.jummah : names.dhuhr, adhan: day.prayers.dhuhr, iqamahs: isFriday ? jummahIqamahs : [resolveIqamah("dhuhr", adhan: day.prayers.dhuhr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.dhuhr)),
+            ResolvedPrayer(id: "asr", name: names.asr, adhan: day.prayers.asr, iqamahs: [resolveIqamah("asr", adhan: day.prayers.asr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.asr)),
+            ResolvedPrayer(id: "maghrib", name: names.maghrib, adhan: day.prayers.maghrib, iqamahs: [resolveIqamah("maghrib", adhan: day.prayers.maghrib, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.maghrib)),
+            ResolvedPrayer(id: "isha", name: names.isha, adhan: day.prayers.isha, iqamahs: [resolveIqamah("isha", adhan: day.prayers.isha, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.isha))
         ]
         
         var nextPrayerIndex = 0
+        var nextEventDate: Date?
+        var nextEventIsIqamah = false
+        var foundTodayEvent = false
         for (i, p) in prayersList.enumerated() {
-            if let d = p.adhanDate, d > now {
+            let isJummah = isFriday && p.id == "dhuhr"
+            if !isJummah, let adhanDate = p.adhanDate, adhanDate > now {
                 nextPrayerIndex = i
+                nextEventDate = adhanDate
+                nextEventIsIqamah = false
+                foundTodayEvent = true
                 break
             }
-            if i == prayersList.count - 1 {
-                nextPrayerIndex = 0 // Tomorrow's fajr
+
+            let candidateIqamah = nextDisplayIqamahRaw(
+                prayerId: p.id,
+                isFriday: isFriday,
+                rawIqamahs: p.iqamahs,
+                adhan: p.adhan,
+                now: now,
+                wallClock: { wallClockToday($0) }
+            )
+            if isParseableTime(candidateIqamah), candidateIqamah != p.adhan,
+               let iqamahDate = wallClockToday(candidateIqamah), iqamahDate > now {
+                nextPrayerIndex = i
+                nextEventDate = iqamahDate
+                nextEventIsIqamah = true
+                foundTodayEvent = true
+                break
             }
         }
         
-        // Post-Isha wrap detection — all today's prayers have passed, so "next" is tomorrow's Fajr
-        let isNextFajrTomorrow = nextPrayerIndex == 0 && (prayersList[0].adhanDate ?? now) <= now
+        // Post-Isha wrap detection — all today's prayers/iqamahs have passed, so "next" is tomorrow's Fajr
+        let isNextFajrTomorrow = !foundTodayEvent
 
         let morrowDay: MasjidlyWidgetDaySnapshot? = {
             guard isNextFajrTomorrow else { return nil }
@@ -234,10 +312,7 @@ enum MasjidlyWidgetResolver {
             return prayersList[nextPrayerIndex]
         }()
 
-        var targetDate = next.adhanDate
-        if nextPrayerIndex == 0, let d = targetDate, d <= now {
-            targetDate = calendar.date(byAdding: .day, value: 1, to: d)
-        }
+        let targetDate = isNextFajrTomorrow ? next.adhanDate : nextEventDate
 
         let nextWallClockBase: Date = isNextFajrTomorrow
             ? (calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart)
@@ -262,10 +337,13 @@ enum MasjidlyWidgetResolver {
         let iqamahDate = wallClockDay(displayIqamahRaw, on: nextWallClockBase)
 
         let progressStartDate: Date? = {
+            if nextEventIsIqamah {
+                return next.adhanDate
+            }
             if nextPrayerIndex > 0, let prev = prayersList[nextPrayerIndex - 1].adhanDate {
                 return prev
             }
-            if nextPrayerIndex == 0, prayersList.last.map({ ($0.adhanDate ?? now) <= now }) == true {
+            if isNextFajrTomorrow {
                 return prayersList.last?.adhanDate
             }
             return calendar.startOfDay(for: now)
@@ -288,7 +366,7 @@ enum MasjidlyWidgetResolver {
                             wallClock: { wallClockDay($0, on: morrowStart) }
                         )
                         : resolveIqamah("dhuhr", adhan: fDhuhrAdhan, iqamah: morrow.iqamah)
-                    return (isFriday ? "Jumu'ah" : "Dhuhr", fDhuhrAdhan, fDhuhrIqamah)
+                    return (isFriday ? names.jummah : names.dhuhr, fDhuhrAdhan, fDhuhrIqamah)
                 }
                 let f = prayersList[nextIdx + 1]
                 let iq = f.id == "dhuhr" && isFriday
@@ -306,7 +384,7 @@ enum MasjidlyWidgetResolver {
             let tomorrowString = isoDateString(for: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
             if let morrow = snapshot.days.first(where: { $0.date == tomorrowString }) {
                 let iqFajr = resolveIqamah("fajr", adhan: morrow.prayers.fajr, iqamah: morrow.iqamah)
-                return ("Fajr", morrow.prayers.fajr, iqFajr)
+                return (names.fajr, morrow.prayers.fajr, iqFajr)
             }
             return ("", "", "")
         }()
@@ -390,6 +468,33 @@ enum MasjidlyWidgetResolver {
 
 
 
+    // MARK: - Localized Prayer Names
+
+    private struct LocalizedNames {
+        let fajr: String
+        let dhuhr: String
+        let asr: String
+        let maghrib: String
+        let isha: String
+        let jummah: String
+    }
+
+    /// Returns prayer display names in the app's selected language.
+    /// Because the widget extension cannot access the host app's .lproj bundles,
+    /// names are resolved from a hardcoded table matching `Localizable.xcstrings`.
+    private static func localizedPrayerNames(for lang: AppLanguage) -> LocalizedNames {
+        switch lang {
+        case .arabic:
+            return LocalizedNames(fajr: "الفجر", dhuhr: "الظهر", asr: "العصر", maghrib: "المغرب", isha: "العشاء", jummah: "الجمعة")
+        case .urdu:
+            return LocalizedNames(fajr: "فجر", dhuhr: "ظہر", asr: "عصر", maghrib: "مغرب", isha: "عشاء", jummah: "جمعہ")
+        case .indonesian:
+            return LocalizedNames(fajr: "Fajr", dhuhr: "Dzuhur", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jummah: "Jumat")
+        case .english:
+            return LocalizedNames(fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jummah: "Jumu'ah")
+        }
+    }
+
     private static func resolveIqamah(_ prayer: String, adhan: String, iqamah: MasjidlyWidgetDailyIqamahTimes) -> String {
         let raw: String
         switch prayer {
@@ -439,7 +544,7 @@ enum MasjidlyWidgetResolver {
     }
 
     private static func snapshotLocale(from raw: String) -> Locale {
-        Locale(identifier: "en")
+        AppLanguage(persistedRawValue: raw).resolvedLocale()
     }
 
     private static func prayerWallClockDate(hour: Int, minute: Int, reference: Date) -> Date? {

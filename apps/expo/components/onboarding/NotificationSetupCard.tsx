@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { ACCENT } from "@/lib/design/themes";
 import type { NotificationDraft } from "@/store/onboarding";
+import type { AppLanguage } from "@/store/settings";
+import { t, type TranslationKey } from "@/lib/i18n/translations";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,33 +28,15 @@ interface NotificationSetupCardProps {
   onFinish: () => void;
   textColor: string;
   usesLightForeground: boolean;
-  locale: string;
+  locale: AppLanguage;
 }
 
-const REMINDER_OPTIONS: { label: string; value: number | null }[] = [
-  { label: "Off", value: null },
-  { label: "5 min", value: 5 },
-  { label: "10 min", value: 10 },
-  { label: "15 min", value: 15 },
-  { label: "30 min", value: 30 },
-];
-
-// Arabic reminder labels
-const REMINDER_OPTIONS_AR: { label: string; value: number | null }[] = [
-  { label: "بدون", value: null },
-  { label: "5 دقائق", value: 5 },
-  { label: "10 دقائق", value: 10 },
-  { label: "15 دقيقة", value: 15 },
-  { label: "30 دقيقة", value: 30 },
-];
-
-// Urdu reminder labels
-const REMINDER_OPTIONS_UR: { label: string; value: number | null }[] = [
-  { label: "کوئی نہیں", value: null },
-  { label: "5 منٹ", value: 5 },
-  { label: "10 منٹ", value: 10 },
-  { label: "15 منٹ", value: 15 },
-  { label: "30 منٹ", value: 30 },
+const REMINDER_OPTIONS: { labelKey: TranslationKey; value: number | null }[] = [
+  { labelKey: "settings.reminder.none", value: null },
+  { labelKey: "settings.reminder.5min", value: 5 },
+  { labelKey: "settings.reminder.10min", value: 10 },
+  { labelKey: "settings.reminder.15min", value: 15 },
+  { labelKey: "settings.reminder.30min", value: 30 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -71,12 +55,7 @@ export function NotificationSetupCard({
   usesLightForeground,
   locale,
 }: NotificationSetupCardProps) {
-  const reminderOptions =
-    locale === "ar"
-      ? REMINDER_OPTIONS_AR
-      : locale === "ur"
-      ? REMINDER_OPTIONS_UR
-      : REMINDER_OPTIONS;
+  const reminderOptions = REMINDER_OPTIONS;
 
   const glassBg = usesLightForeground
     ? "rgba(10, 10, 30, 0.72)"
@@ -116,25 +95,17 @@ export function NotificationSetupCard({
           {/* Title */}
           <View style={{ marginBottom: 16 }}>
             <Text style={[styles.title, { color: textColor }]}>
-              {locale === "ar"
-                ? "إعداد الإشعارات"
-                : locale === "ur"
-                ? "اطلاعات کی ترتیبات"
-                : "Notification Setup"}
+              {t("onboarding.notifications.title", locale)}
             </Text>
             <Text style={[styles.subtitle, { color: textColor + "CC" }]}>
-              {locale === "ar"
-                ? "اختر إعدادات الإشعارات للأذان والإقامة"
-                : locale === "ur"
-                ? "اذان اور اقامت کی اطلاعات کی ترتیبات منتخب کریں"
-                : "Choose your notification preferences for adhan and iqamah times"}
+              {t("onboarding.notifications.subtitle", locale)}
             </Text>
           </View>
 
           {/* Toggles */}
           <View style={styles.toggleRow}>
             <Text style={[styles.toggleLabel, { color: textColor }]}>
-              {locale === "ar" ? "الأذان" : locale === "ur" ? "اذان" : "Adhan"}
+              {t("notification.channel.adhan", locale)}
             </Text>
             <Switch
               value={draft.adhanEnabled}
@@ -142,7 +113,7 @@ export function NotificationSetupCard({
               trackColor={{ false: textColor + "33", true: ACCENT + "66" }}
               thumbColor={draft.adhanEnabled ? ACCENT : textColor + "80"}
               accessibilityLabel={
-                locale === "ar" ? "تفعيل الأذان" : locale === "ur" ? "اذان فعال کریں" : "Toggle Adhan"
+                t("onboarding.notifications.toggle_adhan", locale)
               }
               accessibilityIdentifier="Onboarding.AdhanToggle"
             />
@@ -152,7 +123,7 @@ export function NotificationSetupCard({
 
           <View style={styles.toggleRow}>
             <Text style={[styles.toggleLabel, { color: textColor }]}>
-              {locale === "ar" ? "الإقامة" : locale === "ur" ? "اقامت" : "Iqamah"}
+              {t("notification.channel.iqamah", locale)}
             </Text>
             <Switch
               value={draft.iqamahEnabled}
@@ -160,7 +131,7 @@ export function NotificationSetupCard({
               trackColor={{ false: textColor + "33", true: ACCENT + "66" }}
               thumbColor={draft.iqamahEnabled ? ACCENT : textColor + "80"}
               accessibilityLabel={
-                locale === "ar" ? "تفعيل الإقامة" : locale === "ur" ? "اقامت فعال کریں" : "Toggle Iqamah"
+                t("onboarding.notifications.toggle_iqamah", locale)
               }
               accessibilityIdentifier="Onboarding.IqamahToggle"
             />
@@ -175,20 +146,12 @@ export function NotificationSetupCard({
               { color: textColor + "99" },
             ]}
           >
-            {locale === "ar"
-              ? "التذكير"
-              : locale === "ur"
-              ? "یاد دہانیاں"
-              : "Reminders"}
+            {t("onboarding.notifications.reminders", locale)}
           </Text>
 
           {/* Pre-Adhan reminder */}
           <Text style={[styles.reminderLabel, { color: textColor }]}>
-            {locale === "ar"
-              ? "قبل الأذان"
-              : locale === "ur"
-              ? "اذان سے پہلے"
-              : "Before Adhan"}
+            {t("settings.reminder.before_adhan", locale)}
           </Text>
           <View style={styles.pillRow}>
             {reminderOptions.map((opt) => {
@@ -204,7 +167,7 @@ export function NotificationSetupCard({
                   style={[styles.pill, { backgroundColor: pillBg }]}
                   onPress={() => onAdhanReminderChange(opt.value)}
                   accessibilityRole="button"
-                  accessibilityLabel={opt.label}
+                  accessibilityLabel={t(opt.labelKey, locale)}
                   accessibilityIdentifier="Onboarding.AdhanReminderPicker"
                 >
                   <Text
@@ -213,7 +176,7 @@ export function NotificationSetupCard({
                       { color: selected ? "#FFFFFF" : textColor },
                     ]}
                   >
-                    {opt.label}
+                    {t(opt.labelKey, locale)}
                   </Text>
                 </Pressable>
               );
@@ -223,11 +186,7 @@ export function NotificationSetupCard({
           {/* Pre-Iqamah reminder */}
           <View style={{ height: 12 }} />
           <Text style={[styles.reminderLabel, { color: textColor }]}>
-            {locale === "ar"
-              ? "قبل الإقامة"
-              : locale === "ur"
-              ? "اقامت سے پہلے"
-              : "Before Iqamah"}
+            {t("settings.reminder.before_iqamah", locale)}
           </Text>
           <View style={styles.pillRow}>
             {reminderOptions.map((opt) => {
@@ -243,7 +202,7 @@ export function NotificationSetupCard({
                   style={[styles.pill, { backgroundColor: pillBg }]}
                   onPress={() => onIqamahReminderChange(opt.value)}
                   accessibilityRole="button"
-                  accessibilityLabel={opt.label}
+                  accessibilityLabel={t(opt.labelKey, locale)}
                   accessibilityIdentifier="Onboarding.IqamahReminderPicker"
                 >
                   <Text
@@ -252,7 +211,7 @@ export function NotificationSetupCard({
                       { color: selected ? "#FFFFFF" : textColor },
                     ]}
                   >
-                    {opt.label}
+                    {t(opt.labelKey, locale)}
                   </Text>
                 </Pressable>
               );
@@ -267,7 +226,7 @@ export function NotificationSetupCard({
             disabled={isSaving}
             accessibilityRole="button"
             accessibilityLabel={
-              locale === "ar" ? "إنهاء" : locale === "ur" ? "ختم کریں" : "Finish"
+              t("action.finish", locale)
             }
             accessibilityIdentifier="Onboarding.NotificationFinish"
           >
@@ -275,11 +234,7 @@ export function NotificationSetupCard({
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text style={styles.finishButtonText}>
-                {locale === "ar"
-                  ? "إنهاء"
-                  : locale === "ur"
-                  ? "ختم کریں"
-                  : "Finish"}
+                {t("action.finish", locale)}
               </Text>
             )}
           </Pressable>

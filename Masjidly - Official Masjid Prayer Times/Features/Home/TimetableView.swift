@@ -1,7 +1,7 @@
 import SwiftUI
 
 private func ttLS(_ key: String, locale: Locale) -> String {
-    String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+    LocaleBundle.string(forKey: key, locale: locale)
 }
 
 private enum TimetableTimeColumns {
@@ -25,7 +25,8 @@ struct TimetableView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(SettingsStore.self) private var settings
     @Environment(OnboardingFlowController.self) private var onboarding
-    @Environment(\.locale) private var locale
+    /// Derived from the observable store so language changes re-localize immediately.
+    private var locale: Locale { settings.resolvedLocale }
 
     @State private var selectedDate: Int = 1
 

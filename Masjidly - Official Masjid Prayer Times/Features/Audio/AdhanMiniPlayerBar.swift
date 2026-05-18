@@ -4,6 +4,7 @@ import SwiftUI
 struct AdhanMiniPlayerBar: View {
     let timeTheme: HomeDesign.TimeTheme
     @Bindable private var playback = AdhanSoundPreviewPlayer.shared
+    @Environment(\.locale) private var locale
 
     private let rowSpacing: CGFloat = 16
     private let cardContentSpacing: CGFloat = 10
@@ -16,7 +17,7 @@ struct AdhanMiniPlayerBar: View {
 
                     HStack(alignment: .center, spacing: rowSpacing) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Adhan")
+                            Text(localized("notification.channel.adhan"))
                                 .appFont(size: 19, weight: .semibold)
                                 .foregroundStyle(timeTheme.textColor)
                                 .kerning(-0.2)
@@ -46,7 +47,7 @@ struct AdhanMiniPlayerBar: View {
                         }
                         .buttonStyle(.plain)
                         .shadow(color: HomeDesign.Colors.accent.opacity(0.35), radius: 15, y: 8)
-                        .accessibilityLabel(playback.isPlayingForUI ? "Pause adhan" : "Play adhan")
+                        .accessibilityLabel(playback.isPlayingForUI ? localized("audio.adhan.pause_a11y") : localized("audio.adhan.play_a11y"))
 
                         Button {
                             playback.dismissMiniPlayer()
@@ -58,7 +59,7 @@ struct AdhanMiniPlayerBar: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Stop adhan")
+                        .accessibilityLabel(localized("audio.adhan.stop_a11y"))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -82,8 +83,8 @@ struct AdhanMiniPlayerBar: View {
         }
         .frame(height: 4)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Adhan playback progress")
-        .accessibilityValue("\(Int((fraction * 100).rounded())) percent")
+        .accessibilityLabel(localized("audio.adhan.progress_a11y"))
+        .accessibilityValue(String(format: localized("audio.adhan.progress_value_format"), locale: locale, arguments: [Int((fraction * 100).rounded())]))
     }
 
     private var timeRemainingLabel: String {
@@ -91,7 +92,15 @@ struct AdhanMiniPlayerBar: View {
         let dur = playback.displayedDuration
         guard dur > 0 else { return "—" }
         let left = max(0, dur - cur)
-        return "\(formatMMSS(cur)) / \(formatMMSS(dur)) · \(formatMMSS(left)) left"
+        return String(
+            format: localized("audio.adhan.time_remaining_format"),
+            locale: locale,
+            arguments: [formatMMSS(cur), formatMMSS(dur), formatMMSS(left)]
+        )
+    }
+
+    private func localized(_ key: String) -> String {
+        LocaleBundle.string(forKey: key, locale: locale)
     }
 
     private func formatMMSS(_ t: TimeInterval) -> String {

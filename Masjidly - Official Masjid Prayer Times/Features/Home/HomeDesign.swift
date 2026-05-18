@@ -174,11 +174,15 @@ extension EnvironmentValues {
 
 struct AppFontModifier: ViewModifier {
     @Environment(\.appFontName) var fontName
+    @Environment(\.locale) var locale
     let size: CGFloat
     let weight: Font.Weight
 
     func body(content: Content) -> some View {
-        content.font(HomeDesign.Typography.app(size: size, weight: weight, name: fontName))
+        let isArabic = locale.identifier.hasPrefix("ar")
+        let isUrdu = locale.identifier.hasPrefix("ur")
+        let scale: CGFloat = isUrdu ? 1.25 : (isArabic ? 1.20 : 1.00)
+        content.font(HomeDesign.Typography.app(size: size * scale, weight: weight, name: fontName))
     }
 }
 

@@ -12,6 +12,7 @@ export function usePrayerNotifications(): void {
   const notifications = useSettingsStore((s) => s.notifications);
   const selectedMosqueId = useSettingsStore((s) => s.selectedMosqueId);
   const selectedMosqueSlug = useSettingsStore((s) => s.selectedMosqueSlug);
+  const appLanguage = useSettingsStore((s) => s.appLanguage);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,5 +63,6 @@ export function usePrayerNotifications(): void {
     notifications.isha,
     selectedMosqueId,
     selectedMosqueSlug,
+    appLanguage,
   ]);
 }

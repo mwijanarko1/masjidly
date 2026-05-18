@@ -113,6 +113,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: displayed.fajr,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
             let fajrIq = PrayerTimesEngine.getIqamahTime(prayer: "fajr", adhanTime: displayed.fajr, iqamahTimes: iq)
             try await scheduleIqamahIfEnabled(
@@ -125,6 +126,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: fajrIq,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
 
             let dhuhrTime = displayed.dhuhr
@@ -138,6 +140,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: dhuhrTime,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
             let iqLabel = isFriday ? iq.jummah : PrayerTimesEngine.getIqamahTime(prayer: "dhuhr", adhanTime: dhuhrTime, iqamahTimes: iq)
             try await scheduleIqamahIfEnabled(
@@ -150,6 +153,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: iqLabel,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
 
             try await scheduleAdhanIfEnabled(
@@ -162,6 +166,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: displayed.asr,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
             let asrIq = PrayerTimesEngine.getIqamahTime(prayer: "asr", adhanTime: displayed.asr, iqamahTimes: iq)
             try await scheduleIqamahIfEnabled(
@@ -174,6 +179,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: asrIq,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
 
             try await scheduleAdhanIfEnabled(
@@ -186,6 +192,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: displayed.maghrib,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
             let maghribIq = PrayerTimesEngine.getIqamahTime(prayer: "maghrib", adhanTime: displayed.maghrib, iqamahTimes: iq)
             try await scheduleIqamahIfEnabled(
@@ -198,6 +205,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: maghribIq,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
 
             try await scheduleAdhanIfEnabled(
@@ -210,6 +218,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: displayed.isha,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
             let ishaIq = PrayerTimesEngine.resolveIshaIqamahForDisplay(
                 slug: slug,
@@ -228,6 +237,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: ishaIq,
                 isFriday: isFriday,
                 civilDay: dayDate,
+                locale: locale
             )
         }
     }
@@ -243,10 +253,11 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         prayerKey: String,
         time: String,
         isFriday: Bool,
-        civilDay: Date
+        civilDay: Date,
+        locale: Locale
     ) async throws {
         if settings.adhanEnabled {
-            let copy = PrayerNotificationContent.adhanCopy(prayerKey: prayerKey, isFriday: isFriday)
+            let copy = PrayerNotificationContent.adhanCopy(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
             let info = Self.adhanUserInfo(prayerKey: prayerKey, mosqueSlug: mosqueSlug, iso: iso)
             try await scheduleIfNeeded(
                 id: id,
@@ -270,7 +281,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             minutesBefore: minutes,
             isFriday: isFriday,
             civilDay: civilDay,
-            hhmm: time
+            hhmm: time,
+            locale: locale
         )
     }
 
@@ -283,10 +295,11 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         prayerKey: String,
         time: String,
         isFriday: Bool,
-        civilDay: Date
+        civilDay: Date,
+        locale: Locale
     ) async throws {
         if settings.iqamahEnabled {
-            let copy = PrayerNotificationContent.iqamahCopy(prayerKey: prayerKey, isFriday: isFriday)
+            let copy = PrayerNotificationContent.iqamahCopy(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
             let info = Self.iqamahUserInfo(prayerKey: prayerKey, mosqueSlug: mosqueSlug, iso: iso)
             try await scheduleIfNeeded(
                 id: id,
@@ -310,7 +323,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             minutesBefore: minutes,
             isFriday: isFriday,
             civilDay: civilDay,
-            hhmm: time
+            hhmm: time,
+            locale: locale
         )
     }
 
@@ -329,7 +343,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         minutesBefore: Int,
         isFriday: Bool,
         civilDay: Date,
-        hhmm: String
+        hhmm: String,
+        locale: Locale
     ) async throws {
         guard let targetDate = triggerDate(civilDay: civilDay, hhmm: hhmm) else { return }
         var calMinus = Calendar(identifier: .gregorian)
@@ -346,12 +361,12 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         let payloadKind: PrayerNotificationContent.PayloadKind
         switch kind {
         case .beforeAdhan:
-            let copy = PrayerNotificationContent.beforeAdhanReminderCopy(prayerKey: prayerKey, isFriday: isFriday, minutes: minutesBefore)
+            let copy = PrayerNotificationContent.beforeAdhanReminderCopy(prayerKey: prayerKey, isFriday: isFriday, minutes: minutesBefore, locale: locale)
             title = copy.title
             body = copy.body
             payloadKind = .reminderBeforeAdhan
         case .beforeIqamah:
-            let copy = PrayerNotificationContent.beforeIqamahReminderCopy(prayerKey: prayerKey, isFriday: isFriday, minutes: minutesBefore)
+            let copy = PrayerNotificationContent.beforeIqamahReminderCopy(prayerKey: prayerKey, isFriday: isFriday, minutes: minutesBefore, locale: locale)
             title = copy.title
             body = copy.body
             payloadKind = .reminderBeforeIqamah

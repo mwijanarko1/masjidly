@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 private func componentLS(_ key: String, locale: Locale) -> String {
-    String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+    LocaleBundle.string(forKey: key, locale: locale)
 }
 
 // MARK: - Components
@@ -22,7 +22,7 @@ struct StatusChip: View {
                 .frame(width: 6, height: 6)
                 .shadow(color: Color(hex: "58D66D").opacity(0.5), radius: 3)
         }
-        .font(HomeDesign.Typography.app(size: 13, weight: .regular))
+        .appFont(size: 13, weight: .regular)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Color.black.opacity(0.2))
@@ -104,15 +104,14 @@ struct HeroContent: View {
 
     var body: some View {
         VStack(spacing: stackSpacing) {
-            // Main Time
             Text(prayerTime)
-                .font(HomeDesign.Typography.app(size: timeFontSize, weight: .light))
+                .appFont(size: timeFontSize, weight: .light)
                 .foregroundColor(HomeDesign.Colors.primary)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
 
             Text(prayerName)
-                .font(HomeDesign.Typography.app(size: nameFontSize, weight: .regular))
+                .appFont(size: nameFontSize, weight: .regular)
                 .foregroundColor(HomeDesign.Colors.secondary)
                 .minimumScaleFactor(0.85)
                 .lineLimit(2)
@@ -130,15 +129,15 @@ struct QuickInfoItem: View {
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: icon)
-                .font(HomeDesign.Typography.app(size: 24, weight: .light))
+                .appFont(size: 24, weight: .light)
                 .foregroundColor(HomeDesign.Colors.primary)
             
             VStack(spacing: 2) {
                 Text(value)
-                    .font(HomeDesign.Typography.app(size: 16, weight: .medium))
+                    .appFont(size: 16, weight: .medium)
                     .foregroundColor(HomeDesign.Colors.primary)
                 Text(label)
-                    .font(HomeDesign.Typography.app(size: 12, weight: .regular))
+                    .appFont(size: 12, weight: .regular)
                     .foregroundColor(HomeDesign.Colors.secondary)
             }
         }
@@ -165,16 +164,16 @@ struct PrayerCarouselItem: View {
     var body: some View {
         VStack(spacing: 8) {
             Text(time)
-                .font(HomeDesign.Typography.app(size: timeFontSize, weight: .medium))
+                .appFont(size: timeFontSize, weight: .medium)
                 .foregroundColor(isSelected ? .white : HomeDesign.Colors.primary)
 
             Image(systemName: icon)
-                .font(HomeDesign.Typography.app(size: iconFontSize, weight: .light))
+                .appFont(size: iconFontSize, weight: .light)
                 .foregroundColor(isSelected ? .white : HomeDesign.Colors.accent)
                 .symbolVariant(.fill)
 
             Text(name)
-                .font(HomeDesign.Typography.app(size: nameFontSize, weight: .regular))
+                .appFont(size: nameFontSize, weight: .regular)
                 .foregroundColor(isSelected ? .white : HomeDesign.Colors.secondary)
         }
         .frame(width: cardWidth, height: cardHeight)
@@ -403,11 +402,16 @@ struct MinimalistPrayerPage: View {
     /// Iqamah line below adhan (e.g. `Iqamah: 9:00pm`; repeats adhan time when iqamah is at adhan).
     let iqamahTime: String?
     let theme: HomeDesign.TimeTheme
-    /// When false (user deferred location in onboarding), show only the sun-phase icon without rings or pointer.
+    /// When false (user deferred location in onboarding), Qibla pointer is hidden; rings and sun icon remain.
     var showQiblaCompass: Bool = true
     /// Device-relative rotation toward Qibla; nil until coordinates are known.
     var qiblaRotationDegrees: Double? = nil
     var qiblaOnboardingHighlighted: Bool = false
+    /// Mosque slug for hero countdown resolution.
+    var mosqueSlug: String = ""
+    /// When set with `dailyIqamahTimes`, enables tap/long-press hero countdown.
+    var dailyPrayerTimes: DailyPrayerTimes?
+    var dailyIqamahTimes: DailyIqamahTimes?
     /// Full prayer names (same order as shortcuts); used for accessibility.
     let prayerLabels: [String]
     let selectedIndex: Int
@@ -418,24 +422,27 @@ struct MinimalistPrayerPage: View {
 
     @Environment(\.locale) private var locale
 
+    @State private var heroCountdownVisible = false
+    @State private var heroCountdownLocked = false
+
+    private var showHeroCountdown: Bool { heroCountdownVisible || heroCountdownLocked }
+
+    private var heroCountdownEnabled: Bool {
+        !mosqueSlug.isEmpty && dailyPrayerTimes != nil && dailyIqamahTimes != nil
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
                 .frame(height: 140)
 
-            Group {
-                if showQiblaCompass {
-                    QiblaPrayerIcon(theme: theme, rotationDegrees: qiblaRotationDegrees, size: 120)
-                } else {
-                    PrayerSunPhaseIcon(theme: theme)
-                }
-            }
-            .onboardingHighlight(qiblaOnboardingHighlighted, timeTheme: theme)
-            .padding(.bottom, 60)
+            heroOrb
+                .onboardingHighlight(qiblaOnboardingHighlighted, timeTheme: theme)
+                .padding(.bottom, 60)
 
             VStack(spacing: 6) {
                 Text(prayerTime)
-                    .font(HomeDesign.Typography.primary(size: 88, weight: .light))
+                    .appFont(size: 88, weight: .light)
                     .kerning(-1.76) // -0.02em * 88
                     .foregroundColor(theme.textColor)
                     .shadow(color: theme.textColor.opacity(0.1), radius: 10, x: 0, y: 5)
@@ -444,7 +451,7 @@ struct MinimalistPrayerPage: View {
 
                 if let iq = iqamahTime, !iq.isEmpty {
                     Text(iq)
-                        .font(HomeDesign.Typography.iqamahSubtitle(size: 26, weight: .regular))
+                        .appFont(size: 26, weight: .regular)
                         .tracking(0.6)
                         .foregroundColor(theme.textColor.opacity(0.78))
                         .minimumScaleFactor(0.65)
@@ -458,7 +465,7 @@ struct MinimalistPrayerPage: View {
 
             VStack(spacing: 24) {
                 Text(prayerName)
-                    .font(HomeDesign.Typography.primary(size: 36, weight: .regular))
+                    .appFont(size: 36, weight: .regular)
                     .kerning(-0.36) // -0.01em * 36
                     .foregroundColor(theme.textColor)
 
@@ -468,23 +475,93 @@ struct MinimalistPrayerPage: View {
         }
     }
 
+    @ViewBuilder
+    private var heroOrb: some View {
+        if heroCountdownEnabled, let daily = dailyPrayerTimes, let iq = dailyIqamahTimes {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let pres = PrayerTimesEngine.heroCountdownPresentation(
+                    prayerTimes: daily,
+                    iqamahTimes: iq,
+                    mosqueSlug: mosqueSlug,
+                    now: context.date
+                )
+                let labelText = pres.map { localizedHeroCountdownLabel($0.labelKind) } ?? ""
+                let secs = pres.map { $0.remainingSeconds(at: context.date) } ?? 0
+                let timeStr = PrayerTimesEngine.formatHeroCountdownClock(totalSeconds: secs)
+                let prog = pres.map { $0.progress01(at: context.date) } ?? 0
+
+                QiblaPrayerIcon(
+                    theme: theme,
+                    rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil,
+                    size: 120,
+                    showCountdown: showHeroCountdown,
+                    countdownLabel: labelText,
+                    countdownTime: timeStr,
+                    countdownProgress: prog
+                )
+                .contentShape(Circle())
+                .onTapGesture(perform: handleHeroOrbTap)
+                .onLongPressGesture(minimumDuration: 0.45, perform: handleHeroOrbLongPress)
+                .accessibilityIdentifier("HeroPrayerOrb")
+                .accessibilityHint(Text(LocaleBundle.string(forKey: "home.countdown.a11y.hint", locale: locale)))
+            }
+        } else {
+            QiblaPrayerIcon(theme: theme, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
+        }
+    }
+
+    private func localizedHeroCountdownLabel(_ kind: HeroCountdownLabelKind) -> String {
+        let key: String = switch kind {
+        case .adhanIn: "home.countdown.adhan_in"
+        case .iqamahIn: "home.countdown.iqamah_in"
+        case .nextPrayer: "home.countdown.next_prayer"
+        }
+        return LocaleBundle.string(forKey: key, locale: locale)
+    }
+
+    private func handleHeroOrbTap() {
+        let gen = UIImpactFeedbackGenerator(style: .light)
+        gen.prepare()
+        if heroCountdownLocked {
+            gen.impactOccurred()
+            heroCountdownLocked = false
+            heroCountdownVisible = false
+            return
+        }
+        if heroCountdownVisible {
+            gen.impactOccurred()
+            heroCountdownVisible = false
+        } else {
+            gen.impactOccurred()
+            heroCountdownVisible = true
+        }
+    }
+
+    private func handleHeroOrbLongPress() {
+        guard heroCountdownEnabled else { return }
+        let gen = UIImpactFeedbackGenerator(style: .medium)
+        gen.prepare()
+        gen.impactOccurred()
+        heroCountdownLocked = true
+        heroCountdownVisible = true
+    }
+
     private func carouselA11yLabel(nameLabel: String, letter: String, index: Int) -> String {
         let template = componentLS("carousel.a11y", locale: locale)
         return String(format: template, locale: locale, arguments: [nameLabel, letter, index + 1, totalCount])
     }
 
-    /// Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha — matches `HomeView` prayer order.
-    private static let prayerShortcutLetters = ["F", "S", "D", "A", "M", "I"]
+    /// English canonical IDs for automation/accessibility (must stay language-neutral).
     private static let prayerShortcutIdentifiers = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
     private func shortcutLetter(for index: Int) -> String {
-        if index >= 0, index < Self.prayerShortcutLetters.count {
-            return Self.prayerShortcutLetters[index]
-        }
-        if index < prayerLabels.count {
-            return String(prayerLabels[index].prefix(1)).uppercased()
-        }
-        return "?"
+        guard index >= 0, index < prayerLabels.count else { return "?" }
+        let name = prayerLabels[index]
+        // Arabic and Urdu names use the definite article "ال" — strip it so we get
+        // the root initial (e.g. "الفجر" → "ف" not "ا").
+        let stripped = name.hasPrefix("ال") ? String(name.dropFirst(2)) : name
+        let firstChar = stripped.unicodeScalars.first.map { String($0) } ?? "?"
+        return firstChar
     }
 
     private func shortcutAccessibilityIdentifier(for index: Int) -> String {
@@ -516,7 +593,7 @@ struct MinimalistPrayerPage: View {
                                     onSelectPrayer(index)
                                 } label: {
                                     Text(letter)
-                                        .font(HomeDesign.Typography.app(size: 20, weight: isSelected ? .semibold : .regular))
+                                        .appFont(size: 20, weight: isSelected ? .semibold : .regular)
                                         .foregroundColor(theme.textColor.opacity(isSelected ? 1.0 : 0.38))
                                         .frame(minWidth: 28, minHeight: 36)
                                         .contentShape(Rectangle())

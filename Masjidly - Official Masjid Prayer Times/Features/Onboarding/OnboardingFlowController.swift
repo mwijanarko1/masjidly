@@ -56,6 +56,7 @@ final class OnboardingFlowController {
         selectedMosqueId = mosque.id
         settings.selectedMosqueId = mosque.id
         settings.selectedMosqueSlug = mosque.slug
+        settings.selectedCityGroupingKey = mosque.cityGroupingKey
         homeViewModel.selectedMosque = mosque
         if settingsViewModel.mosques.isEmpty {
             settingsViewModel.mosques = homeViewModel.mosques

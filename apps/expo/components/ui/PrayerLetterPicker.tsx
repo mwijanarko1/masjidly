@@ -7,11 +7,14 @@ import {
   ScrollView,
   Dimensions,
 } from "react-native";
+import { useAppLanguage, getFontScale } from "@/lib/i18n/language";
+import { t, type TranslationKey } from "@/lib/i18n/translations";
 import { TutorialHighlight } from "@/components/onboarding/CoachMarkCard";
 import type { TimeTheme } from "@/lib/design/themes";
 import { getTextColor } from "@/lib/design/themes";
 
 export type PrayerName = "Fajr" | "Sunrise" | "Dhuhr" | "Asr" | "Maghrib" | "Isha";
+
 
 interface PrayerLetterPickerProps {
   prayers: PrayerName[];
@@ -22,13 +25,13 @@ interface PrayerLetterPickerProps {
   highlightedPrayerIndex?: number;
 }
 
-const PRAYER_LETTERS: Record<PrayerName, string> = {
-  Fajr: "F",
-  Sunrise: "S",
-  Dhuhr: "D",
-  Asr: "A",
-  Maghrib: "M",
-  Isha: "I",
+const PRAYER_KEYS: Record<PrayerName, TranslationKey> = {
+  Fajr: "prayer.fajr",
+  Sunrise: "prayer.sunrise",
+  Dhuhr: "prayer.dhuhr",
+  Asr: "prayer.asr",
+  Maghrib: "prayer.maghrib",
+  Isha: "prayer.isha",
 };
 
 export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
@@ -43,6 +46,20 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
     Dimensions.get("window").width
   );
   const textColor = getTextColor(theme);
+  const langCode = useAppLanguage();
+  const fontScale = getFontScale(langCode);
+
+  const getPrayerLetter = (prayer: PrayerName): string => {
+    const key = PRAYER_KEYS[prayer];
+    const localized = t(key, langCode);
+    if (!localized) return prayer[0];
+    
+    let clean = localized;
+    if (clean.startsWith("ال")) {
+      clean = clean.substring(2);
+    }
+    return clean.charAt(0) || prayer[0];
+  };
 
   useEffect(() => {
     const sub = Dimensions.addEventListener("change", ({ window }) => {
@@ -88,10 +105,11 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
                     fontFamily: isSelected
                       ? "Comfortaa_600SemiBold"
                       : "Comfortaa_400Regular",
+                    fontSize: 20 * fontScale,
                   },
                 ]}
               >
-                {PRAYER_LETTERS[prayer]}
+                {getPrayerLetter(prayer)}
               </Text>
             </Pressable>
           );
@@ -109,6 +127,7 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
     </ScrollView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

@@ -14,6 +14,8 @@ import { MasjidlyConvexProvider } from "@/lib/convex/client";
 import { useRouter } from "expo-router";
 import { COLORS } from "@/constants";
 import { playAdhan } from "@/lib/audio/AdhanSoundPlayer";
+import { useAppLanguage } from "@/lib/i18n/language";
+import { t } from "@/lib/i18n/translations";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Notification categories & action identifiers (iOS parity)
@@ -38,28 +40,29 @@ const ACTION = {
  * `PrayerNotificationContent.registerCategories()`.
  */
 function useNotificationCategories() {
+  const appLanguage = useAppLanguage();
   useEffect(() => {
     import("expo-notifications/build/setNotificationCategoryAsync")
       .then(({ setNotificationCategoryAsync }) =>
         Promise.all([
           setNotificationCategoryAsync(CATEGORY.adhan, [
-            { identifier: ACTION.viewTimes, buttonTitle: "View times", options: { opensAppToForeground: true } },
-            { identifier: ACTION.snoozeReminder, buttonTitle: "Snooze reminder", options: {} },
+            { identifier: ACTION.viewTimes, buttonTitle: t("notification.action.view_times", appLanguage), options: { opensAppToForeground: true } },
+            { identifier: ACTION.snoozeReminder, buttonTitle: t("notification.action.snooze_reminder", appLanguage), options: {} },
           ]),
           setNotificationCategoryAsync(CATEGORY.iqamah, [
-            { identifier: ACTION.viewMosque, buttonTitle: "View mosque", options: { opensAppToForeground: true } },
-            { identifier: ACTION.openTimetable, buttonTitle: "Open timetable", options: { opensAppToForeground: true } },
+            { identifier: ACTION.viewMosque, buttonTitle: t("notification.action.view_mosque", appLanguage), options: { opensAppToForeground: true } },
+            { identifier: ACTION.openTimetable, buttonTitle: t("notification.action.open_timetable", appLanguage), options: { opensAppToForeground: true } },
           ]),
           setNotificationCategoryAsync(CATEGORY.reminder, [
-            { identifier: ACTION.openTimetable, buttonTitle: "Open timetable", options: { opensAppToForeground: true } },
-            { identifier: ACTION.dismiss, buttonTitle: "Dismiss", options: { destructive: true } },
+            { identifier: ACTION.openTimetable, buttonTitle: t("notification.action.open_timetable", appLanguage), options: { opensAppToForeground: true } },
+            { identifier: ACTION.dismiss, buttonTitle: t("notification.action.dismiss", appLanguage), options: { destructive: true } },
           ]),
         ])
       )
       .catch(() => {
         // Notification categories unavailable in this environment
       });
-  }, []);
+  }, [appLanguage]);
 }
 
 /**
@@ -219,6 +222,14 @@ export default function RootLayout() {
             <Stack.Screen
               name="settings"
               options={{ presentation: "modal", headerShown: false }}
+            />
+            <Stack.Screen
+              name="masjidly/terms"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="masjidly/privacy"
+              options={{ headerShown: false }}
             />
           </Stack>
         </MasjidlyConvexProvider>

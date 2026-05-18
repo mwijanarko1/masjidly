@@ -1,32 +1,36 @@
-import React from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  ScrollView,
   type ViewStyle,
   type TextStyle,
 } from "react-native";
 import { ACCENT } from "@/lib/design/themes";
+import type { Mosque } from "@/types/prayer";
+import {
+  cityGroupingKey,
+  cityOptions,
+  mosquesInCity,
+} from "@/lib/prayer/mosqueDefaults";
+import { SettingsMenuPickerRow } from "@/components/ui/SettingsMenuPickerRow";
+import { t } from "@/lib/i18n/translations";
+import type { AppLanguage } from "@/store/settings";
+import { SPACING } from "@/constants";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface MosqueItem {
-  id: string;
-  name: string;
-}
-
 interface MosqueSelectionCardProps {
-  mosques: MosqueItem[];
+  mosques: Mosque[];
   selectedMosqueId: string;
   onSelect: (id: string) => void;
   onContinue: () => void;
   textColor: string;
   usesLightForeground: boolean;
-  locale: string;
+  locale: AppLanguage;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,9 +46,61 @@ export function MosqueSelectionCard({
   usesLightForeground,
   locale,
 }: MosqueSelectionCardProps) {
+  const cities = useMemo(() => cityOptions(mosques), [mosques]);
+  /** Local city filter during onboarding (not persisted until Continue). */
+  const [cityKeyOverride, setCityKeyOverride] = useState<string | undefined>(
+    undefined
+  );
+
+  const resolvedCityKey = useMemo(() => {
+    if (cityKeyOverride !== undefined) return cityKeyOverride;
+    const m = mosques.find((x) => x.id === selectedMosqueId);
+    if (m) return cityGroupingKey(m);
+    return cities[0]?.key ?? "";
+  }, [cityKeyOverride, mosques, selectedMosqueId, cities]);
+
+  const mosquesInSelectedCity = useMemo(
+    () =>
+      resolvedCityKey ? mosquesInCity(resolvedCityKey, mosques) : mosques,
+    [mosques, resolvedCityKey]
+  );
+
+  const selectedCityLabel =
+    cities.find((c) => c.key === resolvedCityKey)?.label ??
+    t("settings.reminder.none", locale);
+
+  const selectedMosqueName =
+    mosques.find((m) => m.id === selectedMosqueId)?.name ??
+    t("settings.reminder.none", locale);
+
+  const handleCitySelect = useCallback(
+    (key: string) => {
+      setCityKeyOverride(key);
+      const list = mosquesInCity(key, mosques);
+      if (!list.some((m) => m.id === selectedMosqueId) && list[0]) {
+        onSelect(list[0].id);
+      }
+    },
+    [mosques, selectedMosqueId, onSelect]
+  );
+
+  const handleMosqueSelect = useCallback(
+    (id: string) => {
+      const m = mosques.find((x) => x.id === id);
+      if (m) setCityKeyOverride(cityGroupingKey(m));
+      onSelect(id);
+    },
+    [mosques, onSelect]
+  );
+
+  const RowDivider = () => (
+    <View
+      style={[styles.divider, { backgroundColor: textColor + "2E" }]}
+    />
+  );
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="auto">
-      {/* Dimming backdrop */}
       <View
         style={[
           StyleSheet.absoluteFill,
@@ -56,7 +112,6 @@ export function MosqueSelectionCard({
         ]}
       />
 
-      {/* Center card */}
       <View style={styles.centerContainer} pointerEvents="box-none">
         <View
           style={[
@@ -74,87 +129,49 @@ export function MosqueSelectionCard({
             },
           ]}
         >
-          {/* Title */}
-          <View style={{ alignItems: "center", marginBottom: 10 }}>
-            <Text
-              style={[
-                styles.title,
-                { color: textColor },
-              ]}
-            >
-              {locale === "ar"
-                ? "اختر مسجدك"
-                : locale === "ur"
-                ? "اپنی مسجد منتخب کریں"
-                : "Choose Your Mosque"}
+          <View style={{ alignItems: "center", marginBottom: 14 }}>
+            <Text style={[styles.title, { color: textColor }]}>
+              {t("onboarding.mosque.title", locale)}
             </Text>
-
-            <Text
-              style={[
-                styles.message,
-                { color: textColor + "CC" },
-              ]}
-            >
-              {locale === "ar"
-                ? "اختر المسجد الذي تريد عرض مواقيت الصلاة الخاصة به"
-                : locale === "ur"
-                ? "وہ مسجد منتخب کریں جس کے اوقات نماز آپ دیکھنا چاہتے ہیں"
-                : "Select the mosque whose prayer times you'd like to view"}
+            <Text style={[styles.message, { color: textColor + "CC" }]}>
+              {t("onboarding.mosque.message", locale)}
             </Text>
           </View>
 
-          {/* Mosque picker */}
-          <ScrollView
-            style={styles.pickerList}
-            showsVerticalScrollIndicator={false}
+          <View
+            style={[
+              styles.listBlock,
+              { backgroundColor: textColor + "0D" },
+            ]}
           >
-            {mosques.map((mosque) => {
-              const isSelected = mosque.id === selectedMosqueId;
-              return (
-                <Pressable
-                  key={mosque.id}
-                  style={[
-                    styles.mosqueRow,
-                    {
-                      backgroundColor: isSelected
-                        ? textColor + "1A"
-                        : "transparent",
-                    },
-                  ]}
-                  onPress={() => onSelect(mosque.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={mosque.name}
-                  accessibilityIdentifier="Onboarding.MosquePicker"
-                >
-                  <Text
-                    style={[
-                      styles.mosqueName,
-                      {
-                        color: textColor,
-                        fontFamily: isSelected
-                          ? "Comfortaa_600SemiBold"
-                          : "Comfortaa_400Regular",
-                      },
-                    ]}
-                  >
-                    {mosque.name}
-                  </Text>
-                  {isSelected ? (
-                    <View
-                      style={[
-                        styles.checkmark,
-                        { backgroundColor: ACCENT },
-                      ]}
-                    >
-                      <Text style={styles.checkmarkText}>✓</Text>
-                    </View>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+            <SettingsMenuPickerRow
+              label={t("settings.city.picker", locale)}
+              displayValue={selectedCityLabel}
+              value={resolvedCityKey}
+              options={cities.map((c) => ({ label: c.label, value: c.key }))}
+              onSelect={handleCitySelect}
+              textColor={textColor}
+              invertSheet={usesLightForeground}
+              sheetTitle={t("settings.city.picker", locale)}
+              testID="Onboarding.CityPicker"
+            />
+            <RowDivider />
+            <SettingsMenuPickerRow
+              label={t("settings.mosque.picker", locale)}
+              displayValue={selectedMosqueName}
+              value={selectedMosqueId}
+              options={mosquesInSelectedCity.map((m) => ({
+                label: m.name,
+                value: m.id,
+              }))}
+              onSelect={handleMosqueSelect}
+              textColor={textColor}
+              invertSheet={usesLightForeground}
+              sheetTitle={t("settings.section.mosque.title", locale)}
+              testID="Onboarding.MosquePicker"
+            />
+          </View>
 
-          {/* Continue button */}
           <Pressable
             style={[
               styles.continueButton,
@@ -163,15 +180,11 @@ export function MosqueSelectionCard({
             onPress={onContinue}
             disabled={!selectedMosqueId}
             accessibilityRole="button"
-            accessibilityLabel="Continue"
+            accessibilityLabel={t("onboarding.continue", locale)}
             accessibilityIdentifier="Onboarding.MosqueContinue"
           >
             <Text style={styles.continueButtonText}>
-              {locale === "ar"
-                ? "متابعة"
-                : locale === "ur"
-                ? "جاری رکھیں"
-                : "Continue"}
+              {t("onboarding.continue", locale)}
             </Text>
           </Pressable>
         </View>
@@ -201,7 +214,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.24,
     shadowRadius: 30,
     elevation: 10,
-    maxHeight: "80%",
   } as ViewStyle,
   title: {
     fontSize: 23,
@@ -215,37 +227,16 @@ const styles = StyleSheet.create({
     fontFamily: "Comfortaa_400Regular",
     lineHeight: 22,
     textAlign: "center",
-    marginBottom: 16,
   } as TextStyle,
-  pickerList: {
-    maxHeight: 240,
-    marginBottom: 16,
+  listBlock: {
+    borderRadius: 14,
+    overflow: "hidden",
+    marginBottom: 20,
   } as ViewStyle,
-  mosqueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 4,
+  divider: {
+    height: 0.5,
+    marginHorizontal: SPACING.md,
   } as ViewStyle,
-  mosqueName: {
-    fontSize: 18,
-    flex: 1,
-  } as TextStyle,
-  checkmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  } as ViewStyle,
-  checkmarkText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "bold",
-  } as TextStyle,
   continueButton: {
     backgroundColor: ACCENT,
     paddingVertical: 16,

@@ -16,10 +16,7 @@ enum PrayerLocalization {
     }
 
     static func displayName(canonicalEnglish: String, locale: Locale) -> String {
-        String(
-            localized: String.LocalizationValue(stringLiteral: catalogKey(for: canonicalEnglish)),
-            bundle: .main,
-            locale: locale
-        )
+        LocaleBundle.string(forKey: catalogKey(for: canonicalEnglish), locale: locale)
     }
 }
+

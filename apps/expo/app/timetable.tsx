@@ -15,7 +15,7 @@ import { prayerRepository } from "@/lib/prayer/prayerRepository";
 import { useSettingsStore } from "@/store/settings";
 import { formatPrayerClockForDisplay, getIqamahTimesForDate, getIqamahTime, formatSystemHHMMSheffield, isFridaySheffieldCalendar, findDayData } from "@/lib/prayer/prayerTimesEngine";
 import { t } from "@/lib/i18n/translations";
-import { resolvedLanguageCode, resolvedLocale } from "@/lib/i18n/language";
+import { resolvedLocale, useAppLanguage, getFontScale } from "@/lib/i18n/language";
 import type { MonthPrayerData, DailyIqamahTimes } from "@/types/prayer";
 import {
   themeForPrayer,
@@ -72,8 +72,9 @@ export default function TimetableScreen() {
   const selectedMosqueSlug = useSettingsStore((s) => s.selectedMosqueSlug);
   const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
   const activeMosqueSlug = mosqueSlug ?? selectedMosqueSlug;
-  const languageCode = resolvedLanguageCode();
-  const locale = resolvedLocale();
+  const languageCode = useAppLanguage();
+  const locale = resolvedLocale(languageCode);
+  const fontScale = getFontScale(languageCode);
 
   // ── Onboarding ──
   const onboarding = useOnboardingStore();
@@ -191,10 +192,10 @@ export default function TimetableScreen() {
         {/* Header Bar */}
         <View style={[styles.header, { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24 }]}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.headerDate, { color: textColor }]} numberOfLines={1}>
+            <Text style={[styles.headerDate, { color: textColor, fontSize: 24 * fontScale, lineHeight: 32 * fontScale }]} numberOfLines={1}>
               {formattedSelectedDate}
             </Text>
-            <Text style={[styles.headerMosque, { color: textColor + "B3" }]} numberOfLines={1}>
+            <Text style={[styles.headerMosque, { color: textColor + "B3", fontSize: 15 * fontScale }]} numberOfLines={1}>
               {mosqueNameParam || activeMosqueSlug}
             </Text>
           </View>
@@ -224,7 +225,7 @@ export default function TimetableScreen() {
           <Pressable onPress={goPrev} accessibilityRole="button" accessibilityLabel={t("timetable.previous_month_a11y", languageCode)}>
             <ChevronLeft size={24} color={textColor} />
           </Pressable>
-          <Text style={[styles.monthLabel, { color: textColor }]}>{monthSwitcherTitle}</Text>
+          <Text style={[styles.monthLabel, { color: textColor, fontSize: 18 * fontScale }]}>{monthSwitcherTitle}</Text>
           <Pressable onPress={goNext} accessibilityRole="button" accessibilityLabel={t("timetable.next_month_a11y", languageCode)}>
             <ChevronRight size={24} color={textColor} />
           </Pressable>
@@ -247,10 +248,10 @@ export default function TimetableScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={t("timetable.day_a11y_format", languageCode).replace("%s", String(pt.date))}
                 >
-                  <Text style={[styles.dayWeekday, { color: sel ? textColor : textColor + "66" }]}>
+                  <Text style={[styles.dayWeekday, { color: sel ? textColor : textColor + "66", fontSize: 10 * fontScale }]}>
                     {shortWeekday(pt.date).toUpperCase()}
                   </Text>
-                  <Text style={[styles.dayNumber, { color: sel ? textColor : textColor + "80", fontFamily: sel ? "Comfortaa_500Medium" : "Comfortaa_400Regular" }]}>
+                  <Text style={[styles.dayNumber, { color: sel ? textColor : textColor + "80", fontFamily: sel ? "Comfortaa_500Medium" : "Comfortaa_400Regular", fontSize: 20 * fontScale }]}>
                     {new Intl.NumberFormat(locale).format(pt.date)}
                   </Text>
                   <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: td ? textColor : "transparent", marginTop: 4 }} />
@@ -259,6 +260,7 @@ export default function TimetableScreen() {
             })}
           </ScrollView>
         ) : null}
+
 
         {loading ? (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -279,16 +281,17 @@ export default function TimetableScreen() {
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: SPACING.xl }}>
             {/* Column Header */}
             <View style={[styles.tableHeader, { paddingHorizontal: 24, paddingBottom: 4 }]}>
-              <Text style={[styles.headerCell, styles.nameCell, { color: textColor + "80" }]}>
+              <Text style={[styles.headerCell, styles.nameCell, { color: textColor + "80", fontSize: 13 * fontScale }]}>
                 {t("timetable.header.prayer", languageCode)}
               </Text>
-              <Text style={[styles.headerCell, styles.timeCell, { color: textColor + "80" }]}>
+              <Text style={[styles.headerCell, styles.timeCell, { color: textColor + "80", fontSize: 13 * fontScale }]}>
                 {t("timetable.header.adhan", languageCode)}
               </Text>
-              <Text style={[styles.headerCell, styles.timeCell, { color: textColor + "80" }]}>
+              <Text style={[styles.headerCell, styles.timeCell, { color: textColor + "80", fontSize: 13 * fontScale }]}>
                 {t("timetable.header.iqamah", languageCode)}
               </Text>
             </View>
+
 
             <PrayerRow
               name={t("timetable.header.fajr", languageCode)}

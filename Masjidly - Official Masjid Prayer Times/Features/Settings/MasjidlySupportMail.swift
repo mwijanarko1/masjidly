@@ -82,6 +82,6 @@ enum MasjidlySupportMail {
     }
 
     private static func LS(_ key: String, locale: Locale) -> String {
-        String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+        LocaleBundle.string(forKey: key, locale: locale)
     }
 }

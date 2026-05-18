@@ -8,20 +8,34 @@ export const MosqueSchema = z
     lat: z.number(),
     lng: z.number(),
     slug: z.string(),
+    citySlug: z.string().nullable().optional(),
+    cityName: z.string().nullable().optional(),
+    countryCode: z.string().nullable().optional(),
+    countryName: z.string().nullable().optional(),
+    timezone: z.string().nullable().optional(),
     website: z.string().nullable().optional(),
+    isHidden: z.boolean().nullable().optional(),
     is_hidden: z.boolean().nullable().optional(),
   })
-  .transform((data) => ({
-    id: data.id,
-    name: data.name,
-    address: data.address,
-    lat: data.lat,
-    lng: data.lng,
-    slug: data.slug,
-    website: data.website,
-    isHidden: data.is_hidden,
-    isHiddenResolved: data.is_hidden ?? false,
-  }));
+  .transform((data) => {
+    const isHidden = data.isHidden ?? data.is_hidden ?? false;
+    return {
+      id: data.id,
+      name: data.name,
+      address: data.address,
+      lat: data.lat,
+      lng: data.lng,
+      slug: data.slug,
+      citySlug: data.citySlug ?? "sheffield",
+      cityName: data.cityName ?? "Sheffield",
+      countryCode: data.countryCode ?? "GB",
+      countryName: data.countryName ?? "United Kingdom",
+      timezone: data.timezone ?? "Europe/London",
+      website: data.website,
+      isHidden,
+      isHiddenResolved: isHidden,
+    };
+  });
 
 export type Mosque = z.infer<typeof MosqueSchema>;
 
@@ -171,6 +185,14 @@ export interface NextPrayerCountdownResult {
   hours: number;
   minutes: number;
   seconds: number;
+}
+
+export type HeroCountdownLabelKind = "adhanIn" | "iqamahIn" | "nextPrayer";
+
+export interface HeroCountdownPresentation {
+  labelKind: HeroCountdownLabelKind;
+  targetDate: Date;
+  progressStartDate: Date;
 }
 
 export class PrayerEngineError extends Error {

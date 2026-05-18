@@ -4,7 +4,7 @@ import CoreLocation
 import UIKit
 
 private func LS(_ key: String, locale: Locale) -> String {
-    String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+    LocaleBundle.string(forKey: key, locale: locale)
 }
 
 struct SettingsView: View {
@@ -15,7 +15,9 @@ struct SettingsView: View {
     @Environment(OnboardingFlowController.self) private var onboarding
     @Environment(AppReviewPromptCoordinator.self) private var reviewPrompt
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.locale) private var locale
+    /// Derive locale directly from the observable SettingsStore so that changing
+    /// the in-app language inside this sheet instantly re-localizes every string.
+    private var locale: Locale { settings.resolvedLocale }
     @State private var locationAuthStatus: CLAuthorizationStatus = {
         let manager = CLLocationManager()
         return manager.authorizationStatus
@@ -31,8 +33,13 @@ struct SettingsView: View {
                 settingsTitleHeaderRow
 
                 settingsSectionBlock(titleKey: "settings.section.mosque.title") {
-                    mosquePickerRow
-                        .padding(.vertical, 12)
+                    VStack(spacing: 0) {
+                        cityPickerRow
+                            .padding(.vertical, 12)
+                        settingsRowDivider
+                        mosquePickerRow
+                            .padding(.vertical, 12)
+                    }
                 }
 
                 settingsSectionBlock(titleKey: "settings.section.display.title") {
@@ -42,6 +49,11 @@ struct SettingsView: View {
                         timeTheme: timeTheme
                     )
                     .padding(.vertical, 12)
+                }
+
+                settingsSectionBlock(titleKey: "settings.section.language.title") {
+                    languagePickerRow
+                        .padding(.vertical, 12)
                 }
 
                 settingsSectionBlock(titleKey: "settings.section.qibla.title") {
@@ -125,7 +137,7 @@ struct SettingsView: View {
                             } label: {
                                 developmentChrome {
                                     HStack(alignment: .center, spacing: 12) {
-                                        Text("Test \(testType.rawValue)")
+                                        Text(testNotificationTitle(testType))
                                             .appFont(size: 17, weight: .medium)
                                             .foregroundColor(timeTheme.textColor)
                                         Spacer(minLength: 8)
@@ -350,13 +362,99 @@ struct SettingsView: View {
         insetListRowChrome(content: content)
     }
 
+    private func testNotificationTitle(_ type: TestNotificationType) -> String {
+        let format = localized("settings.development.test_notification_format")
+        let name: String
+        switch type {
+        case .adhan: name = localized("notification.channel.adhan")
+        case .iqamah: name = localized("notification.channel.iqamah")
+        case .reminder: name = localized("settings.development.notification_type.reminder")
+        case .all: name = localized("settings.development.notification_type.all")
+        }
+        return String(format: format, locale: locale, arguments: [name])
+    }
+
     private func testDescription(_ type: TestNotificationType) -> String {
         switch type {
-        case .adhan, .iqamah, .reminder: return "Instant"
-        case .all: return "3× instant"
+        case .adhan, .iqamah, .reminder: return localized("settings.development.instant")
+        case .all: return localized("settings.development.three_instant")
         }
     }
     #endif
+
+    private var cityOptions: [(key: String, label: String)] {
+        MosqueDefaults.cityOptions(from: model.mosques)
+    }
+
+    private var effectiveCityGroupingKey: String {
+        if let k = settings.selectedCityGroupingKey,
+           !MosqueDefaults.mosques(inCityGroupingKey: k, mosques: model.mosques).isEmpty {
+            return k
+        }
+        if let id = settings.selectedMosqueId,
+           let m = model.mosques.first(where: { $0.id == id }) {
+            return m.cityGroupingKey
+        }
+        return cityOptions.first?.key ?? ""
+    }
+
+    private var mosquesInSelectedCity: [Mosque] {
+        let key = effectiveCityGroupingKey
+        guard !key.isEmpty else { return model.mosques }
+        return MosqueDefaults.mosques(inCityGroupingKey: key, mosques: model.mosques)
+    }
+
+    private var cityPickerRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(localized("settings.city.picker"))
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(timeTheme.textColor)
+                .multilineTextAlignment(.leading)
+                .lineLimit(1)
+                .layoutPriority(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 12)
+
+            Picker("", selection: citySelectionBinding) {
+                ForEach(cityOptions, id: \.key) { opt in
+                    Text(opt.label)
+                        .appFont(size: 17)
+                        .tag(opt.key)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(timeTheme.textColor)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(minHeight: 44)
+    }
+
+    private var languagePickerRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(localized("settings.language.app"))
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(timeTheme.textColor)
+                .multilineTextAlignment(.leading)
+                .lineLimit(1)
+                .layoutPriority(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 12)
+
+            Picker("", selection: Bindable(settings).appLanguage) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(localized(language.displayNameKey))
+                        .appFont(size: 17)
+                        .tag(language)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(timeTheme.textColor)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(minHeight: 44)
+    }
 
     private var mosquePickerRow: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -371,7 +469,7 @@ struct SettingsView: View {
             Spacer(minLength: 12)
 
             Picker("", selection: mosqueSelectionBinding) {
-                ForEach(model.mosques) { m in
+                ForEach(mosquesInSelectedCity) { m in
                     Text(m.name)
                         .appFont(size: 17)
                         .tag(m.id)
@@ -426,16 +524,30 @@ struct SettingsView: View {
         .frame(minHeight: 44)
     }
 
+    private var citySelectionBinding: Binding<String> {
+        Binding(
+            get: { effectiveCityGroupingKey },
+            set: { newKey in
+                settings.selectedCityGroupingKey = newKey
+                let inCity = MosqueDefaults.mosques(inCityGroupingKey: newKey, mosques: model.mosques)
+                guard let first = inCity.first else { return }
+                if inCity.contains(where: { $0.id == settings.selectedMosqueId }) { return }
+                Task { await model.selectMosque(first) }
+            }
+        )
+    }
+
     private var mosqueSelectionBinding: Binding<String> {
         Binding(
             get: {
-                if let id = settings.selectedMosqueId, model.mosques.contains(where: { $0.id == id }) {
+                if let id = settings.selectedMosqueId,
+                   mosquesInSelectedCity.contains(where: { $0.id == id }) {
                     return id
                 }
-                return model.mosques.first?.id ?? ""
+                return mosquesInSelectedCity.first?.id ?? ""
             },
             set: { id in
-                guard let m = model.mosques.first(where: { $0.id == id }) else { return }
+                guard let m = mosquesInSelectedCity.first(where: { $0.id == id }) else { return }
                 Task { await model.selectMosque(m) }
             }
         )

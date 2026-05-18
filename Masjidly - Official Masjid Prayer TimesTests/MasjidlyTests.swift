@@ -82,6 +82,36 @@ struct PrayerEngineTests {
         #expect(s == "22:40")
     }
 
+    @Test func muslimWelfareHouseSummerIshaShowsAfterMaghrib() throws {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        guard let d = cal.date(from: DateComponents(year: 2026, month: 6, day: 15, hour: 12)) else { return }
+        let iq = DailyIqamahTimes(fajr: "1", dhuhr: "2", asr: "3", maghrib: "4", isha: "21:10", jummah: "")
+        let s = PrayerTimesEngine.resolveIshaIqamahForDisplay(
+            slug: MosqueDefaults.defaultSlug,
+            date: d,
+            ishaAdhan: "22:40",
+            iqamahTimes: iq,
+            maghribAdhan: "21:30"
+        )
+        #expect(s == "After Maghrib")
+    }
+
+    @Test func nonMwhMosqueSummerIshaUsesIqamahTable() throws {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        guard let d = cal.date(from: DateComponents(year: 2026, month: 6, day: 15, hour: 12)) else { return }
+        let iq = DailyIqamahTimes(fajr: "1", dhuhr: "2", asr: "3", maghrib: "4", isha: "21:10", jummah: "")
+        let s = PrayerTimesEngine.resolveIshaIqamahForDisplay(
+            slug: "other-mosque",
+            date: d,
+            ishaAdhan: "22:40",
+            iqamahTimes: iq,
+            maghribAdhan: "21:30"
+        )
+        #expect(s == "21:10")
+    }
+
     @Test func dstEmbeddedRemap() {
         let day = PrayerTimesEngine.resolveTimetableDayForUkEmbeddedDst(calendarDay: 28, transitionDayInTable: 30, ukTransitionDay: 29, maxTableDay: 31)
         #expect(day == 29)
@@ -91,6 +121,45 @@ struct PrayerEngineTests {
         let ar = Locale(identifier: "ar")
         let s = PrayerTimesEngine.formatPrayerTimeForDisplay("13:05", uses24Hour: true, locale: ar)
         #expect(s != "13:05")
+    }
+
+    @Test func heroCountdownLabelAdhanInBeforeFirstAdhan() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        let now = cal.date(from: DateComponents(year: 2026, month: 6, day: 15, hour: 3, minute: 0))!
+        let d = DailyPrayerTimes(date: "2026-06-15", fajr: "04:00", sunrise: "05:00", dhuhr: "13:00", asr: "18:00", maghrib: "21:00", isha: "22:30")
+        let iq = DailyIqamahTimes(fajr: "04:30", dhuhr: "13:20", asr: "18:10", maghrib: "21:05", isha: "22:45", jummah: "13:25")
+        let h = PrayerTimesEngine.heroCountdownPresentation(prayerTimes: d, iqamahTimes: iq, mosqueSlug: "x", now: now)!
+        #expect(h.labelKind == .adhanIn)
+        #expect(h.remainingSeconds(at: now) == 3600)
+    }
+
+    @Test func heroCountdownLabelNextPrayerAfterFajrWindow() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        let now = cal.date(from: DateComponents(year: 2026, month: 6, day: 15, hour: 12, minute: 0))!
+        let d = DailyPrayerTimes(date: "2026-06-15", fajr: "04:00", sunrise: "05:00", dhuhr: "13:00", asr: "18:00", maghrib: "21:00", isha: "22:30")
+        let iq = DailyIqamahTimes(fajr: "04:30", dhuhr: "13:20", asr: "18:10", maghrib: "21:05", isha: "22:45", jummah: "13:25")
+        let h = PrayerTimesEngine.heroCountdownPresentation(prayerTimes: d, iqamahTimes: iq, mosqueSlug: "x", now: now)!
+        #expect(h.labelKind == .nextPrayer)
+    }
+
+    @Test func heroCountdownIqamahPhase() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        let now = cal.date(from: DateComponents(year: 2026, month: 6, day: 15, hour: 13, minute: 5))!
+        let d = DailyPrayerTimes(date: "2026-06-15", fajr: "04:00", sunrise: "05:00", dhuhr: "13:00", asr: "18:00", maghrib: "21:00", isha: "22:30")
+        let iq = DailyIqamahTimes(fajr: "04:30", dhuhr: "13:20", asr: "18:10", maghrib: "21:05", isha: "22:45", jummah: "13:25")
+        let h = PrayerTimesEngine.heroCountdownPresentation(prayerTimes: d, iqamahTimes: iq, mosqueSlug: "x", now: now)!
+        #expect(h.labelKind == .iqamahIn)
+        #expect(h.remainingSeconds(at: now) == 15 * 60)
+    }
+
+    @Test func formatHeroCountdownClock() {
+        #expect(PrayerTimesEngine.formatHeroCountdownClock(totalSeconds: 5024) == "-1:23:44")
+        #expect(PrayerTimesEngine.formatHeroCountdownClock(totalSeconds: 1122) == "-18:42")
+        #expect(PrayerTimesEngine.formatHeroCountdownClock(totalSeconds: 545) == "-9:05")
+        #expect(PrayerTimesEngine.formatHeroCountdownClock(totalSeconds: 0) == "-0:00")
     }
 }
 
@@ -125,6 +194,15 @@ struct QiblaDirectionTests {
 
 @Suite("Settings")
 struct SettingsStoreTests {
+    @Test @MainActor func selectedCityGroupingKeyPersists() {
+        let defaults = UserDefaults(suiteName: "SettingsStoreTests.selectedCityGroupingKeyPersists")!
+        defaults.removePersistentDomain(forName: "SettingsStoreTests.selectedCityGroupingKeyPersists")
+
+        let s = SettingsStore(defaults: defaults)
+        s.selectedCityGroupingKey = "slug:leeds"
+        #expect(SettingsStore(defaults: defaults).selectedCityGroupingKey == "slug:leeds")
+    }
+
     @Test @MainActor func mosquePersistenceAndDefault() {
         let s = SettingsStore()
         s.selectedMosqueId = "bad-id"
@@ -139,17 +217,21 @@ struct SettingsStoreTests {
         #expect(s.uses24HourTime == true)
     }
 
-    @Test @MainActor func appLanguagePersistsEnglishOnly() {
-        let s = SettingsStore()
-        s.appLanguage = .english
-        #expect(s.appLanguage == .english)
-        let reloaded = SettingsStore()
-        #expect(reloaded.appLanguage == .english)
+    @Test @MainActor func appLanguagePersistsSelectedLanguage() {
+        let defaults = UserDefaults(suiteName: "SettingsStoreTests.appLanguagePersistsSelectedLanguage")!
+        defaults.removePersistentDomain(forName: "SettingsStoreTests.appLanguagePersistsSelectedLanguage")
+        let s = SettingsStore(defaults: defaults)
+        s.appLanguage = .indonesian
+        let reloaded = SettingsStore(defaults: defaults)
+        #expect(reloaded.appLanguage == .indonesian)
+        #expect(reloaded.resolvedLocale.identifier == "id_ID")
     }
 
-    @Test func appLanguageMetadataIsEnglishOnly() {
+    @Test func appLanguageMetadataSupportsRtl() {
         #expect(AppLanguage.english.resolvedLanguageCode == "en")
-        #expect(AppLanguage.english.isResolvedRightToLeft == false)
+        #expect(AppLanguage.arabic.isResolvedRightToLeft == true)
+        #expect(AppLanguage.urdu.isResolvedRightToLeft == true)
+        #expect(AppLanguage.indonesian.isResolvedRightToLeft == false)
     }
 
     @Test @MainActor func onboardingCompletionPersists() {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -21,10 +21,10 @@ import { SettingsMenuPickerRow } from "@/components/ui/SettingsMenuPickerRow";
 import { SPACING, FONT_SIZES } from "@/constants";
 import { SettingsToggleRow } from "@/components/ui/SettingsToggleRow";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
-import { visibleMosques } from "@/lib/prayer/mosqueDefaults";
-import { useSettingsStore } from "@/store/settings";
+import { visibleMosques, cityOptions, mosquesInCity, cityGroupingKey } from "@/lib/prayer/mosqueDefaults";
+import { useSettingsStore, type AppLanguage } from "@/store/settings";
 import { t, type TranslationKey } from "@/lib/i18n/translations";
-import { resolvedLanguageCode } from "@/lib/i18n/language";
+import { APP_LANGUAGES, useAppLanguage } from "@/lib/i18n/language";
 import {
   cancelAllPrayerNotifications,
   rescheduleUpcomingPrayerNotifications,
@@ -58,7 +58,7 @@ async function rescheduleNotifications(
       settings.selectedMosqueSlug
     );
     if (!mosque) return;
-    const locale = resolvedLanguageCode();
+    const locale = useSettingsStore.getState().appLanguage;
     await rescheduleUpcomingPrayerNotifications({
       mosque,
       settings: settings.notifications,
@@ -92,7 +92,7 @@ export default function SettingsScreen() {
 
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [loading, setLoading] = useState(true);
-  const langCode = resolvedLanguageCode();
+  const langCode = useAppLanguage();
 
   useEffect(() => {
     prayerRepository.listMosques().then((all) => {
@@ -101,9 +101,42 @@ export default function SettingsScreen() {
     }).catch(() => setLoading(false));
   }, []);
 
+  const cities = useMemo(() => cityOptions(mosques), [mosques]);
+
+  const effectiveCityKey = useMemo(() => {
+    const stored = settings.selectedCityGroupingKey;
+    if (stored && mosquesInCity(stored, mosques).length > 0) {
+      return stored;
+    }
+    const m = mosques.find((x) => x.id === settings.selectedMosqueId);
+    if (m) return cityGroupingKey(m);
+    return cities[0]?.key ?? "";
+  }, [
+    mosques,
+    settings.selectedCityGroupingKey,
+    settings.selectedMosqueId,
+    cities,
+  ]);
+
+  const mosquesInSelectedCity = useMemo(
+    () => (effectiveCityKey ? mosquesInCity(effectiveCityKey, mosques) : mosques),
+    [mosques, effectiveCityKey]
+  );
+
   const handleMosqueSelect = (mosque: Mosque) => {
-    settings.setSelectedMosque(mosque.id, mosque.slug);
+    settings.setSelectedMosque(mosque.id, mosque.slug, cityGroupingKey(mosque));
     rescheduleNotifications(useSettingsStore.getState());
+  };
+
+  const handleCitySelect = (key: string) => {
+    settings.setSelectedCityGroupingKey(key);
+    const inCity = mosquesInCity(key, mosques);
+    const currentOk = inCity.some((m) => m.id === settings.selectedMosqueId);
+    if (!currentOk && inCity[0]) {
+      handleMosqueSelect(inCity[0]);
+    } else {
+      rescheduleNotifications(useSettingsStore.getState());
+    }
   };
 
   const handle24hToggle = (v: boolean) => {
@@ -174,13 +207,13 @@ export default function SettingsScreen() {
         mosques.find((m) => m.id === settings.selectedMosqueId)?.name ?? null;
       const subject =
         category === "feedback"
-          ? "Masjidly Feedback"
-          : "Masjidly Prayer Time Issue";
+          ? t("settings.email.feedback.subject", langCode)
+          : t("settings.email.prayer_times.subject", langCode);
       const bodyLines: string[] = [];
       bodyLines.push("");
       bodyLines.push("---");
       bodyLines.push(`App: Masjidly`);
-      bodyLines.push(`Mosque: ${mosqueName ?? "Not selected"}`);
+      bodyLines.push(`Mosque: ${mosqueName ?? t("settings.email.mosque.not_selected", langCode)}`);
       bodyLines.push(`Language: ${langCode}`);
       const body = bodyLines.join("\n");
       const mailto = `mailto:mikhailbuilds@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -209,8 +242,8 @@ export default function SettingsScreen() {
         const granted = await requestNotificationAuthorizationIfNeeded();
         if (!granted) {
           Alert.alert(
-            "Notifications not enabled",
-            "Please enable notifications in your device settings to use test notifications."
+            t("settings.alert.notifications_not_enabled.title", langCode),
+            t("settings.alert.notifications_not_enabled.message", langCode)
           );
           return;
         }
@@ -242,36 +275,36 @@ export default function SettingsScreen() {
 
       if (type === "adhan" || type === "all") {
         await scheduleOne(
-          "Maghrib Adhan",
-          "Tap to hear adhan.",
+          t("notification.maghrib_adhan", langCode),
+          t("notification.test.tap_adhan", langCode),
           "adhan",
           { kind: "adhan", prayer: "maghrib", mosqueSlug: slug }
         );
       }
       if (type === "iqamah" || type === "all") {
         await scheduleOne(
-          "Maghrib Iqamah",
-          "Iqamah for Maghrib is now.",
+          t("notification.maghrib_iqamah", langCode),
+          t("notification.test.iqamah_now", langCode),
           "iqamah",
           { kind: "iqamah", prayer: "maghrib", mosqueSlug: slug }
         );
       }
       if (type === "reminder" || type === "all") {
         await scheduleOne(
-          "Maghrib soon",
-          "Adhan in 10 min.",
+          t("notification.test.maghrib_soon", langCode),
+          t("notification.test.adhan_in_10", langCode),
           "reminder",
           { kind: "reminder", prayer: "maghrib", mosqueSlug: slug }
         );
       }
       } catch (e) {
         Alert.alert(
-          "Test notification failed",
-          e instanceof Error ? e.message : "An unknown error occurred"
+          t("settings.alert.test_failed.title", langCode),
+          e instanceof Error ? e.message : t("settings.alert.unknown_error", langCode)
         );
       }
     },
-    [settings.selectedMosqueSlug]
+    [settings.selectedMosqueSlug, langCode]
   );
 
   const SectionCaption: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -284,9 +317,17 @@ export default function SettingsScreen() {
     <View style={[styles.divider, { backgroundColor: textColor + "2E" }]} />
   );
 
+  const formatMosqueLabel = (mosque: Mosque) => mosque.name;
+
+  const selectedCityLabel =
+    cities.find((c) => c.key === effectiveCityKey)?.label ??
+    t("settings.reminder.none", langCode);
+
   const selectedMosqueName =
-    mosques.find((m) => m.id === settings.selectedMosqueId)?.name
-    ?? t("settings.reminder.none", langCode);
+    (() => {
+      const mosque = mosques.find((m) => m.id === settings.selectedMosqueId);
+      return mosque ? formatMosqueLabel(mosque) : t("settings.reminder.none", langCode);
+    })();
 
   const reminderDisplayLabel = (minutes: number | null) => {
     const opt = REMINDER_OPTIONS.find((o) => o.value === minutes);
@@ -331,12 +372,29 @@ export default function SettingsScreen() {
           ) : (
             <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
               <SettingsMenuPickerRow
+                label={t("settings.city.picker", langCode)}
+                displayValue={selectedCityLabel}
+                value={effectiveCityKey}
+                options={cities.map((c) => ({ label: c.label, value: c.key }))}
+                onSelect={(key) => {
+                  handleCitySelect(key);
+                }}
+                textColor={textColor}
+                invertSheet={invertSheet}
+                sheetTitle={t("settings.city.picker", langCode)}
+                testID="settings-city-picker"
+              />
+              <RowDivider />
+              <SettingsMenuPickerRow
                 label={t("settings.mosque.picker", langCode)}
                 displayValue={selectedMosqueName}
                 value={settings.selectedMosqueId ?? ""}
-                options={mosques.map((m) => ({ label: m.name, value: m.id }))}
+                options={mosquesInSelectedCity.map((m) => ({
+                  label: formatMosqueLabel(m),
+                  value: m.id,
+                }))}
                 onSelect={(id) => {
-                  const m = mosques.find((x) => x.id === id);
+                  const m = mosquesInSelectedCity.find((x) => x.id === id);
                   if (m) handleMosqueSelect(m);
                 }}
                 textColor={textColor}
@@ -355,6 +413,25 @@ export default function SettingsScreen() {
               value={settings.uses24HourTime}
               onValueChange={handle24hToggle}
               textColor={textColor}
+            />
+          </View>
+
+          {/* Language Section */}
+          <SectionCaption>{t("settings.section.language.title", langCode)}</SectionCaption>
+          <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
+            <SettingsMenuPickerRow
+              label={t("settings.language.app", langCode)}
+              displayValue={t(`settings.language.${settings.appLanguage}` as TranslationKey, langCode)}
+              value={settings.appLanguage}
+              options={APP_LANGUAGES.map((language) => ({
+                label: t(`settings.language.${language.code}` as TranslationKey, langCode),
+                value: language.code,
+              }))}
+              onSelect={(language) => settings.setAppLanguage(language as AppLanguage)}
+              textColor={textColor}
+              invertSheet={invertSheet}
+              sheetTitle={t("settings.section.language.title", langCode)}
+              testID="settings-language-picker"
             />
           </View>
 
@@ -487,10 +564,40 @@ export default function SettingsScreen() {
             </Pressable>
           </View>
 
+          {/* Legal Section */}
+          <SectionCaption>{t("settings.section.legal.title", langCode)}</SectionCaption>
+          <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.contactRow,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => router.push("/masjidly/terms")}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.listItemText, { color: textColor }]}>
+                {t("settings.legal.terms", langCode)}
+              </Text>
+            </Pressable>
+            <RowDivider />
+            <Pressable
+              style={({ pressed }) => [
+                styles.contactRow,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => router.push("/masjidly/privacy")}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.listItemText, { color: textColor }]}>
+                {t("settings.legal.privacy", langCode)}
+              </Text>
+            </Pressable>
+          </View>
+
           {/* Development Section */}
           {__DEV__ ? (
             <>
-              <SectionCaption>Development</SectionCaption>
+              <SectionCaption>{t("settings.dev.title", langCode)}</SectionCaption>
               <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
                 {/* Reset tutorial */}
                 <Pressable
@@ -501,16 +608,16 @@ export default function SettingsScreen() {
                   onPress={() => {
                     useSettingsStore.getState().setHasCompletedOnboarding(false);
                     Alert.alert(
-                      "Tutorial reset",
-                      "Onboarding flags have been reset. Close and reopen the app to restart the tutorial.",
-                      [{ text: "OK" }]
+                      t("settings.dev.reset_tutorial.title", langCode),
+                      t("settings.dev.reset_tutorial.message", langCode),
+                      [{ text: t("action.ok", langCode) }]
                     );
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel="Reset tutorial"
+                  accessibilityLabel={t("settings.dev.reset_tutorial", langCode)}
                 >
                   <Text style={[styles.listItemText, { color: textColor }]}>
-                    Reset tutorial
+                    {t("settings.dev.reset_tutorial", langCode)}
                   </Text>
                 </Pressable>
 
@@ -525,10 +632,10 @@ export default function SettingsScreen() {
                   accessibilityRole="button"
                 >
                   <Text style={[styles.listItemText, { color: textColor }]}>
-                    Test Adhan
+                    {t("settings.dev.test_adhan", langCode)}
                   </Text>
                   <Text style={[styles.devHint, { color: textColor + "8C" }]}>
-                    Instant
+                    {t("settings.dev.instant", langCode)}
                   </Text>
                 </Pressable>
 
@@ -543,10 +650,10 @@ export default function SettingsScreen() {
                   accessibilityRole="button"
                 >
                   <Text style={[styles.listItemText, { color: textColor }]}>
-                    Test Iqamah
+                    {t("settings.dev.test_iqamah", langCode)}
                   </Text>
                   <Text style={[styles.devHint, { color: textColor + "8C" }]}>
-                    Instant
+                    {t("settings.dev.instant", langCode)}
                   </Text>
                 </Pressable>
 
@@ -561,10 +668,10 @@ export default function SettingsScreen() {
                   accessibilityRole="button"
                 >
                   <Text style={[styles.listItemText, { color: textColor }]}>
-                    Test Reminder
+                    {t("settings.dev.test_reminder", langCode)}
                   </Text>
                   <Text style={[styles.devHint, { color: textColor + "8C" }]}>
-                    Instant
+                    {t("settings.dev.instant", langCode)}
                   </Text>
                 </Pressable>
 
@@ -579,10 +686,10 @@ export default function SettingsScreen() {
                   accessibilityRole="button"
                 >
                   <Text style={[styles.listItemText, { color: textColor }]}>
-                    Test All Three
+                    {t("settings.dev.test_all", langCode)}
                   </Text>
                   <Text style={[styles.devHint, { color: textColor + "8C" }]}>
-                    3× instant
+                    {t("settings.dev.three_instant", langCode)}
                   </Text>
                 </Pressable>
               </View>

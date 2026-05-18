@@ -1,11 +1,11 @@
 import React, { useMemo } from "react";
-import { View, Animated } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { View, Text, Animated } from "react-native";
+import Svg, { Circle, Path } from "react-native-svg";
 import { PrayerSunPhaseIcon } from "./PrayerSunPhaseIcon";
 import type { TimeTheme } from "@/lib/design/themes";
 import { getIconColor } from "@/lib/design/themes";
 
-interface QiblaPrayerIconProps {
+export interface QiblaPrayerIconProps {
   theme: TimeTheme;
   rotationDegrees?: number | null;
   /**
@@ -14,6 +14,11 @@ interface QiblaPrayerIconProps {
    */
   animatedRotation?: Animated.Value;
   size?: number;
+  showCountdown?: boolean;
+  countdownLabel?: string;
+  countdownTime?: string;
+  /** Elapsed fraction 0–1 for the countdown progress ring only. */
+  countdownProgress?: number;
 }
 
 const FRAME_SIZE = 120;
@@ -40,8 +45,6 @@ const QiblaPointerTriangle: React.FC<{ color: string; size: number }> = ({
   color,
   size,
 }) => {
-  // Triangle pointing outward from the circle center (tip at top of SVG).
-  // Positioned so the base sits on the outer ring, tip extends outward — iOS style.
   return (
     <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <Path
@@ -57,13 +60,15 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
   rotationDegrees,
   animatedRotation,
   size = 120,
+  showCountdown = false,
+  countdownLabel = "",
+  countdownTime = "",
+  countdownProgress = 0,
 }) => {
   const color = getIconColor(theme);
   const scale = size / FRAME_SIZE;
   const offset = getQiblaRingContentOffset(theme);
 
-  // Memoized interpolation — must be stable across renders for native driver to track it.
-  // extrapolate: "extend" handles continuousRotation values that may exceed 360.
   const rotateInterpolation = useMemo(() => {
     if (!animatedRotation) return null;
     return animatedRotation.interpolate({
@@ -73,7 +78,43 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
     });
   }, [animatedRotation]);
 
-  const hasPointer = animatedRotation != null || rotationDegrees != null;
+  const prog = Math.min(1, Math.max(0, countdownProgress));
+  const ringPx = 112 * scale;
+  const strokeW = 2 * scale;
+  const r = ringPx / 2 - strokeW / 2;
+  const circumference = 2 * Math.PI * r;
+  const dashOffset = circumference * (1 - prog);
+
+  const outerOpacity = showCountdown ? "6A" : "3D";
+  const outerBorderW = showCountdown ? 1.15 : 1;
+
+  const symbolicOpacity = React.useRef(new Animated.Value(showCountdown ? 0 : 1)).current;
+  const countdownOpacity = React.useRef(new Animated.Value(showCountdown ? 1 : 0)).current;
+  const countdownSlide = React.useRef(new Animated.Value(showCountdown ? 0 : 3 * scale)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(symbolicOpacity, {
+        toValue: showCountdown ? 0 : 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(countdownOpacity, {
+        toValue: showCountdown ? 1 : 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(countdownSlide, {
+        toValue: showCountdown ? 0 : 3 * scale,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [showCountdown, symbolicOpacity, countdownOpacity, countdownSlide, scale]);
+
+  const pointerDeg = rotationDegrees ?? 0;
+  const hasQiblaPointer = animatedRotation != null || rotationDegrees != null;
+  const showPointer = hasQiblaPointer;
 
   return (
     <View
@@ -84,18 +125,38 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
         alignItems: "center",
       }}
     >
-      {/* Outer ring */}
+      {showCountdown ? (
+        <Svg
+          width={ringPx}
+          height={ringPx}
+          style={{ position: "absolute" }}
+          pointerEvents="none"
+        >
+          <Circle
+            cx={ringPx / 2}
+            cy={ringPx / 2}
+            r={r}
+            stroke={color + "61"}
+            strokeWidth={strokeW}
+            fill="none"
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+            transform={`rotate(-90 ${ringPx / 2} ${ringPx / 2})`}
+          />
+        </Svg>
+      ) : null}
+
       <View
         style={{
           position: "absolute",
           width: 112 * scale,
           height: 112 * scale,
           borderRadius: (112 * scale) / 2,
-          borderWidth: 1,
-          borderColor: color + "3D", // ~0.24 opacity
+          borderWidth: outerBorderW,
+          borderColor: color + outerOpacity,
         }}
       />
-      {/* Inner ring */}
       <View
         style={{
           position: "absolute",
@@ -103,23 +164,67 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
           height: 106 * scale,
           borderRadius: (106 * scale) / 2,
           borderWidth: 0.8,
-          borderColor: color + "14", // ~0.08 opacity
+          borderColor: color + "14",
         }}
       />
-      {/* Sun phase icon with offset */}
-      <View
+
+      <Animated.View
         style={{
           transform: [
             { translateX: offset.x * scale },
             { translateY: offset.y * scale },
           ],
+          opacity: symbolicOpacity,
         }}
       >
         <PrayerSunPhaseIcon theme={theme} size={100 * scale} />
-      </View>
-      {/* Qibla pointer — sits outside the compass ring, tip extends outward (iOS style).
-           Uses Animated.View for smooth rotation animation (matching iOS .easeOut). */}
-      {hasPointer && (
+      </Animated.View>
+
+      <Animated.View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0,
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: countdownOpacity,
+          transform: [{ translateY: countdownSlide }],
+        }}
+        pointerEvents="none"
+      >
+        <View style={{ alignItems: "center", maxWidth: 78 * scale, paddingHorizontal: 4 }}>
+          <Text
+            style={{
+              fontSize: 9 * scale,
+              fontWeight: "600",
+              letterSpacing: 1.4,
+              color: color + "85",
+              textTransform: "uppercase",
+              textAlign: "center",
+            }}
+            numberOfLines={1}
+          >
+            {countdownLabel}
+          </Text>
+          <Text
+            style={{
+              marginTop: 2 * scale,
+              fontSize: 20 * scale,
+              fontWeight: "500",
+              fontVariant: ["tabular-nums"],
+              color: color + "EB",
+              textAlign: "center",
+            }}
+            numberOfLines={1}
+          >
+            {countdownTime}
+          </Text>
+        </View>
+      </Animated.View>
+
+      {showPointer ? (
         <Animated.View
           style={{
             position: "absolute",
@@ -129,20 +234,14 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
             bottom: 0,
             justifyContent: "flex-start",
             alignItems: "center",
-            transform: [
-              {
-                rotate: rotateInterpolation ?? `${rotationDegrees}deg`,
-              },
-            ],
+            transform: [{ rotate: rotateInterpolation ?? `${pointerDeg}deg` }],
           }}
         >
-          {/* Ring edge at y=4 (=(FRAME_SIZE−ringSize)/2). Triangle 12px tall, tip at top.
-              Base on ring y=4, tip extends outward to y=−8. */}
           <View style={{ marginTop: -8 * scale }}>
             <QiblaPointerTriangle color={color} size={12 * scale} />
           </View>
         </Animated.View>
-      )}
+      ) : null}
     </View>
   );
 };

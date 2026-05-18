@@ -33,6 +33,10 @@ enum PrayerTimesEngine {
         normalizeMosqueSlug(slug) == risalahSlug
     }
 
+    private static func isMuslimWelfareHouse(slug: String) -> Bool {
+        normalizeMosqueSlug(slug) == normalizeMosqueSlug(MosqueDefaults.defaultSlug)
+    }
+
     static func mosqueTimetableAlreadyIncludesDst(slug: String) -> Bool {
         dstMosqueSlugs.contains(normalizeMosqueSlug(slug))
     }
@@ -130,7 +134,7 @@ enum PrayerTimesEngine {
         if isMasjidRisalah(slug: slug), isRisalahIshaIqamahMatchesAdhanPeriod(date: date) {
             return ishaAdhan
         }
-        if isSummerIshaPeriod(date: date) {
+        if isMuslimWelfareHouse(slug: slug), isSummerIshaPeriod(date: date) {
             return "After Maghrib"
         }
         return getIqamahTime(prayer: "isha", adhanTime: ishaAdhan, iqamahTimes: iqamahTimes, maghribAdhan: maghribAdhan)
@@ -589,6 +593,217 @@ enum PrayerTimesEngine {
         return try resolveIqamahTimes(slug: slug, on: date, monthly: monthly, ramadan: ramadan, ukDst: ukDst)
     }
 
+    // MARK: - Hero circle countdown (widget-aligned)
+
+    /// Label semantics for the home hero countdown (matches `MasjidlyWidgetResolver` phase rules).
+    static func heroCountdownPresentation(
+        prayerTimes: DailyPrayerTimes,
+        iqamahTimes: DailyIqamahTimes,
+        mosqueSlug: String,
+        now: Date = Date()
+    ) -> HeroCountdownPresentation? {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = sheffieldTimeZone
+        let dayStart = cal.startOfDay(for: now)
+        let weekday = cal.component(.weekday, from: now)
+        let isFriday = weekday == 6
+        let checkDate = dayStart
+
+        func wallClockToday(_ time: String) -> Date? {
+            let p = time.split(separator: ":").compactMap { Int($0) }
+            guard p.count == 2 else { return nil }
+            return cal.date(bySettingHour: p[0], minute: p[1], second: 0, of: dayStart)
+        }
+
+        func wallClockNextDay(_ time: String) -> Date? {
+            let p = time.split(separator: ":").compactMap { Int($0) }
+            guard p.count == 2, let morrow = cal.date(byAdding: .day, value: 1, to: dayStart) else { return nil }
+            return cal.date(bySettingHour: p[0], minute: p[1], second: 0, of: morrow)
+        }
+
+        let jummahRaw = iqamahTimes.jummah
+            .components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let jummahIqamahs: [String] = jummahRaw.isEmpty ? [iqamahTimes.dhuhr] : jummahRaw
+
+        struct ResolvedHeroPrayer {
+            let id: String
+            let name: String
+            let adhan: String
+            let iqamahs: [String]
+            let adhanDate: Date?
+        }
+
+        let slug = mosqueSlug
+
+        let prayersList: [ResolvedHeroPrayer] = [
+            ResolvedHeroPrayer(
+                id: "fajr",
+                name: "Fajr",
+                adhan: prayerTimes.fajr,
+                iqamahs: [getIqamahTime(prayer: "fajr", adhanTime: prayerTimes.fajr, iqamahTimes: iqamahTimes)],
+                adhanDate: wallClockToday(prayerTimes.fajr)
+            ),
+            ResolvedHeroPrayer(
+                id: "dhuhr",
+                name: isFriday ? "Jummah" : "Dhuhr",
+                adhan: prayerTimes.dhuhr,
+                iqamahs: isFriday ? jummahIqamahs : [getIqamahTime(prayer: "dhuhr", adhanTime: prayerTimes.dhuhr, iqamahTimes: iqamahTimes)],
+                adhanDate: wallClockToday(prayerTimes.dhuhr)
+            ),
+            ResolvedHeroPrayer(
+                id: "asr",
+                name: "Asr",
+                adhan: prayerTimes.asr,
+                iqamahs: [getIqamahTime(prayer: "asr", adhanTime: prayerTimes.asr, iqamahTimes: iqamahTimes)],
+                adhanDate: wallClockToday(prayerTimes.asr)
+            ),
+            ResolvedHeroPrayer(
+                id: "maghrib",
+                name: "Maghrib",
+                adhan: prayerTimes.maghrib,
+                iqamahs: [getIqamahTime(prayer: "maghrib", adhanTime: prayerTimes.maghrib, iqamahTimes: iqamahTimes)],
+                adhanDate: wallClockToday(prayerTimes.maghrib)
+            ),
+            ResolvedHeroPrayer(
+                id: "isha",
+                name: "Isha",
+                adhan: prayerTimes.isha,
+                iqamahs: [
+                    resolveIshaIqamahForDisplay(
+                        slug: slug,
+                        date: checkDate,
+                        ishaAdhan: prayerTimes.isha,
+                        iqamahTimes: iqamahTimes,
+                        maghribAdhan: prayerTimes.maghrib
+                    )
+                ],
+                adhanDate: wallClockToday(prayerTimes.isha)
+            )
+        ]
+
+        var nextPrayerIndex = 0
+        var nextEventDate: Date?
+        var nextEventIsIqamah = false
+        var foundTodayEvent = false
+
+        for (i, p) in prayersList.enumerated() {
+            let isJummah = isFriday && p.id == "dhuhr"
+            if !isJummah, let adhanDate = p.adhanDate, adhanDate > now {
+                nextPrayerIndex = i
+                nextEventDate = adhanDate
+                nextEventIsIqamah = false
+                foundTodayEvent = true
+                break
+            }
+
+            let candidateIqamah = nextHeroDisplayIqamahRaw(
+                prayerId: p.id,
+                isFriday: isFriday,
+                rawIqamahs: p.iqamahs,
+                adhan: p.adhan,
+                now: now,
+                wallClock: { wallClockToday($0) }
+            )
+            if isParseableTime(candidateIqamah), candidateIqamah != p.adhan,
+               let iqamahDate = wallClockToday(candidateIqamah), iqamahDate > now {
+                nextPrayerIndex = i
+                nextEventDate = iqamahDate
+                nextEventIsIqamah = true
+                foundTodayEvent = true
+                break
+            }
+        }
+
+        let isNextFajrTomorrow = !foundTodayEvent
+
+        let next: ResolvedHeroPrayer = {
+            if isNextFajrTomorrow {
+                let fajr = prayersList[0]
+                return ResolvedHeroPrayer(
+                    id: "fajr",
+                    name: "Fajr",
+                    adhan: fajr.adhan,
+                    iqamahs: fajr.iqamahs,
+                    adhanDate: wallClockNextDay(fajr.adhan)
+                )
+            }
+            return prayersList[nextPrayerIndex]
+        }()
+
+        guard let targetDate = isNextFajrTomorrow ? next.adhanDate : nextEventDate else {
+            return nil
+        }
+
+        let progressStartDate: Date = {
+            if nextEventIsIqamah {
+                return next.adhanDate ?? dayStart
+            }
+            if nextPrayerIndex > 0, let prev = prayersList[nextPrayerIndex - 1].adhanDate {
+                return prev
+            }
+            if isNextFajrTomorrow {
+                return prayersList.last?.adhanDate ?? dayStart
+            }
+            return dayStart
+        }()
+
+        let labelKind: HeroCountdownLabelKind = {
+            if nextEventIsIqamah { return .iqamahIn }
+            if isNextFajrTomorrow { return .nextPrayer }
+            if nextPrayerIndex == 0 { return .adhanIn }
+            return .nextPrayer
+        }()
+
+        return HeroCountdownPresentation(
+            labelKind: labelKind,
+            targetDate: targetDate,
+            progressStartDate: progressStartDate
+        )
+    }
+
+    /// Jumu'ah multi-slot: next iqamah strictly after `now` once adhan has passed; otherwise first slot.
+    private static func nextHeroDisplayIqamahRaw(
+        prayerId: String,
+        isFriday: Bool,
+        rawIqamahs: [String],
+        adhan: String,
+        now: Date,
+        wallClock: (String) -> Date?
+    ) -> String {
+        guard prayerId == "dhuhr", isFriday, rawIqamahs.count > 1 else {
+            return rawIqamahs.first ?? ""
+        }
+        guard let adhanDate = wallClock(adhan) else {
+            return rawIqamahs.first ?? ""
+        }
+        if now < adhanDate {
+            return rawIqamahs.first ?? ""
+        }
+        for raw in rawIqamahs {
+            if let d = wallClock(raw), d > now {
+                return raw
+            }
+        }
+        return rawIqamahs.last ?? ""
+    }
+
+    /// Hero tap countdown: leading `-`, then `H:MM:SS` if ≥ 1 hour, else `M:SS` (minutes unpadded, seconds zero-padded).
+    static func formatHeroCountdownClock(totalSeconds: Int) -> String {
+        let s = max(0, totalSeconds)
+        if s >= 3600 {
+            let h = s / 3600
+            let rem = s % 3600
+            let m = rem / 60
+            let sec = rem % 60
+            return "-\(h):\(String(format: "%02d", m)):\(String(format: "%02d", sec))"
+        }
+        let m = s / 60
+        let sec = s % 60
+        return "-\(m):\(String(format: "%02d", sec))"
+    }
+
     // MARK: - Next prayer / countdown
 
     static func getNextPrayerAndCountdown(
@@ -628,7 +843,7 @@ enum PrayerTimesEngine {
             }
             if isParseableTime(prayer.iqamah), prayer.iqamah != prayer.adhan, let iqT = wallClockToday(prayer.iqamah), iqT > now {
                 let diff = Int(iqT.timeIntervalSince(now))
-                return NextPrayerCountdownResult(nextName: prayer.name, nextTime: prayer.iqamah, totalSeconds: diff, isIqamah: true, isJummah: isJummah)
+                return NextPrayerCountdownResult(nextName: prayer.name, nextTime: prayer.iqamah, totalSeconds: diff, isIqamah: !isJummah, isJummah: isJummah)
             }
         }
 
@@ -718,6 +933,31 @@ struct NextPrayerCountdownResult: Equatable, Sendable {
     var hours: Int { totalSeconds / 3600 }
     var minutes: Int { (totalSeconds % 3600) / 60 }
     var seconds: Int { totalSeconds % 60 }
+}
+
+enum HeroCountdownLabelKind: Equatable, Sendable {
+    case adhanIn
+    case iqamahIn
+    case nextPrayer
+}
+
+/// Widget-aligned interval for the home hero progress ring (`MasjidlyWidgetResolver` semantics).
+struct HeroCountdownPresentation: Equatable, Sendable {
+    let labelKind: HeroCountdownLabelKind
+    let targetDate: Date
+    let progressStartDate: Date
+
+    func remainingSeconds(at now: Date) -> Int {
+        max(0, Int(floor(targetDate.timeIntervalSince(now))))
+    }
+
+    /// Elapsed fraction of `[progressStartDate, targetDate]` — matches accessory widget ring.
+    func progress01(at now: Date) -> Double {
+        let span = targetDate.timeIntervalSince(progressStartDate)
+        guard span > 0 else { return 0 }
+        let t = now.timeIntervalSince(progressStartDate) / span
+        return min(1, max(0, t))
+    }
 }
 
 enum PrayerEngineError: Error {

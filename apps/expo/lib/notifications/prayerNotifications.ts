@@ -27,6 +27,7 @@ import {
 } from "@/lib/prayer/prayerTimesEngine";
 import { monthNameFromNumber } from "@/lib/prayer/monthName";
 import { t, type TranslationKey } from "@/lib/i18n/translations";
+import type { AppLanguage } from "@/store/settings";
 import type { Mosque, DailyPrayerTimes, DailyIqamahTimes } from "@/types/prayer";
 import type { NotificationSettings } from "@/store/settings";
 
@@ -42,7 +43,7 @@ const PRAYER_SCHEDULE_KEYS = {
 } as const;
 
 function translate(key: TranslationKey, locale: string): string {
-  return t(key, locale as "en" | "ar" | "ur");
+  return t(key, locale as AppLanguage);
 }
 
 function dateInSheffield(

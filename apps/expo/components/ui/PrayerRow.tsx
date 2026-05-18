@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from "react-native";
 import { SPACING } from "@/constants";
 import { formatPrayerClockForDisplay } from "@/lib/prayer/prayerTimesEngine";
 
+import { getFontScale, type AppLanguage } from "@/lib/i18n/language";
+
 export interface PrayerRowProps {
   name: string;
   adhan: string;
@@ -32,6 +34,7 @@ export const PrayerRow: React.FC<PrayerRowProps> = ({
   const opacity = isPast ? 0.35 : 1.0;
   const nameWeight = isNext ? "600" : "400";
   const iqamahWeight = isNext ? "700" : "500";
+  const fontScale = getFontScale(locale as AppLanguage);
 
   return (
     <View
@@ -49,6 +52,7 @@ export const PrayerRow: React.FC<PrayerRowProps> = ({
           {
             color: textColor + Math.round(opacity * 255).toString(16).padStart(2, "0"),
             fontFamily: isNext ? "Comfortaa_600SemiBold" : "Comfortaa_400Regular",
+            fontSize: 18 * fontScale,
           },
         ]}
         numberOfLines={1}
@@ -62,6 +66,7 @@ export const PrayerRow: React.FC<PrayerRowProps> = ({
           {
             color: textColor + Math.round(opacity * 0.75 * 255).toString(16).padStart(2, "0"),
             fontFamily: isNext ? "Comfortaa_600SemiBold" : "Comfortaa_400Regular",
+            fontSize: 18 * fontScale,
           },
         ]}
         numberOfLines={1}
@@ -77,6 +82,7 @@ export const PrayerRow: React.FC<PrayerRowProps> = ({
           {
             color: textColor + Math.round(opacity * 255).toString(16).padStart(2, "0"),
             fontFamily: iqamahWeight === "700" ? "Comfortaa_700Bold" : "Comfortaa_500Medium",
+            fontSize: 18 * fontScale,
           },
         ]}
         numberOfLines={1}
@@ -88,6 +94,7 @@ export const PrayerRow: React.FC<PrayerRowProps> = ({
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   row: {

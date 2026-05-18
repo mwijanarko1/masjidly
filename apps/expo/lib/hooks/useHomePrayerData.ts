@@ -16,9 +16,10 @@ import {
   resolveIqamahTimesWithDstMapping,
   getDateInSheffield,
 } from "@/lib/prayer/prayerTimesEngine";
-import { resolveSelectedMosque } from "@/lib/prayer/mosqueDefaults";
+import { resolveSelectedMosque, cityGroupingKey } from "@/lib/prayer/mosqueDefaults";
 import { monthNameFromNumber } from "@/lib/prayer/monthName";
 import { useSettingsStore } from "@/store/settings";
+import { updateAndroidPrayerWidgetSnapshot } from "@/lib/widgets/prayerWidget";
 
 export interface HomePrayerData {
   loadState: "idle" | "loading" | "loaded" | "empty" | "error";
@@ -36,6 +37,8 @@ export interface HomePrayerData {
 export function useHomePrayerData(): HomePrayerData {
   const selectedMosqueId = useSettingsStore((s) => s.selectedMosqueId);
   const selectedMosqueSlug = useSettingsStore((s) => s.selectedMosqueSlug);
+  const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
+  const appLanguage = useSettingsStore((s) => s.appLanguage);
   const setSelectedMosque = useSettingsStore((s) => s.setSelectedMosque);
 
   const [loadState, setLoadState] = useState<HomePrayerData["loadState"]>("idle");
@@ -69,11 +72,11 @@ export function useHomePrayerData(): HomePrayerData {
       }
 
       if (resolved.id !== selectedMosqueId || resolved.slug !== selectedMosqueSlug) {
-        setSelectedMosque(resolved.id, resolved.slug);
+        setSelectedMosque(resolved.id, resolved.slug, cityGroupingKey(resolved));
       }
 
       const now = new Date();
-      const { year, month, day } = getDateInSheffield(now);
+      const { year, month } = getDateInSheffield(now);
       const monthName = monthNameFromNumber(month);
 
       const [monthly, ramadan, dstCalendar] = await Promise.all([
@@ -122,6 +125,20 @@ export function useHomePrayerData(): HomePrayerData {
         ukDst: dstDates,
       };
 
+      updateAndroidPrayerWidgetSnapshot({
+        mosque: resolved,
+        monthData: monthly,
+        ramadanData: ramadan,
+        ukDst: dstDates,
+        uses24HourTime,
+        appLanguage,
+        now,
+      }).catch((error) => {
+        if (__DEV__) {
+          console.warn("[useHomePrayerData] widget update failed:", error);
+        }
+      });
+
       setLoadState("loaded");
     } catch (err) {
       if (__DEV__) {
@@ -129,7 +146,7 @@ export function useHomePrayerData(): HomePrayerData {
       }
       setLoadState("error");
     }
-  }, [selectedMosqueId, selectedMosqueSlug, setSelectedMosque]);
+  }, [selectedMosqueId, selectedMosqueSlug, setSelectedMosque, uses24HourTime, appLanguage]);
 
   useEffect(() => {
     refresh();

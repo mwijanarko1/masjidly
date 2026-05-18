@@ -5,7 +5,7 @@ import {
   requestNotificationAuthorizationIfNeeded,
   rescheduleUpcomingPrayerNotifications,
 } from "@/lib/notifications/prayerNotifications";
-import { resolveSelectedMosque } from "@/lib/prayer/mosqueDefaults";
+import { resolveSelectedMosque, cityGroupingKey } from "@/lib/prayer/mosqueDefaults";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,8 +32,6 @@ export interface NotificationDraft {
 
 interface MosqueStub {
   id: string;
-  slug: string;
-  name: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -106,7 +104,7 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
     const allMosques = await prayerRepository.listMosques();
     const mosque = allMosques.find((m) => m.id === mosqueId);
     if (mosque) {
-      settings.setSelectedMosque(mosque.id, mosque.slug);
+      settings.setSelectedMosque(mosque.id, mosque.slug, cityGroupingKey(mosque));
     }
 
     set({ currentStep: { type: "prayerShortcut", index: 0 } });

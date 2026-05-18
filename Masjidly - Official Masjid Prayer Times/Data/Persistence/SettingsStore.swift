@@ -9,6 +9,7 @@ final class SettingsStore: SettingsPersisting {
     private enum Key: String {
         case selectedMosqueId
         case selectedMosqueSlug
+        case selectedCityGroupingKey
         case uses24HourTime
         case notificationsJSON
         case appLanguage
@@ -28,6 +29,11 @@ final class SettingsStore: SettingsPersisting {
         didSet { defaults.set(selectedMosqueSlug, forKey: Key.selectedMosqueSlug.rawValue) }
     }
 
+    /// When set, filters the mosque list in settings; when `nil`, the UI derives the city from the selected mosque.
+    var selectedCityGroupingKey: String? {
+        didSet { defaults.set(selectedCityGroupingKey, forKey: Key.selectedCityGroupingKey.rawValue) }
+    }
+
     var uses24HourTime: Bool {
         didSet { defaults.set(uses24HourTime, forKey: Key.uses24HourTime.rawValue) }
     }
@@ -44,8 +50,8 @@ final class SettingsStore: SettingsPersisting {
         didSet { defaults.set(appLanguage.rawValue, forKey: Key.appLanguage.rawValue) }
     }
 
-    /// Convenience: always English locale.
-    var resolvedLocale: Locale { Locale(identifier: "en") }
+    /// Locale resolved from the persisted in-app language selection.
+    var resolvedLocale: Locale { appLanguage.resolvedLocale() }
 
     var hasCompletedOnboarding: Bool {
         didSet { defaults.set(hasCompletedOnboarding, forKey: Key.hasCompletedOnboarding.rawValue) }
@@ -80,6 +86,7 @@ final class SettingsStore: SettingsPersisting {
         self.defaults = defaults
         selectedMosqueId = defaults.string(forKey: Key.selectedMosqueId.rawValue)
         selectedMosqueSlug = defaults.string(forKey: Key.selectedMosqueSlug.rawValue)
+        selectedCityGroupingKey = defaults.string(forKey: Key.selectedCityGroupingKey.rawValue)
         if defaults.object(forKey: Key.uses24HourTime.rawValue) == nil {
             uses24HourTime = false
         } else {
@@ -91,11 +98,7 @@ final class SettingsStore: SettingsPersisting {
         } else {
             notifications = NotificationSettings()
         }
-        // Migrate legacy arabic/urdu/system → english and write back to clean the key.
-        if let raw = defaults.string(forKey: Key.appLanguage.rawValue), raw != AppLanguage.english.rawValue {
-            defaults.set(AppLanguage.english.rawValue, forKey: Key.appLanguage.rawValue)
-        }
-        appLanguage = .english
+        appLanguage = AppLanguage(persistedRawValue: defaults.string(forKey: Key.appLanguage.rawValue))
         if defaults.object(forKey: Key.hasCompletedOnboarding.rawValue) == nil {
             hasCompletedOnboarding = false
         } else {

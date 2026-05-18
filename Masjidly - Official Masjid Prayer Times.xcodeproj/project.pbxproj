@@ -516,7 +516,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times";
 				PRODUCT_MODULE_NAME = Masjidly;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -557,7 +557,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times";
 				PRODUCT_MODULE_NAME = Masjidly;
 				PRODUCT_NAME = "$(TARGET_NAME)";

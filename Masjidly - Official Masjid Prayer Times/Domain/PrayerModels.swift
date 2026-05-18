@@ -7,10 +7,23 @@ struct Mosque: Codable, Equatable, Identifiable, Sendable {
     let lat: Double
     let lng: Double
     let slug: String
+    let citySlug: String?
+    let cityName: String?
+    let countryCode: String?
+    let countryName: String?
+    let timezone: String?
     let website: String?
     let isHidden: Bool?
 
     var isHiddenResolved: Bool { isHidden ?? false }
+    var cityDisplayName: String { cityName ?? "Sheffield" }
+
+    /// Groups mosques for city pickers; stable for `SettingsStore.selectedCityGroupingKey`.
+    var cityGroupingKey: String {
+        if let s = citySlug, !s.isEmpty { return "slug:\(s)" }
+        let label = cityName ?? cityDisplayName
+        return "name:\(label.lowercased())"
+    }
 }
 
 struct PrayerTime: Codable, Equatable, Sendable {

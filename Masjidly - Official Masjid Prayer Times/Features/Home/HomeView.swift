@@ -2,7 +2,7 @@ import SwiftUI
 import CoreLocation
 
 private func homeLS(_ key: String, locale: Locale) -> String {
-    String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+    LocaleBundle.string(forKey: key, locale: locale)
 }
 
 struct HomeView: View {
@@ -11,8 +11,9 @@ struct HomeView: View {
     @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(OnboardingFlowController.self) private var onboarding
     @Environment(AppReviewPromptCoordinator.self) private var reviewPrompt
-    @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
+    /// Derived from the observable store so language changes re-localize the entire home immediately.
+    private var locale: Locale { settings.resolvedLocale }
 
     @State private var showingSettings = false
     @State private var showingTimetable = false
@@ -202,6 +203,9 @@ struct HomeView: View {
                 showQiblaCompass: !settings.hideQiblaCompass,
                 qiblaRotationDegrees: qiblaDirectionProvider.displayedRotationDegrees,
                 qiblaOnboardingHighlighted: onboarding.currentStep == .qibla,
+                mosqueSlug: slug,
+                dailyPrayerTimes: daily,
+                dailyIqamahTimes: model.iqamahTimes,
                 prayerLabels: labels,
                 selectedIndex: model.selectedPrayerIndex,
                 totalCount: prayers.count,
@@ -217,7 +221,8 @@ struct HomeView: View {
                     qiblaDirectionProvider.start(fallbackMosque: model.selectedMosque, deferAuthorization: deferAuth)
                 }
                 if let nextName = model.nextCountdown?.nextName {
-                    if let index = prayers.firstIndex(where: { $0.canonical == nextName }) {
+                    let canonicalNextName = nextName == "Jummah" ? "Dhuhr" : nextName
+                    if let index = prayers.firstIndex(where: { $0.canonical == canonicalNextName }) {
                         model.selectedPrayerIndex = index
                     }
                 }
@@ -239,8 +244,8 @@ struct HomeView: View {
                 }
             )
             .environment(onboarding)
-            .environment(\.locale, Locale(identifier: "en"))
-            .environment(\.layoutDirection, .leftToRight)
+            .environment(\.locale, settings.resolvedLocale)
+            .environment(\.layoutDirection, settings.appLanguage.layoutDirection)
             .environment(\.appFontName, settings.appFontName)
         }
     }
@@ -257,8 +262,8 @@ struct HomeView: View {
         .environment(onboarding)
         .environment(settings)
         .environment(reviewPrompt)
-        .environment(\.locale, Locale(identifier: "en"))
-        .environment(\.layoutDirection, .leftToRight)
+        .environment(\.locale, settings.resolvedLocale)
+        .environment(\.layoutDirection, settings.appLanguage.layoutDirection)
         .environment(\.appFontName, settings.appFontName)
     }
 
@@ -465,6 +470,7 @@ struct HomeView: View {
         model.selectedMosque = mosque
         settings.selectedMosqueId = mosque.id
         settings.selectedMosqueSlug = mosque.slug
+        settings.selectedCityGroupingKey = mosque.cityGroupingKey
         Task {
             try? await model.refreshPrayerPayload(for: mosque)
             await model.refreshWidgetSnapshotForCurrentMosque()

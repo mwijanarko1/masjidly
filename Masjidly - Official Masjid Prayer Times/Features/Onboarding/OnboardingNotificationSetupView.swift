@@ -128,6 +128,6 @@ struct OnboardingNotificationSetupView: View {
     }
 
     private func localized(_ key: String) -> String {
-        String(localized: String.LocalizationValue(stringLiteral: key), bundle: .main, locale: locale)
+        LocaleBundle.string(forKey: key, locale: locale)
     }
 }

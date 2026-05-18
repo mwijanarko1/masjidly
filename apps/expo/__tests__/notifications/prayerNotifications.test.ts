@@ -217,8 +217,8 @@ describe("prayerNotifications", () => {
       });
 
       const calls = mockedApi.scheduleNotificationAsync.mock.calls;
-      // Isha iqamah is "After Maghrib" in summer (unparseable), so only 9 scheduled
-      expect(calls.length).toBe(9);
+      // Isha iqamah uses timetable time for non-MWH (parseable), so all 10 base notifications schedule
+      expect(calls.length).toBe(10);
 
       expect(
         calls.some(

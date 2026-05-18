@@ -207,7 +207,7 @@ enum WidgetPrayerResolver {
     }
 
     private static func snapshotLocale(from raw: String) -> Locale {
-        Locale(identifier: "en")
+        AppLanguage(persistedRawValue: raw).resolvedLocale()
     }
 
     private static func format(_ time: String, uses24HourTime: Bool, locale: Locale) -> String {

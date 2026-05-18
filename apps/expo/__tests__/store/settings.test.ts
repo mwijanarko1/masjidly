@@ -29,8 +29,11 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 const defaultState = {
   selectedMosqueId: undefined,
   selectedMosqueSlug: undefined,
+  selectedCityGroupingKey: undefined,
   uses24HourTime: false,
+  hideQiblaCompass: false,
   hasCompletedOnboarding: false,
+  appLanguage: "en" as const,
   notifications: {
     masterEnabled: false,
     adhanEnabled: true,
@@ -55,6 +58,7 @@ describe("SettingsStore", () => {
     const state = useSettingsStore.getState();
     expect(state.uses24HourTime).toBe(false);
     expect(state.hasCompletedOnboarding).toBe(false);
+    expect(state.appLanguage).toBe("en");
     expect(state.notifications.masterEnabled).toBe(false);
     expect(state.notifications.adhanEnabled).toBe(true);
     expect(state.notifications.iqamahEnabled).toBe(true);
@@ -74,6 +78,19 @@ describe("SettingsStore", () => {
     expect(state.selectedMosqueSlug).toBe("mosque-a");
   });
 
+  it("setSelectedMosque with city key updates grouping", () => {
+    act(() =>
+      useSettingsStore.getState().setSelectedMosque("1", "mosque-a", "slug:leeds")
+    );
+    const state = useSettingsStore.getState();
+    expect(state.selectedCityGroupingKey).toBe("slug:leeds");
+  });
+
+  it("setSelectedCityGroupingKey updates city filter", () => {
+    act(() => useSettingsStore.getState().setSelectedCityGroupingKey("slug:bradford"));
+    expect(useSettingsStore.getState().selectedCityGroupingKey).toBe("slug:bradford");
+  });
+
   it("setUses24HourTime updates flag", () => {
     act(() => useSettingsStore.getState().setUses24HourTime(true));
     expect(useSettingsStore.getState().uses24HourTime).toBe(true);
@@ -82,6 +99,11 @@ describe("SettingsStore", () => {
   it("setHasCompletedOnboarding updates flag", () => {
     act(() => useSettingsStore.getState().setHasCompletedOnboarding(true));
     expect(useSettingsStore.getState().hasCompletedOnboarding).toBe(true);
+  });
+
+  it("setAppLanguage updates language", () => {
+    act(() => useSettingsStore.getState().setAppLanguage("id"));
+    expect(useSettingsStore.getState().appLanguage).toBe("id");
   });
 
   it("setNotificationMaster toggles master switch", () => {
@@ -154,16 +176,19 @@ describe("SettingsStore", () => {
       useSettingsStore.getState().setAdhanEnabled(false);
       useSettingsStore.getState().setPreAdhanReminderMinutes(10);
       useSettingsStore.getState().setHasCompletedOnboarding(true);
+      useSettingsStore.getState().setAppLanguage("ar");
       useSettingsStore.getState().resetSettings();
     });
 
     const state = useSettingsStore.getState();
     expect(state.selectedMosqueId).toBeUndefined();
+    expect(state.selectedCityGroupingKey).toBeUndefined();
     expect(state.uses24HourTime).toBe(false);
     expect(state.notifications.masterEnabled).toBe(false);
     expect(state.notifications.fajr).toBe(true);
     expect(state.notifications.adhanEnabled).toBe(true);
     expect(state.notifications.preAdhanReminderMinutes).toBeNull();
     expect(state.hasCompletedOnboarding).toBe(false);
+    expect(state.appLanguage).toBe("en");
   });
 });

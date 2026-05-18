@@ -1,6 +1,8 @@
 import type {
   DailyIqamahTimes,
   DailyPrayerTimes,
+  HeroCountdownLabelKind,
+  HeroCountdownPresentation,
   IqamahTimeRange,
   MonthPrayerData,
   NextPrayerCountdownResult,
@@ -10,6 +12,7 @@ import type {
   UkDstYear,
 } from "@/types/prayer";
 import { PrayerEngineError } from "@/types/prayer";
+import { DEFAULT_MOSQUE_SLUG } from "@/lib/prayer/mosqueDefaults";
 
 export const SHEFFIELD_TIME_ZONE = "Europe/London";
 const RISALAH_SLUG = "masjid-risalah";
@@ -70,6 +73,10 @@ export function normalizeMosqueSlug(slug: string): string {
 
 export function isMasjidRisalah(slug: string): boolean {
   return normalizeMosqueSlug(slug) === RISALAH_SLUG;
+}
+
+export function isMuslimWelfareHouse(slug: string): boolean {
+  return normalizeMosqueSlug(slug) === normalizeMosqueSlug(DEFAULT_MOSQUE_SLUG);
 }
 
 export function mosqueTimetableAlreadyIncludesDst(slug: string): boolean {
@@ -162,7 +169,7 @@ export function resolveIshaIqamahForDisplay(
   if (isMasjidRisalah(slug) && isRisalahIshaIqamahMatchesAdhanPeriod(date)) {
     return ishaAdhan;
   }
-  if (isSummerIshaPeriod(date)) {
+  if (isMuslimWelfareHouse(slug) && isSummerIshaPeriod(date)) {
     return "After Maghrib";
   }
   return getIqamahTime("isha", ishaAdhan, iqamahTimes, maghribAdhan);
@@ -748,7 +755,7 @@ export function getNextPrayerAndCountdown(
           nextName: prayer.name,
           nextTime: prayer.iqamah,
           totalSeconds: diff,
-          isIqamah: true,
+          isIqamah: !isJummah,
           isJummah,
           hours: Math.floor(diff / 3600),
           minutes: Math.floor((diff % 3600) / 60),
@@ -798,6 +805,237 @@ function isParseableTime(t: string): boolean {
   if (t === "" || t === "-" || t === "\u2014" || t === "--:--") return false;
   if (/after maghrib|entry time|straight after/i.test(t)) return false;
   return /^\d{1,2}:\d{2}$/.test(t.trim());
+}
+
+function nextHeroDisplayIqamahRaw(
+  prayerId: string,
+  isFriday: boolean,
+  rawIqamahs: string[],
+  adhan: string,
+  now: Date,
+  wallClock: (hhmm: string) => Date | null
+): string {
+  if (!(prayerId === "dhuhr" && isFriday && rawIqamahs.length > 1)) {
+    return rawIqamahs[0] ?? "";
+  }
+  const adhanDate = wallClock(adhan);
+  if (!adhanDate) return rawIqamahs[0] ?? "";
+  if (now.getTime() < adhanDate.getTime()) return rawIqamahs[0] ?? "";
+  for (const raw of rawIqamahs) {
+    const d = wallClock(raw);
+    if (d && d.getTime() > now.getTime()) return raw;
+  }
+  return rawIqamahs[rawIqamahs.length - 1] ?? "";
+}
+
+/**
+ * Widget-aligned countdown segment for the home hero ring (matches iOS `MasjidlyWidgetResolver`).
+ */
+export function heroCountdownPresentation(
+  prayerTimes: DailyPrayerTimes,
+  iqamahTimes: DailyIqamahTimes,
+  mosqueSlug: string,
+  now: Date = new Date()
+): HeroCountdownPresentation | null {
+  const dayStartParts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: SHEFFIELD_TIME_ZONE,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(now);
+  const getPart = (type: string) => {
+    const p = dayStartParts.find((x) => x.type === type);
+    return p ? parseInt(p.value, 10) : 0;
+  };
+  const dsYear = getPart("year");
+  const dsMonth = getPart("month");
+  const dsDay = getPart("day");
+
+  const weekday = new Intl.DateTimeFormat("en-GB", {
+    timeZone: SHEFFIELD_TIME_ZONE,
+    weekday: "short",
+  })
+    .format(now)
+    .toLowerCase();
+  const isFriday = weekday === "fri";
+  const checkDate = new Date(dsYear, dsMonth - 1, dsDay, 12, 0, 0);
+
+  function wallClockToday(hhmm: string): Date | null {
+    const p = hhmm.split(":").map((s) => parseInt(s.trim(), 10));
+    if (p.length !== 2 || Number.isNaN(p[0]) || Number.isNaN(p[1])) return null;
+    return new Date(dsYear, dsMonth - 1, dsDay, p[0], p[1], 0);
+  }
+
+  function wallClockNextDay(hhmm: string): Date | null {
+    const p = hhmm.split(":").map((s) => parseInt(s.trim(), 10));
+    if (p.length !== 2 || Number.isNaN(p[0]) || Number.isNaN(p[1])) return null;
+    const tomorrow = new Date(dsYear, dsMonth - 1, dsDay + 1);
+    return new Date(
+      tomorrow.getFullYear(),
+      tomorrow.getMonth(),
+      tomorrow.getDate(),
+      p[0],
+      p[1],
+      0
+    );
+  }
+
+  const jummahRaw = iqamahTimes.jummah
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  const jummahIqamahs = jummahRaw.length === 0 ? [iqamahTimes.dhuhr] : jummahRaw;
+
+  const slug = mosqueSlug;
+
+  type Resolved = {
+    id: string;
+    name: string;
+    adhan: string;
+    iqamahs: string[];
+    adhanDate: Date | null;
+  };
+
+  const prayersList: Resolved[] = [
+    {
+      id: "fajr",
+      name: "Fajr",
+      adhan: prayerTimes.fajr,
+      iqamahs: [getIqamahTime("fajr", prayerTimes.fajr, iqamahTimes)],
+      adhanDate: wallClockToday(prayerTimes.fajr),
+    },
+    {
+      id: "dhuhr",
+      name: isFriday ? "Jummah" : "Dhuhr",
+      adhan: prayerTimes.dhuhr,
+      iqamahs: isFriday ? jummahIqamahs : [getIqamahTime("dhuhr", prayerTimes.dhuhr, iqamahTimes)],
+      adhanDate: wallClockToday(prayerTimes.dhuhr),
+    },
+    {
+      id: "asr",
+      name: "Asr",
+      adhan: prayerTimes.asr,
+      iqamahs: [getIqamahTime("asr", prayerTimes.asr, iqamahTimes)],
+      adhanDate: wallClockToday(prayerTimes.asr),
+    },
+    {
+      id: "maghrib",
+      name: "Maghrib",
+      adhan: prayerTimes.maghrib,
+      iqamahs: [getIqamahTime("maghrib", prayerTimes.maghrib, iqamahTimes)],
+      adhanDate: wallClockToday(prayerTimes.maghrib),
+    },
+    {
+      id: "isha",
+      name: "Isha",
+      adhan: prayerTimes.isha,
+      iqamahs: [
+        resolveIshaIqamahForDisplay(slug, checkDate, prayerTimes.isha, iqamahTimes, prayerTimes.maghrib),
+      ],
+      adhanDate: wallClockToday(prayerTimes.isha),
+    },
+  ];
+
+  let nextPrayerIndex = 0;
+  let nextEventDate: Date | null = null;
+  let nextEventIsIqamah = false;
+  let foundTodayEvent = false;
+
+  for (let i = 0; i < prayersList.length; i++) {
+    const p = prayersList[i];
+    const isJummah = isFriday && p.id === "dhuhr";
+    if (!isJummah) {
+      const adhanDate = p.adhanDate;
+      if (adhanDate && adhanDate.getTime() > now.getTime()) {
+        nextPrayerIndex = i;
+        nextEventDate = adhanDate;
+        nextEventIsIqamah = false;
+        foundTodayEvent = true;
+        break;
+      }
+    }
+    const candidateIqamah = nextHeroDisplayIqamahRaw(
+      p.id,
+      isFriday,
+      p.iqamahs,
+      p.adhan,
+      now,
+      wallClockToday
+    );
+    if (isParseableTime(candidateIqamah) && candidateIqamah !== p.adhan) {
+      const iqamahDate = wallClockToday(candidateIqamah);
+      if (iqamahDate && iqamahDate.getTime() > now.getTime()) {
+        nextPrayerIndex = i;
+        nextEventDate = iqamahDate;
+        nextEventIsIqamah = true;
+        foundTodayEvent = true;
+        break;
+      }
+    }
+  }
+
+  const isNextFajrTomorrow = !foundTodayEvent;
+
+  const next: Resolved = isNextFajrTomorrow
+    ? {
+        id: "fajr",
+        name: "Fajr",
+        adhan: prayersList[0].adhan,
+        iqamahs: prayersList[0].iqamahs,
+        adhanDate: wallClockNextDay(prayersList[0].adhan),
+      }
+    : prayersList[nextPrayerIndex];
+
+  const targetDate = isNextFajrTomorrow ? next.adhanDate : nextEventDate;
+  if (!targetDate) return null;
+
+  const dayStart = new Date(dsYear, dsMonth - 1, dsDay, 0, 0, 0, 0);
+
+  let progressStartDate: Date;
+  if (nextEventIsIqamah) {
+    progressStartDate = next.adhanDate ?? dayStart;
+  } else if (nextPrayerIndex > 0) {
+    const prev = prayersList[nextPrayerIndex - 1]?.adhanDate;
+    progressStartDate = prev ?? dayStart;
+  } else if (isNextFajrTomorrow) {
+    progressStartDate = prayersList[prayersList.length - 1]?.adhanDate ?? dayStart;
+  } else {
+    progressStartDate = dayStart;
+  }
+
+  let labelKind: HeroCountdownLabelKind;
+  if (nextEventIsIqamah) labelKind = "iqamahIn";
+  else if (isNextFajrTomorrow) labelKind = "nextPrayer";
+  else if (nextPrayerIndex === 0) labelKind = "adhanIn";
+  else labelKind = "nextPrayer";
+
+  return { labelKind, targetDate, progressStartDate };
+}
+
+export function heroRemainingSeconds(p: HeroCountdownPresentation, now: Date): number {
+  return Math.max(0, Math.floor((p.targetDate.getTime() - now.getTime()) / 1000));
+}
+
+export function heroProgress01(p: HeroCountdownPresentation, now: Date): number {
+  const span = p.targetDate.getTime() - p.progressStartDate.getTime();
+  if (span <= 0) return 0;
+  const t = (now.getTime() - p.progressStartDate.getTime()) / span;
+  return Math.min(1, Math.max(0, t));
+}
+
+/** Leading `-` then `H:MM:SS` if ≥ 1 hour, else `M:SS` (minutes unpadded, seconds zero-padded). */
+export function formatHeroCountdownClock(totalSeconds: number): string {
+  const s = Math.max(0, totalSeconds);
+  if (s >= 3600) {
+    const h = Math.floor(s / 3600);
+    const rem = s % 3600;
+    const m = Math.floor(rem / 60);
+    const sec = rem % 60;
+    return `-${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  }
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `-${m}:${String(sec).padStart(2, "0")}`;
 }
 
 /** Localized clock for `HH:mm` data (digits, separators, AM/PM). */

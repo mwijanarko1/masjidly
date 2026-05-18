@@ -4,6 +4,9 @@ import { CoachMarkCard } from "./CoachMarkCard";
 import { MosqueSelectionCard } from "./MosqueSelectionCard";
 import { NotificationSetupCard } from "./NotificationSetupCard";
 import type { TimeTheme } from "@/lib/design/themes";
+import type { Mosque } from "@/types/prayer";
+import type { AppLanguage } from "@/store/settings";
+import { t, type TranslationKey } from "@/lib/i18n/translations";
 
 // ---------------------------------------------------------------------------
 // Prayer names for shortcut coach marks
@@ -18,87 +21,21 @@ const SHORTCUT_PRAYERS: { letter: string; name: string }[] = [
   { letter: "I", name: "Isha" },
 ];
 
-function shortcutMessage(index: number, locale: string): string {
+function shortcutMessage(index: number, locale: AppLanguage): string {
   const p = SHORTCUT_PRAYERS[index];
   if (!p) return "";
-  if (locale === "ar") {
-    return `اضغط على ${p.letter} لعرض تفاصيل ${p.name === "Isha" ? "العشاء" : p.name === "Fajr" ? "الفجر" : p.name}`;
-  }
-  if (locale === "ur") {
-    return `${p.name} کی تفصیلات دیکھنے کے لیے ${p.letter} دبائیں`;
-  }
-  return `Tap ${p.letter} to see ${p.name} details`;
+  return t("onboarding.shortcut.message_format", locale)
+    .replace("%s", p.letter)
+    .replace("%s", t(prayerKeyForName(p.name), locale));
 }
 
-function shortcutTitle(_index: number, locale: string): string {
-  if (locale === "ar") return "استكشاف أوقات الصلاة";
-  if (locale === "ur") return "نماز کے اوقات دریافت کریں";
-  return "Explore Prayer Times";
+function shortcutTitle(_index: number, locale: AppLanguage): string {
+  return t("onboarding.shortcut.title", locale);
 }
 
-// ---------------------------------------------------------------------------
-// Strings lookup
-// ---------------------------------------------------------------------------
-
-function s(key: string, locale: string): string {
-  if (locale === "ar") {
-    const m: Record<string, string> = {
-      "qibla.title": "اتجاه القبلة",
-      "qibla.message": "تعرف على اتجاه القبلة للصلاة",
-      "qibla.continue": "متابعة",
-      "timetable.title": "جدول المواقيت",
-      "timetable.message": "اضغط على أيقونة التقويم لعرض جدول المواقيت الشهري الكامل",
-      "explore.timetable.title": "استكشاف جدول المواقيت",
-      "explore.timetable.message": "هذا هو جدول المواقيت الشهري الكامل. يمكنك التنقل بين الأيام والأشهر.",
-      "explore.timetable.continue": "متابعة",
-      "close.timetable.message": "اضغط على زر الإغلاق للعودة إلى الشاشة الرئيسية",
-      "settings.title": "الإعدادات",
-      "settings.message": "اضغط على أيقونة الإعدادات لتخصيص تجربتك",
-      "explore.settings.title": "استكشاف الإعدادات",
-      "explore.settings.message": "هنا يمكنك ضبط تفضيلات المسجد والعرض والإشعارات.",
-      "explore.settings.continue": "متابعة",
-      "close.settings.message": "اضغط على زر الإغلاق للعودة إلى الشاشة الرئيسية",
-    };
-    return m[key] ?? key;
-  }
-  if (locale === "ur") {
-    const m: Record<string, string> = {
-      "qibla.title": "قبلہ سمت",
-      "qibla.message": "نماز کے لیے قبلہ کی سمت دریافت کریں",
-      "qibla.continue": "جاری رکھیں",
-      "timetable.title": "نظام الاوقات",
-      "timetable.message": "مکمل ماہانہ نظام الاوقات دیکھنے کے لیے کیلنڈر آئیکن دبائیں",
-      "explore.timetable.title": "نظام الاوقات دریافت کریں",
-      "explore.timetable.message": "یہ آپ کا مکمل ماہانہ نظام الاوقات ہے۔ دنوں اور مہینوں کے درمیان منتقل ہو سکتے ہیں۔",
-      "explore.timetable.continue": "جاری رکھیں",
-      "close.timetable.message": "مرکزی اسکرین پر واپس جانے کے لیے بٹن دبائیں",
-      "settings.title": "ترتیبات",
-      "settings.message": "اپنی ترجیحات حسب ضرورت بنانے کے لیے ترتیبات کا آئیکن دبائیں",
-      "explore.settings.title": "ترتیبات دریافت کریں",
-      "explore.settings.message": "یہاں آپ مسجد، ڈسپلے اور اطلاعات کی ترتیبات کو ایڈجسٹ کر سکتے ہیں۔",
-      "explore.settings.continue": "جاری رکھیں",
-      "close.settings.message": "مرکزی اسکرین پر واپس جانے کے لیے بٹن دبائیں",
-    };
-    return m[key] ?? key;
-  }
-  const m: Record<string, string> = {
-    "qibla.title": "Qibla Direction",
-    "qibla.message": "Discover the Qibla direction for your prayers.",
-    "qibla.continue": "Continue",
-    "timetable.title": "Monthly Timetable",
-    "timetable.message": "Tap the calendar icon to view the full monthly prayer timetable.",
-    "explore.timetable.title": "Explore Timetable",
-    "explore.timetable.message": "This is your full monthly timetable. You can navigate between days and months.",
-    "explore.timetable.continue": "Continue",
-    "close.timetable.message": "Tap the close button to return to the home screen.",
-    "settings.title": "Settings",
-    "settings.message": "Tap the settings icon to customize your experience.",
-    "explore.settings.title": "Explore Settings",
-    "explore.settings.message": "Here you can adjust your mosque, display, and notification preferences.",
-    "explore.settings.continue": "Continue",
-    "close.settings.message": "Tap the close button to return to the home screen.",
-  };
-  return m[key] ?? key;
+function prayerKeyForName(name: string): TranslationKey {
+  const key = name.toLowerCase() as "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
+  return `prayer.${key}` as TranslationKey;
 }
 
 // ---------------------------------------------------------------------------
@@ -107,18 +44,13 @@ function s(key: string, locale: string): string {
 
 export type OverlayScreen = "home" | "timetable" | "settings";
 
-interface MosqueStub {
-  id: string;
-  name: string;
-}
-
 interface TutorialOverlayProps {
   screen: OverlayScreen;
-  mosques: MosqueStub[];
+  mosques: Mosque[];
   theme: TimeTheme;
   textColor: string;
   usesLightForeground: boolean;
-  locale: string;
+  locale: AppLanguage;
 }
 
 // ---------------------------------------------------------------------------
@@ -190,10 +122,10 @@ export function TutorialOverlay({
       case "qibla":
         return (
           <CoachMarkCard
-            title={s("qibla.title", locale)}
-            message={s("qibla.message", locale)}
+            title={t("onboarding.qibla.title", locale)}
+            message={t("onboarding.qibla.message", locale)}
             variant="belowQiblaIcon"
-            primaryButtonTitle={s("qibla.continue", locale)}
+            primaryButtonTitle={t("onboarding.continue", locale)}
             onPrimaryButton={acknowledgeQiblaIntro}
             accessibilityIdentifier="Onboarding.QiblaContinue"
             theme={theme}
@@ -205,8 +137,8 @@ export function TutorialOverlay({
       case "openTimetable":
         return (
           <CoachMarkCard
-            title={s("timetable.title", locale)}
-            message={s("timetable.message", locale)}
+            title={t("onboarding.timetable.title", locale)}
+            message={t("onboarding.timetable.message", locale)}
             variant="belowTopChrome"
             theme={theme}
             textColor={textColor}
@@ -217,8 +149,8 @@ export function TutorialOverlay({
       case "openSettings":
         return (
           <CoachMarkCard
-            title={s("settings.title", locale)}
-            message={s("settings.message", locale)}
+            title={t("onboarding.settings.title", locale)}
+            message={t("onboarding.settings.message", locale)}
             variant="belowTopChrome"
             theme={theme}
             textColor={textColor}
@@ -275,10 +207,10 @@ export function TutorialOverlay({
       case "exploreTimetable":
         return (
           <CoachMarkCard
-            title={s("explore.timetable.title", locale)}
-            message={s("explore.timetable.message", locale)}
+            title={t("onboarding.explore_timetable.title", locale)}
+            message={t("onboarding.explore_timetable.message", locale)}
             variant="floatingBottom"
-            primaryButtonTitle={s("explore.timetable.continue", locale)}
+            primaryButtonTitle={t("onboarding.continue", locale)}
             onPrimaryButton={acknowledgeTimetableExplore}
             accessibilityIdentifier="Onboarding.TimetableExploreContinue"
             theme={theme}
@@ -290,8 +222,8 @@ export function TutorialOverlay({
       case "closeTimetable":
         return (
           <CoachMarkCard
-            title={s("explore.timetable.title", locale)}
-            message={s("close.timetable.message", locale)}
+            title={t("onboarding.explore_timetable.title", locale)}
+            message={t("onboarding.close_timetable.message", locale)}
             variant="belowTopChrome"
             theme={theme}
             textColor={textColor}
@@ -310,10 +242,10 @@ export function TutorialOverlay({
       case "exploreSettings":
         return (
           <CoachMarkCard
-            title={s("explore.settings.title", locale)}
-            message={s("explore.settings.message", locale)}
+            title={t("onboarding.explore_settings.title", locale)}
+            message={t("onboarding.explore_settings.message", locale)}
             variant="floatingBottom"
-            primaryButtonTitle={s("explore.settings.continue", locale)}
+            primaryButtonTitle={t("onboarding.continue", locale)}
             onPrimaryButton={acknowledgeSettingsExplore}
             accessibilityIdentifier="Onboarding.SettingsExploreContinue"
             theme={theme}
@@ -325,8 +257,8 @@ export function TutorialOverlay({
       case "closeSettings":
         return (
           <CoachMarkCard
-            title={s("explore.settings.title", locale)}
-            message={s("close.settings.message", locale)}
+            title={t("onboarding.explore_settings.title", locale)}
+            message={t("onboarding.close_settings.message", locale)}
             variant="belowTopChrome"
             theme={theme}
             textColor={textColor}

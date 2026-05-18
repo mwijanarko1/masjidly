@@ -2,10 +2,49 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {
-
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        }
+      }
     },
     "%lld percent" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld percent"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld percent"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld percent"
+          }
+        }
+      }
     },
     "5 min" : {
       "extractionState" : "stale",
@@ -17,6 +56,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 min"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "5 min"
@@ -45,6 +90,12 @@
             "value" : "10 min"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 min"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -63,6 +114,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 min"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "15 min"
@@ -91,6 +148,12 @@
             "value" : "30 min"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 min"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -114,6 +177,12 @@
             "value" : "Settings"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pengaturan"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -122,7 +191,37 @@
         }
       }
     },
+    "accessibility.timetable" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجدول"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timetable"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jadwal"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ٹائم ٹیبل"
+          }
+        }
+      }
+    },
     "Adhan" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -131,6 +230,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adhan"
@@ -145,7 +250,27 @@
       }
     },
     "Adhan playback progress" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقدم تشغيل الأذان"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kemajuan pemutaran azan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان چلنے کی پیش رفت"
+          }
+        }
+      }
     },
     "Adhan Reminder" : {
       "extractionState" : "stale",
@@ -157,6 +282,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan Reminder"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adhan Reminder"
@@ -185,6 +316,12 @@
             "value" : "العربية"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العربية"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -203,6 +340,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "English"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "English"
@@ -231,6 +374,12 @@
             "value" : "System"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -254,10 +403,190 @@
             "value" : "اردو"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اردو"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "اردو"
+          }
+        }
+      }
+    },
+    "audio.adhan.pause_a11y" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إيقاف الأذان مؤقتًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause adhan"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeda azan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان روکیں"
+          }
+        }
+      }
+    },
+    "audio.adhan.play_a11y" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تشغيل الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play adhan"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Putar azan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان چلائیں"
+          }
+        }
+      }
+    },
+    "audio.adhan.progress_a11y" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقدم تشغيل الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan playback progress"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kemajuan pemutaran azan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان چلنے کی پیش رفت"
+          }
+        }
+      }
+    },
+    "audio.adhan.progress_value_format" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld بالمئة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld percent"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld persen"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld فیصد"
+          }
+        }
+      }
+    },
+    "audio.adhan.stop_a11y" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إيقاف الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop adhan"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hentikan azan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان بند کریں"
+          }
+        }
+      }
+    },
+    "audio.adhan.time_remaining_format" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / %@ · المتبقي %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / %@ · %@ left"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / %@ · %@ tersisa"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / %@ · %@ باقی"
           }
         }
       }
@@ -272,6 +601,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Adhan"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Before Adhan"
@@ -300,6 +635,12 @@
             "value" : "Before Iqamah"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before Iqamah"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -318,6 +659,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, prayer %3$lld of %4$lld"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@, %2$@, prayer %3$lld of %4$lld"
@@ -346,6 +693,12 @@
             "value" : "Prayer %lld"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer %lld"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -364,6 +717,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this."
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this."
@@ -392,6 +751,12 @@
             "value" : "Choose your mosque"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose your mosque"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -410,6 +775,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continue"
@@ -438,10 +809,161 @@
             "value" : "Finish"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "مکمل کریں"
+          }
+        }
+      }
+    },
+    "home.countdown.a11y.active" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@، %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@، %@"
+          }
+        }
+      }
+    },
+    "home.countdown.a11y.hint" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضغط لعرض العد التنازلي. اضغط مطولاً لإبقائه ظاهراً."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to show or hide a live countdown. Long press to keep it visible."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketuk untuk countdown. Tekan lama untuk menahan tampilan."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شمار معلوم کرنے کے لیے تھپتھائیں۔ دکھائے رکھنے کے لیے دیر تک دبائیں۔"
+          }
+        }
+      }
+    },
+    "home.countdown.adhan_in" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأذان بعد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ADHAN IN"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ADHAN IN"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان میں"
+          }
+        }
+      }
+    },
+    "home.countdown.iqamah_in" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإقامة بعد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IQAMAH IN"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IQAMAH IN"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقامت میں"
+          }
+        }
+      }
+    },
+    "home.countdown.next_prayer" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصلاة التالية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NEXT PRAYER"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SHALAT BERIKUT"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اگلی نماز"
           }
         }
       }
@@ -456,6 +978,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah: %@"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Iqamah: %@"
@@ -484,6 +1012,12 @@
             "value" : "Asr illustration"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asr illustration"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -502,6 +1036,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dhuhr illustration"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dhuhr illustration"
@@ -530,6 +1070,12 @@
             "value" : "Fajr illustration"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fajr illustration"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -548,6 +1094,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isha illustration"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Isha illustration"
@@ -576,6 +1128,12 @@
             "value" : "Jummah illustration"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jummah illustration"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -594,6 +1152,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maghrib illustration"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Maghrib illustration"
@@ -622,6 +1186,12 @@
             "value" : "Prayer illustration"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer illustration"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -640,6 +1210,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Iqamah"
@@ -668,6 +1244,12 @@
             "value" : "Iqamah Reminder"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah Reminder"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -686,6 +1268,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly will show official prayer and iqamah times for this mosque."
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Masjidly will show official prayer and iqamah times for this mosque."
@@ -714,6 +1302,12 @@
             "value" : "Mosque"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mosque"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -737,10 +1331,161 @@
             "value" : "None"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "کوئی نہیں"
+          }
+        }
+      }
+    },
+    "notification.action.dismiss" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إغلاق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutup"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بند کریں"
+          }
+        }
+      }
+    },
+    "notification.action.open_timetable" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح الجدول"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open timetable"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buka jadwal"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ٹائم ٹیبل کھولیں"
+          }
+        }
+      }
+    },
+    "notification.action.snooze_reminder" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تأجيل التذكير"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze reminder"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tunda pengingat"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یاد دہانی ملتوی کریں"
+          }
+        }
+      }
+    },
+    "notification.action.view_mosque" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عرض المسجد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View mosque"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lihat masjid"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسجد دیکھیں"
+          }
+        }
+      }
+    },
+    "notification.action.view_times" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عرض الأوقات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View times"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lihat waktu"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اوقات دیکھیں"
           }
         }
       }
@@ -755,6 +1500,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asr adhan %@"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Asr adhan %@"
@@ -783,6 +1534,12 @@
             "value" : "Asr iqamah %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asr iqamah %@"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -801,6 +1558,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adhan"
@@ -829,10 +1592,248 @@
             "value" : "Iqamah"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "اقامت"
+          }
+        }
+      }
+    },
+    "notification.copy.adhan.body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضغط لسماع الأذان."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to hear adhan."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketuk untuk mendengar azan."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان سننے کے لیے ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "notification.copy.adhan.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أذان %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Adhan"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azan %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ کی اذان"
+          }
+        }
+      }
+    },
+    "notification.copy.before_adhan.body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأذان بعد %lld دقيقة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan in %lld min."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azan dalam %lld menit."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld منٹ میں اذان۔"
+          }
+        }
+      }
+    },
+    "notification.copy.before_adhan.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ قريبًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ soon"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ segera"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ قریب ہے"
+          }
+        }
+      }
+    },
+    "notification.copy.before_iqamah.body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإقامة بعد %lld دقيقة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah in %lld min."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah dalam %lld menit."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld منٹ میں اقامت۔"
+          }
+        }
+      }
+    },
+    "notification.copy.before_iqamah.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إقامة %@ قريبًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Iqamah soon"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah %@ segera"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ کی اقامت قریب ہے"
+          }
+        }
+      }
+    },
+    "notification.copy.iqamah.body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حان وقت إقامة %@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah for %@ is now."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah untuk %@ sekarang."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ کی اقامت اب ہے۔"
+          }
+        }
+      }
+    },
+    "notification.copy.iqamah.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إقامة %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Iqamah"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ کی اقامت"
           }
         }
       }
@@ -847,6 +1848,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dhuhr adhan %@"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dhuhr adhan %@"
@@ -875,6 +1882,12 @@
             "value" : "Dhuhr iqamah %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dhuhr iqamah %@"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -893,6 +1906,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fajr adhan %@"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fajr adhan %@"
@@ -921,6 +1940,12 @@
             "value" : "Fajr iqamah %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fajr iqamah %@"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -939,6 +1964,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isha adhan %@"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Isha adhan %@"
@@ -967,6 +1998,12 @@
             "value" : "Isha iqamah %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isha iqamah %@"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -985,6 +2022,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jummah %@"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Jummah %@"
@@ -1013,6 +2056,12 @@
             "value" : "Jummah adhan %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jummah adhan %@"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1031,6 +2080,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maghrib adhan %@"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Maghrib adhan %@"
@@ -1059,6 +2114,12 @@
             "value" : "Maghrib iqamah %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maghrib iqamah %@"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1077,6 +2138,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Off"
@@ -1105,6 +2172,12 @@
             "value" : "Tap the close button to finish setup."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketuk tombol tutup untuk menyelesaikan penyiapan."
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1126,6 +2199,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close Settings"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutup Pengaturan"
           }
         },
         "ur" : {
@@ -1151,6 +2230,12 @@
             "value" : "Tap the close button to return to the prayer times."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketuk tombol tutup untuk kembali ke waktu salat."
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1172,6 +2257,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close the timetable"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutup jadwal"
           }
         },
         "ur" : {
@@ -1197,6 +2288,12 @@
             "value" : "Continue"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lanjut"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1218,6 +2315,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mosque picks which masjid’s times you see. 24-hour time changes how clocks read. Notifications has a master switch; when on, you can enable adhan and iqamah alerts separately and set optional reminders before each. Scroll to skim everything, then tap Continue."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjid menentukan waktu salat masjid mana yang Anda lihat. Waktu 24 jam mengubah tampilan jam. Notifikasi memiliki sakelar utama; saat aktif, Anda dapat mengaktifkan peringatan azan dan iqamah secara terpisah serta mengatur pengingat opsional sebelum masing-masing. Gulir untuk melihat semuanya, lalu ketuk Lanjut."
           }
         },
         "ur" : {
@@ -1243,6 +2346,12 @@
             "value" : "What these settings do"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fungsi pengaturan ini"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1264,6 +2373,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Swipe the date row sideways to pick another day. Use the month arrows to load other months. Scroll the prayer list for the selected day. When you’re done exploring, tap Continue."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geser baris tanggal ke samping untuk memilih hari lain. Gunakan panah bulan untuk memuat bulan lain. Gulir daftar salat untuk hari yang dipilih. Setelah selesai, ketuk Lanjut."
           }
         },
         "ur" : {
@@ -1289,6 +2404,12 @@
             "value" : "Browse dates and months"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jelajahi tanggal dan bulan"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1312,6 +2433,12 @@
             "value" : "Finish"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selesai"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1326,19 +2453,25 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "سيعرض ماسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
+            "value" : "اختر مدينتك ثم مسجدك. سيعرض ماسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Masjidly will show official prayer and iqamah times for this mosque."
+            "value" : "Choose your city, then your mosque. Masjidly will show official prayer and iqamah times for that mosque."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pilih kota Anda, lalu masjid Anda. Masjidly akan menampilkan waktu salat dan iqamah resmi untuk masjid tersebut."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Masjidly اس مسجد کے سرکاری نماز اور اقامت کے اوقات دکھائے گا۔"
+            "value" : "پہلے شہر، پھر مسجد منتخب کریں۔ Masjidly اس مسجد کے سرکاری نماز اور اقامت کے اوقات دکھائے گا۔"
           }
         }
       }
@@ -1349,19 +2482,25 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اختر مسجدك"
+            "value" : "المدينة والمسجد"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose your mosque"
+            "value" : "City & mosque"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kota & masjid"
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اپنی مسجد منتخب کریں"
+            "value" : "شہر اور مسجد"
           }
         }
       }
@@ -1379,6 +2518,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pilih hal yang ingin diberitahukan Masjidly kepada Anda. Permintaan izin iOS akan muncul setelah ini."
           }
         },
         "ur" : {
@@ -1404,6 +2549,12 @@
             "value" : "Prayer notifications"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifikasi salat"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1415,10 +2566,28 @@
     "onboarding.qibla.allow_location" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "السماح بالوصول إلى الموقع"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Allow Location Access"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izinkan Akses Lokasi"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لوکیشن رسائی کی اجازت دیں"
           }
         }
       }
@@ -1426,10 +2595,28 @@
     "onboarding.qibla.later" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لاحقًا"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Do It Later"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nanti saja"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بعد میں کریں"
           }
         }
       }
@@ -1447,6 +2634,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The triangle points toward the Qibla. Rotate your phone until it lines up when you are ready to pray."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segitiga menunjuk ke arah kiblat. Putar ponsel hingga sejajar saat Anda siap salat."
           }
         },
         "ur" : {
@@ -1472,6 +2665,12 @@
             "value" : "Qibla direction"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arah kiblat"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1493,6 +2692,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tap the settings button (top-right) to choose preferences."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketuk tombol pengaturan (kanan atas) untuk memilih preferensi."
           }
         },
         "ur" : {
@@ -1518,6 +2723,12 @@
             "value" : "Open Settings"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buka Pengaturan"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1539,6 +2750,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tap %@ to view that prayer time."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketuk %@ untuk melihat waktu salat tersebut."
           }
         },
         "ur" : {
@@ -1564,6 +2781,12 @@
             "value" : "Try the prayer shortcuts"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coba pintasan salat"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1585,6 +2808,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tap the calendar button (top-left) to see the full timetable."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketuk tombol kalender (kiri atas) untuk melihat jadwal lengkap."
           }
         },
         "ur" : {
@@ -1610,6 +2839,12 @@
             "value" : "Open the timetable"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buka jadwal"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1619,10 +2854,50 @@
       }
     },
     "Pause adhan" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause adhan"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause adhan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause adhan"
+          }
+        }
+      }
     },
     "Play adhan" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play adhan"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play adhan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play adhan"
+          }
+        }
+      }
     },
     "Prayer notifications" : {
       "extractionState" : "stale",
@@ -1634,6 +2909,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer notifications"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prayer notifications"
@@ -1662,6 +2943,12 @@
             "value" : "Asr"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asr"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1685,6 +2972,12 @@
             "value" : "Dhuhr"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dzuhur"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1703,6 +2996,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fajr"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fajr"
@@ -1731,6 +3030,12 @@
             "value" : "Isha"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isha"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1754,6 +3059,12 @@
             "value" : "Jummah"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jumat"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1772,6 +3083,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maghrib"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Maghrib"
@@ -1800,6 +3117,12 @@
             "value" : "Sunrise"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terbit"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1823,6 +3146,12 @@
             "value" : "Prayer"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidak dikenal"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1841,6 +3170,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qibla direction indicator"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qibla direction indicator"
@@ -1869,6 +3204,12 @@
             "value" : "Reminders"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminders"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1887,6 +3228,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes, loving it"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yes, loving it"
@@ -1915,6 +3262,12 @@
             "value" : "Your feedback helps us improve prayer times for everyone."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your feedback helps us improve prayer times for everyone."
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1933,6 +3286,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not really"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Not really"
@@ -1961,6 +3320,12 @@
             "value" : "Loving Masjidly?"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loving Masjidly?"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1979,6 +3344,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause adhan preview"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pause adhan preview"
@@ -2007,10 +3378,45 @@
             "value" : "Preview adhan sound"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview adhan sound"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "اذان کی آواز سنیں"
+          }
+        }
+      }
+    },
+    "settings.city.picker" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المدينة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "City"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kota"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شہر"
           }
         }
       }
@@ -2028,6 +3434,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New features & feedback"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fitur baru & masukan"
           }
         },
         "ur" : {
@@ -2053,10 +3465,132 @@
             "value" : "Prayer times"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waktu salat"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "نماز کے اوقات"
+          }
+        }
+      }
+    },
+    "settings.development.instant" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فوري"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instant"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فوراً"
+          }
+        }
+      }
+    },
+    "settings.development.notification_type.all" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الثلاثة كلها"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Three"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketiganya"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تینوں"
+          }
+        }
+      }
+    },
+    "settings.development.notification_type.reminder" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تذكير"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pengingat"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یاد دہانی"
+          }
+        }
+      }
+    },
+    "settings.development.test_notification_format" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختبار %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uji %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ٹیسٹ کریں"
           }
         }
       }
@@ -2071,6 +3605,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test review prompt"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Test review prompt"
@@ -2099,10 +3639,45 @@
             "value" : "Test tutorial"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test tutorial"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ٹیوٹوریل ٹیسٹ کریں"
+          }
+        }
+      }
+    },
+    "settings.development.three_instant" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3× فوري"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3× instant"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3× instan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3× فوراً"
           }
         }
       }
@@ -2117,6 +3692,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Done"
@@ -2145,6 +3726,12 @@
             "value" : "Manage your mosque, time format, and prayer reminders."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kelola masjid, format waktu, dan pengingat salat."
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2168,10 +3755,132 @@
             "value" : "Settings"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pengaturan"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ترتیبات"
+          }
+        }
+      }
+    },
+    "settings.language.app" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اللغة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bahasa"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زبان"
+          }
+        }
+      }
+    },
+    "settings.language.arabic" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العربية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arabic"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arab"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عربی"
+          }
+        }
+      }
+    },
+    "settings.language.english" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإنجليزية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "English"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inggris"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انگریزی"
+          }
+        }
+      }
+    },
+    "settings.language.indonesian" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإندونيسية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indonesian"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indonesia"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انڈونیشیائی"
           }
         }
       }
@@ -2189,6 +3898,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App language"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bahasa aplikasi"
           }
         },
         "ur" : {
@@ -2214,6 +3929,12 @@
             "value" : "Change the language used in the app and notifications."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ubah bahasa yang digunakan di aplikasi dan notifikasi."
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2237,6 +3958,12 @@
             "value" : "Language"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bahasa"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2245,13 +3972,60 @@
         }
       }
     },
+    "settings.language.urdu" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأردية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urdu"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urdu"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اردو"
+          }
+        }
+      }
+    },
     "settings.location.allow" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "السماح بالموقع"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Allow Location"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izinkan lokasi"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لوکیشن کی اجازت دیں"
           }
         }
       }
@@ -2259,10 +4033,28 @@
     "settings.location.open_settings" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح إعدادات النظام"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open System Settings"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buka Pengaturan Sistem"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سسٹم ترتیبات کھولیں"
           }
         }
       }
@@ -2270,10 +4062,28 @@
     "settings.location.recovery.message" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعّل الوصول إلى الموقع لرؤية اتجاه بوصلة القبلة."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enable location access to see the Qibla compass direction."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktifkan akses lokasi untuk melihat arah kompas kiblat."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبلہ کمپاس کی سمت دیکھنے کے لیے لوکیشن رسائی فعال کریں۔"
           }
         }
       }
@@ -2291,6 +4101,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mosque"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjid"
           }
         },
         "ur" : {
@@ -2316,6 +4132,12 @@
             "value" : "Settings"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pengaturan"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2334,6 +4156,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asr"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Asr"
@@ -2362,6 +4190,12 @@
             "value" : "Dhuhr / Jummah"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dhuhr / Jummah"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2380,6 +4214,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fajr"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fajr"
@@ -2408,6 +4248,12 @@
             "value" : "Isha"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isha"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2426,6 +4272,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maghrib"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Maghrib"
@@ -2454,6 +4306,12 @@
             "value" : "All reminders are paused"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semua pengingat dijeda"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2475,6 +4333,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reminders are active"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pengingat aktif"
           }
         },
         "ur" : {
@@ -2500,6 +4364,12 @@
             "value" : "Prayer notifications"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifikasi salat"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2521,6 +4391,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Control prayer reminders for the selected mosque."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atur pengingat salat untuk masjid yang dipilih."
           }
         },
         "ur" : {
@@ -2546,6 +4422,12 @@
             "value" : "Notifications"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifikasi"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2557,10 +4439,28 @@
     "settings.qibla.enabled.title" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفعيل ميزة القبلة"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enable Qiblah feature"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktifkan fitur kiblat"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبلہ فیچر فعال کریں"
           }
         }
       }
@@ -2578,6 +4478,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adhan Reminder"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pengingat azan"
           }
         },
         "ur" : {
@@ -2603,6 +4509,12 @@
             "value" : "Before Adhan"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sebelum azan"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2624,6 +4536,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Before Iqamah"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sebelum iqamah"
           }
         },
         "ur" : {
@@ -2649,6 +4567,12 @@
             "value" : "Iqamah Reminder"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pengingat iqamah"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2670,6 +4594,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld min"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld mnt"
           }
         },
         "ur" : {
@@ -2695,6 +4625,12 @@
             "value" : "None"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidak ada"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2716,6 +4652,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Off"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mati"
           }
         },
         "ur" : {
@@ -2741,6 +4683,12 @@
             "value" : "Reminders"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pengingat"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2762,6 +4710,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Contact"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontak"
           }
         },
         "ur" : {
@@ -2787,6 +4741,12 @@
             "value" : "Development"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pengembangan"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2808,6 +4768,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keep times easy to scan at a glance."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buat waktu mudah dilihat sekilas."
           }
         },
         "ur" : {
@@ -2833,6 +4799,12 @@
             "value" : "Display"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tampilan"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2841,13 +4813,60 @@
         }
       }
     },
+    "settings.section.language.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لغة التطبيق"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App language"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bahasa aplikasi"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ایپ کی زبان"
+          }
+        }
+      }
+    },
     "settings.section.location.title" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الموقع"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Location"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lokasi"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لوکیشن"
           }
         }
       }
@@ -2865,6 +4884,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose the official timetable used across the app."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pilih jadwal resmi yang digunakan di seluruh aplikasi."
           }
         },
         "ur" : {
@@ -2890,6 +4915,12 @@
             "value" : "Mosque"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjid"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2901,10 +4932,28 @@
     "settings.section.qibla.title" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القبلة"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qiblah"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kiblat"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبلہ"
           }
         }
       }
@@ -2919,6 +4968,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classic chime"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Classic chime"
@@ -2947,6 +5002,12 @@
             "value" : "Default ringtone"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default ringtone"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2965,6 +5026,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard alert"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Standard alert"
@@ -2993,6 +5060,12 @@
             "value" : "Subtle tone"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subtle tone"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3011,6 +5084,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classic chime"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Classic chime"
@@ -3039,6 +5118,12 @@
             "value" : "Default ringtone"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default ringtone"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3057,6 +5142,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quiet tone"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quiet tone"
@@ -3085,6 +5176,12 @@
             "value" : "Standard alert"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard alert"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3106,6 +5203,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Showing 6:45 PM style times"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menampilkan waktu gaya 6:45 PM"
           }
         },
         "ur" : {
@@ -3131,6 +5234,12 @@
             "value" : "Showing 18:45 style times"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menampilkan waktu gaya 18:45"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3154,6 +5263,12 @@
             "value" : "24-hour time"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waktu 24 jam"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3163,7 +5278,27 @@
       }
     },
     "Stop adhan" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop adhan"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop adhan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop adhan"
+          }
+        }
+      }
     },
     "sun_phase.afternoon" : {
       "extractionState" : "stale",
@@ -3175,6 +5310,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afternoon sun"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Afternoon sun"
@@ -3203,6 +5344,12 @@
             "value" : "Crescent moon"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crescent moon"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3221,6 +5368,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dawn sun rising, horizon line above"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dawn sun rising, horizon line above"
@@ -3249,6 +5402,12 @@
             "value" : "Midday sun"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Midday sun"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3267,6 +5426,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sunrise, sun at the horizon"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sunrise, sun at the horizon"
@@ -3295,6 +5460,12 @@
             "value" : "Sunset, sun at the horizon"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sunset, sun at the horizon"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3306,7 +5477,25 @@
     "support.mail.feedback.body" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'd like to share the following idea or feedback:\n\n\n\nThanks,"
+          }
+        },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'd like to share the following idea or feedback:\n\n\n\nThanks,"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'd like to share the following idea or feedback:\n\n\n\nThanks,"
+          }
+        },
+        "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hi Masjidly team,\n\nI'd like to share the following idea or feedback:\n\n\n\nThanks,"
@@ -3317,7 +5506,25 @@
     "support.mail.feedback.subject" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Ideas & feedback"
+          }
+        },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Ideas & feedback"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Ideas & feedback"
+          }
+        },
+        "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Masjidly — Ideas & feedback"
@@ -3328,7 +5535,25 @@
     "support.mail.footer" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—\nMasjidly %@ (build %@)\niOS %@"
+          }
+        },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—\nMasjidly %@ (build %@)\niOS %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—\nMasjidly %@ (build %@)\niOS %@"
+          }
+        },
+        "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "—\nMasjidly %@ (build %@)\niOS %@"
@@ -3339,7 +5564,25 @@
     "support.mail.footer.mosque_line" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected mosque: %@"
+          }
+        },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected mosque: %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected mosque: %@"
+          }
+        },
+        "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Selected mosque: %@"
@@ -3350,7 +5593,25 @@
     "support.mail.prayer_times.body" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'm writing about prayer times. Please see the details below.\n\nMosque:\nDate (or month):\nWhat looks wrong:\n\nThanks,"
+          }
+        },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'm writing about prayer times. Please see the details below.\n\nMosque:\nDate (or month):\nWhat looks wrong:\n\nThanks,"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'm writing about prayer times. Please see the details below.\n\nMosque:\nDate (or month):\nWhat looks wrong:\n\nThanks,"
+          }
+        },
+        "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hi Masjidly team,\n\nI'm writing about prayer times. Please see the details below.\n\nMosque:\nDate (or month):\nWhat looks wrong:\n\nThanks,"
@@ -3361,7 +5622,25 @@
     "support.mail.prayer_times.subject" : {
       "extractionState" : "stale",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Prayer times question"
+          }
+        },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Prayer times question"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Prayer times question"
+          }
+        },
+        "ur" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Masjidly — Prayer times question"
@@ -3379,6 +5658,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test tutorial"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Test tutorial"
@@ -3407,6 +5692,12 @@
             "value" : "Close timetable"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close timetable"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3425,6 +5716,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adhan"
@@ -3453,6 +5750,12 @@
             "value" : "Asr"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asr"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3471,6 +5774,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Date"
@@ -3499,6 +5808,12 @@
             "value" : "Dhuhr"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dhuhr"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3517,6 +5832,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fajr"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fajr"
@@ -3545,6 +5866,12 @@
             "value" : "Iqamah"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3563,6 +5890,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isha"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Isha"
@@ -3591,6 +5924,12 @@
             "value" : "Maghrib"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maghrib"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3614,6 +5953,12 @@
             "value" : "Prayer"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer"
+          }
+        },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3632,6 +5977,12 @@
           }
         },
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sunrise"
+          }
+        },
+        "id" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sunrise"

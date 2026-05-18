@@ -21,6 +21,9 @@ import {
   resolveIqamahTimes,
   resolveIqamahTimesWithDstMapping,
   getNextPrayerAndCountdown,
+  formatHeroCountdownClock,
+  heroCountdownPresentation,
+  heroRemainingSeconds,
   formatTo12Hour,
   formatPrayerClockForDisplay,
   sheffieldNoonUTC,
@@ -279,7 +282,21 @@ describe("PrayerTimesEngine", () => {
       expect(result).toBe("22:40");
     });
 
-    it("returns After Maghrib in summer", () => {
+    it("returns After Maghrib in summer for Muslim Welfare House only", () => {
+      const date = sheffieldNoonUTC(2026, 6, 15);
+      const iq: DailyIqamahTimes = {
+        fajr: "1",
+        dhuhr: "2",
+        asr: "3",
+        maghrib: "4",
+        isha: "21:10",
+        jummah: "",
+      };
+      const result = resolveIshaIqamahForDisplay("muslim-welfare-house", date, "22:40", iq, "21:30");
+      expect(result).toBe("After Maghrib");
+    });
+
+    it("uses iqamah table in summer for non-MWH mosques", () => {
       const date = sheffieldNoonUTC(2026, 6, 15);
       const iq: DailyIqamahTimes = {
         fajr: "1",
@@ -290,7 +307,7 @@ describe("PrayerTimesEngine", () => {
         jummah: "",
       };
       const result = resolveIshaIqamahForDisplay("other", date, "22:40", iq, "21:30");
-      expect(result).toBe("After Maghrib");
+      expect(result).toBe("21:10");
     });
 
     it("uses normal iqamah outside summer and Risalah period", () => {
@@ -715,6 +732,55 @@ describe("PrayerTimesEngine", () => {
         []
       );
       expect(result.fajr).toBe("03:30");
+    });
+  });
+
+  describe("heroCountdownPresentation", () => {
+    const d: DailyPrayerTimes = {
+      date: "2026-06-15",
+      fajr: "04:00",
+      sunrise: "05:00",
+      dhuhr: "13:00",
+      asr: "18:00",
+      maghrib: "21:00",
+      isha: "22:30",
+    };
+    const iq: DailyIqamahTimes = {
+      fajr: "04:30",
+      dhuhr: "13:20",
+      asr: "18:10",
+      maghrib: "21:05",
+      isha: "22:45",
+      jummah: "13:25",
+    };
+
+    it("labels adhanIn before first adhan", () => {
+      const now = new Date("2026-06-15T02:00:00Z");
+      const h = heroCountdownPresentation(d, iq, "x", now);
+      expect(h?.labelKind).toBe("adhanIn");
+      expect(heroRemainingSeconds(h!, now)).toBe(3600);
+    });
+
+    it("labels nextPrayer after first salaat block", () => {
+      const now = new Date("2026-06-15T11:00:00Z");
+      const h = heroCountdownPresentation(d, iq, "x", now);
+      expect(h?.labelKind).toBe("nextPrayer");
+    });
+
+    it("labels iqamahIn between adhan and iqamah", () => {
+      const now = new Date("2026-06-15T12:05:00Z");
+      const h = heroCountdownPresentation(d, iq, "x", now);
+      expect(h?.labelKind).toBe("iqamahIn");
+      expect(heroRemainingSeconds(h!, now)).toBe(15 * 60);
+    });
+  });
+
+  describe("formatHeroCountdownClock", () => {
+    it("formats hours and under-hour", () => {
+      expect(formatHeroCountdownClock(5024)).toBe("-1:23:44");
+      expect(formatHeroCountdownClock(1122)).toBe("-18:42");
+      expect(formatHeroCountdownClock(545)).toBe("-9:05");
+      expect(formatHeroCountdownClock(0)).toBe("-0:00");
     });
   });
 });

@@ -1,14 +1,15 @@
 import SwiftUI
 
-/// Applies English locale and LTR layout.
+/// Applies the persisted in-app locale and layout direction.
 struct MasjidlyRootView: View {
     let homeViewModel: HomeViewModel
+    @Environment(SettingsStore.self) private var settings
     @Environment(OnboardingFlowController.self) private var onboarding
 
     var body: some View {
         HomeView(model: homeViewModel)
-            .environment(\.locale, Locale(identifier: "en"))
-            .environment(\.layoutDirection, .leftToRight)
+            .environment(\.locale, settings.resolvedLocale)
+            .environment(\.layoutDirection, settings.appLanguage.layoutDirection)
             .environment(onboarding)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 AdhanMiniPlayerBar(
@@ -17,6 +18,15 @@ struct MasjidlyRootView: View {
                         selectedPrayerIndex: homeViewModel.selectedPrayerIndex
                     )
                 )
+                .environment(\.locale, settings.resolvedLocale)
+                .environment(\.layoutDirection, settings.appLanguage.layoutDirection)
+            }
+            .onAppear {
+                PrayerNotificationContent.registerCategories(locale: settings.resolvedLocale)
+            }
+            .onChange(of: settings.appLanguage) { _, _ in
+                PrayerNotificationContent.registerCategories(locale: settings.resolvedLocale)
+                Task { await homeViewModel.resyncNotificationsIfNeeded() }
             }
     }
 }

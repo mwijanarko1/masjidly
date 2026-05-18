@@ -1,6 +1,6 @@
 {
   "name": "masjidly",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Masjidly - Official Masjid Prayer Times",
   "main": "expo-router/entry",
   "scripts": {

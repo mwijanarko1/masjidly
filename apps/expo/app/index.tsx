@@ -17,7 +17,7 @@ import { useQiblaDirection } from "@/lib/hooks/useQiblaDirection";
 import { PrayerLetterPicker, type PrayerName } from "@/components/ui/PrayerLetterPicker";
 import { QiblaPrayerIcon } from "@/components/ui/QiblaPrayerIcon";
 import { AdhanMiniPlayerBar } from "@/components/ui/AdhanMiniPlayerBar";
-import { useSettingsStore } from "@/store/settings";
+import { useSettingsStore, type AppLanguage } from "@/store/settings";
 import { useOnboardingStore } from "@/store/onboarding";
 import { TutorialOverlay } from "@/components/onboarding/TutorialOverlay";
 import { TutorialHighlight } from "@/components/onboarding/CoachMarkCard";
@@ -26,9 +26,14 @@ import {
   formatPrayerTimeHeroParts,
   getIqamahTime,
   resolveIshaIqamahForDisplay,
+  heroCountdownPresentation,
+  heroRemainingSeconds,
+  heroProgress01,
+  formatHeroCountdownClock,
 } from "@/lib/prayer/prayerTimesEngine";
 import { t, type TranslationKey } from "@/lib/i18n/translations";
-import { resolvedLanguageCode, resolvedLocale } from "@/lib/i18n/language";
+import type { HeroCountdownLabelKind } from "@/types/prayer";
+import { resolvedLocale, useAppLanguage, getFontScale } from "@/lib/i18n/language";
 import {
   themeForPrayer,
   getSkyTheme,
@@ -75,15 +80,26 @@ function getIqamahForSelectedPrayer(
     }
     case "Isha": {
       return resolveIshaIqamahForDisplay(
-        mosqueSlug,
-        now,
-        prayerTimes.isha,
-        iqamahTimes,
-        prayerTimes.maghrib
+          mosqueSlug,
+          now,
+          prayerTimes.isha,
+          iqamahTimes,
+          prayerTimes.maghrib
       );
     }
     case "Sunrise":
       return null;
+  }
+}
+
+function heroCountdownLabelKey(kind: HeroCountdownLabelKind): TranslationKey {
+  switch (kind) {
+    case "adhanIn":
+      return "home.countdown.adhan_in";
+    case "iqamahIn":
+      return "home.countdown.iqamah_in";
+    case "nextPrayer":
+      return "home.countdown.next_prayer";
   }
 }
 
@@ -98,8 +114,8 @@ function gregorianDateString(date: Date, locale: string): string {
     day: "numeric",
     month: "long",
   })
-    .format(date)
-    .toUpperCase();
+      .format(date)
+      .toUpperCase();
 }
 
 function hijriDateString(date: Date, locale: string): string {
@@ -110,8 +126,8 @@ function hijriDateString(date: Date, locale: string): string {
       month: "long",
       year: "numeric",
     })
-      .format(date)
-      .toUpperCase();
+        .format(date)
+        .toUpperCase();
   } catch {
     try {
       return new Intl.DateTimeFormat(locale, {
@@ -120,8 +136,8 @@ function hijriDateString(date: Date, locale: string): string {
         month: "long",
         year: "numeric",
       })
-        .format(date)
-        .toUpperCase();
+          .format(date)
+          .toUpperCase();
     } catch {
       return "";
     }
@@ -135,7 +151,7 @@ function resolveInitialPrayer(nextName: string | null | undefined): PrayerName {
   return found ?? "Fajr";
 }
 
-function translatePrayerName(name: PrayerName, lang: "en" | "ar" | "ur"): string {
+function translatePrayerName(name: PrayerName, lang: AppLanguage): string {
   const keyMap: Record<PrayerName, TranslationKey> = {
     Fajr: "prayer.fajr",
     Sunrise: "prayer.sunrise",
@@ -159,12 +175,17 @@ export default function HomeScreen() {
     selectedMosque,
   } = useHomePrayerData();
   const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
-  const languageCode = resolvedLanguageCode();
-  const locale = resolvedLocale();
+  const hideQiblaCompass = useSettingsStore((s) => s.hideQiblaCompass);
+  const languageCode = useAppLanguage();
+  const locale = resolvedLocale(languageCode);
+  const fontScale = getFontScale(languageCode);
+
 
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerName>("Fajr");
+  const [heroCountdownVisible, setHeroCountdownVisible] = useState(false);
+  const [heroCountdownLocked, setHeroCountdownLocked] = useState(false);
+  const [heroTick, setHeroTick] = useState(0);
 
-  // ── Onboarding ──
   const onboarding = useOnboardingStore();
   const currentStep = onboarding.currentStep;
   const tutorialStarted = useRef(false);
@@ -198,6 +219,19 @@ export default function HomeScreen() {
   const hijri = hijriDateString(now, locale);
 
   const mosqueSlug = selectedMosque?.slug ?? "";
+
+  const heroCountdownEnabled = Boolean(
+    displayedPrayerTimes && iqamahTimes && mosqueSlug
+  );
+
+  const showHeroCountdown = heroCountdownVisible || heroCountdownLocked;
+
+  useEffect(() => {
+    if (!showHeroCountdown) return;
+    const id = setInterval(() => setHeroTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [showHeroCountdown]);
+
   const iqamah = getIqamahForSelectedPrayer(
     selectedPrayer,
     displayedPrayerTimes,
@@ -230,8 +264,55 @@ export default function HomeScreen() {
 
   const { animatedRotation } = useQiblaDirection({
     fallbackMosque: selectedMosque,
-    enabled: selectedMosque !== null,
+    enabled: selectedMosque !== null && !hideQiblaCompass,
   });
+
+  const heroOrbCountdown = useMemo(() => {
+    void heroTick;
+    if (!displayedPrayerTimes || !iqamahTimes || !mosqueSlug) {
+      return { label: "", time: "", progress: 0 };
+    }
+    const tickNow = new Date();
+    const pres = heroCountdownPresentation(
+      displayedPrayerTimes,
+      iqamahTimes,
+      mosqueSlug,
+      tickNow
+    );
+    if (!pres) return { label: "", time: "", progress: 0 };
+    const secs = heroRemainingSeconds(pres, tickNow);
+    return {
+      label: t(heroCountdownLabelKey(pres.labelKind), languageCode),
+      time: formatHeroCountdownClock(secs),
+      progress: heroProgress01(pres, tickNow),
+    };
+  }, [
+    heroTick,
+    displayedPrayerTimes,
+    iqamahTimes,
+    mosqueSlug,
+    languageCode,
+  ]);
+
+  const onHeroOrbPress = () => {
+    if (!heroCountdownEnabled) return;
+    if (heroCountdownLocked) {
+      setHeroCountdownLocked(false);
+      setHeroCountdownVisible(false);
+      return;
+    }
+    setHeroCountdownVisible((v) => !v);
+  };
+
+  const onHeroOrbLongPress = () => {
+    if (!heroCountdownEnabled) return;
+    setHeroCountdownLocked(true);
+    setHeroCountdownVisible(true);
+  };
+
+  const heroOrbA11yLabel = showHeroCountdown
+    ? `${heroOrbCountdown.label}, ${heroOrbCountdown.time}`
+    : t("onboarding.qibla.title", languageCode);
 
   const heroParts = useMemo(() => {
     if (!adhanTime) return { clock: "--:--", meridiem: null as string | null };
@@ -289,7 +370,7 @@ export default function HomeScreen() {
               <Text
                 style={[
                   styles.gregorianDate,
-                  { color: textColor + "99", letterSpacing: 1.0 },
+                  { color: textColor + "99", letterSpacing: 1.0, fontSize: 13 * fontScale },
                 ]}
               >
                 {gregorian}
@@ -298,7 +379,7 @@ export default function HomeScreen() {
                 <Text
                   style={[
                     styles.hijriDate,
-                    { color: textColor + "66", letterSpacing: 0.8 },
+                    { color: textColor + "66", letterSpacing: 0.8, fontSize: 10 * fontScale },
                   ]}
                 >
                   {hijri}
@@ -335,14 +416,38 @@ export default function HomeScreen() {
                 size={88}
                 color={textColor}
               >
-                <QiblaPrayerIcon theme={theme} animatedRotation={animatedRotation} />
+                <Pressable
+                  onPress={onHeroOrbPress}
+                  onLongPress={onHeroOrbLongPress}
+                  delayLongPress={450}
+                  disabled={!heroCountdownEnabled}
+                  accessibilityRole={heroCountdownEnabled ? "button" : "image"}
+                  accessibilityLabel={heroOrbA11yLabel}
+                  accessibilityHint={
+                    heroCountdownEnabled
+                      ? t("home.countdown.a11y.hint", languageCode)
+                      : undefined
+                  }
+                  testID="HeroPrayerOrb"
+                >
+                  <QiblaPrayerIcon
+                    theme={theme}
+                    animatedRotation={
+                      !hideQiblaCompass ? animatedRotation : undefined
+                    }
+                    showCountdown={showHeroCountdown}
+                    countdownLabel={heroOrbCountdown.label}
+                    countdownTime={heroOrbCountdown.time}
+                    countdownProgress={heroOrbCountdown.progress}
+                  />
+                </Pressable>
               </TutorialHighlight>
             </View>
 
             <View style={{ marginTop: 32, alignItems: "center" }}>
               {/* Hero Clock */}
               <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-                <Text style={[styles.heroClock, { color: textColor }]}>
+                <Text style={[styles.heroClock, { color: textColor, fontSize: 88 * fontScale, lineHeight: 96 * fontScale }]}>
                   {heroParts.clock}
                 </Text>
                 {heroParts.meridiem ? (
@@ -351,7 +456,7 @@ export default function HomeScreen() {
                       styles.heroClock,
                       {
                         color: textColor,
-                        fontSize: 48,
+                        fontSize: 48 * fontScale,
                         letterSpacing: 0,
                         marginLeft: 6,
                       },
@@ -367,7 +472,7 @@ export default function HomeScreen() {
                 <Text
                   style={[
                     styles.iqamahText,
-                    { color: textColor + "C7" },
+                    { color: textColor + "C7", fontSize: 26 * fontScale },
                   ]}
                 >
                   {t("home.iqamah_format", languageCode).replace(
@@ -382,7 +487,7 @@ export default function HomeScreen() {
 
             {/* Bottom: Prayer Name + Letter Picker */}
             <View style={{ alignItems: "center", paddingBottom: 80, gap: 24 }}>
-              <Text style={[styles.prayerName, { color: textColor }]}>
+              <Text style={[styles.prayerName, { color: textColor, fontSize: 36 * fontScale }]}>
                 {translatePrayerName(selectedPrayer, languageCode)}
               </Text>
 
@@ -415,7 +520,7 @@ export default function HomeScreen() {
       {currentStep ? (
         <TutorialOverlay
           screen="home"
-          mosques={mosques.map((m) => ({ id: m.id, name: m.name }))}
+          mosques={mosques}
           theme={theme}
           textColor={textColor}
           usesLightForeground={usesLightForeground}

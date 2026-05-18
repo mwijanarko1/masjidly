@@ -2,6 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+export type AppLanguage = "en" | "ar" | "ur" | "id";
+
 export interface NotificationSettings {
   masterEnabled: boolean;
   adhanEnabled: boolean;
@@ -18,14 +20,19 @@ export interface NotificationSettings {
 export interface SettingsState {
   selectedMosqueId?: string;
   selectedMosqueSlug?: string;
+  /** When set, filters mosque pickers to this city; optional for backward compatibility. */
+  selectedCityGroupingKey?: string;
   uses24HourTime: boolean;
   hideQiblaCompass: boolean;
   hasCompletedOnboarding: boolean;
+  appLanguage: AppLanguage;
   notifications: NotificationSettings;
-  setSelectedMosque: (id: string, slug: string) => void;
+  setSelectedMosque: (id: string, slug: string, cityGroupingKey?: string) => void;
+  setSelectedCityGroupingKey: (key: string | undefined) => void;
   setUses24HourTime: (v: boolean) => void;
   setHideQiblaCompass: (v: boolean) => void;
   setHasCompletedOnboarding: (v: boolean) => void;
+  setAppLanguage: (v: AppLanguage) => void;
   setNotificationMaster: (v: boolean) => void;
   setAdhanEnabled: (v: boolean) => void;
   setIqamahEnabled: (v: boolean) => void;
@@ -54,9 +61,11 @@ const defaultNotifications: NotificationSettings = {
 const initialState: Omit<
   SettingsState,
   | "setSelectedMosque"
+  | "setSelectedCityGroupingKey"
   | "setUses24HourTime"
   | "setHideQiblaCompass"
   | "setHasCompletedOnboarding"
+  | "setAppLanguage"
   | "setNotificationMaster"
   | "setAdhanEnabled"
   | "setIqamahEnabled"
@@ -67,9 +76,11 @@ const initialState: Omit<
 > = {
   selectedMosqueId: undefined,
   selectedMosqueSlug: undefined,
+  selectedCityGroupingKey: undefined,
   uses24HourTime: false,
   hideQiblaCompass: false,
   hasCompletedOnboarding: false,
+  appLanguage: "en",
   notifications: defaultNotifications,
 };
 
@@ -102,20 +113,25 @@ type PersistedV3 = {
   };
 };
 
-function stripAppLanguage<T extends Record<string, unknown>>(state: T): Omit<T, "appLanguage"> {
-  const { appLanguage: _removed, ...rest } = state;
-  return rest;
+function normalizeAppLanguage(value: unknown): AppLanguage {
+  return value === "ar" || value === "ur" || value === "id" || value === "en" ? value : "en";
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       ...initialState,
-      setSelectedMosque: (id, slug) =>
-        set({ selectedMosqueId: id, selectedMosqueSlug: slug }),
+      setSelectedMosque: (id, slug, cityKey) =>
+        set({
+          selectedMosqueId: id,
+          selectedMosqueSlug: slug,
+          ...(cityKey !== undefined ? { selectedCityGroupingKey: cityKey } : {}),
+        }),
+      setSelectedCityGroupingKey: (key) => set({ selectedCityGroupingKey: key }),
       setUses24HourTime: (v) => set({ uses24HourTime: v }),
       setHideQiblaCompass: (v) => set({ hideQiblaCompass: v }),
       setHasCompletedOnboarding: (v) => set({ hasCompletedOnboarding: v }),
+      setAppLanguage: (v) => set({ appLanguage: v }),
       setNotificationMaster: (v) =>
         set((state) => ({
           notifications: { ...state.notifications, masterEnabled: v },
@@ -145,7 +161,7 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: "masjidly-settings",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 4,
+      version: 6,
       migrate: (persisted: unknown, version: number): unknown => {
         if (!persisted || typeof persisted !== "object" || !("state" in persisted)) {
           return persisted;
@@ -158,7 +174,7 @@ export const useSettingsStore = create<SettingsState>()(
             ...v1,
             state: {
               ...v1.state,
-              appLanguage: (v1.state as { appLanguage?: string }).appLanguage ?? "system",
+              appLanguage: normalizeAppLanguage((v1.state as { appLanguage?: string }).appLanguage),
               hasCompletedOnboarding: false,
               notifications: {
                 masterEnabled: v1.state.notifications?.masterEnabled ?? false,
@@ -194,15 +210,13 @@ export const useSettingsStore = create<SettingsState>()(
           shell = migrated;
         }
 
-        if (version < 4) {
-          return { ...shell, state: stripAppLanguage(shell.state) };
-        }
-
-        if ("appLanguage" in shell.state) {
-          return { ...shell, state: stripAppLanguage(shell.state) };
-        }
-
-        return persisted;
+        return {
+          ...shell,
+          state: {
+            ...shell.state,
+            appLanguage: normalizeAppLanguage(shell.state.appLanguage),
+          },
+        };
       },
     }
   )

@@ -221,6 +221,7 @@ final class HomeViewModel {
             }
             settings.selectedMosqueId = mosque.id
             settings.selectedMosqueSlug = mosque.slug
+            settings.selectedCityGroupingKey = mosque.cityGroupingKey
             try await refreshPrayerPayload(for: mosque)
             await refreshWidgetSnapshot(for: mosque)
             loadState = .loaded
