@@ -766,7 +766,6 @@
       }
     },
     "Continue" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -793,6 +792,9 @@
           }
         }
       }
+    },
+    "Explore" : {
+
     },
     "Finish" : {
       "extractionState" : "stale",
@@ -1257,6 +1259,9 @@
           }
         }
       }
+    },
+    "Masjidly Update!" : {
+
     },
     "Masjidly will show official prayer and iqamah times for this mosque." : {
       "extractionState" : "stale",
@@ -3131,6 +3136,35 @@
         }
       }
     },
+    "prayer.tahajjud" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التهجد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tahajjud"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tahajjud"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تہجد"
+          }
+        }
+      }
+    },
     "prayer.unknown" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4958,6 +4992,35 @@
         }
       }
     },
+    "settings.section.theme.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "السمة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theme"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تھیم"
+          }
+        }
+      }
+    },
     "settings.sound.iqamah.handoff" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5186,6 +5249,122 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "معیاری الرٹ"
+          }
+        }
+      }
+    },
+    "settings.theme.fixed_theme" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سمة الصلاة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer theme"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema salat"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نماز کا تھیم"
+          }
+        }
+      }
+    },
+    "settings.theme.mode" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمط السمة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theme style"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gaya tema"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تھیم کا انداز"
+          }
+        }
+      }
+    },
+    "settings.theme.mode.dynamic" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ديناميكي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dynamic"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dinamis"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متحرک"
+          }
+        }
+      }
+    },
+    "settings.theme.mode.fixed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثابت"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fixed"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tetap"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مستقل"
           }
         }
       }
@@ -5648,6 +5827,9 @@
         }
       }
     },
+    "Swipe to scroll updates" : {
+
+    },
     "Test tutorial" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5995,6 +6177,9 @@
           }
         }
       }
+    },
+    "Version %@" : {
+
     }
   },
   "version" : "1.0"

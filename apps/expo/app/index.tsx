@@ -39,6 +39,7 @@ import {
   getSkyTheme,
   getTextColor,
   getUsesLightForeground,
+  resolveTheme,
 } from "@/lib/design/themes";
 
 const PRAYERS: PrayerName[] = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -176,6 +177,9 @@ export default function HomeScreen() {
   } = useHomePrayerData();
   const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
   const hideQiblaCompass = useSettingsStore((s) => s.hideQiblaCompass);
+  const hasCompletedOnboarding = useSettingsStore((s) => s.hasCompletedOnboarding);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const fixedTheme = useSettingsStore((s) => s.fixedTheme);
   const languageCode = useAppLanguage();
   const locale = resolvedLocale(languageCode);
   const fontScale = getFontScale(languageCode);
@@ -257,7 +261,8 @@ export default function HomeScreen() {
     }
   }, [displayedPrayerTimes, selectedPrayer]);
 
-  const theme = themeForPrayer(selectedPrayer);
+  const dynamicTheme = themeForPrayer(selectedPrayer);
+  const theme = resolveTheme(dynamicTheme, themeMode, fixedTheme);
   const sky = getSkyTheme(theme);
   const textColor = getTextColor(theme);
   const usesLightForeground = getUsesLightForeground(theme);
@@ -265,6 +270,7 @@ export default function HomeScreen() {
   const { animatedRotation } = useQiblaDirection({
     fallbackMosque: selectedMosque,
     enabled: selectedMosque !== null && !hideQiblaCompass,
+    deferAuthorization: !hasCompletedOnboarding || hideQiblaCompass,
   });
 
   const heroOrbCountdown = useMemo(() => {

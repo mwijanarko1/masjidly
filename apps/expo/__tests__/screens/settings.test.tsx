@@ -31,6 +31,9 @@ jest.mock("@/store/settings", () => {
     uses24HourTime: false,
     hideQiblaCompass: false,
     hasCompletedOnboarding: true,
+    appLanguage: "en",
+    themeMode: "dynamic",
+    fixedTheme: "fajr",
     notifications: {
       masterEnabled: false,
       adhanEnabled: true,
@@ -47,6 +50,10 @@ jest.mock("@/store/settings", () => {
     setUses24HourTime: mockSetUses24HourTime,
     setHideQiblaCompass: mockSetHideQiblaCompass,
     setHasCompletedOnboarding: jest.fn(),
+    setAppLanguage: jest.fn(),
+    setThemeMode: jest.fn(),
+    setFixedTheme: jest.fn(),
+    setSelectedCityGroupingKey: jest.fn(),
     setNotificationMaster: mockSetNotificationMaster,
     setAdhanEnabled: jest.fn(),
     setIqamahEnabled: jest.fn(),
@@ -115,7 +122,7 @@ describe("SettingsScreen", () => {
     fireEvent.press(screen.getByTestId("settings-mosque-picker"));
     await waitFor(() => expect(screen.getByText("Mosque B")).toBeTruthy());
     fireEvent.press(screen.getByText("Mosque B"));
-    expect(mockSetSelectedMosque).toHaveBeenCalledWith("2", "mosque-b");
+    expect(mockSetSelectedMosque).toHaveBeenCalledWith("2", "mosque-b", "name:sheffield");
   });
 
   it("toggles 24-hour time format", async () => {

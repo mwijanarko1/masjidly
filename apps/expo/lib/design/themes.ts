@@ -1,3 +1,5 @@
+export type ThemeMode = "dynamic" | "fixed";
+
 export type TimeTheme =
   | "fajr"
   | "sunrise"
@@ -79,6 +81,15 @@ export function getUsesLightForeground(theme: TimeTheme): boolean {
   }
 }
 
+export const SELECTABLE_PRAYER_THEMES: TimeTheme[] = [
+  "fajr",
+  "sunrise",
+  "dhuhr",
+  "asr",
+  "maghrib",
+  "isha",
+];
+
 export const PRAYER_THEMES: Record<string, TimeTheme> = {
   Fajr: "fajr",
   Sunrise: "sunrise",
@@ -90,6 +101,14 @@ export const PRAYER_THEMES: Record<string, TimeTheme> = {
 
 export function themeForPrayer(prayerName: string): TimeTheme {
   return PRAYER_THEMES[prayerName] ?? "fajr";
+}
+
+export function resolveTheme(
+  dynamicTheme: TimeTheme,
+  themeMode: ThemeMode,
+  fixedTheme: TimeTheme
+): TimeTheme {
+  return themeMode === "dynamic" ? dynamicTheme : fixedTheme;
 }
 
 export const ACCENT = "#47A6FF";

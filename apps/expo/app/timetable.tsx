@@ -22,6 +22,7 @@ import {
   getSkyTheme,
   getTextColor,
   getUsesLightForeground,
+  resolveTheme,
 } from "@/lib/design/themes";
 
 function formatTime(time: string, uses24h: boolean, locale: string): string {
@@ -71,6 +72,8 @@ export default function TimetableScreen() {
   }>();
   const selectedMosqueSlug = useSettingsStore((s) => s.selectedMosqueSlug);
   const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const fixedTheme = useSettingsStore((s) => s.fixedTheme);
   const activeMosqueSlug = mosqueSlug ?? selectedMosqueSlug;
   const languageCode = useAppLanguage();
   const locale = resolvedLocale(languageCode);
@@ -87,7 +90,8 @@ export default function TimetableScreen() {
   }, [currentStep?.type]);
   // ── End Onboarding ──
 
-  const theme = themeForPrayer(themeParam ?? "Fajr");
+  const dynamicTheme = themeForPrayer(themeParam ?? "Fajr");
+  const theme = resolveTheme(dynamicTheme, themeMode, fixedTheme);
   const sky = getSkyTheme(theme);
   const textColor = getTextColor(theme);
   const usesLightForeground = getUsesLightForeground(theme);

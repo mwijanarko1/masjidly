@@ -24,6 +24,36 @@ Start the Expo development server:
 bun start
 ```
 
+### Android: `failed to download remote update`
+
+Expo Go loads your JS bundle from Metro on your Mac. If the phone cannot reach your Mac on the LAN (guest Wi‑Fi, VPN, firewall), you will see:
+
+`java.io.IOException: failed to download remote update`
+
+**Recommended: USB + port forwarding** (no ngrok):
+
+1. Enable USB debugging on the phone and connect it by cable.
+2. Run:
+
+```bash
+adb reverse tcp:8081 tcp:8081
+bun run start:localhost
+```
+
+3. Press `a` in Metro to open on the device, or in Expo Go enter `exp://127.0.0.1:8081`.
+
+One-liner (reverse + start + open Android):
+
+```bash
+bun run android:usb
+```
+
+**Tunnel mode** (`bun run start:tunnel`) may fail with `Cannot read properties of undefined (reading 'body')` — that is a known `@expo/ngrok` / ngrok API issue, not your app. Use USB or fix LAN instead.
+
+**LAN:** same Wi‑Fi, private network (not guest), VPN off → `bun run start:lan` and scan the QR code.
+
+Ensure Expo Go is updated for SDK 55.
+
 For notification testing, use an Android development build (Expo Go does not fully support local notification channels):
 
 ```bash

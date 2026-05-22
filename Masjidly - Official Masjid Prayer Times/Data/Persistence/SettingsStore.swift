@@ -15,9 +15,12 @@ final class SettingsStore: SettingsPersisting {
         case appLanguage
         case hasCompletedOnboarding
         case appFontName
+        case themeMode
+        case fixedTheme
         case hideQiblaCompass
         case firstAppOpenTrackedAt1970
         case hasCompletedEnjoymentReviewFlow
+        case lastSeenBuildVersion
     }
 
     /// Stored fields so `@Observable` tracks mutations; UserDefaults syncs in `didSet`.
@@ -61,6 +64,18 @@ final class SettingsStore: SettingsPersisting {
         didSet { defaults.set(appFontName, forKey: Key.appFontName.rawValue) }
     }
 
+    var themeMode: HomeDesign.ThemeMode {
+        didSet { defaults.set(themeMode.rawValue, forKey: Key.themeMode.rawValue) }
+    }
+
+    var fixedTheme: HomeDesign.TimeTheme {
+        didSet { defaults.set(fixedTheme.rawValue, forKey: Key.fixedTheme.rawValue) }
+    }
+
+    func resolvedTheme(dynamicTheme: HomeDesign.TimeTheme) -> HomeDesign.TimeTheme {
+        themeMode == .dynamic ? dynamicTheme : fixedTheme
+    }
+
     /// When true, the Qibla compass rings and pointer are hidden (user deferred location).
     var hideQiblaCompass: Bool {
         didSet { defaults.set(hideQiblaCompass, forKey: Key.hideQiblaCompass.rawValue) }
@@ -80,6 +95,12 @@ final class SettingsStore: SettingsPersisting {
     /// After the user responds to the soft review prompt (either option), we do not show it again.
     var hasCompletedEnjoymentReviewFlow: Bool {
         didSet { defaults.set(hasCompletedEnjoymentReviewFlow, forKey: Key.hasCompletedEnjoymentReviewFlow.rawValue) }
+    }
+
+    /// The last build version string the user has seen in the What's New modal.
+    /// When a new build is installed, this won't match, triggering the update pop-up.
+    var lastSeenBuildVersion: String? {
+        didSet { defaults.set(lastSeenBuildVersion, forKey: Key.lastSeenBuildVersion.rawValue) }
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -105,6 +126,8 @@ final class SettingsStore: SettingsPersisting {
             hasCompletedOnboarding = defaults.bool(forKey: Key.hasCompletedOnboarding.rawValue)
         }
         appFontName = defaults.string(forKey: Key.appFontName.rawValue) ?? "Gill Sans"
+        themeMode = HomeDesign.ThemeMode(rawValue: defaults.string(forKey: Key.themeMode.rawValue) ?? "") ?? .dynamic
+        fixedTheme = HomeDesign.TimeTheme(rawValue: defaults.string(forKey: Key.fixedTheme.rawValue) ?? "") ?? .fajr
         if defaults.object(forKey: Key.hideQiblaCompass.rawValue) == nil {
             hideQiblaCompass = false
         } else {
@@ -120,6 +143,7 @@ final class SettingsStore: SettingsPersisting {
         } else {
             hasCompletedEnjoymentReviewFlow = defaults.bool(forKey: Key.hasCompletedEnjoymentReviewFlow.rawValue)
         }
+        lastSeenBuildVersion = defaults.string(forKey: Key.lastSeenBuildVersion.rawValue)
     }
 
     func ensureFirstAppOpenTrackedAtRecordedIfNeeded() {

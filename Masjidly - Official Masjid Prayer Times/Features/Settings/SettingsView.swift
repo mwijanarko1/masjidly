@@ -9,7 +9,7 @@ private func LS(_ key: String, locale: Locale) -> String {
 
 struct SettingsView: View {
     @Bindable var model: SettingsViewModel
-    let timeTheme: HomeDesign.TimeTheme
+    private let dynamicTimeTheme: HomeDesign.TimeTheme
     var onDismiss: (() -> Void)? = nil
     @Environment(SettingsStore.self) private var settings
     @Environment(OnboardingFlowController.self) private var onboarding
@@ -22,6 +22,16 @@ struct SettingsView: View {
         let manager = CLLocationManager()
         return manager.authorizationStatus
     }()
+
+    init(model: SettingsViewModel, timeTheme: HomeDesign.TimeTheme, onDismiss: (() -> Void)? = nil) {
+        self.model = model
+        self.dynamicTimeTheme = timeTheme
+        self.onDismiss = onDismiss
+    }
+
+    private var timeTheme: HomeDesign.TimeTheme {
+        settings.resolvedTheme(dynamicTheme: dynamicTimeTheme)
+    }
 
     private var shouldShowLocationRecovery: Bool {
         settings.hideQiblaCompass || locationAuthStatus == .denied || locationAuthStatus == .restricted
@@ -54,6 +64,18 @@ struct SettingsView: View {
                 settingsSectionBlock(titleKey: "settings.section.language.title") {
                     languagePickerRow
                         .padding(.vertical, 12)
+                }
+
+                settingsSectionBlock(titleKey: "settings.section.theme.title") {
+                    VStack(spacing: 0) {
+                        themeModePickerRow
+                            .padding(.vertical, 12)
+                        if settings.themeMode == .fixed {
+                            settingsRowDivider
+                            fixedThemePickerRow
+                                .padding(.vertical, 12)
+                        }
+                    }
                 }
 
                 settingsSectionBlock(titleKey: "settings.section.qibla.title") {
@@ -454,6 +476,78 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(minHeight: 44)
+    }
+
+    private var themeModePickerRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(localized("settings.theme.mode"))
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(timeTheme.textColor)
+                .multilineTextAlignment(.leading)
+                .lineLimit(1)
+                .layoutPriority(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 12)
+
+            Picker("", selection: Bindable(settings).themeMode) {
+                ForEach(HomeDesign.ThemeMode.allCases) { mode in
+                    Text(themeModeLabel(mode))
+                        .appFont(size: 17)
+                        .tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(timeTheme.textColor)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(minHeight: 44)
+    }
+
+    private var fixedThemePickerRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(localized("settings.theme.fixed_theme"))
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(timeTheme.textColor)
+                .multilineTextAlignment(.leading)
+                .lineLimit(1)
+                .layoutPriority(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 12)
+
+            Picker("", selection: Bindable(settings).fixedTheme) {
+                ForEach(HomeDesign.TimeTheme.selectablePrayerThemes) { theme in
+                    Text(themeLabel(theme))
+                        .appFont(size: 17)
+                        .tag(theme)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(timeTheme.textColor)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(minHeight: 44)
+    }
+
+    private func themeModeLabel(_ mode: HomeDesign.ThemeMode) -> String {
+        switch mode {
+        case .dynamic: localized("settings.theme.mode.dynamic")
+        case .fixed: localized("settings.theme.mode.fixed")
+        }
+    }
+
+    private func themeLabel(_ theme: HomeDesign.TimeTheme) -> String {
+        let key: String = switch theme {
+        case .fajr: "prayer.fajr"
+        case .sunrise: "prayer.sunrise"
+        case .dhuhr: "prayer.dhuhr"
+        case .asr: "prayer.asr"
+        case .maghrib: "prayer.maghrib"
+        case .isha: "prayer.isha"
+        case .tahajjud: "prayer.tahajjud"
+        }
+        return localized(key)
     }
 
     private var mosquePickerRow: some View {

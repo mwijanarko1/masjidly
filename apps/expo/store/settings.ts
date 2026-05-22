@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 export type AppLanguage = "en" | "ar" | "ur" | "id";
+export type ThemeMode = "dynamic" | "fixed";
+export type TimeTheme = "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha" | "tahajjud";
 
 export interface NotificationSettings {
   masterEnabled: boolean;
@@ -26,6 +28,8 @@ export interface SettingsState {
   hideQiblaCompass: boolean;
   hasCompletedOnboarding: boolean;
   appLanguage: AppLanguage;
+  themeMode: ThemeMode;
+  fixedTheme: TimeTheme;
   notifications: NotificationSettings;
   setSelectedMosque: (id: string, slug: string, cityGroupingKey?: string) => void;
   setSelectedCityGroupingKey: (key: string | undefined) => void;
@@ -33,6 +37,8 @@ export interface SettingsState {
   setHideQiblaCompass: (v: boolean) => void;
   setHasCompletedOnboarding: (v: boolean) => void;
   setAppLanguage: (v: AppLanguage) => void;
+  setThemeMode: (v: ThemeMode) => void;
+  setFixedTheme: (v: TimeTheme) => void;
   setNotificationMaster: (v: boolean) => void;
   setAdhanEnabled: (v: boolean) => void;
   setIqamahEnabled: (v: boolean) => void;
@@ -66,6 +72,8 @@ const initialState: Omit<
   | "setHideQiblaCompass"
   | "setHasCompletedOnboarding"
   | "setAppLanguage"
+  | "setThemeMode"
+  | "setFixedTheme"
   | "setNotificationMaster"
   | "setAdhanEnabled"
   | "setIqamahEnabled"
@@ -81,6 +89,8 @@ const initialState: Omit<
   hideQiblaCompass: false,
   hasCompletedOnboarding: false,
   appLanguage: "en",
+  themeMode: "dynamic",
+  fixedTheme: "fajr",
   notifications: defaultNotifications,
 };
 
@@ -117,6 +127,21 @@ function normalizeAppLanguage(value: unknown): AppLanguage {
   return value === "ar" || value === "ur" || value === "id" || value === "en" ? value : "en";
 }
 
+function normalizeThemeMode(value: unknown): ThemeMode {
+  return value === "fixed" ? "fixed" : "dynamic";
+}
+
+function normalizeFixedTheme(value: unknown): TimeTheme {
+  return value === "fajr" ||
+    value === "sunrise" ||
+    value === "dhuhr" ||
+    value === "asr" ||
+    value === "maghrib" ||
+    value === "isha"
+    ? value
+    : "fajr";
+}
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
@@ -132,6 +157,8 @@ export const useSettingsStore = create<SettingsState>()(
       setHideQiblaCompass: (v) => set({ hideQiblaCompass: v }),
       setHasCompletedOnboarding: (v) => set({ hasCompletedOnboarding: v }),
       setAppLanguage: (v) => set({ appLanguage: v }),
+      setThemeMode: (v) => set({ themeMode: v }),
+      setFixedTheme: (v) => set({ fixedTheme: normalizeFixedTheme(v) }),
       setNotificationMaster: (v) =>
         set((state) => ({
           notifications: { ...state.notifications, masterEnabled: v },
@@ -161,7 +188,7 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: "masjidly-settings",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 6,
+      version: 7,
       migrate: (persisted: unknown, version: number): unknown => {
         if (!persisted || typeof persisted !== "object" || !("state" in persisted)) {
           return persisted;
@@ -215,6 +242,8 @@ export const useSettingsStore = create<SettingsState>()(
           state: {
             ...shell.state,
             appLanguage: normalizeAppLanguage(shell.state.appLanguage),
+            themeMode: normalizeThemeMode(shell.state.themeMode),
+            fixedTheme: normalizeFixedTheme(shell.state.fixedTheme),
           },
         };
       },

@@ -3,7 +3,7 @@
     "name": "Masjidly",
     "slug": "masjidly",
     "scheme": "masjidly",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.mikhailspeaks.masjidly",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -47,6 +47,9 @@
     ],
     "androidNavigationBar": {
       "visible": "sticky-immersive"
+    },
+    "extra": {
+      "convexUrl": "https://upbeat-goat-583.eu-west-1.convex.cloud"
     }
   }
 }

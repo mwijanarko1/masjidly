@@ -28,7 +28,10 @@ interface CoachMarkCardProps {
   variant: CoachMarkVariant;
   primaryButtonTitle?: string;
   onPrimaryButton?: () => void;
+  secondaryButtonTitle?: string;
+  onSecondaryButton?: () => void;
   accessibilityIdentifier?: string;
+  secondaryAccessibilityIdentifier?: string;
   theme: TimeTheme;
   textColor: string;
   usesLightForeground: boolean;
@@ -172,7 +175,10 @@ function GlassCard({
   message,
   primaryButtonTitle,
   onPrimaryButton,
+  secondaryButtonTitle,
+  onSecondaryButton,
   accessibilityIdentifier,
+  secondaryAccessibilityIdentifier,
   textColor,
   usesLightForeground,
 }: {
@@ -180,7 +186,10 @@ function GlassCard({
   message: string;
   primaryButtonTitle?: string;
   onPrimaryButton?: () => void;
+  secondaryButtonTitle?: string;
+  onSecondaryButton?: () => void;
   accessibilityIdentifier?: string;
+  secondaryAccessibilityIdentifier?: string;
   textColor: string;
   usesLightForeground: boolean;
 }) {
@@ -211,6 +220,18 @@ function GlassCard({
           <Text style={styles.primaryButtonText}>{primaryButtonTitle}</Text>
         </Pressable>
       ) : null}
+
+      {secondaryButtonTitle && onSecondaryButton ? (
+        <Pressable
+          style={styles.secondaryButton}
+          onPress={onSecondaryButton}
+          accessibilityRole="button"
+          accessibilityLabel={secondaryButtonTitle}
+          accessibilityIdentifier={secondaryAccessibilityIdentifier ?? "Onboarding.CoachSecondary"}
+        >
+          <Text style={[styles.secondaryButtonText, { color: textColor }]}>{secondaryButtonTitle}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -225,7 +246,10 @@ export function CoachMarkCard({
   variant,
   primaryButtonTitle,
   onPrimaryButton,
+  secondaryButtonTitle,
+  onSecondaryButton,
   accessibilityIdentifier,
+  secondaryAccessibilityIdentifier,
   theme,
   textColor,
   usesLightForeground,
@@ -240,7 +264,10 @@ export function CoachMarkCard({
       message={message}
       primaryButtonTitle={primaryButtonTitle}
       onPrimaryButton={onPrimaryButton}
+      secondaryButtonTitle={secondaryButtonTitle}
+      onSecondaryButton={onSecondaryButton}
       accessibilityIdentifier={accessibilityIdentifier}
+      secondaryAccessibilityIdentifier={secondaryAccessibilityIdentifier}
       textColor={textColor}
       usesLightForeground={usesLightForeground}
     />
@@ -335,6 +362,16 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontFamily: "Comfortaa_600SemiBold",
+  } as TextStyle,
+  secondaryButton: {
+    alignItems: "center",
+    marginTop: 14,
+    paddingVertical: 10,
+  } as ViewStyle,
+  secondaryButtonText: {
+    fontSize: 15,
+    fontFamily: "Comfortaa_600SemiBold",
+    opacity: 0.72,
   } as TextStyle,
 
   // Position containers

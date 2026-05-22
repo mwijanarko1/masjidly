@@ -6,8 +6,17 @@ enum HomeDesign {
         let glowColor: Color?
     }
 
-    enum TimeTheme: String, CaseIterable {
+    enum ThemeMode: String, CaseIterable, Identifiable {
+        case dynamic
+        case fixed
+
+        var id: String { rawValue }
+    }
+
+    enum TimeTheme: String, CaseIterable, Identifiable {
         case fajr, sunrise, dhuhr, asr, maghrib, isha, tahajjud
+
+        var id: String { rawValue }
         
         var sky: SkyTheme {
             switch self {
@@ -96,6 +105,8 @@ enum HomeDesign {
 }
 
 extension HomeDesign.TimeTheme {
+    static let selectablePrayerThemes: [Self] = [.fajr, .sunrise, .dhuhr, .asr, .maghrib, .isha]
+
     /// Sky / glass theme for the home prayer hero (matches `HomeView` carousel selection).
     static func homeHeroTheme(displayedPrayerTimes: DailyPrayerTimes?, selectedPrayerIndex: Int) -> Self {
         guard displayedPrayerTimes != nil else { return .fajr }

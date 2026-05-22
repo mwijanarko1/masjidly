@@ -103,7 +103,7 @@ struct MasjidlyPrayerEntry: TimelineEntry {
 
 extension MasjidlyWidgetState {
     var iconName: String {
-        switch prayerName.lowercased() {
+        switch prayerId.lowercased() {
         case "fajr": return "sun.horizon"
         case "sunrise": return "sunrise"
         case "dhuhr", "jumu'ah": return "sun.max"
@@ -120,7 +120,7 @@ struct MasjidlyPrayerWidgetView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        let theme = MasjidlyWidgetTheme.theme(for: entry.state.prayerName)
+        let theme = MasjidlyWidgetTheme.theme(for: entry.state.prayerId)
         
         Group {
             if entry.state.kind != .content {
@@ -144,6 +144,7 @@ struct MasjidlyPrayerWidgetView: View {
                 }
             }
         }
+        .environment(\.layoutDirection, widgetLayoutDirection)
         .containerBackground(for: .widget) {
             if isLockScreenAccessoryFamily {
                 Color.clear
@@ -153,6 +154,11 @@ struct MasjidlyPrayerWidgetView: View {
                 backgroundView(for: theme)
             }
         }
+    }
+
+    private var widgetLayoutDirection: LayoutDirection {
+        let languageCode = String(entry.locale.identifier.prefix(2))
+        return ["ar", "ur"].contains(languageCode) ? .rightToLeft : .leftToRight
     }
 
     private var isLockScreenAccessoryFamily: Bool {
@@ -287,6 +293,7 @@ struct MasjidlyPrayerWidgetView: View {
 
     private var currentDateMediumString: String {
         let formatter = DateFormatter()
+        formatter.locale = entry.locale
         formatter.dateFormat = "EEEE · d MMM"
         return formatter.string(from: entry.date)
     }
@@ -338,6 +345,7 @@ struct MasjidlyPrayerWidgetView: View {
 
     private var fullDateString: String {
         let formatter = DateFormatter()
+        formatter.locale = entry.locale
         formatter.dateFormat = "MMMM, EEEE d"
         return formatter.string(from: entry.date)
     }
@@ -542,13 +550,24 @@ struct MasjidlyPrayerWidgetView: View {
     private func countdownAbbrev(until seconds: TimeInterval) -> String {
         let s = max(0, seconds)
         let mins = Int(s / 60)
+        let units = countdownUnits
         if mins >= 60 {
             let h = mins / 60
             let m = mins % 60
-            return m == 0 ? "\(h)h" : "\(h)h \(m)m"
+            return m == 0 ? "\(h)\(units.hour)" : "\(h)\(units.hour) \(m)\(units.minute)"
         }
-        if mins > 0 { return "\(mins)m" }
-        return "<1m"
+        if mins > 0 { return "\(mins)\(units.minute)" }
+        return "<1\(units.minute)"
+    }
+
+    private var countdownUnits: (hour: String, minute: String) {
+        let languageCode = String(entry.locale.identifier.prefix(2))
+        switch languageCode {
+        case "ar": return ("س", "د")
+        case "ur": return ("گ", "م")
+        case "id": return ("j", "m")
+        default: return ("h", "m")
+        }
     }
 }
 
@@ -606,8 +625,8 @@ enum MasjidlyWidgetTheme {
         }
     }
     
-    static func theme(for prayerName: String) -> TimeTheme {
-        switch prayerName.lowercased() {
+    static func theme(for prayerId: String) -> TimeTheme {
+        switch prayerId.lowercased() {
         case "fajr": return .fajr
         case "sunrise": return .sunrise
         case "dhuhr", "jumu'ah": return .dhuhr

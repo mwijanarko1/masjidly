@@ -17,13 +17,18 @@ struct HomeView: View {
 
     @State private var showingSettings = false
     @State private var showingTimetable = false
+    @State private var showingWhatsNew = false
     @State private var qiblaDirectionProvider = QiblaDirectionProvider()
 
-    private var currentTheme: HomeDesign.TimeTheme {
+    private var dynamicTheme: HomeDesign.TimeTheme {
         HomeDesign.TimeTheme.homeHeroTheme(
             displayedPrayerTimes: model.displayedPrayerTimes,
             selectedPrayerIndex: model.selectedPrayerIndex
         )
+    }
+
+    private var currentTheme: HomeDesign.TimeTheme {
+        settings.resolvedTheme(dynamicTheme: dynamicTheme)
     }
 
     var body: some View {
@@ -32,19 +37,13 @@ struct HomeView: View {
 
     @ViewBuilder
     private var homeChromeStack: some View {
-        GeometryReader { geo in
-            let metrics = HomeViewportMetrics(geometry: geo)
-            homeMainZStack(metrics: metrics)
-                .frame(width: geo.size.width, height: geo.size.height)
-        }
-        .ignoresSafeArea()
-        .navigationBarHidden(true)
-        .accessibilityIdentifier("tabHome")
-        .task {
+        homeContent
+            .task {
             await model.load()
             await settingsViewModel.load()
             onboarding.startIfNeeded()
             await model.resyncNotificationsIfNeeded()
+            checkWhatsNew()
         }
         .onAppear {
             Task { await model.applySelectionFromSettings() }
@@ -59,6 +58,7 @@ struct HomeView: View {
             reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
                 isOnboardingBlocking: enjoymentReviewFlowBlocked
             )
+            checkWhatsNew()
         }
         .onChange(of: onboarding.isActive) { _, isActive in
             guard !isActive else { return }
@@ -92,9 +92,7 @@ struct HomeView: View {
             qiblaDirectionProvider.updateFallbackMosque(newValue)
         }
         .onChange(of: qiblaDirectionProvider.authorizationStatus) { _, newStatus in
-            if newStatus == .authorizedWhenInUse || newStatus == .authorizedAlways {
-                settings.hideQiblaCompass = false
-            }
+            handleQiblaAuthorizationStatusChange(newStatus)
         }
         .onReceive(NotificationCenter.default.publisher(for: .masjidlyOpenTimetable)) { _ in
             showingSettings = false
@@ -126,6 +124,22 @@ struct HomeView: View {
             onLoveIt: { reviewPrompt.userConfirmedEnjoymentPositive() },
             onNotReally: { reviewPrompt.userConfirmedEnjoymentNegative() }
         )
+    }
+
+    private var homeContent: some View {
+        GeometryReader { geo in
+            let metrics = HomeViewportMetrics(geometry: geo)
+            homeMainZStack(metrics: metrics)
+                .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .ignoresSafeArea()
+        .navigationBarHidden(true)
+        .accessibilityIdentifier("tabHome")
+        .overlay {
+            if showingWhatsNew {
+                whatsNewOverlay
+            }
+        }
     }
 
     private func homeMainZStack(metrics: HomeViewportMetrics) -> AnyView {
@@ -199,7 +213,7 @@ struct HomeView: View {
                 prayerName: displayName,
                 prayerTime: prayerTimeDisplay,
                 iqamahTime: iqSubtitle,
-                theme: prayer.theme,
+                theme: currentTheme,
                 showQiblaCompass: !settings.hideQiblaCompass,
                 qiblaRotationDegrees: qiblaDirectionProvider.displayedRotationDegrees,
                 qiblaOnboardingHighlighted: onboarding.currentStep == .qibla,
@@ -228,6 +242,89 @@ struct HomeView: View {
                 }
             }
         )
+    }
+
+    @ViewBuilder
+    private var whatsNewOverlay: some View {
+        GeometryReader { geo in
+            ZStack {
+                // Full-bleed backdrop (dimming + adaptive atmospheric gradient)
+                ZStack {
+                    Color.black.opacity(0.4)
+                    
+                    LinearGradient(
+                        colors: currentTheme.sky.baseColors.map { $0.opacity(0.55) },
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    
+                    if let glow = currentTheme.sky.glowColor {
+                        RadialGradient(
+                            colors: [glow.opacity(0.4), glow.opacity(0.15), .clear],
+                            center: UnitPoint(x: 0.5, y: 0.82),
+                            startRadius: 0,
+                            endRadius: 500
+                        )
+                        .blendMode(.screen)
+                    }
+                }
+                .ignoresSafeArea()
+                .onTapGesture {
+                    dismissWhatsNew()
+                }
+
+                WhatsNewModalView(
+                    version: WhatsNew.currentVersion,
+                    items: WhatsNew.latestUpdates,
+                    timeTheme: currentTheme,
+                    onDismiss: {
+                        dismissWhatsNew()
+                    },
+                    onAction: { action in
+                        dismissWhatsNew()
+                        switch action {
+                        case .settings:
+                            showingSettings = true
+                        case .timetable:
+                            showingTimetable = true
+                        }
+                    }
+                )
+                .onDisappear {
+                    settings.lastSeenBuildVersion = WhatsNew.fullVersionString
+                }
+                .padding(.horizontal, 24)
+                .frame(maxWidth: 380)
+                .frame(maxHeight: min(580, geo.size.height - 80))
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .transition(.opacity.animation(.easeInOut(duration: 0.25)))
+    }
+
+    private func dismissWhatsNew() {
+        showingWhatsNew = false
+        settings.lastSeenBuildVersion = WhatsNew.fullVersionString
+    }
+
+    @ViewBuilder
+    private var whatsNewSheet: some View {
+        WhatsNewModalView(
+            version: WhatsNew.currentVersion,
+            items: WhatsNew.latestUpdates,
+            timeTheme: currentTheme,
+            onAction: { action in
+                switch action {
+                case .settings:
+                    showingSettings = true
+                case .timetable:
+                    showingTimetable = true
+                }
+            }
+        )
+        .onDisappear {
+            settings.lastSeenBuildVersion = WhatsNew.fullVersionString
+        }
     }
 
     @ViewBuilder
@@ -304,6 +401,8 @@ struct HomeView: View {
             .blendMode(.plusLighter)
         }
         .animation(.easeInOut(duration: 0.8), value: model.selectedPrayerIndex)
+        .animation(.easeInOut(duration: 0.8), value: settings.fixedTheme)
+        .animation(.easeInOut(duration: 0.8), value: settings.themeMode)
         .ignoresSafeArea()
     }
 
@@ -466,6 +565,20 @@ struct HomeView: View {
         return formatter.string(from: Date())
     }
 
+    private func checkWhatsNew() {
+        let currentBuild = WhatsNew.fullVersionString
+        guard settings.lastSeenBuildVersion != currentBuild else { return }
+        guard settings.hasCompletedOnboarding else { return }
+        showingWhatsNew = true
+    }
+
+    private func handleQiblaAuthorizationStatusChange(_ status: CLAuthorizationStatus) {
+        let isAuthorized = status == .authorizedWhenInUse || status == .authorizedAlways
+        if isAuthorized {
+            settings.hideQiblaCompass = false
+        }
+    }
+
     private func selectMosque(_ mosque: Mosque) {
         model.selectedMosque = mosque
         settings.selectedMosqueId = mosque.id
@@ -557,6 +670,12 @@ private extension View {
     }
 }
 
+// MARK: - Notification Names
+
+extension Notification.Name {
+    static let masjidlyShowWhatsNew = Notification.Name("masjidly.show.whatsnew")
+}
+
 // MARK: - Viewport-aware layout
 
 private struct HomeViewportMetrics: Sendable {
@@ -624,3 +743,4 @@ private struct HomeViewportMetrics: Sendable {
             .environment(review)
     }
 }
+

@@ -34,6 +34,8 @@ const defaultState = {
   hideQiblaCompass: false,
   hasCompletedOnboarding: false,
   appLanguage: "en" as const,
+  themeMode: "dynamic" as const,
+  fixedTheme: "fajr" as const,
   notifications: {
     masterEnabled: false,
     adhanEnabled: true,
@@ -59,6 +61,8 @@ describe("SettingsStore", () => {
     expect(state.uses24HourTime).toBe(false);
     expect(state.hasCompletedOnboarding).toBe(false);
     expect(state.appLanguage).toBe("en");
+    expect(state.themeMode).toBe("dynamic");
+    expect(state.fixedTheme).toBe("fajr");
     expect(state.notifications.masterEnabled).toBe(false);
     expect(state.notifications.adhanEnabled).toBe(true);
     expect(state.notifications.iqamahEnabled).toBe(true);
@@ -104,6 +108,20 @@ describe("SettingsStore", () => {
   it("setAppLanguage updates language", () => {
     act(() => useSettingsStore.getState().setAppLanguage("id"));
     expect(useSettingsStore.getState().appLanguage).toBe("id");
+  });
+
+  it("sets theme preferences", () => {
+    act(() => {
+      useSettingsStore.getState().setThemeMode("fixed");
+      useSettingsStore.getState().setFixedTheme("maghrib");
+    });
+    expect(useSettingsStore.getState().themeMode).toBe("fixed");
+    expect(useSettingsStore.getState().fixedTheme).toBe("maghrib");
+  });
+
+  it("normalizes unsupported fixed themes back to Fajr", () => {
+    act(() => useSettingsStore.getState().setFixedTheme("tahajjud"));
+    expect(useSettingsStore.getState().fixedTheme).toBe("fajr");
   });
 
   it("setNotificationMaster toggles master switch", () => {
@@ -177,6 +195,8 @@ describe("SettingsStore", () => {
       useSettingsStore.getState().setPreAdhanReminderMinutes(10);
       useSettingsStore.getState().setHasCompletedOnboarding(true);
       useSettingsStore.getState().setAppLanguage("ar");
+      useSettingsStore.getState().setThemeMode("fixed");
+      useSettingsStore.getState().setFixedTheme("asr");
       useSettingsStore.getState().resetSettings();
     });
 
@@ -190,5 +210,7 @@ describe("SettingsStore", () => {
     expect(state.notifications.preAdhanReminderMinutes).toBeNull();
     expect(state.hasCompletedOnboarding).toBe(false);
     expect(state.appLanguage).toBe("en");
+    expect(state.themeMode).toBe("dynamic");
+    expect(state.fixedTheme).toBe("fajr");
   });
 });

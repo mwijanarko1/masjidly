@@ -237,7 +237,7 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
             transform: [{ rotate: rotateInterpolation ?? `${pointerDeg}deg` }],
           }}
         >
-          <View style={{ marginTop: -8 * scale }}>
+          <View style={{ marginTop: -10 * scale }}>
             <QiblaPointerTriangle color={color} size={12 * scale} />
           </View>
         </Animated.View>

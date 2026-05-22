@@ -52,11 +52,13 @@ function continuousRotationDegrees(
 interface UseQiblaDirectionOptions {
   fallbackMosque?: Mosque | null;
   enabled?: boolean;
+  deferAuthorization?: boolean;
 }
 
 export function useQiblaDirection({
   fallbackMosque,
   enabled = true,
+  deferAuthorization = false,
 }: UseQiblaDirectionOptions = {}) {
   // Animated value for native-driver rotation — completely decoupled from React render cycle.
   const animatedRotation = useRef(new Animated.Value(0)).current;
@@ -127,46 +129,51 @@ export function useQiblaDirection({
     let headingInitialised = false; // Only set headingAvailable once to avoid redundant re-renders
 
     async function setup() {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      let permission = await Location.getForegroundPermissionsAsync();
 
-      if (status !== "granted") {
-        updateDisplayedRotation();
-        return;
+      if (permission.status === "undetermined" && !deferAuthorization) {
+        permission = await Location.requestForegroundPermissionsAsync();
       }
 
-      // Get initial position
-      try {
-        const loc = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.HundredMeters,
-        });
-        if (!mounted) return;
-        currentLocation.current = {
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        };
-        updateDisplayedRotation();
-      } catch {
-        // Location failed — fall through to heading-only mode
-      }
-
-      if (!mounted) return;
-
-      // Watch position for changes
-      locationSub = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.HundredMeters,
-          distanceInterval: 250,
-        },
-        (location) => {
+      if (permission.status === "granted") {
+        // Get initial position
+        try {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.HundredMeters,
+          });
+          if (!mounted) return;
           currentLocation.current = {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
           };
           updateDisplayedRotation();
-        },
-      );
+        } catch {
+          // Location failed — fall through to fallback-mosque + heading mode
+        }
 
-      // Watch compass heading
+        if (!mounted) return;
+
+        // Watch position for changes
+        locationSub = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.HundredMeters,
+            distanceInterval: 250,
+          },
+          (location) => {
+            currentLocation.current = {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            };
+            updateDisplayedRotation();
+          },
+        );
+      } else {
+        // Native iOS still displays/rotates against fallback mosque coordinates when
+        // precise device location is unavailable.
+        updateDisplayedRotation();
+      }
+
+      // Watch compass heading independently of location authorization, matching native iOS.
       try {
         headingSub = await Location.watchHeadingAsync((heading) => {
           const h = heading.trueHeading >= 0 ? heading.trueHeading : heading.magHeading;
@@ -203,7 +210,7 @@ export function useQiblaDirection({
       if (headingSub) headingSub.remove();
       if (locationSub) locationSub.remove();
     };
-  }, [enabled, updateDisplayedRotation]);
+  }, [enabled, deferAuthorization, updateDisplayedRotation]);
 
   // Update when fallback mosque changes
   useEffect(() => {

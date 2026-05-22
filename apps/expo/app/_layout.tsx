@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useEffect } from "react";
-import { View, ActivityIndicator, Platform } from "react-native";
+import { Platform } from "react-native";
 import { useFonts } from "expo-font";
 import {
   Comfortaa_300Light,
@@ -12,7 +12,6 @@ import {
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MasjidlyConvexProvider } from "@/lib/convex/client";
 import { useRouter } from "expo-router";
-import { COLORS } from "@/constants";
 import { playAdhan } from "@/lib/audio/AdhanSoundPlayer";
 import { useAppLanguage } from "@/lib/i18n/language";
 import { t } from "@/lib/i18n/translations";
@@ -194,20 +193,12 @@ export default function RootLayout() {
   useNotificationHandler();
   useNotificationResponseListener();
 
-  const [fontsLoaded] = useFonts({
+  useFonts({
     Comfortaa_300Light,
     Comfortaa_400Regular,
     Comfortaa_500Medium,
     Comfortaa_600SemiBold,
   });
-
-  if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background }}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-      </View>
-    );
-  }
 
   return (
     <ErrorBoundary>

@@ -47,6 +47,8 @@ interface OnboardingState {
   startIfNeeded: (mosques: MosqueStub[]) => void;
   selectMosque: (mosqueId: string) => Promise<void>;
   handlePrayerShortcutTap: (index: number) => void;
+  completeQiblaOnboardingAllowingLocationRequest: () => void;
+  completeQiblaOnboardingDeferringLocation: () => void;
   acknowledgeQiblaIntro: () => void;
   handleTimetableOpened: () => void;
   acknowledgeTimetableExplore: () => void;
@@ -121,10 +123,22 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
     }
   },
 
-  acknowledgeQiblaIntro: () => {
+  completeQiblaOnboardingAllowingLocationRequest: () => {
     const step = get().currentStep;
     if (!step || step.type !== "qibla") return;
+    useSettingsStore.getState().setHideQiblaCompass(false);
     set({ currentStep: { type: "openTimetable" } });
+  },
+
+  completeQiblaOnboardingDeferringLocation: () => {
+    const step = get().currentStep;
+    if (!step || step.type !== "qibla") return;
+    useSettingsStore.getState().setHideQiblaCompass(true);
+    set({ currentStep: { type: "openTimetable" } });
+  },
+
+  acknowledgeQiblaIntro: () => {
+    get().completeQiblaOnboardingAllowingLocationRequest();
   },
 
   handleTimetableOpened: () => {

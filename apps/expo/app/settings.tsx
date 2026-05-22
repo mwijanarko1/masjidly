@@ -11,6 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 import { AtmosphericSkyBackground } from "@/components/ui/AtmosphericSkyBackground";
@@ -41,6 +42,10 @@ import {
   getSkyTheme,
   getTextColor,
   getUsesLightForeground,
+  resolveTheme,
+  SELECTABLE_PRAYER_THEMES,
+  type ThemeMode,
+  type TimeTheme,
 } from "@/lib/design/themes";
 
 async function rescheduleNotifications(
@@ -72,12 +77,12 @@ async function rescheduleNotifications(
 export default function SettingsScreen() {
   const router = useRouter();
   const { theme: themeParam } = useLocalSearchParams<{ theme?: string }>();
-  const theme = themeForPrayer(themeParam ?? "Fajr");
+  const settings = useSettingsStore();
+  const dynamicTheme = themeForPrayer(themeParam ?? "Fajr");
+  const theme = resolveTheme(dynamicTheme, settings.themeMode, settings.fixedTheme);
   const sky = getSkyTheme(theme);
   const textColor = getTextColor(theme);
   const invertSheet = getUsesLightForeground(theme);
-
-  const settings = useSettingsStore();
 
   // ── Onboarding ──
   const onboarding = useOnboardingStore();
@@ -92,6 +97,7 @@ export default function SettingsScreen() {
 
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [loading, setLoading] = useState(true);
+  const [locationPermissionStatus, setLocationPermissionStatus] = useState<Location.PermissionStatus | null>(null);
   const langCode = useAppLanguage();
 
   useEffect(() => {
@@ -145,9 +151,10 @@ export default function SettingsScreen() {
 
   const handleQiblaToggle = (v: boolean) => {
     settings.setHideQiblaCompass(!v);
-    // On iOS, enabling qibla when location is notDetermined triggers a permission request
-    if (v && Platform.OS === "ios") {
-      // On iOS, the system handles this; on Android, we don't have a direct equivalent
+    if (v && locationPermissionStatus === Location.PermissionStatus.UNDETERMINED) {
+      Location.requestForegroundPermissionsAsync()
+        .then((permission) => setLocationPermissionStatus(permission.status))
+        .catch(() => {});
     }
   };
 
@@ -225,15 +232,36 @@ export default function SettingsScreen() {
   );
 
   // ── Location recovery ──
+  useEffect(() => {
+    let mounted = true;
+    Location.getForegroundPermissionsAsync()
+      .then((permission) => {
+        if (mounted) setLocationPermissionStatus(permission.status);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const qiblaIsHidden = settings.hideQiblaCompass;
+  const shouldShowLocationRecovery =
+    qiblaIsHidden || locationPermissionStatus === Location.PermissionStatus.DENIED;
 
   const handleLocationRecovery = useCallback(() => {
+    if (locationPermissionStatus === Location.PermissionStatus.UNDETERMINED) {
+      Location.requestForegroundPermissionsAsync()
+        .then((permission) => setLocationPermissionStatus(permission.status))
+        .catch(() => {});
+      return;
+    }
+
     if (Platform.OS === "ios") {
       Linking.openURL("app-settings:");
     } else {
       Linking.openSettings();
     }
-  }, []);
+  }, [locationPermissionStatus]);
 
   // ── Test notifications (dev) ──
   const fireTestNotification = useCallback(
@@ -332,6 +360,24 @@ export default function SettingsScreen() {
   const reminderDisplayLabel = (minutes: number | null) => {
     const opt = REMINDER_OPTIONS.find((o) => o.value === minutes);
     return opt ? t(opt.labelKey, langCode) : t("settings.reminder.none", langCode);
+  };
+
+  const themeModeLabel = (mode: ThemeMode) =>
+    mode === "dynamic"
+      ? t("settings.theme.mode.dynamic", langCode)
+      : t("settings.theme.mode.fixed", langCode);
+
+  const themeLabel = (timeTheme: TimeTheme) => {
+    const keyMap: Record<TimeTheme, TranslationKey> = {
+      fajr: "prayer.fajr",
+      sunrise: "prayer.sunrise",
+      dhuhr: "prayer.dhuhr",
+      asr: "prayer.asr",
+      maghrib: "prayer.maghrib",
+      isha: "prayer.isha",
+      tahajjud: "prayer.isha",
+    };
+    return t(keyMap[timeTheme], langCode);
   };
 
   return (
@@ -435,6 +481,44 @@ export default function SettingsScreen() {
             />
           </View>
 
+          {/* Theme Section */}
+          <SectionCaption>{t("settings.section.theme.title", langCode)}</SectionCaption>
+          <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
+            <SettingsMenuPickerRow
+              label={t("settings.theme.mode", langCode)}
+              displayValue={themeModeLabel(settings.themeMode)}
+              value={settings.themeMode}
+              options={(["dynamic", "fixed"] as ThemeMode[]).map((mode) => ({
+                label: themeModeLabel(mode),
+                value: mode,
+              }))}
+              onSelect={settings.setThemeMode}
+              textColor={textColor}
+              invertSheet={invertSheet}
+              sheetTitle={t("settings.section.theme.title", langCode)}
+              testID="settings-theme-mode-picker"
+            />
+            {settings.themeMode === "fixed" ? (
+              <>
+                <RowDivider />
+                <SettingsMenuPickerRow
+                  label={t("settings.theme.fixed_theme", langCode)}
+                  displayValue={themeLabel(settings.fixedTheme)}
+                  value={settings.fixedTheme}
+                  options={SELECTABLE_PRAYER_THEMES.map((timeTheme) => ({
+                    label: themeLabel(timeTheme),
+                    value: timeTheme,
+                  }))}
+                  onSelect={settings.setFixedTheme}
+                  textColor={textColor}
+                  invertSheet={invertSheet}
+                  sheetTitle={t("settings.theme.fixed_theme", langCode)}
+                  testID="settings-fixed-theme-picker"
+                />
+              </>
+            ) : null}
+          </View>
+
           {/* Qibla Section */}
           <SectionCaption>{t("settings.section.qibla.title", langCode)}</SectionCaption>
           <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
@@ -446,8 +530,8 @@ export default function SettingsScreen() {
             />
           </View>
 
-          {/* Location Recovery Section (shown when qibla is hidden) */}
-          {qiblaIsHidden ? (
+          {/* Location Recovery Section */}
+          {shouldShowLocationRecovery ? (
             <>
               <SectionCaption>{t("settings.section.location.title", langCode)}</SectionCaption>
               <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
@@ -463,10 +547,16 @@ export default function SettingsScreen() {
                       pressed && { opacity: 0.8 },
                     ]}
                     accessibilityRole="button"
-                    accessibilityLabel={t("settings.location.open_settings", langCode)}
+                    accessibilityLabel={
+                      locationPermissionStatus === Location.PermissionStatus.UNDETERMINED
+                        ? t("settings.location.allow", langCode)
+                        : t("settings.location.open_settings", langCode)
+                    }
                   >
-                    <Text style={[styles.locationRecoveryButtonText, { color: "#FFFFFF" }]}>
-                      {t("settings.location.open_settings", langCode)}
+                    <Text style={[styles.locationRecoveryButtonText, { color: "#FFFFFF" }]}> 
+                      {locationPermissionStatus === Location.PermissionStatus.UNDETERMINED
+                        ? t("settings.location.allow", langCode)
+                        : t("settings.location.open_settings", langCode)}
                     </Text>
                   </Pressable>
                 </View>

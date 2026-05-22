@@ -1,4 +1,5 @@
 import React from "react";
+import * as Location from "expo-location";
 import { useOnboardingStore } from "@/store/onboarding";
 import { CoachMarkCard } from "./CoachMarkCard";
 import { MosqueSelectionCard } from "./MosqueSelectionCard";
@@ -72,8 +73,11 @@ export function TutorialOverlay({
     (s) => s.isCompletingNotifications
   );
   const selectMosque = useOnboardingStore((s) => s.selectMosque);
-  const acknowledgeQiblaIntro = useOnboardingStore(
-    (s) => s.acknowledgeQiblaIntro
+  const completeQiblaOnboardingAllowingLocationRequest = useOnboardingStore(
+    (s) => s.completeQiblaOnboardingAllowingLocationRequest
+  );
+  const completeQiblaOnboardingDeferringLocation = useOnboardingStore(
+    (s) => s.completeQiblaOnboardingDeferringLocation
   );
   const acknowledgeTimetableExplore = useOnboardingStore(
     (s) => s.acknowledgeTimetableExplore
@@ -125,9 +129,16 @@ export function TutorialOverlay({
             title={t("onboarding.qibla.title", locale)}
             message={t("onboarding.qibla.message", locale)}
             variant="belowQiblaIcon"
-            primaryButtonTitle={t("onboarding.continue", locale)}
-            onPrimaryButton={acknowledgeQiblaIntro}
-            accessibilityIdentifier="Onboarding.QiblaContinue"
+            primaryButtonTitle={t("onboarding.qibla.allow_location", locale)}
+            onPrimaryButton={() => {
+              Location.requestForegroundPermissionsAsync().finally(() => {
+                completeQiblaOnboardingAllowingLocationRequest();
+              });
+            }}
+            secondaryButtonTitle={t("onboarding.qibla.later", locale)}
+            onSecondaryButton={completeQiblaOnboardingDeferringLocation}
+            accessibilityIdentifier="Onboarding.QiblaAllow"
+            secondaryAccessibilityIdentifier="Onboarding.QiblaLater"
             theme={theme}
             textColor={textColor}
             usesLightForeground={usesLightForeground}

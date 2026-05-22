@@ -13,9 +13,11 @@ struct MasjidlyRootView: View {
             .environment(onboarding)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 AdhanMiniPlayerBar(
-                    timeTheme: HomeDesign.TimeTheme.homeHeroTheme(
-                        displayedPrayerTimes: homeViewModel.displayedPrayerTimes,
-                        selectedPrayerIndex: homeViewModel.selectedPrayerIndex
+                    timeTheme: settings.resolvedTheme(
+                        dynamicTheme: HomeDesign.TimeTheme.homeHeroTheme(
+                            displayedPrayerTimes: homeViewModel.displayedPrayerTimes,
+                            selectedPrayerIndex: homeViewModel.selectedPrayerIndex
+                        )
                     )
                 )
                 .environment(\.locale, settings.resolvedLocale)

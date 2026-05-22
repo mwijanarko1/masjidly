@@ -118,6 +118,8 @@ enum MasjidlyWidgetStateKind: Equatable, Sendable {
 struct MasjidlyWidgetState: Equatable, Sendable {
     let kind: MasjidlyWidgetStateKind
     let mosqueName: String
+    /// Canonical prayer identifier used for icons/themes independent of display language.
+    let prayerId: String
     let prayerName: String
     let adhanTime: String
     let iqamahTime: String
@@ -137,6 +139,7 @@ struct MasjidlyWidgetState: Equatable, Sendable {
     static let placeholder = MasjidlyWidgetState(
         kind: .content,
         mosqueName: "Masjidly",
+        prayerId: "dhuhr",
         prayerName: "Dhuhr",
         adhanTime: "1:10pm",
         iqamahTime: "1:30pm",
@@ -159,6 +162,7 @@ struct MasjidlyWidgetState: Equatable, Sendable {
     static let missing = MasjidlyWidgetState(
         kind: .missing,
         mosqueName: "Masjidly",
+        prayerId: "",
         prayerName: "Open Masjidly",
         adhanTime: "--:--",
         iqamahTime: "--:--",
@@ -176,6 +180,7 @@ struct MasjidlyWidgetState: Equatable, Sendable {
         MasjidlyWidgetState(
             kind: .stale,
             mosqueName: "Masjidly",
+            prayerId: "",
             prayerName: "Open Masjidly to refresh",
             adhanTime: "--:--",
             iqamahTime: "--:--",
@@ -303,7 +308,7 @@ enum MasjidlyWidgetResolver {
             if isNextFajrTomorrow, let morrow = morrowDay {
                 return ResolvedPrayer(
                     id: "fajr",
-                    name: "Fajr",
+                    name: names.fajr,
                     adhan: morrow.prayers.fajr,
                     iqamahs: [resolveIqamah("fajr", adhan: morrow.prayers.fajr, iqamah: morrow.iqamah)],
                     adhanDate: wallClockDay(morrow.prayers.fajr, on: calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart)
@@ -421,11 +426,12 @@ enum MasjidlyWidgetResolver {
             )
         }
 
-        let extraJummahCount = isFriday && next.name == "Jumu'ah" ? max(0, jummahIqamahs.count - 1) : 0
+        let extraJummahCount = isFriday && next.id == "dhuhr" ? max(0, jummahIqamahs.count - 1) : 0
 
         return MasjidlyWidgetState(
             kind: .content,
             mosqueName: snapshot.mosque.name,
+            prayerId: next.id,
             prayerName: next.name,
             adhanTime: format(next.adhan, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
             iqamahTime: format(displayIqamahRaw, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
