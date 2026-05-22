@@ -689,6 +689,23 @@ export default function SettingsScreen() {
             <>
               <SectionCaption>{t("settings.dev.title", langCode)}</SectionCaption>
               <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
+                {/* Test What\'s New */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.contactRow,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                  onPress={() =>
+                    router.replace({ pathname: "/", params: { showWhatsNew: "1" } })
+                  }
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.listItemText, { color: textColor }]}>
+                    {"Test What's New"}
+                  </Text>
+                </Pressable>
+
+                <RowDivider />
                 {/* Reset tutorial */}
                 <Pressable
                   style={({ pressed }) => [

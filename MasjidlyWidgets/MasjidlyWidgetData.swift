@@ -243,7 +243,15 @@ enum MasjidlyWidgetResolver {
         }
 
         let jummahRaw = day.iqamah.jummah.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-        let jummahIqamahs = jummahRaw.isEmpty ? [day.iqamah.dhuhr] : jummahRaw
+        let jummahTimes = jummahRaw.isEmpty ? [day.iqamah.dhuhr] : jummahRaw
+        let jummahAdhan = nextDisplayIqamahRaw(
+            prayerId: "dhuhr",
+            isFriday: isFriday,
+            rawIqamahs: jummahTimes,
+            adhan: day.prayers.dhuhr,
+            now: now,
+            wallClock: { wallClockToday($0) }
+        )
         
         struct ResolvedPrayer {
             let id: String
@@ -257,7 +265,7 @@ enum MasjidlyWidgetResolver {
         let names = localizedPrayerNames(for: lang)
         let prayersList: [ResolvedPrayer] = [
             ResolvedPrayer(id: "fajr", name: names.fajr, adhan: day.prayers.fajr, iqamahs: [resolveIqamah("fajr", adhan: day.prayers.fajr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.fajr)),
-            ResolvedPrayer(id: "dhuhr", name: isFriday ? names.jummah : names.dhuhr, adhan: day.prayers.dhuhr, iqamahs: isFriday ? jummahIqamahs : [resolveIqamah("dhuhr", adhan: day.prayers.dhuhr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.dhuhr)),
+            ResolvedPrayer(id: "dhuhr", name: isFriday ? names.jummah : names.dhuhr, adhan: isFriday ? jummahAdhan : day.prayers.dhuhr, iqamahs: isFriday ? [] : [resolveIqamah("dhuhr", adhan: day.prayers.dhuhr, iqamah: day.iqamah)], adhanDate: wallClockToday(isFriday ? jummahAdhan : day.prayers.dhuhr)),
             ResolvedPrayer(id: "asr", name: names.asr, adhan: day.prayers.asr, iqamahs: [resolveIqamah("asr", adhan: day.prayers.asr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.asr)),
             ResolvedPrayer(id: "maghrib", name: names.maghrib, adhan: day.prayers.maghrib, iqamahs: [resolveIqamah("maghrib", adhan: day.prayers.maghrib, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.maghrib)),
             ResolvedPrayer(id: "isha", name: names.isha, adhan: day.prayers.isha, iqamahs: [resolveIqamah("isha", adhan: day.prayers.isha, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.isha))
@@ -268,8 +276,7 @@ enum MasjidlyWidgetResolver {
         var nextEventIsIqamah = false
         var foundTodayEvent = false
         for (i, p) in prayersList.enumerated() {
-            let isJummah = isFriday && p.id == "dhuhr"
-            if !isJummah, let adhanDate = p.adhanDate, adhanDate > now {
+            if let adhanDate = p.adhanDate, adhanDate > now {
                 nextPrayerIndex = i
                 nextEventDate = adhanDate
                 nextEventIsIqamah = false
@@ -325,7 +332,7 @@ enum MasjidlyWidgetResolver {
 
         let rawIqamahsForNext: [String] = {
             if isFriday, next.id == "dhuhr" {
-                return jummahIqamahs
+                return []
             }
             return [resolveIqamah(next.id, adhan: next.adhan, iqamah: isNextFajrTomorrow ? (morrowDay?.iqamah ?? day.iqamah) : day.iqamah)]
         }()
@@ -361,29 +368,21 @@ enum MasjidlyWidgetResolver {
                 if isNextFajrTomorrow, let morrow = morrowDay {
                     let morrowStart = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
                     let fDhuhrAdhan = morrow.prayers.dhuhr
-                    let fDhuhrIqamah = isFriday
+                    let fDhuhrIqamah = isFriday ? "" : resolveIqamah("dhuhr", adhan: fDhuhrAdhan, iqamah: morrow.iqamah)
+                    let fDhuhrDisplayAdhan = isFriday
                         ? nextDisplayIqamahRaw(
                             prayerId: "dhuhr",
                             isFriday: true,
-                            rawIqamahs: jummahIqamahs,
+                            rawIqamahs: jummahTimes,
                             adhan: fDhuhrAdhan,
                             now: now,
                             wallClock: { wallClockDay($0, on: morrowStart) }
                         )
-                        : resolveIqamah("dhuhr", adhan: fDhuhrAdhan, iqamah: morrow.iqamah)
-                    return (isFriday ? names.jummah : names.dhuhr, fDhuhrAdhan, fDhuhrIqamah)
+                        : fDhuhrAdhan
+                    return (isFriday ? names.jummah : names.dhuhr, fDhuhrDisplayAdhan, fDhuhrIqamah)
                 }
                 let f = prayersList[nextIdx + 1]
-                let iq = f.id == "dhuhr" && isFriday
-                    ? nextDisplayIqamahRaw(
-                        prayerId: "dhuhr",
-                        isFriday: true,
-                        rawIqamahs: jummahIqamahs,
-                        adhan: f.adhan,
-                        now: now,
-                        wallClock: { wallClockToday($0) }
-                    )
-                    : resolveIqamah(f.id, adhan: f.adhan, iqamah: day.iqamah)
+                let iq = f.id == "dhuhr" && isFriday ? "" : resolveIqamah(f.id, adhan: f.adhan, iqamah: day.iqamah)
                 return (f.name, f.adhan, iq)
             }
             let tomorrowString = isoDateString(for: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
@@ -426,7 +425,7 @@ enum MasjidlyWidgetResolver {
             )
         }
 
-        let extraJummahCount = isFriday && next.id == "dhuhr" ? max(0, jummahIqamahs.count - 1) : 0
+        let extraJummahCount = 0
 
         return MasjidlyWidgetState(
             kind: .content,
@@ -446,7 +445,7 @@ enum MasjidlyWidgetResolver {
         )
     }
 
-    /// For Jumu'ah with multiple iqamahs, returns the next iqamah strictly after `now` when adhan has passed; otherwise the first slot.
+    /// For Jummah with multiple iqamahs, returns the next iqamah strictly after `now` when adhan has passed; otherwise the first slot.
     private static func nextDisplayIqamahRaw(
         prayerId: String,
         isFriday: Bool,
@@ -497,7 +496,7 @@ enum MasjidlyWidgetResolver {
         case .indonesian:
             return LocalizedNames(fajr: "Fajr", dhuhr: "Dzuhur", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jummah: "Jumat")
         case .english:
-            return LocalizedNames(fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jummah: "Jumu'ah")
+            return LocalizedNames(fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jummah: "Jummah")
         }
     }
 

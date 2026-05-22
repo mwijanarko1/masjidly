@@ -73,10 +73,15 @@ final class OnboardingFlowController {
     func handlePrayerShortcutTap(index: Int) {
         guard case .prayerShortcut(let expectedIndex) = currentStep, expectedIndex == index else { return }
         if expectedIndex >= 5 {
-            currentStep = .qibla
+            currentStep = .qiblaCountdown
         } else {
             currentStep = .prayerShortcut(index: expectedIndex + 1)
         }
+    }
+
+    func completeQiblaCountdownStep() {
+        guard currentStep == .qiblaCountdown else { return }
+        currentStep = .qibla
     }
 
     func completeQiblaOnboardingAllowingLocationRequest() {
@@ -150,6 +155,7 @@ final class OnboardingFlowController {
             await notificationScheduler.cancelAllPrayerNotifications()
         }
 
+        settings.lastSeenBuildVersion = WhatsNew.fullVersionString
         settings.hasCompletedOnboarding = true
         currentStep = nil
     }

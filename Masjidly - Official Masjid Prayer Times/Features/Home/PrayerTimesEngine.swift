@@ -625,7 +625,15 @@ enum PrayerTimesEngine {
             .components(separatedBy: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-        let jummahIqamahs: [String] = jummahRaw.isEmpty ? [iqamahTimes.dhuhr] : jummahRaw
+        let jummahTimes: [String] = jummahRaw.isEmpty ? [iqamahTimes.dhuhr] : jummahRaw
+        let jummahAdhan = nextHeroDisplayIqamahRaw(
+            prayerId: "dhuhr",
+            isFriday: isFriday,
+            rawIqamahs: jummahTimes,
+            adhan: prayerTimes.dhuhr,
+            now: now,
+            wallClock: { wallClockToday($0) }
+        )
 
         struct ResolvedHeroPrayer {
             let id: String
@@ -648,9 +656,9 @@ enum PrayerTimesEngine {
             ResolvedHeroPrayer(
                 id: "dhuhr",
                 name: isFriday ? "Jummah" : "Dhuhr",
-                adhan: prayerTimes.dhuhr,
-                iqamahs: isFriday ? jummahIqamahs : [getIqamahTime(prayer: "dhuhr", adhanTime: prayerTimes.dhuhr, iqamahTimes: iqamahTimes)],
-                adhanDate: wallClockToday(prayerTimes.dhuhr)
+                adhan: isFriday ? jummahAdhan : prayerTimes.dhuhr,
+                iqamahs: isFriday ? [] : [getIqamahTime(prayer: "dhuhr", adhanTime: prayerTimes.dhuhr, iqamahTimes: iqamahTimes)],
+                adhanDate: wallClockToday(isFriday ? jummahAdhan : prayerTimes.dhuhr)
             ),
             ResolvedHeroPrayer(
                 id: "asr",
@@ -689,8 +697,7 @@ enum PrayerTimesEngine {
         var foundTodayEvent = false
 
         for (i, p) in prayersList.enumerated() {
-            let isJummah = isFriday && p.id == "dhuhr"
-            if !isJummah, let adhanDate = p.adhanDate, adhanDate > now {
+            if let adhanDate = p.adhanDate, adhanDate > now {
                 nextPrayerIndex = i
                 nextEventDate = adhanDate
                 nextEventIsIqamah = false
@@ -763,7 +770,7 @@ enum PrayerTimesEngine {
         )
     }
 
-    /// Jumu'ah multi-slot: next iqamah strictly after `now` once adhan has passed; otherwise first slot.
+    /// Jummah multi-slot: next iqamah strictly after `now` once adhan has passed; otherwise first slot.
     private static func nextHeroDisplayIqamahRaw(
         prayerId: String,
         isFriday: Bool,
@@ -827,9 +834,23 @@ enum PrayerTimesEngine {
 
         let slug = mosqueSlug
 
+        let jummahRaw = iqamahTimes.jummah
+            .components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let jummahTimes = jummahRaw.isEmpty ? [iqamahTimes.dhuhr] : jummahRaw
+        let jummahAdhan = nextHeroDisplayIqamahRaw(
+            prayerId: "dhuhr",
+            isFriday: isFriday,
+            rawIqamahs: jummahTimes,
+            adhan: prayerTimes.dhuhr,
+            now: now,
+            wallClock: { wallClockToday($0) }
+        )
+
         let prayers: [(name: String, adhan: String, iqamah: String)] = [
             ("Fajr", prayerTimes.fajr, getIqamahTime(prayer: "fajr", adhanTime: prayerTimes.fajr, iqamahTimes: iqamahTimes)),
-            (isFriday ? "Jummah" : "Dhuhr", prayerTimes.dhuhr, isFriday ? iqamahTimes.jummah : getIqamahTime(prayer: "dhuhr", adhanTime: prayerTimes.dhuhr, iqamahTimes: iqamahTimes)),
+            (isFriday ? "Jummah" : "Dhuhr", isFriday ? jummahAdhan : prayerTimes.dhuhr, isFriday ? "" : getIqamahTime(prayer: "dhuhr", adhanTime: prayerTimes.dhuhr, iqamahTimes: iqamahTimes)),
             ("Asr", prayerTimes.asr, getIqamahTime(prayer: "asr", adhanTime: prayerTimes.asr, iqamahTimes: iqamahTimes)),
             ("Maghrib", prayerTimes.maghrib, getIqamahTime(prayer: "maghrib", adhanTime: prayerTimes.maghrib, iqamahTimes: iqamahTimes)),
             ("Isha", prayerTimes.isha, resolveIshaIqamahForDisplay(slug: slug, date: checkDate, ishaAdhan: prayerTimes.isha, iqamahTimes: iqamahTimes, maghribAdhan: prayerTimes.maghrib)),
@@ -837,13 +858,13 @@ enum PrayerTimesEngine {
 
         for prayer in prayers {
             let isJummah = prayer.name == "Jummah"
-            if !isJummah, let adhanT = wallClockToday(prayer.adhan), adhanT > now {
+            if let adhanT = wallClockToday(prayer.adhan), adhanT > now {
                 let diff = Int(adhanT.timeIntervalSince(now))
-                return NextPrayerCountdownResult(nextName: prayer.name, nextTime: prayer.adhan, totalSeconds: diff, isIqamah: false, isJummah: false)
+                return NextPrayerCountdownResult(nextName: prayer.name, nextTime: prayer.adhan, totalSeconds: diff, isIqamah: false, isJummah: isJummah)
             }
-            if isParseableTime(prayer.iqamah), prayer.iqamah != prayer.adhan, let iqT = wallClockToday(prayer.iqamah), iqT > now {
+            if !isJummah, isParseableTime(prayer.iqamah), prayer.iqamah != prayer.adhan, let iqT = wallClockToday(prayer.iqamah), iqT > now {
                 let diff = Int(iqT.timeIntervalSince(now))
-                return NextPrayerCountdownResult(nextName: prayer.name, nextTime: prayer.iqamah, totalSeconds: diff, isIqamah: !isJummah, isJummah: isJummah)
+                return NextPrayerCountdownResult(nextName: prayer.name, nextTime: prayer.iqamah, totalSeconds: diff, isIqamah: true, isJummah: false)
             }
         }
 

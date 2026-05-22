@@ -174,6 +174,21 @@ struct SettingsView: View {
                         }
 
                         Button {
+                            NotificationCenter.default.post(name: .masjidlyShowWhatsNew, object: nil)
+                            onDismiss?()
+                            dismiss()
+                        } label: {
+                            developmentChrome {
+                                Text("Test What's New")
+                                    .appFont(size: 17, weight: .medium)
+                                    .foregroundColor(timeTheme.textColor)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
                             reviewPrompt.resetAndPresentEnjoymentPromptForTesting()
                             onDismiss?()
                             dismiss()

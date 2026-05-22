@@ -10,19 +10,23 @@ struct WhatsNewModalView: View {
     let version: String
     let items: [WhatsNewItem]
     let timeTheme: HomeDesign.TimeTheme
+    let locale: Locale
     var onDismiss: (() -> Void)? = nil
-    var onAction: ((WhatsNewAction) -> Void)?
+
+    private var copy: WhatsNewModalCopy {
+        WhatsNewModalCopy(locale: locale)
+    }
 
     var body: some View {
         OnboardingTutorialChrome.card(timeTheme: timeTheme) {
             VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 10) {
-                    Text("Masjidly Update!")
+                    Text(copy.title)
                         .appFont(size: 26, weight: .bold)
                         .foregroundStyle(timeTheme.textColor)
 
-                    Text("Version \(version)")
+                    Text(copy.versionLabel(version))
                         .appFont(size: 14, weight: .medium)
                         .foregroundStyle(timeTheme.textColor.opacity(0.62))
                         .padding(.horizontal, 16)
@@ -32,7 +36,7 @@ struct WhatsNewModalView: View {
 
                     // Scroll Indication
                     HStack(spacing: 4) {
-                        Text("Swipe to scroll updates")
+                        Text(copy.swipeHint)
                             .appFont(size: 12, weight: .medium)
                         Image(systemName: "chevron.down")
                             .font(.system(size: 10, weight: .semibold))
@@ -62,9 +66,7 @@ struct WhatsNewModalView: View {
                                         .foregroundStyle(timeTheme.textColor.opacity(0.72))
                                         .fixedSize(horizontal: false, vertical: true)
 
-                                    if let action = item.action {
-                                        exploreButton(for: action)
-                                    }
+
                                 }
                             }
                         }
@@ -76,13 +78,14 @@ struct WhatsNewModalView: View {
 
                 // Continue button — uses the blue-gradient capsule from onboarding
                 Button {
-                    let gen = UIImpactFeedbackGenerator(style: .light)
-                    gen.prepare()
-                    gen.impactOccurred()
-                    dismiss()
-                    onDismiss?()
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    if let onDismiss {
+                        onDismiss()
+                    } else {
+                        dismiss()
+                    }
                 } label: {
-                    Text("Continue")
+                    Text(copy.continueLabel)
                         .onboardingPrimaryCapsule()
                 }
                 .buttonStyle(.plain)
@@ -93,33 +96,42 @@ struct WhatsNewModalView: View {
         .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
     }
 
-    @ViewBuilder
-    private func exploreButton(for action: WhatsNewAction) -> some View {
-        Button {
-            let gen = UIImpactFeedbackGenerator(style: .light)
-            gen.prepare()
-            gen.impactOccurred()
-            dismiss()
-            onDismiss?()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                onAction?(action)
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Text("Explore")
-                    .appFont(size: 12, weight: .bold)
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 12, weight: .bold))
-            }
-            .foregroundStyle(HomeDesign.Colors.accent)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .stroke(HomeDesign.Colors.accent.opacity(0.3), lineWidth: 1)
-            )
+}
+
+private struct WhatsNewModalCopy {
+    let title: String
+    let versionPrefix: String
+    let swipeHint: String
+    let continueLabel: String
+
+    init(locale: Locale) {
+        let code = locale.language.languageCode?.identifier ?? String(locale.identifier.prefix(2))
+        switch code {
+        case "ar":
+            title = "تحديث مسجدلي!"
+            versionPrefix = "الإصدار"
+            swipeHint = "اسحب لقراءة التحديثات"
+            continueLabel = "متابعة"
+        case "ur":
+            title = "مسجدلی اپ ڈیٹ!"
+            versionPrefix = "ورژن"
+            swipeHint = "اپ ڈیٹس دیکھنے کے لیے سوائپ کریں"
+            continueLabel = "جاری رکھیں"
+        case "id":
+            title = "Pembaruan Masjidly!"
+            versionPrefix = "Versi"
+            swipeHint = "Geser untuk melihat pembaruan"
+            continueLabel = "Lanjut"
+        default:
+            title = "Masjidly Update!"
+            versionPrefix = "Version"
+            swipeHint = "Swipe to scroll updates"
+            continueLabel = "Continue"
         }
-        .padding(.top, 4)
+    }
+
+    func versionLabel(_ version: String) -> String {
+        "\(versionPrefix) \(version)"
     }
 }
 
@@ -128,6 +140,6 @@ struct WhatsNewModalView: View {
         version: "1.1",
         items: WhatsNew.latestUpdates,
         timeTheme: .fajr,
-        onAction: { _ in }
+        locale: Locale(identifier: "en")
     )
 }

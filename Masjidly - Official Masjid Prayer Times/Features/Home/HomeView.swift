@@ -35,95 +35,111 @@ struct HomeView: View {
         homeChromeStack
     }
 
-    @ViewBuilder
     private var homeChromeStack: some View {
+        homePresentationChrome
+    }
+
+    private var homePresentationChrome: some View {
+        AnyView(homeNotificationChrome)
+            .fullScreenCover(isPresented: $showingTimetable, content: timetableFullScreenView)
+            .fullScreenCover(isPresented: $showingSettings, content: settingsFullScreenView)
+            .enjoymentReviewAlert(
+                title: homeLS("review.enjoyment.title", locale: locale),
+                message: homeLS("review.enjoyment.message", locale: locale),
+                loveTitle: homeLS("review.enjoyment.love_it", locale: locale),
+                notReallyTitle: homeLS("review.enjoyment.not_really", locale: locale),
+                isPresented: Binding(
+                    get: { reviewPrompt.showEnjoymentPrompt },
+                    set: { reviewPrompt.showEnjoymentPrompt = $0 }
+                ),
+                onLoveIt: { reviewPrompt.userConfirmedEnjoymentPositive() },
+                onNotReally: { reviewPrompt.userConfirmedEnjoymentNegative() }
+            )
+    }
+
+    private var homeNotificationChrome: some View {
+        AnyView(homeStateChangeChrome)
+            .onReceive(NotificationCenter.default.publisher(for: .masjidlyOpenTimetable)) { _ in
+                showingSettings = false
+                showingTimetable = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .masjidlyOpenSettingsMosque)) { _ in
+                showingTimetable = false
+                showingSettings = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .masjidlyFocusHomeTimes)) { _ in
+                showingTimetable = false
+                showingSettings = false
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .masjidlyShowWhatsNew)) { _ in
+                showingTimetable = false
+                showingSettings = false
+                showingWhatsNew = true
+            }
+    }
+
+    private var homeStateChangeChrome: some View {
+        AnyView(homeLifecycleChrome)
+            .onChange(of: settings.uses24HourTime) { _, _ in
+                Task { await model.refreshWidgetSnapshotForCurrentMosque() }
+            }
+            .onChange(of: settings.selectedMosqueId) { _, _ in
+                Task { await model.applySelectionFromSettings() }
+            }
+            .onChange(of: settings.selectedMosqueSlug) { _, _ in
+                Task { await model.applySelectionFromSettings() }
+            }
+            .onChange(of: model.selectedMosque) { _, newValue in
+                qiblaDirectionProvider.updateFallbackMosque(newValue)
+            }
+            .onChange(of: qiblaDirectionProvider.authorizationStatus) { _, newStatus in
+                handleQiblaAuthorizationStatusChange(newStatus)
+            }
+    }
+
+    private var homeLifecycleChrome: some View {
         homeContent
             .task {
-            await model.load()
-            await settingsViewModel.load()
-            onboarding.startIfNeeded()
-            await model.resyncNotificationsIfNeeded()
-            checkWhatsNew()
-        }
-        .onAppear {
-            Task { await model.applySelectionFromSettings() }
-            reviewPrompt.recordLaunchIfNeeded()
-            reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
-                isOnboardingBlocking: enjoymentReviewFlowBlocked
-            )
-        }
-        .onChange(of: settings.hasCompletedOnboarding) { _, completed in
-            guard completed else { return }
-            reviewPrompt.recordLaunchIfNeeded()
-            reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
-                isOnboardingBlocking: enjoymentReviewFlowBlocked
-            )
-            checkWhatsNew()
-        }
-        .onChange(of: onboarding.isActive) { _, isActive in
-            guard !isActive else { return }
-            reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
-                isOnboardingBlocking: enjoymentReviewFlowBlocked
-            )
-        }
-        .onChange(of: settings.notifications.masterEnabled) { _, _ in
-            Task { await model.resyncNotificationsIfNeeded() }
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active else { return }
-            Task {
-                await model.refreshFromNetworkIfStale()
+                await model.load()
+                await settingsViewModel.load()
+                onboarding.startIfNeeded()
                 await model.resyncNotificationsIfNeeded()
+                checkWhatsNew()
             }
-            reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
-                isOnboardingBlocking: enjoymentReviewFlowBlocked
-            )
-        }
-        .onChange(of: settings.uses24HourTime) { _, _ in
-            Task { await model.refreshWidgetSnapshotForCurrentMosque() }
-        }
-        .onChange(of: settings.selectedMosqueId) { _, _ in
-            Task { await model.applySelectionFromSettings() }
-        }
-        .onChange(of: settings.selectedMosqueSlug) { _, _ in
-            Task { await model.applySelectionFromSettings() }
-        }
-        .onChange(of: model.selectedMosque) { _, newValue in
-            qiblaDirectionProvider.updateFallbackMosque(newValue)
-        }
-        .onChange(of: qiblaDirectionProvider.authorizationStatus) { _, newStatus in
-            handleQiblaAuthorizationStatusChange(newStatus)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .masjidlyOpenTimetable)) { _ in
-            showingSettings = false
-            showingTimetable = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .masjidlyOpenSettingsMosque)) { _ in
-            showingTimetable = false
-            showingSettings = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .masjidlyFocusHomeTimes)) { _ in
-            showingTimetable = false
-            showingSettings = false
-        }
-        .fullScreenCover(isPresented: $showingTimetable) {
-            timetableFullScreen
-        }
-        .fullScreenCover(isPresented: $showingSettings) {
-            settingsFullScreen
-        }
-        .enjoymentReviewAlert(
-            title: homeLS("review.enjoyment.title", locale: locale),
-            message: homeLS("review.enjoyment.message", locale: locale),
-            loveTitle: homeLS("review.enjoyment.love_it", locale: locale),
-            notReallyTitle: homeLS("review.enjoyment.not_really", locale: locale),
-            isPresented: Binding(
-                get: { reviewPrompt.showEnjoymentPrompt },
-                set: { reviewPrompt.showEnjoymentPrompt = $0 }
-            ),
-            onLoveIt: { reviewPrompt.userConfirmedEnjoymentPositive() },
-            onNotReally: { reviewPrompt.userConfirmedEnjoymentNegative() }
-        )
+            .onAppear {
+                Task { await model.applySelectionFromSettings() }
+                reviewPrompt.recordLaunchIfNeeded()
+                reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
+                    isOnboardingBlocking: enjoymentReviewFlowBlocked
+                )
+            }
+            .onChange(of: settings.hasCompletedOnboarding) { _, completed in
+                guard completed else { return }
+                reviewPrompt.recordLaunchIfNeeded()
+                reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
+                    isOnboardingBlocking: enjoymentReviewFlowBlocked
+                )
+                checkWhatsNew()
+            }
+            .onChange(of: onboarding.isActive) { _, isActive in
+                guard !isActive else { return }
+                reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
+                    isOnboardingBlocking: enjoymentReviewFlowBlocked
+                )
+            }
+            .onChange(of: settings.notifications.masterEnabled) { _, _ in
+                Task { await model.resyncNotificationsIfNeeded() }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                guard newPhase == .active else { return }
+                Task {
+                    await model.refreshFromNetworkIfStale()
+                    await model.resyncNotificationsIfNeeded()
+                }
+                reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
+                    isOnboardingBlocking: enjoymentReviewFlowBlocked
+                )
+            }
     }
 
     private var homeContent: some View {
@@ -177,10 +193,15 @@ struct HomeView: View {
     }
 
     private func homePrayerPage(for daily: DailyPrayerTimes) -> AnyView {
+        let isFriday = isFridayInSheffield(Date())
+        let jummahTime = model.iqamahTimes?.jummah
+            .components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { !$0.isEmpty }) ?? daily.dhuhr
         let prayers: [(canonical: String, time: String, theme: HomeDesign.TimeTheme)] = [
             ("Fajr", daily.fajr, .fajr),
             ("Sunrise", daily.sunrise, .sunrise),
-            ("Dhuhr", daily.dhuhr, .dhuhr),
+            (isFriday ? "Jummah" : "Dhuhr", isFriday ? jummahTime : daily.dhuhr, .dhuhr),
             ("Asr", daily.asr, .asr),
             ("Maghrib", daily.maghrib, .maghrib),
             ("Isha", daily.isha, .isha)
@@ -216,7 +237,7 @@ struct HomeView: View {
                 theme: currentTheme,
                 showQiblaCompass: !settings.hideQiblaCompass,
                 qiblaRotationDegrees: qiblaDirectionProvider.displayedRotationDegrees,
-                qiblaOnboardingHighlighted: onboarding.currentStep == .qibla,
+                qiblaOnboardingHighlighted: onboarding.currentStep == .qibla || onboarding.currentStep == .qiblaCountdown,
                 mosqueSlug: slug,
                 dailyPrayerTimes: daily,
                 dailyIqamahTimes: model.iqamahTimes,
@@ -235,8 +256,7 @@ struct HomeView: View {
                     qiblaDirectionProvider.start(fallbackMosque: model.selectedMosque, deferAuthorization: deferAuth)
                 }
                 if let nextName = model.nextCountdown?.nextName {
-                    let canonicalNextName = nextName == "Jummah" ? "Dhuhr" : nextName
-                    if let index = prayers.firstIndex(where: { $0.canonical == canonicalNextName }) {
+                    if let index = prayers.firstIndex(where: { $0.canonical == nextName }) {
                         model.selectedPrayerIndex = index
                     }
                 }
@@ -275,24 +295,13 @@ struct HomeView: View {
 
                 WhatsNewModalView(
                     version: WhatsNew.currentVersion,
-                    items: WhatsNew.latestUpdates,
+                    items: WhatsNew.localizedUpdates(locale: locale),
                     timeTheme: currentTheme,
+                    locale: locale,
                     onDismiss: {
                         dismissWhatsNew()
-                    },
-                    onAction: { action in
-                        dismissWhatsNew()
-                        switch action {
-                        case .settings:
-                            showingSettings = true
-                        case .timetable:
-                            showingTimetable = true
-                        }
                     }
                 )
-                .onDisappear {
-                    settings.lastSeenBuildVersion = WhatsNew.fullVersionString
-                }
                 .padding(.horizontal, 24)
                 .frame(maxWidth: 380)
                 .frame(maxHeight: min(580, geo.size.height - 80))
@@ -303,28 +312,31 @@ struct HomeView: View {
     }
 
     private func dismissWhatsNew() {
-        showingWhatsNew = false
         settings.lastSeenBuildVersion = WhatsNew.fullVersionString
+        withAnimation(.easeInOut(duration: 0.18)) {
+            showingWhatsNew = false
+        }
     }
 
     @ViewBuilder
     private var whatsNewSheet: some View {
         WhatsNewModalView(
             version: WhatsNew.currentVersion,
-            items: WhatsNew.latestUpdates,
+            items: WhatsNew.localizedUpdates(locale: locale),
             timeTheme: currentTheme,
-            onAction: { action in
-                switch action {
-                case .settings:
-                    showingSettings = true
-                case .timetable:
-                    showingTimetable = true
-                }
-            }
+            locale: locale
         )
         .onDisappear {
             settings.lastSeenBuildVersion = WhatsNew.fullVersionString
         }
+    }
+
+    private func timetableFullScreenView() -> AnyView {
+        AnyView(timetableFullScreen)
+    }
+
+    private func settingsFullScreenView() -> AnyView {
+        AnyView(settingsFullScreen)
     }
 
     @ViewBuilder
@@ -465,12 +477,25 @@ struct HomeView: View {
                 variant: .aboveShortcutRow
             )
             .allowsHitTesting(false)
+        case .qiblaCountdown:
+            OnboardingCoachMarkView(
+                title: homeLS("onboarding.qibla_countdown.title", locale: locale),
+                message: homeLS("onboarding.qibla_countdown.message", locale: locale),
+                timeTheme: currentTheme,
+                variant: .belowQiblaIconLower,
+                primaryButtonTitle: homeLS("onboarding.continue", locale: locale),
+                onPrimaryButton: {
+                    onboarding.completeQiblaCountdownStep()
+                },
+                primaryButtonAccessibilityIdentifier: "Onboarding.QiblaCountdownContinue",
+                blocksBackgroundInteractions: false
+            )
         case .qibla:
             OnboardingCoachMarkView(
                 title: homeLS("onboarding.qibla.title", locale: locale),
                 message: homeLS("onboarding.qibla.message", locale: locale),
                 timeTheme: currentTheme,
-                variant: .belowQiblaIcon,
+                variant: .belowQiblaIconLower,
                 primaryButtonTitle: homeLS("onboarding.qibla.allow_location", locale: locale),
                 onPrimaryButton: {
                     qiblaDirectionProvider.requestWhenInUseAuthorizationIfNeeded()
@@ -610,11 +635,10 @@ struct HomeView: View {
         case "Sunrise":
             return nil
         case "Dhuhr":
-            if isFridayInSheffield(now) {
-                let j = iq.jummah.trimmingCharacters(in: .whitespacesAndNewlines)
-                return j.isEmpty ? nil : j
-            }
+            if isFridayInSheffield(now) { return nil }
             return PrayerTimesEngine.getIqamahTime(prayer: "dhuhr", adhanTime: daily.dhuhr, iqamahTimes: iq)
+        case "Jummah":
+            return nil
         case "Asr":
             return PrayerTimesEngine.getIqamahTime(prayer: "asr", adhanTime: daily.asr, iqamahTimes: iq)
         case "Maghrib":

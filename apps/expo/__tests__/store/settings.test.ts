@@ -33,6 +33,7 @@ const defaultState = {
   uses24HourTime: false,
   hideQiblaCompass: false,
   hasCompletedOnboarding: false,
+  lastSeenBuildVersion: undefined,
   appLanguage: "en" as const,
   themeMode: "dynamic" as const,
   fixedTheme: "fajr" as const,
@@ -108,6 +109,11 @@ describe("SettingsStore", () => {
   it("setAppLanguage updates language", () => {
     act(() => useSettingsStore.getState().setAppLanguage("id"));
     expect(useSettingsStore.getState().appLanguage).toBe("id");
+  });
+
+  it("setLastSeenBuildVersion updates update popup state", () => {
+    act(() => useSettingsStore.getState().setLastSeenBuildVersion("1.1.0 (3)"));
+    expect(useSettingsStore.getState().lastSeenBuildVersion).toBe("1.1.0 (3)");
   });
 
   it("sets theme preferences", () => {
@@ -195,6 +201,7 @@ describe("SettingsStore", () => {
       useSettingsStore.getState().setPreAdhanReminderMinutes(10);
       useSettingsStore.getState().setHasCompletedOnboarding(true);
       useSettingsStore.getState().setAppLanguage("ar");
+      useSettingsStore.getState().setLastSeenBuildVersion("1.1.0 (3)");
       useSettingsStore.getState().setThemeMode("fixed");
       useSettingsStore.getState().setFixedTheme("asr");
       useSettingsStore.getState().resetSettings();
@@ -209,6 +216,7 @@ describe("SettingsStore", () => {
     expect(state.notifications.adhanEnabled).toBe(true);
     expect(state.notifications.preAdhanReminderMinutes).toBeNull();
     expect(state.hasCompletedOnboarding).toBe(false);
+    expect(state.lastSeenBuildVersion).toBeUndefined();
     expect(state.appLanguage).toBe("en");
     expect(state.themeMode).toBe("dynamic");
     expect(state.fixedTheme).toBe("fajr");

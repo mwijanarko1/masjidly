@@ -94,6 +94,7 @@ export const PRAYER_THEMES: Record<string, TimeTheme> = {
   Fajr: "fajr",
   Sunrise: "sunrise",
   Dhuhr: "dhuhr",
+  Jummah: "dhuhr",
   Asr: "asr",
   Maghrib: "maghrib",
   Isha: "isha",

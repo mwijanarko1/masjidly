@@ -194,9 +194,10 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
         }}
         pointerEvents="none"
       >
-        <View style={{ alignItems: "center", maxWidth: 78 * scale, paddingHorizontal: 4 }}>
+        <View style={{ alignItems: "center", width: 78 * scale, paddingHorizontal: 4 }}>
           <Text
             style={{
+              width: "100%",
               fontSize: 9 * scale,
               fontWeight: "600",
               letterSpacing: 1.4,
@@ -205,11 +206,14 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
               textAlign: "center",
             }}
             numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
           >
             {countdownLabel}
           </Text>
           <Text
             style={{
+              width: "100%",
               marginTop: 2 * scale,
               fontSize: 20 * scale,
               fontWeight: "500",
@@ -218,6 +222,8 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
               textAlign: "center",
             }}
             numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.55}
           >
             {countdownTime}
           </Text>

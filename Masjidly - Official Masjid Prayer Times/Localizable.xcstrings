@@ -713,7 +713,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اختر ما تريد أن يرسل ماسجدلي إشعارات عنه. سيظهر طلب إذن iOS بعد ذلك."
+            "value" : "اختر ما تريد أن يرسل مسجدلي إشعارات عنه. سيظهر طلب إذن iOS بعد ذلك."
           }
         },
         "en" : {
@@ -766,6 +766,7 @@
       }
     },
     "Continue" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -792,9 +793,6 @@
           }
         }
       }
-    },
-    "Explore" : {
-
     },
     "Finish" : {
       "extractionState" : "stale",
@@ -976,7 +974,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "الإقامة: %@"
+            "value" : "الإقامة : %@"
           }
         },
         "en" : {
@@ -994,7 +992,7 @@
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اقامت: %@"
+            "value" : "اقامت : %@"
           }
         }
       }
@@ -1260,16 +1258,13 @@
         }
       }
     },
-    "Masjidly Update!" : {
-
-    },
     "Masjidly will show official prayer and iqamah times for this mosque." : {
       "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "سيعرض ماسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
+            "value" : "سيعرض مسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
           }
         },
         "en" : {
@@ -2458,7 +2453,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اختر مدينتك ثم مسجدك. سيعرض ماسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
+            "value" : "اختر مدينتك ثم مسجدك. سيعرض مسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
           }
         },
         "en" : {
@@ -2516,7 +2511,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اختر ما تريد أن يرسل ماسجدلي إشعارات عنه. سيظهر طلب إذن iOS بعد ذلك."
+            "value" : "اختر ما تريد أن يرسل مسجدلي إشعارات عنه. سيظهر طلب إذن iOS بعد ذلك."
           }
         },
         "en" : {
@@ -2564,6 +2559,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نماز کی اطلاعات"
+          }
+        }
+      }
+    },
+    "onboarding.qibla_countdown.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضغط دائرة القبلة لعرض العدّاد الحي للصلاة التالية. اضغط مرة أخرى لإخفائه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the Qibla circle to show the live countdown to the next prayer. Tap again to hide it."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketuk lingkaran kiblat untuk menampilkan hitung mundur langsung ke salat berikutnya. Ketuk lagi untuk menyembunyikannya."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اگلی نماز کا لائیو کاؤنٹ ڈاؤن دکھانے کے لیے قبلہ دائرے کو ٹیپ کریں۔ چھپانے کے لیے دوبارہ ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "onboarding.qibla_countdown.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عدّاد الصلاة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer countdown"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hitung mundur salat"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نماز کا کاؤنٹ ڈاؤن"
           }
         }
       }
@@ -5827,9 +5880,6 @@
         }
       }
     },
-    "Swipe to scroll updates" : {
-
-    },
     "Test tutorial" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6177,9 +6227,6 @@
           }
         }
       }
-    },
-    "Version %@" : {
-
     }
   },
   "version" : "1.0"

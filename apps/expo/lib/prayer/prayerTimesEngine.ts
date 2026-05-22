@@ -701,6 +701,20 @@ export function getNextPrayerAndCountdown(
 
   const slug = mosqueSlug;
 
+  const jummahRaw = iqamahTimes.jummah
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  const jummahTimes = jummahRaw.length === 0 ? [iqamahTimes.dhuhr] : jummahRaw;
+  const jummahAdhan = nextHeroDisplayIqamahRaw(
+    "dhuhr",
+    isFriday,
+    jummahTimes,
+    prayerTimes.dhuhr,
+    now,
+    wallClockToday
+  );
+
   const prayers = [
     {
       name: "Fajr",
@@ -709,8 +723,8 @@ export function getNextPrayerAndCountdown(
     },
     {
       name: isFriday ? "Jummah" : "Dhuhr",
-      adhan: prayerTimes.dhuhr,
-      iqamah: isFriday ? iqamahTimes.jummah : getIqamahTime("dhuhr", prayerTimes.dhuhr, iqamahTimes),
+      adhan: isFriday ? jummahAdhan : prayerTimes.dhuhr,
+      iqamah: isFriday ? "" : getIqamahTime("dhuhr", prayerTimes.dhuhr, iqamahTimes),
     },
     {
       name: "Asr",
@@ -731,23 +745,21 @@ export function getNextPrayerAndCountdown(
 
   for (const prayer of prayers) {
     const isJummah = prayer.name === "Jummah";
-    if (!isJummah) {
-      const adhanT = wallClockToday(prayer.adhan);
-      if (adhanT && adhanT.getTime() > now.getTime()) {
-        const diff = Math.floor((adhanT.getTime() - now.getTime()) / 1000);
-        return {
-          nextName: prayer.name,
-          nextTime: prayer.adhan,
-          totalSeconds: diff,
-          isIqamah: false,
-          isJummah: false,
-          hours: Math.floor(diff / 3600),
-          minutes: Math.floor((diff % 3600) / 60),
-          seconds: diff % 60,
-        };
-      }
+    const adhanT = wallClockToday(prayer.adhan);
+    if (adhanT && adhanT.getTime() > now.getTime()) {
+      const diff = Math.floor((adhanT.getTime() - now.getTime()) / 1000);
+      return {
+        nextName: prayer.name,
+        nextTime: prayer.adhan,
+        totalSeconds: diff,
+        isIqamah: false,
+        isJummah,
+        hours: Math.floor(diff / 3600),
+        minutes: Math.floor((diff % 3600) / 60),
+        seconds: diff % 60,
+      };
     }
-    if (isParseableTime(prayer.iqamah) && prayer.iqamah !== prayer.adhan) {
+    if (!isJummah && isParseableTime(prayer.iqamah) && prayer.iqamah !== prayer.adhan) {
       const iqT = wallClockToday(prayer.iqamah);
       if (iqT && iqT.getTime() > now.getTime()) {
         const diff = Math.floor((iqT.getTime() - now.getTime()) / 1000);
@@ -884,7 +896,15 @@ export function heroCountdownPresentation(
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
-  const jummahIqamahs = jummahRaw.length === 0 ? [iqamahTimes.dhuhr] : jummahRaw;
+  const jummahTimes = jummahRaw.length === 0 ? [iqamahTimes.dhuhr] : jummahRaw;
+  const jummahAdhan = nextHeroDisplayIqamahRaw(
+    "dhuhr",
+    isFriday,
+    jummahTimes,
+    prayerTimes.dhuhr,
+    now,
+    wallClockToday
+  );
 
   const slug = mosqueSlug;
 
@@ -907,9 +927,9 @@ export function heroCountdownPresentation(
     {
       id: "dhuhr",
       name: isFriday ? "Jummah" : "Dhuhr",
-      adhan: prayerTimes.dhuhr,
-      iqamahs: isFriday ? jummahIqamahs : [getIqamahTime("dhuhr", prayerTimes.dhuhr, iqamahTimes)],
-      adhanDate: wallClockToday(prayerTimes.dhuhr),
+      adhan: isFriday ? jummahAdhan : prayerTimes.dhuhr,
+      iqamahs: isFriday ? [] : [getIqamahTime("dhuhr", prayerTimes.dhuhr, iqamahTimes)],
+      adhanDate: wallClockToday(isFriday ? jummahAdhan : prayerTimes.dhuhr),
     },
     {
       id: "asr",
@@ -943,16 +963,13 @@ export function heroCountdownPresentation(
 
   for (let i = 0; i < prayersList.length; i++) {
     const p = prayersList[i];
-    const isJummah = isFriday && p.id === "dhuhr";
-    if (!isJummah) {
-      const adhanDate = p.adhanDate;
-      if (adhanDate && adhanDate.getTime() > now.getTime()) {
-        nextPrayerIndex = i;
-        nextEventDate = adhanDate;
-        nextEventIsIqamah = false;
-        foundTodayEvent = true;
-        break;
-      }
+    const adhanDate = p.adhanDate;
+    if (adhanDate && adhanDate.getTime() > now.getTime()) {
+      nextPrayerIndex = i;
+      nextEventDate = adhanDate;
+      nextEventIsIqamah = false;
+      foundTodayEvent = true;
+      break;
     }
     const candidateIqamah = nextHeroDisplayIqamahRaw(
       p.id,

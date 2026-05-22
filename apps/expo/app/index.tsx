@@ -7,7 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Calendar, Settings } from "lucide-react-native";
 import { AtmosphericSkyBackground } from "@/components/ui/AtmosphericSkyBackground";
@@ -21,6 +21,7 @@ import { useSettingsStore, type AppLanguage } from "@/store/settings";
 import { useOnboardingStore } from "@/store/onboarding";
 import { TutorialOverlay } from "@/components/onboarding/TutorialOverlay";
 import { TutorialHighlight } from "@/components/onboarding/CoachMarkCard";
+import { WhatsNewModal } from "@/components/updates/WhatsNewModal";
 import {
   formatPrayerClockForDisplay,
   formatPrayerTimeHeroParts,
@@ -41,8 +42,10 @@ import {
   getUsesLightForeground,
   resolveTheme,
 } from "@/lib/design/themes";
+import { currentMasjidlyFullVersion } from "@/lib/updates/whatsNew";
 
-const PRAYERS: PrayerName[] = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+const BASE_PRAYERS: PrayerName[] = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+const FRIDAY_PRAYERS: PrayerName[] = ["Fajr", "Sunrise", "Jummah", "Asr", "Maghrib", "Isha"];
 
 function isFridayInSheffield(date: Date): boolean {
   const cal = new Intl.DateTimeFormat("en-GB", {
@@ -50,6 +53,18 @@ function isFridayInSheffield(date: Date): boolean {
     weekday: "short",
   });
   return cal.format(date).toLowerCase().startsWith("f");
+}
+
+function getPrimaryJummahTime(
+  prayerTimes: ReturnType<typeof useHomePrayerData>["displayedPrayerTimes"],
+  iqamahTimes: ReturnType<typeof useHomePrayerData>["iqamahTimes"]
+): string {
+  const raw = iqamahTimes?.jummah ?? "";
+  const first = raw
+    .split(",")
+    .map((s) => s.trim())
+    .find((s) => s.length > 0);
+  return first ?? prayerTimes?.dhuhr ?? "";
 }
 
 function getIqamahForSelectedPrayer(
@@ -67,11 +82,11 @@ function getIqamahForSelectedPrayer(
       return getIqamahTime("fajr", prayerTimes.fajr, iqamahTimes);
     }
     case "Dhuhr": {
-      if (isFridayInSheffield(now)) {
-        const j = iqamahTimes.jummah?.trim();
-        return j && j.length > 0 ? j : null;
-      }
+      if (isFridayInSheffield(now)) return null;
       return getIqamahTime("dhuhr", prayerTimes.dhuhr, iqamahTimes);
+    }
+    case "Jummah": {
+      return null;
     }
     case "Asr": {
       return getIqamahTime("asr", prayerTimes.asr, iqamahTimes);
@@ -147,8 +162,8 @@ function hijriDateString(date: Date, locale: string): string {
 
 function resolveInitialPrayer(nextName: string | null | undefined): PrayerName {
   if (!nextName) return "Fajr";
-  if (nextName === "Jummah") return "Dhuhr";
-  const found = PRAYERS.find((p) => p === nextName);
+  if (nextName === "Jummah") return "Jummah";
+  const found = BASE_PRAYERS.find((p) => p === nextName);
   return found ?? "Fajr";
 }
 
@@ -157,6 +172,7 @@ function translatePrayerName(name: PrayerName, lang: AppLanguage): string {
     Fajr: "prayer.fajr",
     Sunrise: "prayer.sunrise",
     Dhuhr: "prayer.dhuhr",
+    Jummah: "prayer.jummah",
     Asr: "prayer.asr",
     Maghrib: "prayer.maghrib",
     Isha: "prayer.isha",
@@ -166,6 +182,7 @@ function translatePrayerName(name: PrayerName, lang: AppLanguage): string {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { showWhatsNew } = useLocalSearchParams<{ showWhatsNew?: string }>();
   const {
     loadState,
     mosques,
@@ -178,6 +195,8 @@ export default function HomeScreen() {
   const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
   const hideQiblaCompass = useSettingsStore((s) => s.hideQiblaCompass);
   const hasCompletedOnboarding = useSettingsStore((s) => s.hasCompletedOnboarding);
+  const lastSeenBuildVersion = useSettingsStore((s) => s.lastSeenBuildVersion);
+  const setLastSeenBuildVersion = useSettingsStore((s) => s.setLastSeenBuildVersion);
   const themeMode = useSettingsStore((s) => s.themeMode);
   const fixedTheme = useSettingsStore((s) => s.fixedTheme);
   const languageCode = useAppLanguage();
@@ -186,6 +205,7 @@ export default function HomeScreen() {
 
 
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerName>("Fajr");
+  const [showingWhatsNew, setShowingWhatsNew] = useState(false);
   const [heroCountdownVisible, setHeroCountdownVisible] = useState(false);
   const [heroCountdownLocked, setHeroCountdownLocked] = useState(false);
   const [heroTick, setHeroTick] = useState(0);
@@ -193,6 +213,7 @@ export default function HomeScreen() {
   const onboarding = useOnboardingStore();
   const currentStep = onboarding.currentStep;
   const tutorialStarted = useRef(false);
+  const prayers = isFridayInSheffield(new Date()) ? FRIDAY_PRAYERS : BASE_PRAYERS;
   useEffect(() => {
     if (!tutorialStarted.current && mosques.length > 0) {
       tutorialStarted.current = true;
@@ -203,7 +224,7 @@ export default function HomeScreen() {
   const handlePrayerSelect = (prayer: PrayerName) => {
     setSelectedPrayer(prayer);
     if (currentStep?.type === "prayerShortcut") {
-      const idx = PRAYERS.indexOf(prayer);
+      const idx = prayers.indexOf(prayer);
       if (idx === currentStep.index) {
         onboarding.handlePrayerShortcutTap(idx);
       }
@@ -211,6 +232,26 @@ export default function HomeScreen() {
   };
 
   // ── End Onboarding ──
+
+  const dismissWhatsNew = () => {
+    setShowingWhatsNew(false);
+    setLastSeenBuildVersion(currentMasjidlyFullVersion());
+  };
+
+  useEffect(() => {
+    if (!hasCompletedOnboarding) return;
+    if (loadState === "loading" || loadState === "idle") return;
+    const currentBuild = currentMasjidlyFullVersion();
+    if (lastSeenBuildVersion !== currentBuild) {
+      setShowingWhatsNew(true);
+    }
+  }, [hasCompletedOnboarding, lastSeenBuildVersion, loadState]);
+
+  useEffect(() => {
+    if (showWhatsNew === "1") {
+      setShowingWhatsNew(true);
+    }
+  }, [showWhatsNew]);
 
   useEffect(() => {
     if (nextCountdown?.nextName) {
@@ -251,7 +292,9 @@ export default function HomeScreen() {
       case "Sunrise":
         return displayedPrayerTimes.sunrise;
       case "Dhuhr":
-        return displayedPrayerTimes.dhuhr;
+        return isFridayInSheffield(new Date()) ? getPrimaryJummahTime(displayedPrayerTimes, iqamahTimes) : displayedPrayerTimes.dhuhr;
+      case "Jummah":
+        return getPrimaryJummahTime(displayedPrayerTimes, iqamahTimes);
       case "Asr":
         return displayedPrayerTimes.asr;
       case "Maghrib":
@@ -259,7 +302,7 @@ export default function HomeScreen() {
       case "Isha":
         return displayedPrayerTimes.isha;
     }
-  }, [displayedPrayerTimes, selectedPrayer]);
+  }, [displayedPrayerTimes, iqamahTimes, selectedPrayer]);
 
   const dynamicTheme = themeForPrayer(selectedPrayer);
   const theme = resolveTheme(dynamicTheme, themeMode, fixedTheme);
@@ -498,7 +541,7 @@ export default function HomeScreen() {
               </Text>
 
               <PrayerLetterPicker
-                prayers={PRAYERS}
+                prayers={prayers}
                 selectedPrayer={selectedPrayer}
                 onSelectPrayer={handlePrayerSelect}
                 theme={theme}
@@ -533,6 +576,20 @@ export default function HomeScreen() {
           locale={languageCode}
         />
       ) : null}
+
+      <WhatsNewModal
+        visible={showingWhatsNew && !currentStep}
+        theme={theme}
+        language={languageCode}
+        onDismiss={dismissWhatsNew}
+        onAction={(action) => {
+          if (action === "settings") {
+            router.push({ pathname: "/settings", params: { theme: selectedPrayer } });
+          } else if (action === "timetable") {
+            router.push({ pathname: "/timetable", params: { theme: selectedPrayer, mosqueName: selectedMosque?.name ?? "" } });
+          }
+        }}
+      />
     </View>
   );
 }

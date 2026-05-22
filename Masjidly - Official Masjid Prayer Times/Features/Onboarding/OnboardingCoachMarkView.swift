@@ -11,6 +11,8 @@ struct OnboardingCoachMarkView: View {
     let primaryButtonTitle: String?
     let onPrimaryButton: (() -> Void)?
     let primaryButtonAccessibilityIdentifier: String?
+    /// When false, controls behind the coach mark remain tappable even while the card has a button.
+    let blocksBackgroundInteractions: Bool
 
     /// Optional secondary (lower-emphasis) button shown below the primary button.
     let secondaryButtonTitle: String?
@@ -24,6 +26,8 @@ struct OnboardingCoachMarkView: View {
         case aboveShortcutRow
         /// Hint sits under the Qibla rings, above the large adhan time.
         case belowQiblaIcon
+        /// Hint sits lower than the Qibla rings so the hero circle stays tappable/visible during countdown onboarding.
+        case belowQiblaIconLower
         /// Hint pinned to the bottom; no dimming so the sheet behind stays fully interactive (timetable / settings explore).
         case floatingBottom
     }
@@ -36,6 +40,7 @@ struct OnboardingCoachMarkView: View {
         primaryButtonTitle: String? = nil,
         onPrimaryButton: (() -> Void)? = nil,
         primaryButtonAccessibilityIdentifier: String? = nil,
+        blocksBackgroundInteractions: Bool = true,
         secondaryButtonTitle: String? = nil,
         onSecondaryButton: (() -> Void)? = nil,
         secondaryButtonAccessibilityIdentifier: String? = nil
@@ -47,6 +52,7 @@ struct OnboardingCoachMarkView: View {
         self.primaryButtonTitle = primaryButtonTitle
         self.onPrimaryButton = onPrimaryButton
         self.primaryButtonAccessibilityIdentifier = primaryButtonAccessibilityIdentifier
+        self.blocksBackgroundInteractions = blocksBackgroundInteractions
         self.secondaryButtonTitle = secondaryButtonTitle
         self.onSecondaryButton = onSecondaryButton
         self.secondaryButtonAccessibilityIdentifier = secondaryButtonAccessibilityIdentifier
@@ -78,7 +84,8 @@ struct OnboardingCoachMarkView: View {
                     let topChrome = max(geo.safeAreaInsets.top, 56) + 12
                     let topCardInset = topChrome + 52
                     let shortcutReserve = geo.safeAreaInsets.bottom + min(260, max(200, geo.size.height * 0.31))
-                    let blocksBackground = showsDimmingBackdrop && (onPrimaryButton != nil && primaryButtonTitle != nil) || (onSecondaryButton != nil && secondaryButtonTitle != nil)
+                    let hasButtons = (onPrimaryButton != nil && primaryButtonTitle != nil) || (onSecondaryButton != nil && secondaryButtonTitle != nil)
+                    let blocksBackground = showsDimmingBackdrop && blocksBackgroundInteractions && hasButtons
 
                     ZStack {
                         if showsDimmingBackdrop {
@@ -113,6 +120,16 @@ struct OnboardingCoachMarkView: View {
                             VStack(spacing: 0) {
                                 Spacer()
                                     .frame(height: max(geo.safeAreaInsets.top, 20) + geo.size.height * 0.28)
+                                hintCard
+                                    .padding(.horizontal, 24)
+                                Spacer(minLength: 0)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+                        case .belowQiblaIconLower:
+                            VStack(spacing: 0) {
+                                Spacer()
+                                    .frame(height: max(geo.safeAreaInsets.top, 20) + geo.size.height * 0.40)
                                 hintCard
                                     .padding(.horizontal, 24)
                                 Spacer(minLength: 0)

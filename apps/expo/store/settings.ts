@@ -27,6 +27,7 @@ export interface SettingsState {
   uses24HourTime: boolean;
   hideQiblaCompass: boolean;
   hasCompletedOnboarding: boolean;
+  lastSeenBuildVersion?: string;
   appLanguage: AppLanguage;
   themeMode: ThemeMode;
   fixedTheme: TimeTheme;
@@ -36,6 +37,7 @@ export interface SettingsState {
   setUses24HourTime: (v: boolean) => void;
   setHideQiblaCompass: (v: boolean) => void;
   setHasCompletedOnboarding: (v: boolean) => void;
+  setLastSeenBuildVersion: (v: string) => void;
   setAppLanguage: (v: AppLanguage) => void;
   setThemeMode: (v: ThemeMode) => void;
   setFixedTheme: (v: TimeTheme) => void;
@@ -71,6 +73,7 @@ const initialState: Omit<
   | "setUses24HourTime"
   | "setHideQiblaCompass"
   | "setHasCompletedOnboarding"
+  | "setLastSeenBuildVersion"
   | "setAppLanguage"
   | "setThemeMode"
   | "setFixedTheme"
@@ -88,6 +91,7 @@ const initialState: Omit<
   uses24HourTime: false,
   hideQiblaCompass: false,
   hasCompletedOnboarding: false,
+  lastSeenBuildVersion: undefined,
   appLanguage: "en",
   themeMode: "dynamic",
   fixedTheme: "fajr",
@@ -156,6 +160,7 @@ export const useSettingsStore = create<SettingsState>()(
       setUses24HourTime: (v) => set({ uses24HourTime: v }),
       setHideQiblaCompass: (v) => set({ hideQiblaCompass: v }),
       setHasCompletedOnboarding: (v) => set({ hasCompletedOnboarding: v }),
+      setLastSeenBuildVersion: (v) => set({ lastSeenBuildVersion: v }),
       setAppLanguage: (v) => set({ appLanguage: v }),
       setThemeMode: (v) => set({ themeMode: v }),
       setFixedTheme: (v) => set({ fixedTheme: normalizeFixedTheme(v) }),
@@ -188,7 +193,7 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: "masjidly-settings",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 7,
+      version: 8,
       migrate: (persisted: unknown, version: number): unknown => {
         if (!persisted || typeof persisted !== "object" || !("state" in persisted)) {
           return persisted;

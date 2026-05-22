@@ -380,7 +380,7 @@ struct TimetableView: View {
         }
     }
 
-    /// Friday only: one row per Jumuah slot — Dhuhr adhan + Jumuah iqāmah (replaces the normal Dhuhr row).
+    /// Friday only: one row per Jummah slot — Dhuhr adhan + Jummah iqāmah (replaces the normal Dhuhr row).
     private func fridayJummahRowsReplacingDhuhr(
         time: PrayerTime,
         dhuhrAdhanFormatted: String,

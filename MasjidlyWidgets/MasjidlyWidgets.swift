@@ -106,7 +106,7 @@ extension MasjidlyWidgetState {
         switch prayerId.lowercased() {
         case "fajr": return "sun.horizon"
         case "sunrise": return "sunrise"
-        case "dhuhr", "jumu'ah": return "sun.max"
+        case "dhuhr", "jummah": return "sun.max"
         case "asr": return "sun.dust"
         case "maghrib": return "sunset"
         case "isha": return "moon.stars"
@@ -282,11 +282,13 @@ struct MasjidlyPrayerWidgetView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.55)
 
-            Text(String(format: widgetLS("widget.iqamah_format", locale: entry.locale), entry.state.iqamahTime))
-                .widgetFont(size: 12, weight: .regular, locale: entry.locale)
-                .foregroundStyle(theme.textColor.opacity(0.6))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+            if !entry.state.iqamahTime.isEmpty {
+                Text(String(format: widgetLS("widget.iqamah_format", locale: entry.locale), entry.state.iqamahTime))
+                    .widgetFont(size: 12, weight: .regular, locale: entry.locale)
+                    .foregroundStyle(theme.textColor.opacity(0.6))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
         }
         .padding(16)
     }
@@ -374,10 +376,12 @@ struct MasjidlyPrayerWidgetView: View {
                     
                     Spacer()
                     
-                    Text(String(format: widgetLS("widget.iqamah_format", locale: entry.locale), entry.state.iqamahTime))
-                        .widgetFont(size: 14, weight: .regular, locale: entry.locale)
-                        .monospacedDigit()
-                        .foregroundStyle(theme.textColor.opacity(0.6))
+                    if !entry.state.iqamahTime.isEmpty {
+                        Text(String(format: widgetLS("widget.iqamah_format", locale: entry.locale), entry.state.iqamahTime))
+                            .widgetFont(size: 14, weight: .regular, locale: entry.locale)
+                            .monospacedDigit()
+                            .foregroundStyle(theme.textColor.opacity(0.6))
+                    }
                 }
             }
             .padding(.bottom, 4)
@@ -497,16 +501,18 @@ struct MasjidlyPrayerWidgetView: View {
                     .lineLimit(1)
             }
 
-            HStack(spacing: 6) {
-                Text(widgetLS("widget.iqamah", locale: entry.locale))
-                    .widgetFont(size: 12, weight: .medium, locale: entry.locale)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 4)
-                Text(s.iqamahTime)
-                    .widgetFont(size: 13, weight: .medium, locale: entry.locale)
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+            if !s.iqamahTime.isEmpty {
+                HStack(spacing: 6) {
+                    Text(widgetLS("widget.iqamah", locale: entry.locale))
+                        .widgetFont(size: 12, weight: .medium, locale: entry.locale)
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 4)
+                    Text(s.iqamahTime)
+                        .widgetFont(size: 13, weight: .medium, locale: entry.locale)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
 
             if hasFollowing {
@@ -629,7 +635,7 @@ enum MasjidlyWidgetTheme {
         switch prayerId.lowercased() {
         case "fajr": return .fajr
         case "sunrise": return .sunrise
-        case "dhuhr", "jumu'ah": return .dhuhr
+        case "dhuhr", "jummah": return .dhuhr
         case "asr": return .asr
         case "maghrib": return .maghrib
         case "isha": return .isha
@@ -675,7 +681,7 @@ private func widgetLS(_ key: String, locale: Locale) -> String {
         if lang == "id" { return "Buka aplikasi untuk memperbarui" }
         return "Open app to update"
     case "widget.open_masjidly_update":
-        if lang == "ar" { return "افتح ماسجدلي للتحديث" }
+        if lang == "ar" { return "افتح مسجدلي للتحديث" }
         if lang == "ur" { return "اپ ڈیٹ کرنے کے لیے مسجدلی کھولیں" }
         if lang == "id" { return "Buka Masjidly untuk memperbarui" }
         return "Open Masjidly to update"

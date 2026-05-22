@@ -4,7 +4,7 @@ import UserNotifications
 /// Copy and sound wiring for prayer notifications (English; compact lock-screen text).
 enum PrayerNotificationContent {
     /// Preferred spelling for Friday congregational prayer in user-facing English copy.
-    static let jumuahName = "Jumu\u{2019}ah"
+    static let jummahName = "Jummah"
 
     enum CategoryID {
         static let adhan = "masjidly.category.adhan"

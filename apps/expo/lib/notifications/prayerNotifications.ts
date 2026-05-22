@@ -100,10 +100,10 @@ function capitalize(s: string): string {
 
 /**
  * Prayer display name matching iOS PrayerNotificationContent.prayerDisplayName().
- * Uses "Jumu\u2019ah" for Friday dhuhr.
+ * Uses "Jummah" for Friday dhuhr.
  */
 function prayerDisplayName(prayer: string, isFriday: boolean): string {
-  if (prayer === "dhuhr" && isFriday) return "Jumu\u2019ah";
+  if (prayer === "dhuhr" && isFriday) return "Jummah";
   return capitalize(prayer);
 }
 
@@ -118,12 +118,12 @@ function iOSNotificationContent(data: Record<string, string>, body: string): { t
   switch (kind) {
     case "adhan": {
       // iOS: title = "Fajr Adhan", body = "Tap to hear adhan."
-      const name = prayer === "jummah" ? "Jumu\u2019ah" : capitalize(prayer);
+      const name = prayer === "jummah" ? "Jummah" : capitalize(prayer);
       return { title: `${name} Adhan`, body: "Tap to hear adhan." };
     }
     case "iqamah": {
       // iOS: title = "Fajr Iqamah", body = "Iqamah for Fajr is now."
-      const name = prayer === "jummah" ? "Jumu\u2019ah" : capitalize(prayer);
+      const name = prayer === "jummah" ? "Jummah" : capitalize(prayer);
       return { title: `${name} Iqamah`, body: `Iqamah for ${name} is now.` };
     }
     case "reminder": {

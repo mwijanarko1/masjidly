@@ -427,6 +427,11 @@ struct MinimalistPrayerPage: View {
 
     private var showHeroCountdown: Bool { heroCountdownVisible || heroCountdownLocked }
 
+    private var usesArabicScript: Bool {
+        let code = locale.language.languageCode?.identifier ?? ""
+        return code == "ar" || code == "ur"
+    }
+
     private var heroCountdownEnabled: Bool {
         !mosqueSlug.isEmpty && dailyPrayerTimes != nil && dailyIqamahTimes != nil
     }
@@ -452,7 +457,7 @@ struct MinimalistPrayerPage: View {
                 if let iq = iqamahTime, !iq.isEmpty {
                     Text(iq)
                         .appFont(size: 26, weight: .regular)
-                        .tracking(0.6)
+                        .tracking(usesArabicScript ? 0 : 0.6)
                         .foregroundColor(theme.textColor.opacity(0.78))
                         .minimumScaleFactor(0.65)
                         .lineLimit(2)
@@ -507,6 +512,8 @@ struct MinimalistPrayerPage: View {
             }
         } else {
             QiblaPrayerIcon(theme: theme, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
+                .contentShape(Circle())
+                .onTapGesture(perform: handleHeroOrbTap)
         }
     }
 

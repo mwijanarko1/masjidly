@@ -13,7 +13,7 @@ import { TutorialHighlight } from "@/components/onboarding/CoachMarkCard";
 import type { TimeTheme } from "@/lib/design/themes";
 import { getTextColor } from "@/lib/design/themes";
 
-export type PrayerName = "Fajr" | "Sunrise" | "Dhuhr" | "Asr" | "Maghrib" | "Isha";
+export type PrayerName = "Fajr" | "Sunrise" | "Dhuhr" | "Jummah" | "Asr" | "Maghrib" | "Isha";
 
 
 interface PrayerLetterPickerProps {
@@ -29,6 +29,7 @@ const PRAYER_KEYS: Record<PrayerName, TranslationKey> = {
   Fajr: "prayer.fajr",
   Sunrise: "prayer.sunrise",
   Dhuhr: "prayer.dhuhr",
+  Jummah: "prayer.jummah",
   Asr: "prayer.asr",
   Maghrib: "prayer.maghrib",
   Isha: "prayer.isha",
