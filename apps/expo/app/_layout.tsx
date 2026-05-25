@@ -11,6 +11,7 @@ import {
 } from "@expo-google-fonts/comfortaa";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MasjidlyConvexProvider } from "@/lib/convex/client";
+import UpdatePromptModal from "@/components/updates/UpdatePromptModal";
 import { useRouter } from "expo-router";
 import { playAdhan } from "@/lib/audio/AdhanSoundPlayer";
 import { useAppLanguage } from "@/lib/i18n/language";
@@ -204,6 +205,7 @@ export default function RootLayout() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <MasjidlyConvexProvider>
+          <UpdatePromptModal autoCheck />
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen
