@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 // MARK: - Release Manifest Models
 
