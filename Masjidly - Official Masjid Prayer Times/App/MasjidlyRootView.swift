@@ -49,8 +49,8 @@ struct MasjidlyRootView: View {
                     AppUpdateChecker.openAppStore()
                     showUpdateAlert = false
                 }
-            } message: { release in
-                Text(updateMessage(for: release))
+            } message: { _ in
+                Text(updateMessage)
             }
     }
 
@@ -105,12 +105,12 @@ struct MasjidlyRootView: View {
         }
     }
 
-    private func updateMessage(for release: MasjidlyRelease) -> String {
+    private var updateMessage: String {
         switch settings.appLanguage {
-        case .arabic: return "تحديث جديد متاح"
-        case .urdu: return "نیا اپ ڈیٹ دستیاب ہے"
-        case .indonesian: return "Pembaruan baru tersedia"
-        default: return "New update available"
+        case .arabic: return " "
+        case .urdu: return " "
+        case .indonesian: return " "
+        default: return " "
         }
     }
 }

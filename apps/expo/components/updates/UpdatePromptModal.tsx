@@ -99,17 +99,6 @@ export default function UpdatePromptModal({
                   : "Update Available"}
           </Text>
 
-          {/* Message */}
-          <Text style={styles.messageText}>
-            {language === "ar"
-              ? "تحديث جديد متاح"
-              : language === "ur"
-                ? "نیا اپ ڈیٹ دستیاب ہے"
-                : language === "id"
-                  ? "Pembaruan baru tersedia"
-                  : "New update available"}
-          </Text>
-
           {/* Buttons */}
           <View style={styles.buttons}>
             <TouchableOpacity
@@ -214,13 +203,6 @@ const styles = StyleSheet.create({
     color: "#1a1a1a",
     marginBottom: 4,
     textAlign: "center",
-  },
-  messageText: {
-    fontSize: 15,
-    color: "#555",
-    textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 24,
   },
   buttons: {
     flexDirection: "row",
