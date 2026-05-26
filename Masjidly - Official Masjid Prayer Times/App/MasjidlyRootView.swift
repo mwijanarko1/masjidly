@@ -107,10 +107,10 @@ struct MasjidlyRootView: View {
 
     private var updateMessage: String {
         switch settings.appLanguage {
-        case .arabic: return " "
-        case .urdu: return " "
-        case .indonesian: return " "
-        default: return " "
+        case .arabic: return "نسخة أحدث من مسجدلي جاهزة للتثبيت."
+        case .urdu: return "مسجدلی کا نیا ورژن انسٹال کرنے کے لیے تیار ہے۔"
+        case .indonesian: return "Versi baru Masjidly siap dipasang."
+        default: return "A newer version of Masjidly is ready."
         }
     }
 }
