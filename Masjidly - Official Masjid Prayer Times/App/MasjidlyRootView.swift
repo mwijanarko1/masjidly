@@ -34,6 +34,9 @@ struct MasjidlyRootView: View {
                 PrayerNotificationContent.registerCategories(locale: settings.resolvedLocale)
                 Task { await homeViewModel.resyncNotificationsIfNeeded() }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .masjidlyShowUpdatePrompt)) { _ in
+                presentTestUpdateAlert()
+            }
             .alert(
                 updateAlertTitle,
                 isPresented: $showUpdateAlert,
@@ -63,6 +66,13 @@ struct MasjidlyRootView: View {
             case .upToDate, .checkFailed:
                 break
             }
+        }
+    }
+
+    private func presentTestUpdateAlert() {
+        Task {
+            pendingRelease = await AppUpdateChecker.fetchLatestRelease() ?? MasjidlyRelease.testRelease
+            showUpdateAlert = true
         }
     }
 

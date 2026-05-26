@@ -14,6 +14,30 @@ struct MasjidlyRelease: Codable, Equatable {
         case pubDate = "pub_date"
         case notes
     }
+
+    static var testRelease: MasjidlyRelease {
+        MasjidlyRelease(
+            android: AndroidRelease(
+                version: "1.1.1",
+                versionCode: 7,
+                url: "https://sheffieldmasjids.com/masjidly/masjidly-latest.apk",
+                sha256: "",
+                minVersionCode: 1
+            ),
+            ios: IOSRelease(
+                version: "9.9.9",
+                build: 999,
+                appStoreUrl: "https://apps.apple.com/gb/app/masjidly-masjid-prayer-times/id6767841833"
+            ),
+            pubDate: ISO8601DateFormatter().string(from: Date()),
+            notes: LocalizedNotes(
+                en: "Developer test update prompt. This confirms the App Store update alert is working.",
+                ar: "اختبار تنبيه التحديث للمطور. هذا يؤكد أن تنبيه التحديث عبر متجر التطبيقات يعمل.",
+                ur: "ڈیولپر ٹیسٹ اپ ڈیٹ پرامپٹ۔ یہ تصدیق کرتا ہے کہ ایپ اسٹور اپ ڈیٹ الرٹ کام کر رہا ہے۔",
+                id: "Prompt pembaruan uji pengembang. Ini mengonfirmasi bahwa peringatan pembaruan App Store berfungsi."
+            )
+        )
+    }
 }
 
 struct AndroidRelease: Codable, Equatable {

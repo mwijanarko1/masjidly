@@ -189,6 +189,21 @@ struct SettingsView: View {
                         .buttonStyle(.plain)
 
                         Button {
+                            NotificationCenter.default.post(name: .masjidlyShowUpdatePrompt, object: nil)
+                            onDismiss?()
+                            dismiss()
+                        } label: {
+                            developmentChrome {
+                                Text("Test Update Prompt")
+                                    .appFont(size: 17, weight: .medium)
+                                    .foregroundColor(timeTheme.textColor)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
                             reviewPrompt.resetAndPresentEnjoymentPromptForTesting()
                             onDismiss?()
                             dismiss()

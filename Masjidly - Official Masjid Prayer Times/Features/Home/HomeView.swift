@@ -793,6 +793,7 @@ private extension View {
 
 extension Notification.Name {
     static let masjidlyShowWhatsNew = Notification.Name("masjidly.show.whatsnew")
+    static let masjidlyShowUpdatePrompt = Notification.Name("masjidly.show.updatePrompt")
 }
 
 // MARK: - Viewport-aware layout
