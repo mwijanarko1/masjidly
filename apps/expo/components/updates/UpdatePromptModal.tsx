@@ -38,6 +38,7 @@ export default function UpdatePromptModal({
   const language = useAppLanguage();
 
   const visible = externalVisible ?? internalVisible;
+  const isAndroid = Platform.OS === "android";
 
   const check = useCallback(async () => {
     setChecking(true);
