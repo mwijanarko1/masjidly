@@ -16,7 +16,7 @@ import {
   type UpdateInfo,
   type MasjidlyRelease,
 } from "@/lib/updates/updateChecker";
-import { useLanguage } from "@/lib/i18n/language";
+import { useAppLanguage } from "@/lib/i18n/language";
 
 interface UpdatePromptModalProps {
   /** If true, checks for update on mount and shows prompt if available */
@@ -35,7 +35,7 @@ export default function UpdatePromptModal({
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [checking, setChecking] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const { language } = useLanguage();
+  const language = useAppLanguage();
 
   const visible = externalVisible ?? internalVisible;
 
