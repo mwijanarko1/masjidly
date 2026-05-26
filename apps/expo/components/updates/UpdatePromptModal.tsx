@@ -39,12 +39,6 @@ export default function UpdatePromptModal({
 
   const visible = externalVisible ?? internalVisible;
 
-  // Pick the right locale for release notes
-  const notes = updateInfo?.release?.notes;
-  const localizedNotes = notes
-    ? notes[language as keyof typeof notes] ?? notes.en
-    : null;
-
   const check = useCallback(async () => {
     setChecking(true);
     const info = await checkForUpdate();
@@ -80,11 +74,6 @@ export default function UpdatePromptModal({
   if (!visible || !updateInfo?.release) return null;
 
   const { release } = updateInfo;
-  const isAndroid = Platform.OS === "android";
-  const latestVersion = isAndroid
-    ? `${release.android.version} (${release.android.versionCode})`
-    : `${release.ios.version} (build ${release.ios.build})`;
-
   return (
     <Modal
       visible={visible}
@@ -110,32 +99,16 @@ export default function UpdatePromptModal({
                   : "Update Available"}
           </Text>
 
-          {/* Version */}
-          <Text style={styles.versionText}>
+          {/* Message */}
+          <Text style={styles.messageText}>
             {language === "ar"
-              ? `الإصدار ${latestVersion}`
+              ? "تحديث جديد متاح"
               : language === "ur"
-                ? `ورژن ${latestVersion}`
+                ? "نیا اپ ڈیٹ دستیاب ہے"
                 : language === "id"
-                  ? `Versi ${latestVersion}`
-                  : `Version ${latestVersion}`}
+                  ? "Pembaruan baru tersedia"
+                  : "New update available"}
           </Text>
-
-          {/* Release notes */}
-          {localizedNotes && (
-            <View style={styles.notesContainer}>
-              <Text style={styles.notesLabel}>
-                {language === "ar"
-                  ? "ما الجديد:"
-                  : language === "ur"
-                    ? "نیا کیا ہے:"
-                    : language === "id"
-                      ? "Apa yang baru:"
-                      : "What's new:"}
-              </Text>
-              <Text style={styles.notesText}>{localizedNotes}</Text>
-            </View>
-          )}
 
           {/* Buttons */}
           <View style={styles.buttons}>
@@ -242,31 +215,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     textAlign: "center",
   },
-  versionText: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 16,
+  messageText: {
+    fontSize: 15,
+    color: "#555",
     textAlign: "center",
-  },
-  notesContainer: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 12,
-    padding: 14,
+    lineHeight: 22,
     marginBottom: 24,
-    width: "100%",
-  },
-  notesLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#999",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  notesText: {
-    fontSize: 14,
-    color: "#333",
-    lineHeight: 20,
   },
   buttons: {
     flexDirection: "row",
