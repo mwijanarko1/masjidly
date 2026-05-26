@@ -31,10 +31,10 @@ struct MasjidlyRelease: Codable, Equatable {
             ),
             pubDate: ISO8601DateFormatter().string(from: Date()),
             notes: LocalizedNotes(
-                en: "Developer test update prompt. This confirms the App Store update alert is working.",
-                ar: "اختبار تنبيه التحديث للمطور. هذا يؤكد أن تنبيه التحديث عبر متجر التطبيقات يعمل.",
-                ur: "ڈیولپر ٹیسٹ اپ ڈیٹ پرامپٹ۔ یہ تصدیق کرتا ہے کہ ایپ اسٹور اپ ڈیٹ الرٹ کام کر رہا ہے۔",
-                id: "Prompt pembaruan uji pengembang. Ini mengonfirmasi bahwa peringatan pembaruan App Store berfungsi."
+                en: "This is a test notification confirming the update prompt works. No update is actually available.",
+                ar: "هذا إشعار اختبار لتأكيد عمل تنبيه التحديث. لا يوجد تحديث فعلي متاح.",
+                ur: "یہ ایک ٹیسٹ نوٹیفکیشن ہے جو اس بات کی تصدیق کرتا ہے کہ اپ ڈیٹ پرامپٹ کام کر رہا ہے۔ کوئی حقیقی اپ ڈیٹ دستیاب نہیں ہے۔",
+                id: "Ini adalah notifikasi tes yang mengonfirmasi bahwa prompt pembaruan berfungsi. Tidak ada pembaruan yang tersedia."
             )
         )
     }
