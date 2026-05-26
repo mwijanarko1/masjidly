@@ -59,14 +59,9 @@ final class AppUpdateChecker {
 
     // MARK: - Public API
 
-    /// Returns the current app version and build
+    /// Returns the current marketing version (CFBundleShortVersionString), e.g. "1.1.1".
     static var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
-    }
-
-    static var currentBuild: Int {
-        let raw = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        return Int(raw) ?? 1
     }
 
     /// Fetches the latest release manifest from the website.
@@ -87,19 +82,44 @@ final class AppUpdateChecker {
     }
 
     /// Checks whether a newer version is available for the current platform.
-    /// On iOS, compares the build number against the manifest's iOS build number.
+    /// On iOS, compares the marketing version (`CFBundleShortVersionString`) against
+    /// the manifest's `ios.version`. Build numbers are ignored.
     static func checkForUpdate() async -> AppUpdateStatus {
         guard let release = await fetchLatestRelease() else {
             return .checkFailed("Could not reach version server.")
         }
 
-        // Compare iOS build numbers
-        let current = currentBuild
-        if release.ios.build > current {
+        if isVersion(release.ios.version, newerThan: currentVersion) {
             return .updateAvailable(release: release)
         }
 
         return .upToDate
+    }
+
+    /// Numeric dotted-version comparison for values like "1", "1.1", "1.1.1".
+    /// Missing components are treated as zero, so "1.2" equals "1.2.0".
+    private static func isVersion(_ candidate: String, newerThan current: String) -> Bool {
+        let candidateParts = numericVersionParts(candidate)
+        let currentParts = numericVersionParts(current)
+        let count = max(candidateParts.count, currentParts.count)
+
+        for index in 0..<count {
+            let candidateValue = index < candidateParts.count ? candidateParts[index] : 0
+            let currentValue = index < currentParts.count ? currentParts[index] : 0
+            if candidateValue > currentValue { return true }
+            if candidateValue < currentValue { return false }
+        }
+
+        return false
+    }
+
+    private static func numericVersionParts(_ version: String) -> [Int] {
+        version
+            .split(separator: ".")
+            .map { part in
+                let numericPrefix = part.prefix { $0.isNumber }
+                return Int(numericPrefix) ?? 0
+            }
     }
 
     /// Opens the App Store page for Masjidly.
