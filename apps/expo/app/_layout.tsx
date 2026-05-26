@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useEffect } from "react";
-import { Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { Platform, DeviceEventEmitter } from "react-native";
 import { useFonts } from "expo-font";
 import {
   Comfortaa_300Light,
@@ -193,6 +193,15 @@ export default function RootLayout() {
   useNotificationCategories();
   useNotificationHandler();
   useNotificationResponseListener();
+  const [showTestUpdatePrompt, setShowTestUpdatePrompt] = useState(false);
+
+  // Listen for test update prompt from settings dev section
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener("masjidly:testUpdatePrompt", () => {
+      setShowTestUpdatePrompt(true);
+    });
+    return () => sub.remove();
+  }, []);
 
   useFonts({
     Comfortaa_300Light,
@@ -205,7 +214,11 @@ export default function RootLayout() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <MasjidlyConvexProvider>
-          <UpdatePromptModal autoCheck />
+          <UpdatePromptModal
+            autoCheck
+            visible={showTestUpdatePrompt}
+            onClose={() => setShowTestUpdatePrompt(false)}
+          />
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen

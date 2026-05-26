@@ -9,6 +9,7 @@ import {
   Linking,
   Platform,
   Alert,
+  DeviceEventEmitter,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
@@ -702,6 +703,24 @@ export default function SettingsScreen() {
                 >
                   <Text style={[styles.listItemText, { color: textColor }]}>
                     {"Test What's New"}
+                  </Text>
+                </Pressable>
+
+                <RowDivider />
+
+                {/* Test Update Prompt */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.contactRow,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                  onPress={() => {
+                    DeviceEventEmitter.emit("masjidly:testUpdatePrompt");
+                  }}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.listItemText, { color: textColor }]}>
+                    {"Test Update Prompt"}
                   </Text>
                 </Pressable>
 
