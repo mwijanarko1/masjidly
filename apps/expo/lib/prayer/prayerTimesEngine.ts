@@ -175,6 +175,27 @@ export function resolveIshaIqamahForDisplay(
   return getIqamahTime("isha", ishaAdhan, iqamahTimes, maghribAdhan);
 }
 
+/**
+ * Centralized iqamah display resolution.
+ * For Isha, applies special mosque/season rules via `resolveIshaIqamahForDisplay`;
+ * for all other prayers, delegates to `getIqamahTime`.
+ * Use this everywhere iqamah is shown to ensure home, timetable, and widgets agree.
+ */
+export function getDisplayIqamah(
+  prayer: string,
+  adhanTime: string,
+  iqamahTimes: DailyIqamahTimes,
+  mosqueSlug: string,
+  date: Date,
+  maghribAdhan: string
+): string {
+  const p = prayer.toLowerCase();
+  if (p === "isha") {
+    return resolveIshaIqamahForDisplay(mosqueSlug, date, adhanTime, iqamahTimes, maghribAdhan);
+  }
+  return getIqamahTime(p, adhanTime, iqamahTimes, maghribAdhan);
+}
+
 export function getIqamahTime(
   prayer: string,
   adhanTime: string,

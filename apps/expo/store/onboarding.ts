@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { useSettingsStore } from "@/store/settings";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
 import {
+  cancelAllPrayerNotifications,
   requestNotificationAuthorizationIfNeeded,
   rescheduleUpcomingPrayerNotifications,
 } from "@/lib/notifications/prayerNotifications";
@@ -14,6 +15,7 @@ import { resolveSelectedMosque, cityGroupingKey } from "@/lib/prayer/mosqueDefau
 export type OnboardingStep =
   | { type: "chooseMosque" }
   | { type: "prayerShortcut"; index: number }
+  | { type: "qiblaCountdown" }
   | { type: "qibla" }
   | { type: "openTimetable" }
   | { type: "exploreTimetable" }
@@ -47,6 +49,7 @@ interface OnboardingState {
   startIfNeeded: (mosques: MosqueStub[]) => void;
   selectMosque: (mosqueId: string) => Promise<void>;
   handlePrayerShortcutTap: (index: number) => void;
+  completeQiblaCountdown: () => void;
   completeQiblaOnboardingAllowingLocationRequest: () => void;
   completeQiblaOnboardingDeferringLocation: () => void;
   acknowledgeQiblaIntro: () => void;
@@ -114,13 +117,21 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
 
   handlePrayerShortcutTap: (index) => {
     const step = get().currentStep;
-    if (!step || step.type !== "prayerShortcut" || step.index !== index) return;
+    if (
+      !step ||
+      step.type !== "prayerShortcut" ||
+      step.index !== 0 ||
+      index < 0 ||
+      index > 5
+    ) return;
 
-    if (index >= 5) {
-      set({ currentStep: { type: "qibla" } });
-    } else {
-      set({ currentStep: { type: "prayerShortcut", index: index + 1 } });
-    }
+    set({ currentStep: { type: "qiblaCountdown" } });
+  },
+
+  completeQiblaCountdown: () => {
+    const step = get().currentStep;
+    if (!step || step.type !== "qiblaCountdown") return;
+    set({ currentStep: { type: "qibla" } });
   },
 
   completeQiblaOnboardingAllowingLocationRequest: () => {
@@ -186,17 +197,27 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
       const draft = get().notificationDraft;
       const settings = useSettingsStore.getState();
 
-      // Persist notification settings
-      settings.setAdhanEnabled(draft.adhanEnabled);
-      settings.setIqamahEnabled(draft.iqamahEnabled);
-      settings.setPreAdhanReminderMinutes(draft.preAdhanReminderMinutes);
-      settings.setPreIqamahReminderMinutes(draft.preIqamahReminderMinutes);
-
       const masterEnabled =
         draft.adhanEnabled ||
         draft.iqamahEnabled ||
         draft.preAdhanReminderMinutes != null ||
         draft.preIqamahReminderMinutes != null;
+
+      // Persist the full notification choice atomically, matching native iOS.
+      // Without masterEnabled, Expo rescheduling exits early and the OS never
+      // receives any pending prayer notifications from the tutorial flow.
+      useSettingsStore.setState((state) => ({
+        notifications: {
+          ...state.notifications,
+          masterEnabled,
+          adhanEnabled: draft.adhanEnabled,
+          iqamahEnabled: draft.iqamahEnabled,
+          preAdhanReminderMinutes: draft.preAdhanReminderMinutes,
+          preIqamahReminderMinutes: draft.preIqamahReminderMinutes,
+        },
+      }));
+
+      const nextNotifications = useSettingsStore.getState().notifications;
 
       if (masterEnabled) {
         await requestNotificationAuthorizationIfNeeded();
@@ -211,14 +232,11 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
         if (mosque) {
           await rescheduleUpcomingPrayerNotifications({
             mosque,
-            settings: useSettingsStore.getState().notifications,
+            settings: nextNotifications,
             locale: "en",
           });
         }
       } else {
-        const { cancelAllPrayerNotifications } = await import(
-          "@/lib/notifications/prayerNotifications"
-        );
         await cancelAllPrayerNotifications();
       }
 

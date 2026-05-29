@@ -17,6 +17,10 @@ struct WhatsNewModalView: View {
         WhatsNewModalCopy(locale: locale)
     }
 
+    private var hasMultipleItems: Bool {
+        items.count > 1
+    }
+
     var body: some View {
         OnboardingTutorialChrome.card(timeTheme: timeTheme) {
             VStack(spacing: 24) {
@@ -34,47 +38,31 @@ struct WhatsNewModalView: View {
                         .background(timeTheme.textColor.opacity(0.1))
                         .clipShape(Capsule())
 
-                    // Scroll Indication
-                    HStack(spacing: 4) {
-                        Text(copy.swipeHint)
-                            .appFont(size: 12, weight: .medium)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 10, weight: .semibold))
+                    if hasMultipleItems {
+                        // Scroll Indication
+                        HStack(spacing: 4) {
+                            Text(copy.swipeHint)
+                                .appFont(size: 12, weight: .medium)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(timeTheme.textColor.opacity(0.45))
+                        .padding(.top, 2)
                     }
-                    .foregroundStyle(timeTheme.textColor.opacity(0.45))
-                    .padding(.top, 2)
                 }
                 .padding(.top, 8)
 
-                // Features List (scrollable)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        ForEach(items) { item in
-                            HStack(alignment: .top, spacing: 16) {
-                                Image(systemName: item.icon)
-                                    .font(.system(size: 22, weight: .light))
-                                    .foregroundStyle(HomeDesign.Colors.accent)
-                                    .frame(width: 32)
-
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(item.title)
-                                        .appFont(size: 17, weight: .bold)
-                                        .foregroundStyle(timeTheme.textColor)
-
-                                    Text(item.description)
-                                        .appFont(size: 14, weight: .regular)
-                                        .foregroundStyle(timeTheme.textColor.opacity(0.72))
-                                        .fixedSize(horizontal: false, vertical: true)
-
-
-                                }
-                            }
-                        }
+                if hasMultipleItems {
+                    ScrollView {
+                        itemsList
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 2)
                     }
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 2)
+                    .scrollIndicators(.visible)
+                } else {
+                    itemsList
+                        .padding(.horizontal, 2)
                 }
-                .scrollIndicators(.visible)
 
                 // Continue button — uses the blue-gradient capsule from onboarding
                 Button {
@@ -94,6 +82,30 @@ struct WhatsNewModalView: View {
             .padding(24)
         }
         .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
+    }
+
+    private var itemsList: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            ForEach(items) { item in
+                HStack(alignment: .top, spacing: 16) {
+                    Image(systemName: item.icon)
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(HomeDesign.Colors.accent)
+                        .frame(width: 32)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(item.title)
+                            .appFont(size: 17, weight: .bold)
+                            .foregroundStyle(timeTheme.textColor)
+
+                        Text(item.description)
+                            .appFont(size: 14, weight: .regular)
+                            .foregroundStyle(timeTheme.textColor.opacity(0.72))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
     }
 
 }

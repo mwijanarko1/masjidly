@@ -12,6 +12,7 @@ import {
   getDisplayedPrayerTimes,
   isoDateString,
   resolveIqamahTimesWithDstMapping,
+  resolveIshaIqamahForDisplay,
   resolvePrayerTimes,
   sheffieldNoonUTC,
 } from "@/lib/prayer/prayerTimesEngine";
@@ -81,10 +82,20 @@ export async function updateAndroidPrayerWidgetSnapshot(params: {
         params.ukDst
       );
       const { year, month, day } = getDateInSheffield(date);
+      const displayed = getDisplayedPrayerTimes(prayerTimes, date, params.mosque.slug);
       days.push({
         date: isoDateString(year, month, day),
-        prayers: getDisplayedPrayerTimes(prayerTimes, date, params.mosque.slug),
-        iqamah,
+        prayers: displayed,
+        iqamah: {
+          ...iqamah,
+          isha: resolveIshaIqamahForDisplay(
+            params.mosque.slug,
+            date,
+            displayed.isha,
+            iqamah,
+            displayed.maghrib
+          ),
+        },
       });
     } catch (error) {
       if (__DEV__) {

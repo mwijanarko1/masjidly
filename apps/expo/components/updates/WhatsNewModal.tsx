@@ -1,7 +1,6 @@
 import React from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 import { AlignRight, ChevronDown, Clock, Globe2, Palette } from "lucide-react-native";
 import type { AppLanguage } from "@/store/settings";
 import { ACCENT, getSkyTheme, getTextColor, type TimeTheme } from "@/lib/design/themes";
@@ -33,12 +32,16 @@ function FeatureIcon({ item }: { item: WhatsNewItem }) {
 export function WhatsNewModal({ visible, theme, language, onDismiss, onAction }: WhatsNewModalProps) {
   const sky = getSkyTheme(theme);
   const textColor = getTextColor(theme);
+  const usesLightForeground = textColor === "#FFFFFF";
   const copy = whatsNewCopy(language);
   const fontScale = getFontScale(language);
   const version = currentMasjidlyVersion();
   const { height } = useWindowDimensions();
-  const maxCardHeight = Math.max(360, Math.min(580, height - 80));
-  const maxScrollHeight = Math.max(150, maxCardHeight - 230);
+  const hasMultipleItems = copy.items.length > 1;
+  const maxCardHeight = hasMultipleItems
+    ? Math.max(360, Math.min(580, height - 80))
+    : Math.max(300, Math.min(440, height - 80));
+  const maxScrollHeight = Math.max(150, maxCardHeight - (hasMultipleItems ? 230 : 190));
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
@@ -48,12 +51,27 @@ export function WhatsNewModal({ visible, theme, language, onDismiss, onAction }:
           <View style={styles.dim} />
         </Pressable>
 
-        <BlurView
-          intensity={34}
-          tint={textColor === "#FFFFFF" ? "dark" : "light"}
-          style={[styles.cardWrap, { maxHeight: maxCardHeight }]}
+        <View
+          style={[
+            styles.cardWrap,
+            { maxHeight: maxCardHeight },
+            {
+              backgroundColor: usesLightForeground
+                ? "rgb(10, 10, 30)"
+                : "rgb(255, 255, 255)",
+            },
+          ]}
         >
-          <View style={styles.cardBorder}>
+          <View
+            style={[
+              styles.cardBorder,
+              {
+                borderColor: usesLightForeground
+                  ? "rgba(255,255,255,0.15)"
+                  : "rgba(0,0,0,0.12)",
+              },
+            ]}
+          >
             <View style={[styles.cardInner, { maxHeight: maxCardHeight }]}>
               <View style={styles.header}>
                 <Text style={[styles.title, { color: textColor, fontSize: 26 * fontScale }]}>
@@ -64,20 +82,23 @@ export function WhatsNewModal({ visible, theme, language, onDismiss, onAction }:
                     {copy.versionLabel.replace("%s", version)}
                   </Text>
                 </View>
-                <View style={styles.swipeHint}>
-                  <Text style={[styles.swipeText, { color: `${textColor}73`, fontSize: 12 * fontScale }]}>
-                    {copy.swipeHint}
-                  </Text>
-                  <ChevronDown size={12} color={`${textColor}73`} strokeWidth={2} />
-                </View>
+                {hasMultipleItems ? (
+                  <View style={styles.swipeHint}>
+                    <Text style={[styles.swipeText, { color: `${textColor}73`, fontSize: 12 * fontScale }]}>
+                      {copy.swipeHint}
+                    </Text>
+                    <ChevronDown size={12} color={`${textColor}73`} strokeWidth={2} />
+                  </View>
+                ) : null}
               </View>
 
               <ScrollView
                 style={[styles.scroll, { maxHeight: maxScrollHeight }]}
-                contentContainerStyle={styles.items}
-                showsVerticalScrollIndicator
-                nestedScrollEnabled
-                bounces
+                contentContainerStyle={[styles.items, !hasMultipleItems && styles.singleItem]}
+                showsVerticalScrollIndicator={hasMultipleItems}
+                nestedScrollEnabled={hasMultipleItems}
+                scrollEnabled={hasMultipleItems}
+                bounces={hasMultipleItems}
               >
                 {copy.items.map((item, index) => (
                   <View key={`${item.title}-${index}`} style={styles.itemRow}>
@@ -104,7 +125,7 @@ export function WhatsNewModal({ visible, theme, language, onDismiss, onAction }:
               </Pressable>
             </View>
           </View>
-        </BlurView>
+        </View>
       </View>
     </Modal>
   );
@@ -131,8 +152,6 @@ const styles = StyleSheet.create({
   cardBorder: {
     borderRadius: 34,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.28)",
-    backgroundColor: "rgba(255,255,255,0.12)",
   },
   cardInner: {
     padding: 24,
@@ -171,6 +190,9 @@ const styles = StyleSheet.create({
     gap: 24,
     paddingVertical: 4,
     paddingHorizontal: 2,
+  },
+  singleItem: {
+    paddingVertical: 0,
   },
   itemRow: {
     flexDirection: "row",

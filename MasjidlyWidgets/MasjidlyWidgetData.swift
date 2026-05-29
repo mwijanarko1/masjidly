@@ -268,7 +268,7 @@ enum MasjidlyWidgetResolver {
             ResolvedPrayer(id: "dhuhr", name: isFriday ? names.jummah : names.dhuhr, adhan: isFriday ? jummahAdhan : day.prayers.dhuhr, iqamahs: isFriday ? [] : [resolveIqamah("dhuhr", adhan: day.prayers.dhuhr, iqamah: day.iqamah)], adhanDate: wallClockToday(isFriday ? jummahAdhan : day.prayers.dhuhr)),
             ResolvedPrayer(id: "asr", name: names.asr, adhan: day.prayers.asr, iqamahs: [resolveIqamah("asr", adhan: day.prayers.asr, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.asr)),
             ResolvedPrayer(id: "maghrib", name: names.maghrib, adhan: day.prayers.maghrib, iqamahs: [resolveIqamah("maghrib", adhan: day.prayers.maghrib, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.maghrib)),
-            ResolvedPrayer(id: "isha", name: names.isha, adhan: day.prayers.isha, iqamahs: [resolveIqamah("isha", adhan: day.prayers.isha, iqamah: day.iqamah)], adhanDate: wallClockToday(day.prayers.isha))
+            ResolvedPrayer(id: "isha", name: names.isha, adhan: day.prayers.isha, iqamahs: [resolveIqamah("isha", adhan: day.prayers.isha, iqamah: day.iqamah, mosqueSlug: snapshot.mosque.slug, date: now, maghribAdhan: day.prayers.maghrib)], adhanDate: wallClockToday(day.prayers.isha))
         ]
         
         var nextPrayerIndex = 0
@@ -334,7 +334,14 @@ enum MasjidlyWidgetResolver {
             if isFriday, next.id == "dhuhr" {
                 return []
             }
-            return [resolveIqamah(next.id, adhan: next.adhan, iqamah: isNextFajrTomorrow ? (morrowDay?.iqamah ?? day.iqamah) : day.iqamah)]
+            return [resolveIqamah(
+                next.id,
+                adhan: next.adhan,
+                iqamah: isNextFajrTomorrow ? (morrowDay?.iqamah ?? day.iqamah) : day.iqamah,
+                mosqueSlug: snapshot.mosque.slug,
+                date: nextWallClockBase,
+                maghribAdhan: (isNextFajrTomorrow ? morrowDay?.prayers.maghrib : day.prayers.maghrib) ?? day.prayers.maghrib
+            )]
         }()
 
         let displayIqamahRaw = nextDisplayIqamahRaw(
@@ -382,7 +389,7 @@ enum MasjidlyWidgetResolver {
                     return (isFriday ? names.jummah : names.dhuhr, fDhuhrDisplayAdhan, fDhuhrIqamah)
                 }
                 let f = prayersList[nextIdx + 1]
-                let iq = f.id == "dhuhr" && isFriday ? "" : resolveIqamah(f.id, adhan: f.adhan, iqamah: day.iqamah)
+                let iq = f.id == "dhuhr" && isFriday ? "" : resolveIqamah(f.id, adhan: f.adhan, iqamah: day.iqamah, mosqueSlug: snapshot.mosque.slug, date: now, maghribAdhan: day.prayers.maghrib)
                 return (f.name, f.adhan, iq)
             }
             let tomorrowString = isoDateString(for: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
@@ -500,17 +507,59 @@ enum MasjidlyWidgetResolver {
         }
     }
 
-    private static func resolveIqamah(_ prayer: String, adhan: String, iqamah: MasjidlyWidgetDailyIqamahTimes) -> String {
+    private static func resolveIqamah(
+        _ prayer: String,
+        adhan: String,
+        iqamah: MasjidlyWidgetDailyIqamahTimes,
+        mosqueSlug: String = "",
+        date: Date = Date(),
+        maghribAdhan: String = ""
+    ) -> String {
         let raw: String
         switch prayer {
         case "fajr": raw = iqamah.fajr == "Various" ? adhan : iqamah.fajr
         case "dhuhr": raw = iqamah.dhuhr
         case "asr": raw = iqamah.asr.lowercased() == "entry time" ? adhan : iqamah.asr
         case "maghrib": raw = iqamah.maghrib == "sunset" ? adhan : iqamah.maghrib
-        case "isha": raw = iqamah.isha == "Entry Time" ? adhan : iqamah.isha
+        case "isha":
+            if isMasjidRisalah(mosqueSlug), isRisalahIshaIqamahMatchesAdhanPeriod(date) {
+                raw = adhan
+            } else if isMuslimWelfareHouse(mosqueSlug), isSummerIshaPeriod(date) {
+                raw = "After Maghrib"
+            } else if iqamah.isha == "Straight after Maghrib" {
+                raw = maghribAdhan.isEmpty ? adhan : maghribAdhan
+            } else {
+                raw = iqamah.isha == "Entry Time" ? adhan : iqamah.isha
+            }
         default: raw = ""
         }
         return resolveRelativeIqamah(raw, adhan: adhan)
+    }
+
+    private static func isMasjidRisalah(_ slug: String) -> Bool {
+        slug.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "masjid-risalah"
+    }
+
+    private static func isMuslimWelfareHouse(_ slug: String) -> Bool {
+        slug.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "muslim-welfare-house"
+    }
+
+    private static func isSummerIshaPeriod(_ date: Date) -> Bool {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = sheffieldTimeZone
+        let y = cal.component(.year, from: date)
+        guard let may15 = cal.date(from: DateComponents(year: y, month: 5, day: 15, hour: 12)),
+              let aug15 = cal.date(from: DateComponents(year: y, month: 8, day: 15, hour: 12)) else { return false }
+        return date >= may15 && date <= aug15
+    }
+
+    private static func isRisalahIshaIqamahMatchesAdhanPeriod(_ date: Date) -> Bool {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = sheffieldTimeZone
+        let y = cal.component(.year, from: date)
+        guard let may1 = cal.date(from: DateComponents(year: y, month: 5, day: 1, hour: 12)),
+              let july31 = cal.date(from: DateComponents(year: y, month: 7, day: 31, hour: 12)) else { return false }
+        return date >= may1 && date <= july31
     }
 
     private static func resolveRelativeIqamah(_ value: String, adhan: String) -> String {
@@ -577,6 +626,9 @@ enum MasjidlyWidgetResolver {
             f.timeStyle = .short
             f.dateStyle = .none
         }
-        return f.string(from: date)
+        let formatted = f.string(from: date)
+        // Use non-breaking space so AM/PM stays attached to the time and doesn't
+        // get truncated on the narrow lock screen accessory widget layout.
+        return uses24HourTime ? formatted : formatted.replacingOccurrences(of: " ", with: "\u{00a0}")
     }
 }

@@ -606,12 +606,12 @@ struct MinimalistPrayerPage: View {
                                         .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
-                                .onboardingHighlight(highlightedShortcutIndex == index, timeTheme: theme)
                                 .id(index)
                                 .accessibilityIdentifier(shortcutAccessibilityIdentifier(for: index))
                                 .accessibilityLabel(carouselA11yLabel(nameLabel: nameLabel, letter: letter, index: index))
                             }
                         }
+                        .onboardingHighlight(highlightedShortcutIndex != nil, timeTheme: theme)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 20)

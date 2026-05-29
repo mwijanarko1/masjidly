@@ -23,17 +23,26 @@ import { TutorialOverlay } from "@/components/onboarding/TutorialOverlay";
 import { TutorialHighlight } from "@/components/onboarding/CoachMarkCard";
 import { WhatsNewModal } from "@/components/updates/WhatsNewModal";
 import {
+  checkNotificationPermissionIssue,
+  requestNotificationPermission,
+  fixNotificationMasterEnabled,
+  type NotificationPermissionIssue,
+} from "@/lib/notifications/notificationPermissionCheck";
+import { NotificationRecoveryModal } from "@/components/notifications/NotificationRecoveryModal";
+import {
+  rescheduleUpcomingPrayerNotifications,
+} from "@/lib/notifications/prayerNotifications";
+import {
   formatPrayerClockForDisplay,
   formatPrayerTimeHeroParts,
-  getIqamahTime,
-  resolveIshaIqamahForDisplay,
+  getDisplayIqamah,
   heroCountdownPresentation,
   heroRemainingSeconds,
   heroProgress01,
   formatHeroCountdownClock,
 } from "@/lib/prayer/prayerTimesEngine";
 import { t, type TranslationKey } from "@/lib/i18n/translations";
-import type { HeroCountdownLabelKind } from "@/types/prayer";
+import type { DailyPrayerTimes, HeroCountdownLabelKind } from "@/types/prayer";
 import { resolvedLocale, useAppLanguage, getFontScale } from "@/lib/i18n/language";
 import {
   themeForPrayer,
@@ -78,32 +87,23 @@ function getIqamahForSelectedPrayer(
   const now = new Date();
 
   switch (selected) {
-    case "Fajr": {
-      return getIqamahTime("fajr", prayerTimes.fajr, iqamahTimes);
-    }
-    case "Dhuhr": {
-      if (isFridayInSheffield(now)) return null;
-      return getIqamahTime("dhuhr", prayerTimes.dhuhr, iqamahTimes);
-    }
-    case "Jummah": {
-      return null;
-    }
-    case "Asr": {
-      return getIqamahTime("asr", prayerTimes.asr, iqamahTimes);
-    }
-    case "Maghrib": {
-      return getIqamahTime("maghrib", prayerTimes.maghrib, iqamahTimes);
-    }
+    case "Fajr":
+    case "Dhuhr":
+    case "Asr":
+    case "Maghrib":
     case "Isha": {
-      return resolveIshaIqamahForDisplay(
-          mosqueSlug,
-          now,
-          prayerTimes.isha,
-          iqamahTimes,
-          prayerTimes.maghrib
+      if (selected === "Dhuhr" && isFridayInSheffield(now)) return null;
+      return getDisplayIqamah(
+        selected.toLowerCase(),
+        prayerTimes[selected.toLowerCase() as keyof DailyPrayerTimes] as string,
+        iqamahTimes,
+        mosqueSlug,
+        now,
+        prayerTimes.maghrib
       );
     }
     case "Sunrise":
+    case "Jummah":
       return null;
   }
 }
@@ -206,6 +206,7 @@ export default function HomeScreen() {
 
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerName>("Fajr");
   const [showingWhatsNew, setShowingWhatsNew] = useState(false);
+  const [notificationIssue, setNotificationIssue] = useState<NotificationPermissionIssue>(null);
   const [heroCountdownVisible, setHeroCountdownVisible] = useState(false);
   const [heroCountdownLocked, setHeroCountdownLocked] = useState(false);
   const [heroTick, setHeroTick] = useState(0);
@@ -225,9 +226,7 @@ export default function HomeScreen() {
     setSelectedPrayer(prayer);
     if (currentStep?.type === "prayerShortcut") {
       const idx = prayers.indexOf(prayer);
-      if (idx === currentStep.index) {
-        onboarding.handlePrayerShortcutTap(idx);
-      }
+      onboarding.handlePrayerShortcutTap(idx);
     }
   };
 
@@ -246,6 +245,36 @@ export default function HomeScreen() {
       setShowingWhatsNew(true);
     }
   }, [hasCompletedOnboarding, lastSeenBuildVersion, loadState]);
+
+  // ── Notification Permission Recovery ──
+  const [checkDone, setCheckDone] = useState(false);
+  useEffect(() => {
+    if (!hasCompletedOnboarding) return;
+    if (loadState === "loading" || loadState === "idle") return;
+    if (checkDone) return;
+    // Don’t show recovery prompt while the What’s New modal is visible.
+    if (showingWhatsNew) return;
+
+    setCheckDone(true);
+    checkNotificationPermissionIssue().then(setNotificationIssue);
+  }, [hasCompletedOnboarding, loadState, showingWhatsNew, checkDone]);
+
+  const handleNotificationRecovery = async () => {
+    if (notificationIssue?.kind === "bug_recovery") {
+      fixNotificationMasterEnabled();
+    }
+
+    const granted = await requestNotificationPermission();
+    if (granted && selectedMosque) {
+      const settings = useSettingsStore.getState();
+      await rescheduleUpcomingPrayerNotifications({
+        mosque: selectedMosque,
+        settings: settings.notifications,
+        locale: languageCode,
+      });
+    }
+    setNotificationIssue(null);
+  };
 
   useEffect(() => {
     if (showWhatsNew === "1") {
@@ -545,11 +574,7 @@ export default function HomeScreen() {
                 selectedPrayer={selectedPrayer}
                 onSelectPrayer={handlePrayerSelect}
                 theme={theme}
-                highlightedPrayerIndex={
-                  currentStep?.type === "prayerShortcut"
-                    ? currentStep.index
-                    : undefined
-                }
+                highlightAllPrayers={currentStep?.type === "prayerShortcut"}
               />
             </View>
           </View>
@@ -589,6 +614,15 @@ export default function HomeScreen() {
             router.push({ pathname: "/timetable", params: { theme: selectedPrayer, mosqueName: selectedMosque?.name ?? "" } });
           }
         }}
+      />
+
+      <NotificationRecoveryModal
+        visible={notificationIssue !== null && !currentStep}
+        theme={theme}
+        language={languageCode}
+        issue={notificationIssue}
+        onEnable={handleNotificationRecovery}
+        onDismiss={() => setNotificationIssue(null)}
       />
     </View>
   );

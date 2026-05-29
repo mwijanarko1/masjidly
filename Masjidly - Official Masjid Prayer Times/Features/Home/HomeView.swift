@@ -1,6 +1,5 @@
 import SwiftUI
 import CoreLocation
-import UserNotifications
 
 private func homeLS(_ key: String, locale: Locale) -> String {
     LocaleBundle.string(forKey: key, locale: locale)
@@ -19,8 +18,9 @@ struct HomeView: View {
     @State private var showingSettings = false
     @State private var showingTimetable = false
     @State private var showingWhatsNew = false
-    @State private var showingNotificationRecovery = false
-    @State private var notificationRecoveryIsBugRecovery = false
+    @State private var showUpdateAlert = false
+    @State private var pendingRelease: MasjidlyRelease?
+    @State private var hasCheckedForUpdate = false
     @State private var qiblaDirectionProvider = QiblaDirectionProvider()
 
     private var dynamicTheme: HomeDesign.TimeTheme {
@@ -55,15 +55,30 @@ struct HomeView: View {
                     get: { reviewPrompt.showEnjoymentPrompt },
                     set: { reviewPrompt.showEnjoymentPrompt = $0 }
                 ),
-                onLoveIt: { reviewPrompt.userConfirmedEnjoymentPositive() },
-                onNotReally: { reviewPrompt.userConfirmedEnjoymentNegative() }
+                onLoveIt: {
+                    reviewPrompt.userConfirmedEnjoymentPositive()
+                    presentUpdateAlertIfReady()
+                },
+                onNotReally: {
+                    reviewPrompt.userConfirmedEnjoymentNegative()
+                    presentUpdateAlertIfReady()
+                }
             )
-            .notificationRecoveryAlert(
-                isBugRecovery: $notificationRecoveryIsBugRecovery,
-                isPresented: $showingNotificationRecovery,
-                onEnable: { handleNotificationRecoveryEnable() },
-                onDismiss: { showingNotificationRecovery = false }
-            )
+            .alert(
+                updateAlertTitle,
+                isPresented: $showUpdateAlert,
+                presenting: pendingRelease
+            ) { _ in
+                Button(updateLaterLabel) {
+                    showUpdateAlert = false
+                }
+                Button(updateNowLabel) {
+                    AppUpdateChecker.openAppStore()
+                    showUpdateAlert = false
+                }
+            } message: { _ in
+                Text(updateMessage)
+            }
     }
 
     private var homeNotificationChrome: some View {
@@ -84,6 +99,11 @@ struct HomeView: View {
                 showingTimetable = false
                 showingSettings = false
                 showingWhatsNew = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .masjidlyShowUpdatePrompt)) { _ in
+                showingTimetable = false
+                showingSettings = false
+                presentTestUpdateAlert()
             }
     }
 
@@ -114,7 +134,7 @@ struct HomeView: View {
                 onboarding.startIfNeeded()
                 await model.resyncNotificationsIfNeeded()
                 checkWhatsNew()
-                checkNotificationRecovery()
+                checkForUpdateIfNeeded()
             }
             .onAppear {
                 Task { await model.applySelectionFromSettings() }
@@ -130,13 +150,15 @@ struct HomeView: View {
                     isOnboardingBlocking: enjoymentReviewFlowBlocked
                 )
                 checkWhatsNew()
-                checkNotificationRecovery()
+                checkForUpdateIfNeeded()
+                presentUpdateAlertIfReady()
             }
             .onChange(of: onboarding.isActive) { _, isActive in
                 guard !isActive else { return }
                 reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
                     isOnboardingBlocking: enjoymentReviewFlowBlocked
                 )
+                presentUpdateAlertIfReady()
             }
             .onChange(of: settings.notifications.masterEnabled) { _, _ in
                 Task { await model.resyncNotificationsIfNeeded() }
@@ -327,6 +349,7 @@ struct HomeView: View {
         withAnimation(.easeInOut(duration: 0.18)) {
             showingWhatsNew = false
         }
+        presentUpdateAlertIfReady()
     }
 
     @ViewBuilder
@@ -476,14 +499,10 @@ struct HomeView: View {
                     Task { await onboarding.selectMosque(mosque) }
                 }
             )
-        case .prayerShortcut(let index):
+        case .prayerShortcut:
             OnboardingCoachMarkView(
                 title: homeLS("onboarding.shortcut.title", locale: locale),
-                message: String(
-                    format: homeLS("onboarding.shortcut.message_format", locale: locale),
-                    locale: locale,
-                    arguments: [shortcutLetter(for: index)]
-                ),
+                message: homeLS("onboarding.shortcut.message_format", locale: locale),
                 timeTheme: currentTheme,
                 variant: .aboveShortcutRow
             )
@@ -601,68 +620,83 @@ struct HomeView: View {
         return formatter.string(from: Date())
     }
 
-    private func checkNotificationRecovery() {
+    private func checkWhatsNew() {
+        let currentBuild = WhatsNew.fullVersionString
+        guard settings.lastSeenBuildVersion != currentBuild else { return }
         guard settings.hasCompletedOnboarding else { return }
-        guard !showingWhatsNew else { return }
+        guard !onboarding.isActive else { return }
+        showingWhatsNew = true
+    }
 
-        let n = settings.notifications
-        let bugRecoveryCondition = !n.masterEnabled && (n.adhanEnabled || n.iqamahEnabled)
+    private func checkForUpdateIfNeeded() {
+        guard !hasCheckedForUpdate else { return }
+        guard settings.hasCompletedOnboarding else { return }
+        hasCheckedForUpdate = true
 
-        if bugRecoveryCondition {
-            notificationRecoveryIsBugRecovery = true
-            showingNotificationRecovery = true
-            return
-        }
-
-        guard n.masterEnabled else { return }
-
-        // Check OS-level permission asynchronously
         Task {
-            let center = UNUserNotificationCenter.current()
-            let settings = await center.notificationSettings()
-            switch settings.authorizationStatus {
-            case .denied:
-                await MainActor.run {
-                    notificationRecoveryIsBugRecovery = false
-                    showingNotificationRecovery = true
-                }
-            default:
+            let status = await AppUpdateChecker.checkForUpdate()
+            switch status {
+            case .updateAvailable(let release):
+                pendingRelease = release
+                presentUpdateAlertIfReady()
+            case .upToDate, .checkFailed:
                 break
             }
         }
     }
 
-    private func handleNotificationRecoveryEnable() {
+    private func presentTestUpdateAlert() {
         Task {
-            if notificationRecoveryIsBugRecovery {
-                // Fix masterEnabled from the bug so resync works
-                var n = settings.notifications
-                n.masterEnabled = n.adhanEnabled || n.iqamahEnabled ||
-                                  n.preAdhanReminderMinutes != nil ||
-                                  n.preIqamahReminderMinutes != nil
-                settings.notifications = n
-            }
-
-            // Request OS permission and reschedule via the model
-            let center = UNUserNotificationCenter.current()
-            do {
-                let granted = try await center.requestAuthorization(options: [.alert, .sound])
-                if granted {
-                    await model.resyncNotificationsIfNeeded()
-                }
-            } catch {
-                // Silently handle the error
-            }
-
-            showingNotificationRecovery = false
+            pendingRelease = await AppUpdateChecker.fetchLatestRelease() ?? MasjidlyRelease.testRelease
+            presentUpdateAlertIfReady()
         }
     }
 
-    private func checkWhatsNew() {
-        let currentBuild = WhatsNew.fullVersionString
-        guard settings.lastSeenBuildVersion != currentBuild else { return }
+    private func presentUpdateAlertIfReady() {
+        guard pendingRelease != nil else { return }
         guard settings.hasCompletedOnboarding else { return }
-        showingWhatsNew = true
+        guard !onboarding.isActive else { return }
+        guard !showingWhatsNew else { return }
+        guard !reviewPrompt.showEnjoymentPrompt else { return }
+        guard !showingSettings else { return }
+        guard !showingTimetable else { return }
+        showUpdateAlert = true
+    }
+
+    private var updateAlertTitle: String {
+        switch settings.appLanguage {
+        case .arabic: return "تحديث متوفر"
+        case .urdu: return "اپ ڈیٹ دستیاب ہے"
+        case .indonesian: return "Pembaruan Tersedia"
+        default: return "Update Available"
+        }
+    }
+
+    private var updateNowLabel: String {
+        switch settings.appLanguage {
+        case .arabic: return "فتح المتجر"
+        case .urdu: return "اسٹور کھولیں"
+        case .indonesian: return "Buka App Store"
+        default: return "Open App Store"
+        }
+    }
+
+    private var updateLaterLabel: String {
+        switch settings.appLanguage {
+        case .arabic: return "لاحقاً"
+        case .urdu: return "بعد میں"
+        case .indonesian: return "Nanti"
+        default: return "Later"
+        }
+    }
+
+    private var updateMessage: String {
+        switch settings.appLanguage {
+        case .arabic: return "نسخة أحدث من مسجدلي جاهزة للتثبيت."
+        case .urdu: return "مسجدلی کا نیا ورژن انسٹال کرنے کے لیے تیار ہے۔"
+        case .indonesian: return "Versi baru Masjidly siap dipasang."
+        default: return "A newer version of Masjidly is ready."
+        }
     }
 
     private func handleQiblaAuthorizationStatusChange(_ status: CLAuthorizationStatus) {
@@ -704,13 +738,22 @@ struct HomeView: View {
             return nil
         case "Dhuhr":
             if isFridayInSheffield(now) { return nil }
-            return PrayerTimesEngine.getIqamahTime(prayer: "dhuhr", adhanTime: daily.dhuhr, iqamahTimes: iq)
+            return PrayerTimesEngine.getDisplayIqamah(
+                prayer: "dhuhr", adhanTime: daily.dhuhr, iqamahTimes: iq,
+                mosqueSlug: mosqueSlug, date: now, maghribAdhan: daily.maghrib
+            )
         case "Jummah":
             return nil
         case "Asr":
-            return PrayerTimesEngine.getIqamahTime(prayer: "asr", adhanTime: daily.asr, iqamahTimes: iq)
+            return PrayerTimesEngine.getDisplayIqamah(
+                prayer: "asr", adhanTime: daily.asr, iqamahTimes: iq,
+                mosqueSlug: mosqueSlug, date: now, maghribAdhan: daily.maghrib
+            )
         case "Maghrib":
-            return PrayerTimesEngine.getIqamahTime(prayer: "maghrib", adhanTime: daily.maghrib, iqamahTimes: iq)
+            return PrayerTimesEngine.getDisplayIqamah(
+                prayer: "maghrib", adhanTime: daily.maghrib, iqamahTimes: iq,
+                mosqueSlug: mosqueSlug, date: now, maghribAdhan: daily.maghrib
+            )
         case "Isha":
             return PrayerTimesEngine.resolveIshaIqamahForDisplay(
                 slug: mosqueSlug,
@@ -744,33 +787,6 @@ struct HomeView: View {
 }
 
 private extension View {
-    func notificationRecoveryAlert(
-        isBugRecovery: Binding<Bool>,
-        isPresented: Binding<Bool>,
-        onEnable: @escaping () -> Void,
-        onDismiss: @escaping () -> Void
-    ) -> some View {
-        alert("Notifications", isPresented: isPresented) {
-            if isBugRecovery.wrappedValue {
-                Button("Enable Notifications", action: onEnable)
-                Button("Not Now", role: .cancel, action: onDismiss)
-            } else {
-                Button("Open Settings", action: {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                    }
-                })
-                Button("Not Now", role: .cancel, action: onDismiss)
-            }
-        } message: {
-            if isBugRecovery.wrappedValue {
-                Text("During setup, prayer notifications weren\'t saved correctly. Enable them now to receive adhan and iqamah alerts.")
-            } else {
-                Text("Prayer notifications are enabled in Masjidly but blocked by your device settings. Open Settings to allow notifications.")
-            }
-        }
-    }
-
     func enjoymentReviewAlert(
         title: String,
         message: String,

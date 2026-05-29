@@ -499,6 +499,7 @@ struct MasjidlyPrayerWidgetView: View {
                     .monospacedDigit()
                     .foregroundStyle(.primary)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.65)
             }
 
             if !s.iqamahTime.isEmpty {
@@ -512,6 +513,7 @@ struct MasjidlyPrayerWidgetView: View {
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.65)
                 }
             }
 

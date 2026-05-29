@@ -2801,25 +2801,25 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اضغط %@ لعرض وقت تلك الصلاة."
+            "value" : "اضغط على أي حرف لعرض وقت تلك الصلاة."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap %@ to view that prayer time."
+            "value" : "Tap any of the letters to see that prayer’s time."
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ketuk %@ untuk melihat waktu salat tersebut."
+            "value" : "Ketuk huruf apa pun untuk melihat waktu salat tersebut."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اس نماز کا وقت دیکھنے کے لیے %@ پر ٹیپ کریں۔"
+            "value" : "اس نماز کا وقت دیکھنے کے لیے کسی بھی حرف پر ٹیپ کریں۔"
           }
         }
       }

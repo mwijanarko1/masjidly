@@ -197,7 +197,7 @@ struct OnboardingHighlightModifier: ViewModifier {
         content
             .overlay {
                 if isHighlighted {
-                    Circle()
+                    Capsule()
                         .stroke(timeTheme.textColor.opacity(0.8), lineWidth: 1.5)
                         .padding(-6)
                         .shadow(color: timeTheme.textColor.opacity(0.3), radius: 8)

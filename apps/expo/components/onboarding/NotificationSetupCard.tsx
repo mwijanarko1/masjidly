@@ -58,8 +58,8 @@ export function NotificationSetupCard({
   const reminderOptions = REMINDER_OPTIONS;
 
   const glassBg = usesLightForeground
-    ? "rgba(10, 10, 30, 0.72)"
-    : "rgba(255, 255, 255, 0.82)";
+    ? "rgb(10, 10, 30)"
+    : "rgb(255, 255, 255)";
   const glassBorder = usesLightForeground
     ? "rgba(255, 255, 255, 0.15)"
     : "rgba(240, 240, 240, 0.6)";
@@ -72,8 +72,8 @@ export function NotificationSetupCard({
           StyleSheet.absoluteFill,
           {
             backgroundColor: usesLightForeground
-              ? "rgba(0, 0, 0, 0.28)"
-              : "rgba(0, 0, 0, 0.14)",
+              ? "rgba(0, 0, 0, 0.24)"
+              : "rgba(0, 0, 0, 0.13)",
           },
         ]}
       />

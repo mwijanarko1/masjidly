@@ -140,6 +140,31 @@ enum PrayerTimesEngine {
         return getIqamahTime(prayer: "isha", adhanTime: ishaAdhan, iqamahTimes: iqamahTimes, maghribAdhan: maghribAdhan)
     }
 
+    /// Centralized iqamah display resolution.
+    /// For Isha, applies special mosque/season rules via `resolveIshaIqamahForDisplay`;
+    /// for all other prayers, delegates to `getIqamahTime`.
+    /// Use this everywhere iqamah is shown to ensure home, timetable, and widgets agree.
+    static func getDisplayIqamah(
+        prayer: String,
+        adhanTime: String,
+        iqamahTimes: DailyIqamahTimes,
+        mosqueSlug: String,
+        date: Date,
+        maghribAdhan: String
+    ) -> String {
+        let p = prayer.lowercased()
+        if p == "isha" {
+            return resolveIshaIqamahForDisplay(
+                slug: mosqueSlug,
+                date: date,
+                ishaAdhan: adhanTime,
+                iqamahTimes: iqamahTimes,
+                maghribAdhan: maghribAdhan
+            )
+        }
+        return getIqamahTime(prayer: p, adhanTime: adhanTime, iqamahTimes: iqamahTimes, maghribAdhan: maghribAdhan)
+    }
+
     static func getIqamahTime(prayer: String, adhanTime: String, iqamahTimes: DailyIqamahTimes, maghribAdhan: String? = nil) -> String {
         let p = prayer.lowercased()
         switch p {

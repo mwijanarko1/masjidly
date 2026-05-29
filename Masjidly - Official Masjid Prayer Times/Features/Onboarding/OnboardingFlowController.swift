@@ -71,12 +71,10 @@ final class OnboardingFlowController {
     }
 
     func handlePrayerShortcutTap(index: Int) {
-        guard case .prayerShortcut(let expectedIndex) = currentStep, expectedIndex == index else { return }
-        if expectedIndex >= 5 {
-            currentStep = .qiblaCountdown
-        } else {
-            currentStep = .prayerShortcut(index: expectedIndex + 1)
-        }
+        guard case .prayerShortcut(let expectedIndex) = currentStep,
+              expectedIndex == 0,
+              (0...5).contains(index) else { return }
+        currentStep = .qiblaCountdown
     }
 
     func completeQiblaCountdownStep() {

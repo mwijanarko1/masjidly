@@ -304,11 +304,12 @@ struct TimetableView: View {
     private func prayersStack(for time: PrayerTime) -> some View {
         let dailyIqamah = try? PrayerTimesEngine.getIqamahTimesForDate(dayOfMonth: time.date, iqamahRanges: currentMonthData.iqamahTimes)
         let isToday = (selectedDate == currentDayOfSystem)
+        let prayerDate = PrayerTimesEngine.sheffieldNoonUTC(year: currentYear, month: currentMonth, day: time.date)
 
         var rows: [RowData] = []
         
         let fAdhan = formatTime(time.fajr)
-        let fIqamah = resolveIqamahString(id: "fajr", adhan: time.fajr, iqamahRaw: dailyIqamah, maghrib: time.maghrib)
+        let fIqamah = resolveIqamahString(id: "fajr", adhan: time.fajr, iqamahRaw: dailyIqamah, maghrib: time.maghrib, for: prayerDate)
         rows.append(RowData(id: "fajr", name: ttLS("timetable.header.fajr", locale: locale), adhanSortKey: time.fajr, adhanDisplay: fAdhan, iqamahDisplay: fIqamah))
         
         rows.append(RowData(id: "sunrise", name: ttLS("timetable.header.shu", locale: locale), adhanSortKey: time.shurooq, adhanDisplay: formatTime(time.shurooq), iqamahDisplay: "-"))
@@ -317,20 +318,20 @@ struct TimetableView: View {
         if isFriday(dayOfMonth: time.date) {
             rows.append(contentsOf: fridayJummahRowsReplacingDhuhr(time: time, dhuhrAdhanFormatted: dAdhan, dailyIqamah: dailyIqamah))
         } else {
-            let dIqamah = resolveIqamahString(id: "dhuhr", adhan: time.dhuhr, iqamahRaw: dailyIqamah, maghrib: time.maghrib)
+            let dIqamah = resolveIqamahString(id: "dhuhr", adhan: time.dhuhr, iqamahRaw: dailyIqamah, maghrib: time.maghrib, for: prayerDate)
             rows.append(RowData(id: "dhuhr", name: ttLS("timetable.header.dhu", locale: locale), adhanSortKey: time.dhuhr, adhanDisplay: dAdhan, iqamahDisplay: dIqamah))
         }
 
         let aAdhan = formatTime(time.asr)
-        let aIqamah = resolveIqamahString(id: "asr", adhan: time.asr, iqamahRaw: dailyIqamah, maghrib: time.maghrib)
+        let aIqamah = resolveIqamahString(id: "asr", adhan: time.asr, iqamahRaw: dailyIqamah, maghrib: time.maghrib, for: prayerDate)
         rows.append(RowData(id: "asr", name: ttLS("timetable.header.asr", locale: locale), adhanSortKey: time.asr, adhanDisplay: aAdhan, iqamahDisplay: aIqamah))
 
         let mAdhan = formatTime(time.maghrib)
-        let mIqamah = resolveIqamahString(id: "maghrib", adhan: time.maghrib, iqamahRaw: dailyIqamah, maghrib: time.maghrib)
+        let mIqamah = resolveIqamahString(id: "maghrib", adhan: time.maghrib, iqamahRaw: dailyIqamah, maghrib: time.maghrib, for: prayerDate)
         rows.append(RowData(id: "maghrib", name: ttLS("timetable.header.mag", locale: locale), adhanSortKey: time.maghrib, adhanDisplay: mAdhan, iqamahDisplay: mIqamah))
 
         let iAdhan = formatTime(time.isha)
-        let iIqamah = resolveIqamahString(id: "isha", adhan: time.isha, iqamahRaw: dailyIqamah, maghrib: time.maghrib)
+        let iIqamah = resolveIqamahString(id: "isha", adhan: time.isha, iqamahRaw: dailyIqamah, maghrib: time.maghrib, for: prayerDate)
         rows.append(RowData(id: "isha", name: ttLS("timetable.header.ish", locale: locale), adhanSortKey: time.isha, adhanDisplay: iAdhan, iqamahDisplay: iIqamah))
 
         let currentHHMM = formatSystemTime() 
@@ -541,10 +542,17 @@ struct TimetableView: View {
         return formatter.string(from: date)
     }
     
-    private func resolveIqamahString(id: String, adhan: String, iqamahRaw: DailyIqamahTimes?, maghrib: String) -> String {
+    private func resolveIqamahString(id: String, adhan: String, iqamahRaw: DailyIqamahTimes?, maghrib: String, for date: Date) -> String {
         if id == "sunrise" { return "-" }
         guard let iq = iqamahRaw else { return "-" }
-        let resolved = PrayerTimesEngine.getIqamahTime(prayer: id, adhanTime: adhan, iqamahTimes: iq, maghribAdhan: maghrib)
+        let resolved = PrayerTimesEngine.getDisplayIqamah(
+            prayer: id,
+            adhanTime: adhan,
+            iqamahTimes: iq,
+            mosqueSlug: mosqueSlug,
+            date: date,
+            maghribAdhan: maghrib
+        )
         let trimmed = resolved.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty || trimmed.lowercased() == "no iqamah" { return "-" }
         return formatTime(resolved)

@@ -313,15 +313,12 @@ struct OnboardingFlowControllerTests {
         #expect(harness.controller.currentStep == .prayerShortcut(index: 0))
     }
 
-    @Test func prayerShortcutStepsRequireExpectedIndex() {
+    @Test func prayerShortcutStepOnlyRequiresOneShortcutTap() {
         let harness = OnboardingHarness()
         harness.controller.currentStep = .prayerShortcut(index: 0)
 
         harness.controller.handlePrayerShortcutTap(index: 3)
-        #expect(harness.controller.currentStep == .prayerShortcut(index: 0))
-
-        harness.controller.handlePrayerShortcutTap(index: 0)
-        #expect(harness.controller.currentStep == .prayerShortcut(index: 1))
+        #expect(harness.controller.currentStep == .qiblaCountdown)
     }
 
     @Test func qiblaDeferPathSetsHideCompassFlag() {
@@ -345,9 +342,12 @@ struct OnboardingFlowControllerTests {
 
     @Test func guidedSurfaceStepsAdvanceInOrder() {
         let harness = OnboardingHarness()
-        harness.controller.currentStep = .prayerShortcut(index: 5)
+        harness.controller.currentStep = .prayerShortcut(index: 0)
 
-        harness.controller.handlePrayerShortcutTap(index: 5)
+        harness.controller.handlePrayerShortcutTap(index: 0)
+        #expect(harness.controller.currentStep == .qiblaCountdown)
+
+        harness.controller.completeQiblaCountdownStep()
         #expect(harness.controller.currentStep == .qibla)
 
         harness.controller.completeQiblaOnboardingAllowingLocationRequest()

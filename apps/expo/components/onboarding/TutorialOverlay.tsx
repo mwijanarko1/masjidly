@@ -7,37 +7,7 @@ import { NotificationSetupCard } from "./NotificationSetupCard";
 import type { TimeTheme } from "@/lib/design/themes";
 import type { Mosque } from "@/types/prayer";
 import type { AppLanguage } from "@/store/settings";
-import { t, type TranslationKey } from "@/lib/i18n/translations";
-
-// ---------------------------------------------------------------------------
-// Prayer names for shortcut coach marks
-// ---------------------------------------------------------------------------
-
-const SHORTCUT_PRAYERS: { letter: string; name: string }[] = [
-  { letter: "F", name: "Fajr" },
-  { letter: "S", name: "Sunrise" },
-  { letter: "D", name: "Dhuhr" },
-  { letter: "A", name: "Asr" },
-  { letter: "M", name: "Maghrib" },
-  { letter: "I", name: "Isha" },
-];
-
-function shortcutMessage(index: number, locale: AppLanguage): string {
-  const p = SHORTCUT_PRAYERS[index];
-  if (!p) return "";
-  return t("onboarding.shortcut.message_format", locale)
-    .replace("%s", p.letter)
-    .replace("%s", t(prayerKeyForName(p.name), locale));
-}
-
-function shortcutTitle(_index: number, locale: AppLanguage): string {
-  return t("onboarding.shortcut.title", locale);
-}
-
-function prayerKeyForName(name: string): TranslationKey {
-  const key = name.toLowerCase() as "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
-  return `prayer.${key}` as TranslationKey;
-}
+import { t } from "@/lib/i18n/translations";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -114,9 +84,28 @@ export function TutorialOverlay({
       case "prayerShortcut":
         return (
           <CoachMarkCard
-            title={shortcutTitle(currentStep.index, locale)}
-            message={shortcutMessage(currentStep.index, locale)}
+            title={t("onboarding.shortcut.title", locale)}
+            message={t("onboarding.shortcut.message_format", locale)}
             variant="aboveShortcutRow"
+            theme={theme}
+            textColor={textColor}
+            usesLightForeground={usesLightForeground}
+          />
+        );
+
+      case "qiblaCountdown":
+        return (
+          <CoachMarkCard
+            title={t("onboarding.qibla_countdown.title", locale)}
+            message={t("onboarding.qibla_countdown.message", locale)}
+            variant="belowQiblaIconLower"
+            primaryButtonTitle={t("onboarding.continue", locale)}
+            onPrimaryButton={() => {
+              const cs = useOnboardingStore.getState();
+              cs.completeQiblaCountdown();
+            }}
+            blocksBackgroundInteractions={false}
+            accessibilityIdentifier="Onboarding.QiblaCountdownContinue"
             theme={theme}
             textColor={textColor}
             usesLightForeground={usesLightForeground}
@@ -128,7 +117,7 @@ export function TutorialOverlay({
           <CoachMarkCard
             title={t("onboarding.qibla.title", locale)}
             message={t("onboarding.qibla.message", locale)}
-            variant="belowQiblaIcon"
+            variant="belowQiblaIconLower"
             primaryButtonTitle={t("onboarding.qibla.allow_location", locale)}
             onPrimaryButton={() => {
               Location.requestForegroundPermissionsAsync().finally(() => {

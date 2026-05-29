@@ -13,7 +13,7 @@ import { SPACING, FONT_SIZES } from "@/constants";
 import { PrayerRow } from "@/components/ui/PrayerRow";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
 import { useSettingsStore } from "@/store/settings";
-import { formatPrayerClockForDisplay, getIqamahTimesForDate, getIqamahTime, formatSystemHHMMSheffield, isFridaySheffieldCalendar, findDayData } from "@/lib/prayer/prayerTimesEngine";
+import { formatPrayerClockForDisplay, getIqamahTimesForDate, getDisplayIqamah, formatSystemHHMMSheffield, isFridaySheffieldCalendar, findDayData, sheffieldNoonUTC } from "@/lib/prayer/prayerTimesEngine";
 import { t } from "@/lib/i18n/translations";
 import { resolvedLocale, useAppLanguage, getFontScale } from "@/lib/i18n/language";
 import type { MonthPrayerData, DailyIqamahTimes } from "@/types/prayer";
@@ -36,10 +36,12 @@ function timetableIqamahDisplay(
   daily: DailyIqamahTimes | null,
   maghribAdhan: string,
   uses24h: boolean,
-  locale: string
+  locale: string,
+  mosqueSlug: string,
+  date: Date
 ): string {
   if (!daily) return "-";
-  const raw = getIqamahTime(prayerId, adhan, daily, maghribAdhan);
+  const raw = getDisplayIqamah(prayerId, adhan, daily, mosqueSlug, date, maghribAdhan);
   const trimmed = raw.trim();
   if (!trimmed || trimmed.toLowerCase() === "no iqamah") return "-";
   return formatPrayerClockForDisplay(trimmed, uses24h, locale);
@@ -300,7 +302,7 @@ export default function TimetableScreen() {
             <PrayerRow
               name={t("timetable.header.fajr", languageCode)}
               adhan={dayData.fajr}
-              iqamah={timetableIqamahDisplay("fajr", dayData.fajr, iqamah, dayData.maghrib, uses24HourTime, locale)}
+              iqamah={timetableIqamahDisplay("fajr", dayData.fajr, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
               isNext={nextPrayerId === "fajr"}
               isPast={selectedIsToday && dayData.fajr <= currentHHMM}
               uses24HourTime={uses24HourTime}
@@ -359,7 +361,7 @@ export default function TimetableScreen() {
               <PrayerRow
                 name={t("timetable.header.dhu", languageCode)}
                 adhan={dayData.dhuhr}
-                iqamah={timetableIqamahDisplay("dhuhr", dayData.dhuhr, iqamah, dayData.maghrib, uses24HourTime, locale)}
+                iqamah={timetableIqamahDisplay("dhuhr", dayData.dhuhr, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
                 isNext={nextPrayerId === "dhuhr"}
                 isPast={selectedIsToday && dayData.dhuhr <= currentHHMM}
                 uses24HourTime={uses24HourTime}
@@ -370,7 +372,7 @@ export default function TimetableScreen() {
             <PrayerRow
               name={t("timetable.header.asr", languageCode)}
               adhan={dayData.asr}
-              iqamah={timetableIqamahDisplay("asr", dayData.asr, iqamah, dayData.maghrib, uses24HourTime, locale)}
+              iqamah={timetableIqamahDisplay("asr", dayData.asr, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
               isNext={nextPrayerId === "asr"}
               isPast={selectedIsToday && dayData.asr <= currentHHMM}
               uses24HourTime={uses24HourTime}
@@ -380,7 +382,7 @@ export default function TimetableScreen() {
             <PrayerRow
               name={t("timetable.header.mag", languageCode)}
               adhan={dayData.maghrib}
-              iqamah={timetableIqamahDisplay("maghrib", dayData.maghrib, iqamah, dayData.maghrib, uses24HourTime, locale)}
+              iqamah={timetableIqamahDisplay("maghrib", dayData.maghrib, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
               isNext={nextPrayerId === "maghrib"}
               isPast={selectedIsToday && dayData.maghrib <= currentHHMM}
               uses24HourTime={uses24HourTime}
@@ -390,7 +392,7 @@ export default function TimetableScreen() {
             <PrayerRow
               name={t("timetable.header.ish", languageCode)}
               adhan={dayData.isha}
-              iqamah={timetableIqamahDisplay("isha", dayData.isha, iqamah, dayData.maghrib, uses24HourTime, locale)}
+              iqamah={timetableIqamahDisplay("isha", dayData.isha, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
               isNext={nextPrayerId === "isha"}
               isPast={selectedIsToday && dayData.isha <= currentHHMM}
               uses24HourTime={uses24HourTime}

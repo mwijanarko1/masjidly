@@ -20,6 +20,7 @@ export type CoachMarkVariant =
   | "belowTopChrome"
   | "aboveShortcutRow"
   | "belowQiblaIcon"
+  | "belowQiblaIconLower"
   | "floatingBottom";
 
 interface CoachMarkCardProps {
@@ -35,6 +36,10 @@ interface CoachMarkCardProps {
   theme: TimeTheme;
   textColor: string;
   usesLightForeground: boolean;
+  /** When true (default), the dimming backdrop blocks taps on UI behind the coach mark.
+   *  Set to false to let users interact with elements behind the card (e.g. tapping the
+   *  Qibla circle during countdown onboarding). The Continue button remains tappable. */
+  blocksBackgroundInteractions?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,6 +74,8 @@ function messageColor(textColor: string): string {
 interface TutorialHighlightProps {
   isHighlighted: boolean;
   size?: number;
+  width?: number;
+  height?: number;
   color?: string;
   style?: ViewStyle;
   children: React.ReactNode;
@@ -77,6 +84,8 @@ interface TutorialHighlightProps {
 export function TutorialHighlight({
   isHighlighted,
   size = 44,
+  width,
+  height,
   color = "#FFFFFF",
   style,
   children,
@@ -124,15 +133,16 @@ export function TutorialHighlight({
     };
   }, [isHighlighted, pulseAnim, ringOpacity]);
 
-  const ringSize = size + 12;
+  const ringWidth = (width ?? size) + 12;
+  const ringHeight = (height ?? size) + 12;
 
   return (
     <View
       style={[
         style,
         {
-          width: ringSize,
-          height: ringSize,
+          width: ringWidth,
+          height: ringHeight,
           justifyContent: "center",
           alignItems: "center",
         },
@@ -144,9 +154,9 @@ export function TutorialHighlight({
             position: "absolute",
             top: 0,
             left: 0,
-            width: ringSize,
-            height: ringSize,
-            borderRadius: ringSize / 2,
+            width: ringWidth,
+            height: ringHeight,
+            borderRadius: Math.min(ringWidth, ringHeight) / 2,
             borderWidth: 1.5,
             borderColor: color,
             opacity: ringOpacity,
@@ -253,6 +263,7 @@ export function CoachMarkCard({
   theme,
   textColor,
   usesLightForeground,
+  blocksBackgroundInteractions = true,
 }: CoachMarkCardProps) {
   const hasButton = !!(primaryButtonTitle && onPrimaryButton);
   // Dimming backdrop only for non-floating variants with a primary button
@@ -286,7 +297,7 @@ export function CoachMarkCard({
   }
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents={hasButton ? "auto" : "box-none"}>
+    <View style={StyleSheet.absoluteFill} pointerEvents={hasButton && blocksBackgroundInteractions ? "auto" : "box-none"}>
       {/* Dimming backdrop */}
       {showDimming ? (
         <View
@@ -294,11 +305,11 @@ export function CoachMarkCard({
             StyleSheet.absoluteFill,
             {
               backgroundColor: usesLightForeground
-                ? "rgba(0, 0, 0, 0.25)"
-                : "rgba(0, 0, 0, 0.18)",
+                ? "rgba(0, 0, 0, 0.12)"
+                : "rgba(0, 0, 0, 0.08)",
             },
           ]}
-          pointerEvents="auto"
+          pointerEvents={blocksBackgroundInteractions ? "auto" : "none"}
         />
       ) : null}
 
@@ -309,6 +320,7 @@ export function CoachMarkCard({
           variant === "belowTopChrome" && styles.belowTopChromeContainer,
           variant === "aboveShortcutRow" && styles.aboveShortcutRowContainer,
           variant === "belowQiblaIcon" && styles.belowQiblaIconContainer,
+          variant === "belowQiblaIconLower" && styles.belowQiblaIconLowerContainer,
         ]}
         pointerEvents="box-none"
       >
@@ -390,5 +402,9 @@ const styles = StyleSheet.create({
   belowQiblaIconContainer: {
     justifyContent: "flex-start",
     paddingTop: 56 + 240, // safeArea + qibla icon (120) + paddingTop(40) + topRow(~52) + gap
+  },
+  belowQiblaIconLowerContainer: {
+    justifyContent: "flex-start",
+    paddingTop: 56 + 320, // lower than belowQiblaIcon to keep hero circle visible
   },
 });

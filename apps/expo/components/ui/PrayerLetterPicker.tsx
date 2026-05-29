@@ -21,8 +21,8 @@ interface PrayerLetterPickerProps {
   selectedPrayer: PrayerName;
   onSelectPrayer: (prayer: PrayerName) => void;
   theme: TimeTheme;
-  /** When set, wraps the button at this index in a pulsing tutorial highlight. */
-  highlightedPrayerIndex?: number;
+  /** When true, wraps the full shortcut row in a pulsing tutorial highlight. */
+  highlightAllPrayers?: boolean;
 }
 
 const PRAYER_KEYS: Record<PrayerName, TranslationKey> = {
@@ -40,7 +40,7 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
   selectedPrayer,
   onSelectPrayer,
   theme,
-  highlightedPrayerIndex,
+  highlightAllPrayers,
 }) => {
   const scrollRef = useRef<ScrollView>(null);
   const [screenW, setScreenW] = useState(
@@ -54,7 +54,7 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
     const key = PRAYER_KEYS[prayer];
     const localized = t(key, langCode);
     if (!localized) return prayer[0];
-    
+
     let clean = localized;
     if (clean.startsWith("ال")) {
       clean = clean.substring(2);
@@ -85,45 +85,44 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.container}
     >
-      <View style={[styles.row, { minWidth: screenW - 40 }]}>
-        {prayers.map((prayer, idx) => {
-          const isSelected = prayer === selectedPrayer;
-          const isHighlighted = highlightedPrayerIndex === idx;
-          const button = (
-            <Pressable
-              key={prayer}
-              onPress={() => onSelectPrayer(prayer)}
-              style={styles.button}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              accessibilityLabel={prayer}
-            >
-              <Text
-                style={[
-                  styles.letter,
-                  {
-                    color: textColor + (isSelected ? "FF" : "61"),
-                    fontFamily: isSelected
-                      ? "Comfortaa_600SemiBold"
-                      : "Comfortaa_400Regular",
-                    fontSize: 20 * fontScale,
-                  },
-                ]}
-              >
-                {getPrayerLetter(prayer)}
-              </Text>
-            </Pressable>
-          );
-
-          if (isHighlighted) {
-            return (
-              <TutorialHighlight key={prayer} isHighlighted size={44} color={textColor}>
-                {button}
-              </TutorialHighlight>
-            );
-          }
-          return button;
-        })}
+      <View style={[styles.centeringFrame, { minWidth: screenW - 40 }]}>
+        <TutorialHighlight
+          isHighlighted={highlightAllPrayers === true}
+          width={228}
+          height={52}
+          color={textColor}
+        >
+          <View style={styles.row}>
+            {prayers.map((prayer) => {
+              const isSelected = prayer === selectedPrayer;
+              return (
+                <Pressable
+                  key={prayer}
+                  onPress={() => onSelectPrayer(prayer)}
+                  style={styles.button}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={prayer}
+                >
+                  <Text
+                    style={[
+                      styles.letter,
+                      {
+                        color: textColor + (isSelected ? "FF" : "61"),
+                        fontFamily: isSelected
+                          ? "Comfortaa_600SemiBold"
+                          : "Comfortaa_400Regular",
+                        fontSize: 20 * fontScale,
+                      },
+                    ]}
+                  >
+                    {getPrayerLetter(prayer)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </TutorialHighlight>
       </View>
     </ScrollView>
   );
@@ -133,6 +132,10 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
+  },
+  centeringFrame: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   row: {
     flexDirection: "row",
