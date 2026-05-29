@@ -7,8 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
   checkForUpdate,
@@ -17,6 +17,28 @@ import {
   type MasjidlyRelease,
 } from "@/lib/updates/updateChecker";
 import { useAppLanguage } from "@/lib/i18n/language";
+
+const TEST_RELEASE: MasjidlyRelease = {
+  android: {
+    version: "9.9.9",
+    versionCode: 999,
+    url: "https://www.sheffieldmasjids.com/masjidly/Masjidly-1.1.2.apk",
+    sha256: "",
+    minVersionCode: 1,
+  },
+  ios: {
+    version: "9.9.9",
+    build: 999,
+    appStoreUrl: "https://apps.apple.com/gb/app/masjidly-masjid-prayer-times/id6767841833",
+  },
+  pub_date: new Date().toISOString(),
+  notes: {
+    en: "New update available",
+    ar: "تحديث جديد متاح",
+    ur: "نیا اپ ڈیٹ دستیاب ہے",
+    id: "Pembaruan baru tersedia",
+  },
+};
 
 interface UpdatePromptModalProps {
   /** If true, checks for update on mount and shows prompt if available */
@@ -59,6 +81,24 @@ export default function UpdatePromptModal({
     }
   }, [autoCheck, check]);
 
+  useEffect(() => {
+    if (!externalVisible) return;
+
+    let cancelled = false;
+    checkForUpdate().then((info) => {
+      if (cancelled) return;
+      setUpdateInfo({
+        updateAvailable: true,
+        release: info.release ?? TEST_RELEASE,
+        error: info.error,
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [externalVisible]);
+
   const handleUpdate = async () => {
     if (updateInfo?.release) {
       setDownloading(true);
@@ -74,7 +114,6 @@ export default function UpdatePromptModal({
 
   if (!visible || !updateInfo?.release) return null;
 
-  const { release } = updateInfo;
   return (
     <Modal
       visible={visible}

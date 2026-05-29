@@ -38,7 +38,7 @@ export interface UpdateInfo {
 }
 
 const LATEST_JSON_URL =
-  "https://sheffieldmasjids.com/masjidly/latest.json";
+  "https://www.sheffieldmasjids.com/masjidly/latest.json";
 
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -76,30 +76,47 @@ async function fetchLatestRelease(): Promise<MasjidlyRelease | null> {
  * Gets the current app's version code for Android.
  */
 function currentVersionCode(): number | null {
-  const android = Constants.expoConfig?.android;
-  if (android?.versionCode != null) {
-    return android.versionCode;
-  }
-  return null;
-}
-
-/**
- * Gets the current app's build number for iOS.
- */
-function currentBuildNumber(): number | null {
   const nativeBuild = Constants.nativeBuildVersion;
   if (nativeBuild) {
     const parsed = parseInt(nativeBuild, 10);
     if (!isNaN(parsed)) return parsed;
   }
+
+  const android = Constants.expoConfig?.android;
+  if (android?.versionCode != null) {
+    return android.versionCode;
+  }
+
   return null;
+}
+
+function isVersionNewer(candidate: string, current: string): boolean {
+  const candidateParts = numericVersionParts(candidate);
+  const currentParts = numericVersionParts(current);
+  const count = Math.max(candidateParts.length, currentParts.length);
+
+  for (let index = 0; index < count; index += 1) {
+    const candidateValue = candidateParts[index] ?? 0;
+    const currentValue = currentParts[index] ?? 0;
+    if (candidateValue > currentValue) return true;
+    if (candidateValue < currentValue) return false;
+  }
+
+  return false;
+}
+
+function numericVersionParts(version: string): number[] {
+  return version.split(".").map((part) => {
+    const numericPrefix = part.match(/^\d+/)?.[0];
+    return numericPrefix ? Number(numericPrefix) : 0;
+  });
 }
 
 /**
  * Checks whether an update is available for the current platform.
  *
  * - On **Android**: compares `versionCode` against the manifest's `versionCode`.
- * - On **iOS**: compares `build number` against the manifest's `build`.
+ * - On **iOS**: compares version against the manifest's semantic `version`.
  *
  * Returns an `UpdateInfo` object. Even if the fetch fails, you get
  * `{ updateAvailable: false, release: null, error: "..." }`.
@@ -132,16 +149,16 @@ export async function checkForUpdate(): Promise<UpdateInfo> {
   }
 
   if (Platform.OS === "ios") {
-    const current = currentBuildNumber();
-    if (current == null) {
+    const current = Constants.nativeApplicationVersion ?? Constants.expoConfig?.version;
+    if (!current) {
       return {
         updateAvailable: false,
         release,
-        error: "Could not determine current iOS build number.",
+        error: "Could not determine current iOS version.",
       };
     }
     return {
-      updateAvailable: release.ios.build > current,
+      updateAvailable: isVersionNewer(release.ios.version, current),
       release,
       error: null,
     };

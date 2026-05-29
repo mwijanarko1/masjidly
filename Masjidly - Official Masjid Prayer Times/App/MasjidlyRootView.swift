@@ -46,7 +46,7 @@ struct MasjidlyRootView: View {
                     showUpdateAlert = false
                 }
                 Button(updateNowLabel) {
-                    AppUpdateChecker.openAppStore()
+                    AppUpdateChecker.openAppStore(release: release)
                     showUpdateAlert = false
                 }
             } message: { _ in

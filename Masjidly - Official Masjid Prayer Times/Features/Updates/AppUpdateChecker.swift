@@ -20,7 +20,7 @@ struct MasjidlyRelease: Codable, Equatable {
             android: AndroidRelease(
                 version: "1.1.1",
                 versionCode: 7,
-                url: "https://sheffieldmasjids.com/masjidly/masjidly-latest.apk",
+                url: "https://www.sheffieldmasjids.com/masjidly/Masjidly-1.1.2.apk",
                 sha256: "",
                 minVersionCode: 1
             ),
@@ -78,7 +78,7 @@ enum AppUpdateStatus: Equatable {
 /// is available.
 final class AppUpdateChecker {
 
-    private static let latestJsonUrl = URL(string: "https://sheffieldmasjids.com/masjidly/latest.json")!
+    private static let latestJsonUrl = URL(string: "https://www.sheffieldmasjids.com/masjidly/latest.json")!
     private static let timeout: TimeInterval = 10
 
     // MARK: - Public API
@@ -147,8 +147,9 @@ final class AppUpdateChecker {
     }
 
     /// Opens the App Store page for Masjidly.
-    static func openAppStore() {
-        guard let url = URL(string: "https://apps.apple.com/gb/app/masjidly-masjid-prayer-times/id6767841833") else {
+    static func openAppStore(release: MasjidlyRelease? = nil) {
+        let urlString = release?.ios.appStoreUrl ?? "https://apps.apple.com/gb/app/masjidly-masjid-prayer-times/id6767841833"
+        guard let url = URL(string: urlString) else {
             return
         }
         #if os(iOS)
