@@ -10,8 +10,10 @@ final class OnboardingFlowController {
     private let notificationScheduler: any PrayerNotificationScheduling
 
     var currentStep: OnboardingStep?
+    var selectedLanguage: AppLanguage
     var selectedMosqueId = ""
     var notificationDraft = OnboardingNotificationDraft()
+    var isSelectingMosque = false
     var isCompletingNotifications = false
 
     var isActive: Bool {
@@ -28,12 +30,28 @@ final class OnboardingFlowController {
         self.homeViewModel = homeViewModel
         self.settingsViewModel = settingsViewModel
         self.notificationScheduler = notificationScheduler
+        selectedLanguage = settings.appLanguage
         selectedMosqueId = settings.selectedMosqueId ?? ""
         notificationDraft = OnboardingNotificationDraft(
             adhanEnabled: settings.notifications.adhanEnabled,
             iqamahEnabled: settings.notifications.iqamahEnabled,
             preAdhanReminderMinutes: settings.notifications.preAdhanReminderMinutes,
-            preIqamahReminderMinutes: settings.notifications.preIqamahReminderMinutes
+            preIqamahReminderMinutes: settings.notifications.preIqamahReminderMinutes,
+            fajr: settings.notifications.fajr,
+            dhuhrJummah: settings.notifications.dhuhrJummah,
+            asr: settings.notifications.asr,
+            maghrib: settings.notifications.maghrib,
+            isha: settings.notifications.isha,
+            adhanFajr: settings.notifications.adhanFajr,
+            adhanDhuhrJummah: settings.notifications.adhanDhuhrJummah,
+            adhanAsr: settings.notifications.adhanAsr,
+            adhanMaghrib: settings.notifications.adhanMaghrib,
+            adhanIsha: settings.notifications.adhanIsha,
+            iqamahFajr: settings.notifications.iqamahFajr,
+            iqamahDhuhrJummah: settings.notifications.iqamahDhuhrJummah,
+            iqamahAsr: settings.notifications.iqamahAsr,
+            iqamahMaghrib: settings.notifications.iqamahMaghrib,
+            iqamahIsha: settings.notifications.iqamahIsha
         )
     }
 
@@ -49,14 +67,26 @@ final class OnboardingFlowController {
         if selectedMosqueId.isEmpty {
             selectedMosqueId = settings.selectedMosqueId ?? homeViewModel.mosques.first?.id ?? settingsViewModel.mosques.first?.id ?? ""
         }
+        currentStep = .chooseLanguage
+    }
+
+    func selectLanguage(_ language: AppLanguage) {
+        guard currentStep == .chooseLanguage else { return }
+        selectedLanguage = language
+        settings.appLanguage = language
         currentStep = .chooseMosque
     }
 
     func selectMosque(_ mosque: Mosque) async {
+        guard currentStep == .chooseMosque, !isSelectingMosque else { return }
+        isSelectingMosque = true
+        defer { isSelectingMosque = false }
+
         selectedMosqueId = mosque.id
         settings.selectedMosqueId = mosque.id
         settings.selectedMosqueSlug = mosque.slug
         settings.selectedCityGroupingKey = mosque.cityGroupingKey
+        settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: mosque)
         homeViewModel.selectedMosque = mosque
         if settingsViewModel.mosques.isEmpty {
             settingsViewModel.mosques = homeViewModel.mosques
@@ -75,6 +105,10 @@ final class OnboardingFlowController {
               expectedIndex == 0,
               (0...5).contains(index) else { return }
         currentStep = .qiblaCountdown
+    }
+
+    func skipToTutorialEnd() {
+        currentStep = .notifications
     }
 
     func completeQiblaCountdownStep() {
@@ -133,6 +167,11 @@ final class OnboardingFlowController {
         next.iqamahEnabled = notificationDraft.iqamahEnabled
         next.preAdhanReminderMinutes = notificationDraft.preAdhanReminderMinutes
         next.preIqamahReminderMinutes = notificationDraft.preIqamahReminderMinutes
+        next.fajr = notificationDraft.fajr
+        next.dhuhrJummah = notificationDraft.dhuhrJummah
+        next.asr = notificationDraft.asr
+        next.maghrib = notificationDraft.maghrib
+        next.isha = notificationDraft.isha
         next.masterEnabled = notificationDraft.adhanEnabled || 
                             notificationDraft.iqamahEnabled || 
                             notificationDraft.preAdhanReminderMinutes != nil ||
@@ -146,7 +185,8 @@ final class OnboardingFlowController {
                     mosque: mosque,
                     days: 7,
                     settings: next,
-                    locale: settings.resolvedLocale
+                    locale: settings.resolvedLocale,
+                    asrIqamahPreference: settings.asrIqamahPreference
                 )
             }
         } else {
@@ -172,9 +212,25 @@ extension OnboardingFlowController {
             adhanEnabled: settings.notifications.adhanEnabled,
             iqamahEnabled: settings.notifications.iqamahEnabled,
             preAdhanReminderMinutes: settings.notifications.preAdhanReminderMinutes,
-            preIqamahReminderMinutes: settings.notifications.preIqamahReminderMinutes
+            preIqamahReminderMinutes: settings.notifications.preIqamahReminderMinutes,
+            fajr: settings.notifications.fajr,
+            dhuhrJummah: settings.notifications.dhuhrJummah,
+            asr: settings.notifications.asr,
+            maghrib: settings.notifications.maghrib,
+            isha: settings.notifications.isha,
+            adhanFajr: settings.notifications.adhanFajr,
+            adhanDhuhrJummah: settings.notifications.adhanDhuhrJummah,
+            adhanAsr: settings.notifications.adhanAsr,
+            adhanMaghrib: settings.notifications.adhanMaghrib,
+            adhanIsha: settings.notifications.adhanIsha,
+            iqamahFajr: settings.notifications.iqamahFajr,
+            iqamahDhuhrJummah: settings.notifications.iqamahDhuhrJummah,
+            iqamahAsr: settings.notifications.iqamahAsr,
+            iqamahMaghrib: settings.notifications.iqamahMaghrib,
+            iqamahIsha: settings.notifications.iqamahIsha
         )
-        currentStep = .chooseMosque
+        selectedLanguage = settings.appLanguage
+        currentStep = .chooseLanguage
     }
 }
 #endif

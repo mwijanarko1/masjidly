@@ -10,11 +10,8 @@ import {
   AndroidImportance,
 } from "@/lib/notifications/expoNotificationApi";
 
-// Notification category identifiers (iOS parity with PrayerNotificationContent.CategoryID)
-const CATEGORY_ADHAN = "masjidly.category.adhan";
-const CATEGORY_IQAMAH = "masjidly.category.iqamah";
-const CATEGORY_REMINDER = "masjidly.category.reminder";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
+import { prayerTimesCache } from "@/lib/prayer/prayerTimesCache";
 import {
   getDateInSheffield,
   isoDateString,
@@ -24,12 +21,18 @@ import {
   getIqamahTime,
   resolveIshaIqamahForDisplay,
   SHEFFIELD_TIME_ZONE,
+  selectAsrIqamahTime,
 } from "@/lib/prayer/prayerTimesEngine";
 import { monthNameFromNumber } from "@/lib/prayer/monthName";
 import { t, type TranslationKey } from "@/lib/i18n/translations";
 import type { AppLanguage } from "@/store/settings";
-import type { Mosque, DailyPrayerTimes, DailyIqamahTimes } from "@/types/prayer";
+import type { AsrIqamahPreference, Mosque, DailyPrayerTimes, DailyIqamahTimes } from "@/types/prayer";
 import type { NotificationSettings } from "@/store/settings";
+
+// Notification category identifiers (iOS parity with PrayerNotificationContent.CategoryID)
+const CATEGORY_ADHAN = "masjidly.category.adhan";
+const CATEGORY_IQAMAH = "masjidly.category.iqamah";
+const CATEGORY_REMINDER = "masjidly.category.reminder";
 
 const IDENTIFIER_PREFIX = "masjidly.prayer.";
 const ANDROID_CHANNEL_ID = "prayer-times";
@@ -240,8 +243,9 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
   days?: number;
   settings: NotificationSettings;
   locale: string;
+  asrIqamahPreference?: AsrIqamahPreference;
 }): Promise<void> {
-  const { mosque, days = 7, settings, locale } = input;
+  const { mosque, days = 7, settings, locale, asrIqamahPreference = "first" } = input;
 
   await cancelAllPrayerNotifications();
   if (!settings.masterEnabled) return;
@@ -264,10 +268,16 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
   const reminderAdhan = settings.preAdhanReminderMinutes;
   const reminderIqamah = settings.preIqamahReminderMinutes;
 
-  const isPrayerEnabled = (prayer: "fajr" | "dhuhrJummah" | "asr" | "maghrib" | "isha"): boolean =>
-    settings[prayer] === true;
+  const isAdhanForPrayer = (prayer: "fajr" | "dhuhrJummah" | "asr" | "maghrib" | "isha"): boolean =>
+    settings[`adhan${prayer.charAt(0).toUpperCase()}${prayer.slice(1)}` as keyof NotificationSettings] === true;
+  const isIqamahForPrayer = (prayer: "fajr" | "dhuhrJummah" | "asr" | "maghrib" | "isha"): boolean =>
+    settings[`iqamah${prayer.charAt(0).toUpperCase()}${prayer.slice(1)}` as keyof NotificationSettings] === true;
 
-  const ukDst = (await prayerRepository.getUkDstDates())?.ukDstDates ?? [];
+  const dstCalendar = await prayerRepository.getUkDstDates().then(async (dst) => {
+    if (dst) await prayerTimesCache.saveUkDst(dst);
+    return dst;
+  }).catch(() => prayerTimesCache.loadUkDst());
+  const ukDst = dstCalendar?.ukDstDates ?? [];
   const slug = mosque.slug;
 
   const { year: y0, month: m0, day: d0 } = getDateInSheffield(new Date());
@@ -284,13 +294,19 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
       slug,
       monthName,
       comps.year
-    );
-    const ramadan = await prayerRepository.getRamadanTimetable(slug, iso);
+    ).then(async (data) => {
+      if (data) await prayerTimesCache.saveMonthly(slug, monthName, comps.year, data);
+      return data;
+    }).catch(() => prayerTimesCache.loadMonthly(slug, monthName, comps.year));
+    const ramadan = await prayerRepository.getRamadanTimetable(slug, iso).then(async (data) => {
+      if (data) await prayerTimesCache.saveRamadan(slug, iso, data);
+      return data;
+    }).catch(() => prayerTimesCache.loadRamadan(slug, iso));
 
     let displayed: DailyPrayerTimes;
     let iq: DailyIqamahTimes;
     try {
-      const raw = resolvePrayerTimes(slug, dayDate, monthly, ramadan, ukDst);
+      const raw = resolvePrayerTimes(slug, dayDate, monthly, ramadan, ukDst, asrIqamahPreference);
       displayed = getDisplayedPrayerTimes(raw, dayDate, slug);
       iq = resolveIqamahTimesWithDstMapping(
         slug,
@@ -312,8 +328,7 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
     const isFriday = wdStr === "fri";
 
     // Fajr
-    if (isPrayerEnabled("fajr")) {
-      if (adhanEnabled) {
+    if (isAdhanForPrayer("fajr") && adhanEnabled) {
         await scheduleIfNeeded(
           `${IDENTIFIER_PREFIX}${slug}.${iso}.fajr.adhan`,
           mosque.name,
@@ -334,7 +349,7 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-      if (iqamahEnabled) {
+    if (isIqamahForPrayer("fajr") && iqamahEnabled) {
         const fajrIq = getIqamahTime("fajr", displayed.fajr, iq);
         await scheduleIfNeeded(
           `${IDENTIFIER_PREFIX}${slug}.${iso}.fajr.iqamah`,
@@ -356,14 +371,12 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-    }
 
     // Dhuhr / Jummah
-    if (isPrayerEnabled("dhuhrJummah")) {
+    if (isAdhanForPrayer("dhuhrJummah") && adhanEnabled) {
       const adhanKey = isFriday
         ? "notification.jummah_adhan"
         : "notification.dhuhr_adhan";
-      if (adhanEnabled) {
         await scheduleIfNeeded(
           `${IDENTIFIER_PREFIX}${slug}.${iso}.dhuhr.adhan`,
           mosque.name,
@@ -384,7 +397,7 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-      if (iqamahEnabled) {
+    if (isIqamahForPrayer("dhuhrJummah") && iqamahEnabled) {
         const iqLabel = isFriday
           ? iq.jummah
           : getIqamahTime("dhuhr", displayed.dhuhr, iq);
@@ -412,11 +425,9 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-    }
 
     // Asr
-    if (isPrayerEnabled("asr")) {
-      if (adhanEnabled) {
+    if (isAdhanForPrayer("asr") && adhanEnabled) {
         await scheduleIfNeeded(
           `${IDENTIFIER_PREFIX}${slug}.${iso}.asr.adhan`,
           mosque.name,
@@ -437,8 +448,8 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-      if (iqamahEnabled) {
-        const asrIq = getIqamahTime("asr", displayed.asr, iq);
+    if (isIqamahForPrayer("asr") && iqamahEnabled) {
+        const asrIq = selectAsrIqamahTime(iq.asr, displayed.asr, asrIqamahPreference);
         await scheduleIfNeeded(
           `${IDENTIFIER_PREFIX}${slug}.${iso}.asr.iqamah`,
           mosque.name,
@@ -459,11 +470,9 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-    }
 
     // Maghrib
-    if (isPrayerEnabled("maghrib")) {
-      if (adhanEnabled) {
+    if (isAdhanForPrayer("maghrib") && adhanEnabled) {
         await scheduleIfNeeded(
           `${IDENTIFIER_PREFIX}${slug}.${iso}.maghrib.adhan`,
           mosque.name,
@@ -484,7 +493,7 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-      if (iqamahEnabled) {
+    if (isIqamahForPrayer("maghrib") && iqamahEnabled) {
         const maghribIq = getIqamahTime("maghrib", displayed.maghrib, iq);
         await scheduleIfNeeded(
           `${IDENTIFIER_PREFIX}${slug}.${iso}.maghrib.iqamah`,
@@ -506,11 +515,9 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-    }
 
     // Isha
-    if (isPrayerEnabled("isha")) {
-      if (adhanEnabled) {
+    if (isAdhanForPrayer("isha") && adhanEnabled) {
         await scheduleIfNeeded(
           `${IDENTIFIER_PREFIX}${slug}.${iso}.isha.adhan`,
           mosque.name,
@@ -531,7 +538,7 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-      if (iqamahEnabled) {
+    if (isIqamahForPrayer("isha") && iqamahEnabled) {
         const ishaIq = resolveIshaIqamahForDisplay(
           slug,
           dayDate,
@@ -559,6 +566,5 @@ export async function rescheduleUpcomingPrayerNotifications(input: {
           );
         }
       }
-    }
   }
 }

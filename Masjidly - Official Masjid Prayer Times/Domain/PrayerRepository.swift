@@ -22,7 +22,8 @@ protocol PrayerNotificationScheduling: AnyObject {
         mosque: Mosque,
         days: Int,
         settings: NotificationSettings,
-        locale: Locale
+        locale: Locale,
+        asrIqamahPreference: AsrIqamahPreference
     ) async throws
     func cancelAllPrayerNotifications() async
 }

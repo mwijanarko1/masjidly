@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, Switch, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Switch,
+} from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { SPACING, FONT_SIZES } from "@/constants";
 
 export interface SettingsToggleRowProps {
@@ -11,7 +17,7 @@ export interface SettingsToggleRowProps {
   textColor: string;
 }
 
-export const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
+export const SettingsToggleRow: React.FC<SettingsToggleRowProps> = React.memo(({
   title,
   subtitle,
   value,
@@ -59,7 +65,7 @@ export const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
       />
     </Pressable>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

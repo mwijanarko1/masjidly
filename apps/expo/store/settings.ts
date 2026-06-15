@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import type { AsrIqamahPreference } from "@/types/prayer";
 
 export type AppLanguage = "en" | "ar" | "ur" | "id";
 export type ThemeMode = "dynamic" | "fixed";
@@ -12,11 +13,27 @@ export interface NotificationSettings {
   iqamahEnabled: boolean;
   preAdhanReminderMinutes: number | null;
   preIqamahReminderMinutes: number | null;
+  /** @deprecated Use adhanFajr / iqamahFajr instead */
   fajr: boolean;
+  /** @deprecated Use adhanDhuhrJummah / iqamahDhuhrJummah instead */
   dhuhrJummah: boolean;
+  /** @deprecated Use adhanAsr / iqamahAsr instead */
   asr: boolean;
+  /** @deprecated Use adhanMaghrib / iqamahMaghrib instead */
   maghrib: boolean;
+  /** @deprecated Use adhanIsha / iqamahIsha instead */
   isha: boolean;
+  // Per-type per-prayer flags
+  adhanFajr: boolean;
+  adhanDhuhrJummah: boolean;
+  adhanAsr: boolean;
+  adhanMaghrib: boolean;
+  adhanIsha: boolean;
+  iqamahFajr: boolean;
+  iqamahDhuhrJummah: boolean;
+  iqamahAsr: boolean;
+  iqamahMaghrib: boolean;
+  iqamahIsha: boolean;
 }
 
 export interface SettingsState {
@@ -24,6 +41,8 @@ export interface SettingsState {
   selectedMosqueSlug?: string;
   /** When set, filters mosque pickers to this city; optional for backward compatibility. */
   selectedCityGroupingKey?: string;
+  /** When set, filters city/mosque pickers to this country; optional for backward compatibility. */
+  selectedCountryGroupingKey?: string;
   uses24HourTime: boolean;
   hideQiblaCompass: boolean;
   hasCompletedOnboarding: boolean;
@@ -31,9 +50,11 @@ export interface SettingsState {
   appLanguage: AppLanguage;
   themeMode: ThemeMode;
   fixedTheme: TimeTheme;
+  asrIqamahPreference: AsrIqamahPreference;
   notifications: NotificationSettings;
-  setSelectedMosque: (id: string, slug: string, cityGroupingKey?: string) => void;
+  setSelectedMosque: (id: string, slug: string, cityGroupingKey?: string, countryGroupingKey?: string) => void;
   setSelectedCityGroupingKey: (key: string | undefined) => void;
+  setSelectedCountryGroupingKey: (key: string | undefined) => void;
   setUses24HourTime: (v: boolean) => void;
   setHideQiblaCompass: (v: boolean) => void;
   setHasCompletedOnboarding: (v: boolean) => void;
@@ -41,6 +62,7 @@ export interface SettingsState {
   setAppLanguage: (v: AppLanguage) => void;
   setThemeMode: (v: ThemeMode) => void;
   setFixedTheme: (v: TimeTheme) => void;
+  setAsrIqamahPreference: (v: AsrIqamahPreference) => void;
   setNotificationMaster: (v: boolean) => void;
   setAdhanEnabled: (v: boolean) => void;
   setIqamahEnabled: (v: boolean) => void;
@@ -50,6 +72,8 @@ export interface SettingsState {
     prayer: keyof Omit<NotificationSettings, "masterEnabled" | "adhanEnabled" | "iqamahEnabled" | "preAdhanReminderMinutes" | "preIqamahReminderMinutes">,
     enabled: boolean
   ) => void;
+  setAdhanNotificationPrayer: (prayer: 'fajr' | 'dhuhrJummah' | 'asr' | 'maghrib' | 'isha', enabled: boolean) => void;
+  setIqamahNotificationPrayer: (prayer: 'fajr' | 'dhuhrJummah' | 'asr' | 'maghrib' | 'isha', enabled: boolean) => void;
   resetSettings: () => void;
 }
 
@@ -64,12 +88,23 @@ const defaultNotifications: NotificationSettings = {
   asr: true,
   maghrib: true,
   isha: true,
+  adhanFajr: true,
+  adhanDhuhrJummah: true,
+  adhanAsr: true,
+  adhanMaghrib: true,
+  adhanIsha: true,
+  iqamahFajr: true,
+  iqamahDhuhrJummah: true,
+  iqamahAsr: true,
+  iqamahMaghrib: true,
+  iqamahIsha: true,
 };
 
 const initialState: Omit<
   SettingsState,
   | "setSelectedMosque"
   | "setSelectedCityGroupingKey"
+  | "setSelectedCountryGroupingKey"
   | "setUses24HourTime"
   | "setHideQiblaCompass"
   | "setHasCompletedOnboarding"
@@ -77,17 +112,21 @@ const initialState: Omit<
   | "setAppLanguage"
   | "setThemeMode"
   | "setFixedTheme"
+  | "setAsrIqamahPreference"
   | "setNotificationMaster"
   | "setAdhanEnabled"
   | "setIqamahEnabled"
   | "setPreAdhanReminderMinutes"
   | "setPreIqamahReminderMinutes"
   | "setNotificationPrayer"
+  | "setAdhanNotificationPrayer"
+  | "setIqamahNotificationPrayer"
   | "resetSettings"
 > = {
   selectedMosqueId: undefined,
   selectedMosqueSlug: undefined,
   selectedCityGroupingKey: undefined,
+  selectedCountryGroupingKey: undefined,
   uses24HourTime: false,
   hideQiblaCompass: false,
   hasCompletedOnboarding: false,
@@ -95,6 +134,7 @@ const initialState: Omit<
   appLanguage: "en",
   themeMode: "dynamic",
   fixedTheme: "fajr",
+  asrIqamahPreference: "first",
   notifications: defaultNotifications,
 };
 
@@ -135,6 +175,10 @@ function normalizeThemeMode(value: unknown): ThemeMode {
   return value === "fixed" ? "fixed" : "dynamic";
 }
 
+function normalizeAsrIqamahPreference(value: unknown): AsrIqamahPreference {
+  return value === "second" ? "second" : "first";
+}
+
 function normalizeFixedTheme(value: unknown): TimeTheme {
   return value === "fajr" ||
     value === "sunrise" ||
@@ -150,13 +194,15 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       ...initialState,
-      setSelectedMosque: (id, slug, cityKey) =>
+      setSelectedMosque: (id, slug, cityKey, countryKey) =>
         set({
           selectedMosqueId: id,
           selectedMosqueSlug: slug,
           ...(cityKey !== undefined ? { selectedCityGroupingKey: cityKey } : {}),
+          ...(countryKey !== undefined ? { selectedCountryGroupingKey: countryKey } : {}),
         }),
       setSelectedCityGroupingKey: (key) => set({ selectedCityGroupingKey: key }),
+      setSelectedCountryGroupingKey: (key) => set({ selectedCountryGroupingKey: key }),
       setUses24HourTime: (v) => set({ uses24HourTime: v }),
       setHideQiblaCompass: (v) => set({ hideQiblaCompass: v }),
       setHasCompletedOnboarding: (v) => set({ hasCompletedOnboarding: v }),
@@ -164,6 +210,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAppLanguage: (v) => set({ appLanguage: v }),
       setThemeMode: (v) => set({ themeMode: v }),
       setFixedTheme: (v) => set({ fixedTheme: normalizeFixedTheme(v) }),
+      setAsrIqamahPreference: (v) => set({ asrIqamahPreference: normalizeAsrIqamahPreference(v) }),
       setNotificationMaster: (v) =>
         set((state) => ({
           notifications: { ...state.notifications, masterEnabled: v },
@@ -188,12 +235,26 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => ({
           notifications: { ...state.notifications, [prayer]: enabled },
         })),
+      setAdhanNotificationPrayer: (prayer, enabled) =>
+        set((state) => ({
+          notifications: {
+            ...state.notifications,
+            [`adhan${prayer.charAt(0).toUpperCase()}${prayer.slice(1)}` as keyof NotificationSettings]: enabled,
+          },
+        })),
+      setIqamahNotificationPrayer: (prayer, enabled) =>
+        set((state) => ({
+          notifications: {
+            ...state.notifications,
+            [`iqamah${prayer.charAt(0).toUpperCase()}${prayer.slice(1)}` as keyof NotificationSettings]: enabled,
+          },
+        })),
       resetSettings: () => set({ ...initialState }),
     }),
     {
       name: "masjidly-settings",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 8,
+      version: 9,
       migrate: (persisted: unknown, version: number): unknown => {
         if (!persisted || typeof persisted !== "object" || !("state" in persisted)) {
           return persisted;
@@ -242,6 +303,23 @@ export const useSettingsStore = create<SettingsState>()(
           shell = migrated;
         }
 
+        // Merge notification defaults & migrate legacy per-prayer fields
+        const notifs = (shell.state.notifications ?? {}) as Record<string, unknown>;
+        shell.state.notifications = {
+          ...defaultNotifications,
+          ...notifs,
+          adhanFajr: (notifs.adhanFajr as boolean | undefined) ?? (notifs.fajr as boolean | undefined) ?? true,
+          iqamahFajr: (notifs.iqamahFajr as boolean | undefined) ?? (notifs.fajr as boolean | undefined) ?? true,
+          adhanDhuhrJummah: (notifs.adhanDhuhrJummah as boolean | undefined) ?? (notifs.dhuhrJummah as boolean | undefined) ?? true,
+          iqamahDhuhrJummah: (notifs.iqamahDhuhrJummah as boolean | undefined) ?? (notifs.dhuhrJummah as boolean | undefined) ?? true,
+          adhanAsr: (notifs.adhanAsr as boolean | undefined) ?? (notifs.asr as boolean | undefined) ?? true,
+          iqamahAsr: (notifs.iqamahAsr as boolean | undefined) ?? (notifs.asr as boolean | undefined) ?? true,
+          adhanMaghrib: (notifs.adhanMaghrib as boolean | undefined) ?? (notifs.maghrib as boolean | undefined) ?? true,
+          iqamahMaghrib: (notifs.iqamahMaghrib as boolean | undefined) ?? (notifs.maghrib as boolean | undefined) ?? true,
+          adhanIsha: (notifs.adhanIsha as boolean | undefined) ?? (notifs.isha as boolean | undefined) ?? true,
+          iqamahIsha: (notifs.iqamahIsha as boolean | undefined) ?? (notifs.isha as boolean | undefined) ?? true,
+        };
+
         return {
           ...shell,
           state: {
@@ -249,6 +327,7 @@ export const useSettingsStore = create<SettingsState>()(
             appLanguage: normalizeAppLanguage(shell.state.appLanguage),
             themeMode: normalizeThemeMode(shell.state.themeMode),
             fixedTheme: normalizeFixedTheme(shell.state.fixedTheme),
+            asrIqamahPreference: normalizeAsrIqamahPreference(shell.state.asrIqamahPreference),
           },
         };
       },

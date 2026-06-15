@@ -417,6 +417,9 @@
         }
       }
     },
+    "Asr adhan time" : {
+
+    },
     "audio.adhan.pause_a11y" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -719,13 +722,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this."
+            "value" : "Choose which prayer alerts you want. Then your iPhone will ask if alerts are allowed."
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this."
+            "value" : "Choose which prayer alerts you want. Then your iPhone will ask if alerts are allowed."
           }
         },
         "ur" : {
@@ -735,6 +738,9 @@
           }
         }
       }
+    },
+    "Choose your language" : {
+
     },
     "Choose your mosque" : {
       "extractionState" : "stale",
@@ -766,7 +772,6 @@
       }
     },
     "Continue" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -822,6 +827,9 @@
           }
         }
       }
+    },
+    "First Asr (Mithl 1)" : {
+
     },
     "home.countdown.a11y.active" : {
       "extractionState" : "stale",
@@ -968,6 +976,64 @@
         }
       }
     },
+    "home.current_month_times_missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيتم إضافة المواقيت قريباً"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Times to be added soon"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jadwal akan segera ditambahkan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اوقات جلد شامل کر دیے جائیں گے"
+          }
+        }
+      }
+    },
+    "home.go_to_available_times_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الانتقال إلى المواقيت المتاحة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to available times"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buka jadwal yang tersedia"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دستیاب اوقات پر جائیں"
+          }
+        }
+      }
+    },
     "home.iqamah_format" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -993,6 +1059,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اقامت : %@"
+          }
+        }
+      }
+    },
+    "home.request_times_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طلب إضافة هذه المواقيت"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request these times"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minta jadwal ini"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یہ اوقات شامل کرنے کی درخواست کریں"
           }
         }
       }
@@ -2169,7 +2264,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap the close button to finish setup."
+            "value" : "Tap close to finish."
           }
         },
         "id" : {
@@ -2198,7 +2293,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close Settings"
+            "value" : "Close settings"
           }
         },
         "id" : {
@@ -2227,7 +2322,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap the close button to return to the prayer times."
+            "value" : "Tap close to go back."
           }
         },
         "id" : {
@@ -2256,7 +2351,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close the timetable"
+            "value" : "Close timetable"
           }
         },
         "id" : {
@@ -2314,7 +2409,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mosque picks which masjid’s times you see. 24-hour time changes how clocks read. Notifications has a master switch; when on, you can enable adhan and iqamah alerts separately and set optional reminders before each. Scroll to skim everything, then tap Continue."
+            "value" : "Change your mosque, style, and alerts here."
           }
         },
         "id" : {
@@ -2343,7 +2438,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "What these settings do"
+            "value" : "Use settings"
           }
         },
         "id" : {
@@ -2372,7 +2467,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipe the date row sideways to pick another day. Use the month arrows to load other months. Scroll the prayer list for the selected day. When you’re done exploring, tap Continue."
+            "value" : "Pick a day or change the month."
           }
         },
         "id" : {
@@ -2401,7 +2496,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Browse dates and months"
+            "value" : "Use the timetable"
           }
         },
         "id" : {
@@ -2453,25 +2548,25 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اختر مدينتك ثم مسجدك. سيعرض مسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
+            "value" : "اختر بلدك ثم مدينتك ثم مسجدك. سيعرض مسجدلي أوقات الصلاة والإقامة الرسمية لهذا المسجد."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose your city, then your mosque. Masjidly will show official prayer and iqamah times for that mosque."
+            "value" : "Select your country, city, and mosque."
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pilih kota Anda, lalu masjid Anda. Masjidly akan menampilkan waktu salat dan iqamah resmi untuk masjid tersebut."
+            "value" : "Pilih negara Anda, lalu kota Anda, lalu masjid Anda. Masjidly akan menampilkan waktu salat dan iqamah resmi untuk masjid tersebut."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "پہلے شہر، پھر مسجد منتخب کریں۔ Masjidly اس مسجد کے سرکاری نماز اور اقامت کے اوقات دکھائے گا۔"
+            "value" : "پہلے ملک، پھر شہر، پھر مسجد منتخب کریں۔ Masjidly اس مسجد کے سرکاری نماز اور اقامت کے اوقات دکھائے گا۔"
           }
         }
       }
@@ -2482,25 +2577,25 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "المدينة والمسجد"
+            "value" : "البلد والمدينة والمسجد"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "City & mosque"
+            "value" : "Pick your mosque"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kota & masjid"
+            "value" : "Negara, kota & masjid"
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "شہر اور مسجد"
+            "value" : "ملک، شہر اور مسجد"
           }
         }
       }
@@ -2517,7 +2612,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose what you want Masjidly to notify you about. The iOS permission prompt will appear after this."
+            "value" : "Select which prayers to receive notifications for."
           }
         },
         "id" : {
@@ -2534,6 +2629,64 @@
         }
       }
     },
+    "onboarding.notifications.prayers_adhan" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأذان"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان"
+          }
+        }
+      }
+    },
+    "onboarding.notifications.prayers_iqamah" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإقامة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iqamah"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقامت"
+          }
+        }
+      }
+    },
     "onboarding.notifications.title" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2546,13 +2699,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Prayer notifications"
+            "value" : "Prayer Notifications"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notifikasi salat"
+            "value" : "Notifikasi Salat"
           }
         },
         "ur" : {
@@ -2575,7 +2728,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap the Qibla circle to show the live countdown to the next prayer. Tap again to hide it."
+            "value" : "Tap the Qibla circle to show or hide the timer."
           }
         },
         "id" : {
@@ -2604,7 +2757,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Prayer countdown"
+            "value" : "Prayer timer"
           }
         },
         "id" : {
@@ -2662,7 +2815,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Do It Later"
+            "value" : "Do it later"
           }
         },
         "id" : {
@@ -2691,7 +2844,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The triangle points toward the Qibla. Rotate your phone until it lines up when you are ready to pray."
+            "value" : "Location helps find the Qibla and closest mosque. Turn toward the triangle."
           }
         },
         "id" : {
@@ -2720,7 +2873,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Qibla direction"
+            "value" : "Find the Qibla"
           }
         },
         "id" : {
@@ -2749,7 +2902,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap the settings button (top-right) to choose preferences."
+            "value" : "Tap settings to change the app."
           }
         },
         "id" : {
@@ -2778,7 +2931,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Settings"
+            "value" : "Settings"
           }
         },
         "id" : {
@@ -2807,7 +2960,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap any of the letters to see that prayer’s time."
+            "value" : "Tap a letter to see its time."
           }
         },
         "id" : {
@@ -2836,7 +2989,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Try the prayer shortcuts"
+            "value" : "Check prayer times"
           }
         },
         "id" : {
@@ -2865,7 +3018,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap the calendar button (top-left) to see the full timetable."
+            "value" : "Tap the calendar to see this month’s times."
           }
         },
         "id" : {
@@ -2894,7 +3047,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open the timetable"
+            "value" : "Monthly prayer times"
           }
         },
         "id" : {
@@ -2934,6 +3087,9 @@
         }
       }
     },
+    "Pilih bahasa" : {
+
+    },
     "Play adhan" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2969,13 +3125,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Prayer notifications"
+            "value" : "Prayer alerts"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Prayer notifications"
+            "value" : "Prayer alerts"
           }
         },
         "ur" : {
@@ -3421,6 +3577,125 @@
         }
       }
     },
+    "review.feedback.later" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ربما لاحقًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maybe later"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mungkin nanti"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شاید بعد میں"
+          }
+        }
+      }
+    },
+    "review.feedback.message" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الميزات التي يجب أن نضيفها أو نحسنها؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What features should we add or improve?"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fitur apa yang perlu kami tambahkan atau tingkatkan?"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آپ کون سی خصوصیات شامل یا بہتر دیکھنا چاہیں گے؟"
+          }
+        }
+      }
+    },
+    "review.feedback.send" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إرسال ملاحظات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send feedback"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kirim masukan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فیڈ بیک بھیجیں"
+          }
+        }
+      }
+    },
+    "review.feedback.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساعدنا على تحسين مسجدلي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Help us improve Masjidly"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bantu kami meningkatkan Masjidly"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly کو بہتر بنانے میں ہماری مدد کریں"
+          }
+        }
+      }
+    },
+    "Second Asr (Mithl 2)" : {
+
+    },
     "settings.adhan_sound.pause" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3514,25 +3789,25 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ميزات جديدة وملاحظات"
+            "value" : "إرسال ملاحظات"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New features & feedback"
+            "value" : "Send feedback"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fitur baru & masukan"
+            "value" : "Kirim masukan"
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "نئی خصوصیات اور رائے"
+            "value" : "فیڈ بیک بھیجیں"
           }
         }
       }
@@ -3543,25 +3818,83 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أوقات الصلاة"
+            "value" : "الإبلاغ عن أوقات الصلاة"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Prayer times"
+            "value" : "Report prayer times"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Waktu salat"
+            "value" : "Laporkan waktu salat"
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "نماز کے اوقات"
+            "value" : "نماز کے اوقات رپورٹ کریں"
+          }
+        }
+      }
+    },
+    "settings.contact.request_masjid.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طلب إضافة مسجد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request a masjid"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minta masjid baru"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسجد کی درخواست کریں"
+          }
+        }
+      }
+    },
+    "settings.country.picker" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البلد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Country"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Negara"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملک"
           }
         }
       }
@@ -3794,6 +4127,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ہو گیا"
+          }
+        }
+      }
+    },
+    "settings.gradients.option_label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خيار"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Option"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opsi"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آپشن"
           }
         }
       }
@@ -4084,6 +4446,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اردو"
+          }
+        }
+      }
+    },
+    "settings.legal.privacy" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سياسة الخصوصية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy Policy"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kebijakan Privasi"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رازداری کی پالیسی"
+          }
+        }
+      }
+    },
+    "settings.legal.terms" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شروط الخدمة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms of Service"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ketentuan Layanan"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سروس کی شرائط"
           }
         }
       }
@@ -4461,6 +4881,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نماز کی اطلاعات"
+          }
+        }
+      }
+    },
+    "settings.notifications.prayer_selection" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختيار الصلوات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prayer Selection"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pilihan Salat"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نماز کا انتخاب"
           }
         }
       }
@@ -4900,6 +5349,35 @@
         }
       }
     },
+    "settings.section.gradients.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التدرجات اللونية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gradients"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gradien"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "گریڈینٹ"
+          }
+        }
+      }
+    },
     "settings.section.language.title" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4925,6 +5403,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ایپ کی زبان"
+          }
+        }
+      }
+    },
+    "settings.section.legal.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قانوني"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legal"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legal"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قانونی"
           }
         }
       }
@@ -5509,6 +6016,9 @@
         }
       }
     },
+    "Skip tutorial" : {
+
+    },
     "Stop adhan" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5822,6 +6332,64 @@
         }
       }
     },
+    "support.mail.missing_prayer_times.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nPlease add the prayer times for the following masjid and month.\n\nMasjid: %@\nMonth: %@\n\nThanks,"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nPlease add the prayer times for the following masjid and month.\n\nMasjid: %@\nMonth: %@\n\nThanks,"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nPlease add the prayer times for the following masjid and month.\n\nMasjid: %@\nMonth: %@\n\nThanks,"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nPlease add the prayer times for the following masjid and month.\n\nMasjid: %@\nMonth: %@\n\nThanks,"
+          }
+        }
+      }
+    },
+    "support.mail.missing_prayer_times.subject" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Please add prayer times for %@ (%@)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Please add prayer times for %@ (%@)"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Please add prayer times for %@ (%@)"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Please add prayer times for %@ (%@)"
+          }
+        }
+      }
+    },
     "support.mail.prayer_times.body" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5876,6 +6444,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Masjidly — Prayer times question"
+          }
+        }
+      }
+    },
+    "support.mail.request_masjid.body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'd like to request adding a masjid to Masjidly.\n\nMasjid name:\nCity / country:\nWebsite or contact details:\nPrayer timetable source:\n\nThanks,"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'd like to request adding a masjid to Masjidly.\n\nMasjid name:\nCity / country:\nWebsite or contact details:\nPrayer timetable source:\n\nThanks,"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'd like to request adding a masjid to Masjidly.\n\nMasjid name:\nCity / country:\nWebsite or contact details:\nPrayer timetable source:\n\nThanks,"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi Masjidly team,\n\nI'd like to request adding a masjid to Masjidly.\n\nMasjid name:\nCity / country:\nWebsite or contact details:\nPrayer timetable source:\n\nThanks,"
+          }
+        }
+      }
+    },
+    "support.mail.request_masjid.subject" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Request a masjid"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Request a masjid"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Request a masjid"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjidly — Request a masjid"
           }
         }
       }
@@ -6227,6 +6853,102 @@
           }
         }
       }
+    },
+    "timetable.header.lastThird" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الثلث الأخير"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last Third"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sepertiga Malam"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخری تہائی"
+          }
+        }
+      }
+    },
+    "timetable.header.midnight" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منتصف الليل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Midnight"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tengah Malam"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آدھی رات"
+          }
+        }
+      }
+    },
+    "timetable.missing_month" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تتوفر لدينا مواقيت الصلاة لهذا الشهر بعد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We don't have the prayer times for this month yet."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kami belum memiliki jadwal salat untuk bulan ini."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ہمارے پاس اس مہینے کے نماز کے اوقات ابھی موجود نہیں ہیں۔"
+          }
+        }
+      }
+    },
+    "You can change this later in Settings." : {
+
+    },
+    "اپنی زبان منتخب کریں" : {
+
+    },
+    "اختر لغتك" : {
+
     }
   },
   "version" : "1.0"

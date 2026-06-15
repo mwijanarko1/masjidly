@@ -3,21 +3,26 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   type ViewStyle,
   type TextStyle,
 } from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { ACCENT } from "@/lib/design/themes";
 import type { Mosque } from "@/types/prayer";
 import {
   cityGroupingKey,
   cityOptions,
   mosquesInCity,
+  countryGroupingKey,
+  countryOptions,
+  mosquesInCountry,
 } from "@/lib/prayer/mosqueDefaults";
 import { SettingsMenuPickerRow } from "@/components/ui/SettingsMenuPickerRow";
 import { t } from "@/lib/i18n/translations";
 import type { AppLanguage } from "@/store/settings";
 import { SPACING } from "@/constants";
+
+const ONBOARDING_PICKER_LABEL_WIDTH = 72;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -28,6 +33,7 @@ interface MosqueSelectionCardProps {
   selectedMosqueId: string;
   onSelect: (id: string) => void;
   onContinue: () => void;
+  isContinuing?: boolean;
   textColor: string;
   usesLightForeground: boolean;
   locale: AppLanguage;
@@ -42,14 +48,32 @@ export function MosqueSelectionCard({
   selectedMosqueId,
   onSelect,
   onContinue,
+  isContinuing = false,
   textColor,
   usesLightForeground,
   locale,
 }: MosqueSelectionCardProps) {
-  const cities = useMemo(() => cityOptions(mosques), [mosques]);
+  const countries = useMemo(() => countryOptions(mosques), [mosques]);
+  /** Local country filter during onboarding (not persisted until Continue). */
+  const [countryKeyOverride, setCountryKeyOverride] = useState<string | undefined>(
+    undefined
+  );
+
   /** Local city filter during onboarding (not persisted until Continue). */
   const [cityKeyOverride, setCityKeyOverride] = useState<string | undefined>(
     undefined
+  );
+
+  const resolvedCountryKey = useMemo(() => {
+    if (countryKeyOverride !== undefined) return countryKeyOverride;
+    const m = mosques.find((x) => x.id === selectedMosqueId);
+    if (m) return countryGroupingKey(m);
+    return countries[0]?.key ?? "";
+  }, [countryKeyOverride, mosques, selectedMosqueId, countries]);
+
+  const cities = useMemo(
+    () => cityOptions(mosques, resolvedCountryKey),
+    [mosques, resolvedCountryKey]
   );
 
   const resolvedCityKey = useMemo(() => {
@@ -59,11 +83,15 @@ export function MosqueSelectionCard({
     return cities[0]?.key ?? "";
   }, [cityKeyOverride, mosques, selectedMosqueId, cities]);
 
-  const mosquesInSelectedCity = useMemo(
-    () =>
-      resolvedCityKey ? mosquesInCity(resolvedCityKey, mosques) : mosques,
-    [mosques, resolvedCityKey]
-  );
+  const mosquesInSelectedCity = useMemo(() => {
+    const countryMosques = mosquesInCountry(resolvedCountryKey, mosques);
+    if (!resolvedCityKey) return countryMosques;
+    return mosquesInCity(resolvedCityKey, countryMosques);
+  }, [mosques, resolvedCountryKey, resolvedCityKey]);
+
+  const selectedCountryLabel =
+    countries.find((c) => c.key === resolvedCountryKey)?.label ??
+    t("settings.reminder.none", locale);
 
   const selectedCityLabel =
     cities.find((c) => c.key === resolvedCityKey)?.label ??
@@ -73,10 +101,12 @@ export function MosqueSelectionCard({
     mosques.find((m) => m.id === selectedMosqueId)?.name ??
     t("settings.reminder.none", locale);
 
-  const handleCitySelect = useCallback(
+  const handleCountrySelect = useCallback(
     (key: string) => {
-      setCityKeyOverride(key);
-      const list = mosquesInCity(key, mosques);
+      setCountryKeyOverride(key);
+      // Reset city override when country changes
+      setCityKeyOverride(undefined);
+      const list = mosquesInCountry(key, mosques);
       if (!list.some((m) => m.id === selectedMosqueId) && list[0]) {
         onSelect(list[0].id);
       }
@@ -84,10 +114,25 @@ export function MosqueSelectionCard({
     [mosques, selectedMosqueId, onSelect]
   );
 
+  const handleCitySelect = useCallback(
+    (key: string) => {
+      setCityKeyOverride(key);
+      const countryMosques = mosquesInCountry(resolvedCountryKey, mosques);
+      const list = mosquesInCity(key, countryMosques);
+      if (!list.some((m) => m.id === selectedMosqueId) && list[0]) {
+        onSelect(list[0].id);
+      }
+    },
+    [mosques, selectedMosqueId, resolvedCountryKey, onSelect]
+  );
+
   const handleMosqueSelect = useCallback(
     (id: string) => {
       const m = mosques.find((x) => x.id === id);
-      if (m) setCityKeyOverride(cityGroupingKey(m));
+      if (m) {
+        setCountryKeyOverride(countryGroupingKey(m));
+        setCityKeyOverride(cityGroupingKey(m));
+      }
       onSelect(id);
     },
     [mosques, onSelect]
@@ -145,6 +190,19 @@ export function MosqueSelectionCard({
             ]}
           >
             <SettingsMenuPickerRow
+              label={t("settings.country.picker", locale)}
+              displayValue={selectedCountryLabel}
+              value={resolvedCountryKey}
+              options={countries.map((c) => ({ label: c.label, value: c.key }))}
+              onSelect={handleCountrySelect}
+              textColor={textColor}
+              invertSheet={usesLightForeground}
+              sheetTitle={t("settings.country.picker", locale)}
+              testID="Onboarding.CountryPicker"
+              labelWidth={ONBOARDING_PICKER_LABEL_WIDTH}
+            />
+            <RowDivider />
+            <SettingsMenuPickerRow
               label={t("settings.city.picker", locale)}
               displayValue={selectedCityLabel}
               value={resolvedCityKey}
@@ -154,6 +212,7 @@ export function MosqueSelectionCard({
               invertSheet={usesLightForeground}
               sheetTitle={t("settings.city.picker", locale)}
               testID="Onboarding.CityPicker"
+              labelWidth={ONBOARDING_PICKER_LABEL_WIDTH}
             />
             <RowDivider />
             <SettingsMenuPickerRow
@@ -169,16 +228,17 @@ export function MosqueSelectionCard({
               invertSheet={usesLightForeground}
               sheetTitle={t("settings.section.mosque.title", locale)}
               testID="Onboarding.MosquePicker"
+              labelWidth={ONBOARDING_PICKER_LABEL_WIDTH}
             />
           </View>
 
           <Pressable
             style={[
               styles.continueButton,
-              { opacity: selectedMosqueId ? 1 : 0.45 },
+              { opacity: selectedMosqueId && !isContinuing ? 1 : 0.45 },
             ]}
             onPress={onContinue}
-            disabled={!selectedMosqueId}
+            disabled={!selectedMosqueId || isContinuing}
             accessibilityRole="button"
             accessibilityLabel={t("onboarding.continue", locale)}
             accessibilityIdentifier="Onboarding.MosqueContinue"

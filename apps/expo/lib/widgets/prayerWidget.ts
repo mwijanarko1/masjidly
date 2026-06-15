@@ -17,6 +17,7 @@ import {
   sheffieldNoonUTC,
 } from "@/lib/prayer/prayerTimesEngine";
 import type { AppLanguage } from "@/store/settings";
+import type { AsrIqamahPreference } from "@/types/prayer";
 
 
 interface AndroidPrayerWidgetModule {
@@ -41,6 +42,7 @@ interface WidgetSnapshot {
   days: WidgetDaySnapshot[];
   uses24HourTime: boolean;
   appLanguageRawValue: AppLanguage;
+  asrIqamahPreference: AsrIqamahPreference;
 }
 
 function dateByAddingDaysInSheffield(base: Date, offsetDays: number): Date {
@@ -55,6 +57,7 @@ export async function updateAndroidPrayerWidgetSnapshot(params: {
   ukDst: UkDstYear[];
   uses24HourTime: boolean;
   appLanguage: AppLanguage;
+  asrIqamahPreference: AsrIqamahPreference;
   now?: Date;
 }): Promise<void> {
   if (Platform.OS !== "android" || !nativePrayerWidget || !params.mosque) {
@@ -72,7 +75,8 @@ export async function updateAndroidPrayerWidgetSnapshot(params: {
         date,
         params.monthData ?? undefined,
         params.ramadanData ?? undefined,
-        params.ukDst
+        params.ukDst,
+        params.asrIqamahPreference
       );
       const iqamah = resolveIqamahTimesWithDstMapping(
         params.mosque.slug,
@@ -119,6 +123,7 @@ export async function updateAndroidPrayerWidgetSnapshot(params: {
     days,
     uses24HourTime: params.uses24HourTime,
     appLanguageRawValue: params.appLanguage,
+    asrIqamahPreference: params.asrIqamahPreference,
   };
 
   await nativePrayerWidget.saveSnapshot(JSON.stringify(snapshot));

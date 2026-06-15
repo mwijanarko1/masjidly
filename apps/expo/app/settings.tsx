@@ -3,18 +3,21 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   ScrollView,
   ActivityIndicator,
   Linking,
   Platform,
   Alert,
   DeviceEventEmitter,
+  LayoutAnimation,
+  Switch,
+  UIManager,
 } from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X } from "lucide-react-native";
+import { ChevronRight, X } from "lucide-react-native";
 import { AtmosphericSkyBackground } from "@/components/ui/AtmosphericSkyBackground";
 import { TutorialHighlight } from "@/components/onboarding/CoachMarkCard";
 import { TutorialOverlay } from "@/components/onboarding/TutorialOverlay";
@@ -23,7 +26,9 @@ import { SettingsMenuPickerRow } from "@/components/ui/SettingsMenuPickerRow";
 import { SPACING, FONT_SIZES } from "@/constants";
 import { SettingsToggleRow } from "@/components/ui/SettingsToggleRow";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
-import { visibleMosques, cityOptions, mosquesInCity, cityGroupingKey } from "@/lib/prayer/mosqueDefaults";
+import { prayerTimesCache } from "@/lib/prayer/prayerTimesCache";
+import { visibleMosques, cityOptions, mosquesInCity, mosquesInCountry, countryOptions, countryGroupingKey, cityGroupingKey } from "@/lib/prayer/mosqueDefaults";
+import { useShallow } from "zustand/react/shallow";
 import { useSettingsStore, type AppLanguage } from "@/store/settings";
 import { t, type TranslationKey } from "@/lib/i18n/translations";
 import { APP_LANGUAGES, useAppLanguage } from "@/lib/i18n/language";
@@ -37,7 +42,9 @@ import {
   SchedulableTriggerInputTypes,
 } from "@/lib/notifications/expoNotificationApi";
 import { resolveSelectedMosque } from "@/lib/prayer/mosqueDefaults";
-import type { Mosque } from "@/types/prayer";
+import { getDateInSheffield } from "@/lib/prayer/prayerTimesEngine";
+import { MONTH_NAMES, monthNameFromNumber, type MonthName } from "@/lib/prayer/monthName";
+import type { MonthPrayerData, Mosque } from "@/types/prayer";
 import {
   themeForPrayer,
   getSkyTheme,
@@ -49,6 +56,34 @@ import {
   type TimeTheme,
 } from "@/lib/design/themes";
 
+type NotificationPrayerKey = "fajr" | "dhuhrJummah" | "asr" | "maghrib" | "isha";
+
+const NOTIFICATION_PRAYER_KEYS: readonly NotificationPrayerKey[] = [
+  "fajr",
+  "dhuhrJummah",
+  "asr",
+  "maghrib",
+  "isha",
+];
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+function notificationField(prefix: "adhan" | "iqamah", prayer: NotificationPrayerKey) {
+  return `${prefix}${prayer.charAt(0).toUpperCase()}${prayer.slice(1)}`;
+}
+
+function notificationPrayerLabelKey(prayer: NotificationPrayerKey): TranslationKey {
+  switch (prayer) {
+    case "fajr": return "settings.notification.fajr";
+    case "dhuhrJummah": return "settings.notification.dhuhr_jummah";
+    case "asr": return "settings.notification.asr";
+    case "maghrib": return "settings.notification.maghrib";
+    case "isha": return "settings.notification.isha";
+  }
+}
+
 async function rescheduleNotifications(
   settings: ReturnType<typeof useSettingsStore.getState>
 ): Promise<void> {
@@ -57,7 +92,10 @@ async function rescheduleNotifications(
       await cancelAllPrayerNotifications();
       return;
     }
-    const mosques = await prayerRepository.listMosques();
+    const mosques = await prayerRepository.listMosques().then(async (all) => {
+      await prayerTimesCache.saveMosques(all);
+      return all;
+    }).catch(async () => (await prayerTimesCache.loadMosques()) ?? []);
     const mosque = resolveSelectedMosque(
       mosques,
       settings.selectedMosqueId,
@@ -69,16 +107,61 @@ async function rescheduleNotifications(
       mosque,
       settings: settings.notifications,
       locale,
+      asrIqamahPreference: settings.asrIqamahPreference,
     });
   } catch {
     // Notification native modules may not be available (Android Expo Go); fail silently.
   }
 }
 
+async function loadMonthlyPrayerTimesWithCache(
+  mosqueSlug: string,
+  month: MonthName,
+  year: number
+) {
+  const cached = await prayerTimesCache.loadMonthly(mosqueSlug, month, year);
+  if (cached) return cached;
+  const monthly = await prayerRepository.getMonthlyPrayerTimes(mosqueSlug, month, year);
+  if (monthly) {
+    await prayerTimesCache.saveMonthly(mosqueSlug, month, year, monthly);
+  }
+  return monthly;
+}
+
+function monthHasSecondAsrAdhan(monthly: MonthPrayerData | null): boolean {
+  return monthly?.prayerTimes.some((row) => Boolean(row.asrMithl2)) ?? false;
+}
+
 export default function SettingsScreen() {
   const router = useRouter();
   const { theme: themeParam } = useLocalSearchParams<{ theme?: string }>();
-  const settings = useSettingsStore();
+  const settings = useSettingsStore(
+    useShallow((s) => ({
+      selectedMosqueId: s.selectedMosqueId,
+      selectedMosqueSlug: s.selectedMosqueSlug,
+      selectedCityGroupingKey: s.selectedCityGroupingKey,
+      selectedCountryGroupingKey: s.selectedCountryGroupingKey,
+      hideQiblaCompass: s.hideQiblaCompass,
+      themeMode: s.themeMode,
+      fixedTheme: s.fixedTheme,
+      asrIqamahPreference: s.asrIqamahPreference,
+      uses24HourTime: s.uses24HourTime,
+      appLanguage: s.appLanguage,
+      notifications: s.notifications,
+      setSelectedMosque: s.setSelectedMosque,
+      setSelectedCityGroupingKey: s.setSelectedCityGroupingKey,
+      setSelectedCountryGroupingKey: s.setSelectedCountryGroupingKey,
+      setUses24HourTime: s.setUses24HourTime,
+      setHideQiblaCompass: s.setHideQiblaCompass,
+      setNotificationMaster: s.setNotificationMaster,
+      setPreAdhanReminderMinutes: s.setPreAdhanReminderMinutes,
+      setPreIqamahReminderMinutes: s.setPreIqamahReminderMinutes,
+      setAsrIqamahPreference: s.setAsrIqamahPreference,
+      setThemeMode: s.setThemeMode,
+      setFixedTheme: s.setFixedTheme,
+      setAppLanguage: s.setAppLanguage,
+    }))
+  );
   const dynamicTheme = themeForPrayer(themeParam ?? "Fajr");
   const theme = resolveTheme(dynamicTheme, settings.themeMode, settings.fixedTheme);
   const sky = getSkyTheme(theme);
@@ -99,20 +182,134 @@ export default function SettingsScreen() {
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [loading, setLoading] = useState(true);
   const [locationPermissionStatus, setLocationPermissionStatus] = useState<Location.PermissionStatus | null>(null);
+  const [userCoordinates, setUserCoordinates] = useState<Location.LocationObjectCoords | null>(null);
+  const [supportsMultipleAsr, setSupportsMultipleAsr] = useState(false);
+  const [adhanPrayerSettingsExpanded, setAdhanPrayerSettingsExpanded] = useState(false);
+  const [iqamahPrayerSettingsExpanded, setIqamahPrayerSettingsExpanded] = useState(false);
   const langCode = useAppLanguage();
 
   useEffect(() => {
-    prayerRepository.listMosques().then((all) => {
-      setMosques(visibleMosques(all));
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    let cancelled = false;
+    async function loadMosques() {
+      const cached = await prayerTimesCache.loadMosques();
+      if (!cancelled && cached) {
+        setMosques(visibleMosques(cached));
+        setLoading(false);
+      }
+      try {
+        const all = await prayerRepository.listMosques();
+        await prayerTimesCache.saveMosques(all);
+        if (!cancelled) {
+          setMosques(visibleMosques(all));
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadMosques();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const cities = useMemo(() => cityOptions(mosques), [mosques]);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAsrSupport() {
+      const selected = mosques.find((m) => m.id === settings.selectedMosqueId) ?? mosques.find((m) => m.slug === settings.selectedMosqueSlug);
+      if (!selected) {
+        setSupportsMultipleAsr(false);
+        return;
+      }
+      const { year, month } = getDateInSheffield(new Date());
+      const monthName = monthNameFromNumber(month);
+      if (!monthName) {
+        setSupportsMultipleAsr(false);
+        return;
+      }
+      try {
+        const currentMonth = await loadMonthlyPrayerTimesWithCache(selected.slug, monthName, year);
+        if (monthHasSecondAsrAdhan(currentMonth)) {
+          if (!cancelled) setSupportsMultipleAsr(true);
+          return;
+        }
+
+        // The setting should be available for mosques that support a second Asr
+        // adhan anywhere in the yearly timetable, not only in the current month.
+        for (const candidateMonth of MONTH_NAMES) {
+          if (candidateMonth === monthName) continue;
+          const monthly = await loadMonthlyPrayerTimesWithCache(selected.slug, candidateMonth, year);
+          if (cancelled) return;
+          if (monthHasSecondAsrAdhan(monthly)) {
+            setSupportsMultipleAsr(true);
+            return;
+          }
+        }
+
+        if (!cancelled) setSupportsMultipleAsr(false);
+      } catch {
+        if (!cancelled) setSupportsMultipleAsr(false);
+      }
+    }
+    loadAsrSupport();
+    return () => {
+      cancelled = true;
+    };
+  }, [mosques, settings.selectedMosqueId, settings.selectedMosqueSlug]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUserCoordinates() {
+      if (settings.hideQiblaCompass) {
+        setUserCoordinates(null);
+        return;
+      }
+
+      try {
+        const permission = await Location.getForegroundPermissionsAsync();
+        if (cancelled) return;
+        setLocationPermissionStatus(permission.status);
+        if (permission.status !== Location.PermissionStatus.GRANTED) {
+          setUserCoordinates(null);
+          return;
+        }
+
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!cancelled) {
+          setUserCoordinates(position.coords);
+        }
+      } catch {
+        // Location can fail in simulators or when services are unavailable; leave closest mosque unset.
+      }
+    }
+
+    loadUserCoordinates();
+    return () => {
+      cancelled = true;
+    };
+  }, [settings.hideQiblaCompass]);
+
+  const countries = useMemo(() => countryOptions(mosques), [mosques]);
+
+  const effectiveCountryKey = useMemo(() => {
+    const stored = settings.selectedCountryGroupingKey;
+    if (stored && mosquesInCountry(stored, mosques).length > 0) {
+      return stored;
+    }
+    const m = mosques.find((x) => x.id === settings.selectedMosqueId);
+    if (m) return countryGroupingKey(m);
+    return countries[0]?.key ?? "";
+  }, [mosques, settings.selectedCountryGroupingKey, settings.selectedMosqueId, countries]);
+
+  const cities = useMemo(() => cityOptions(mosques, effectiveCountryKey), [mosques, effectiveCountryKey]);
 
   const effectiveCityKey = useMemo(() => {
     const stored = settings.selectedCityGroupingKey;
-    if (stored && mosquesInCity(stored, mosques).length > 0) {
+    const mosquesInSelectedCountry = mosquesInCountry(effectiveCountryKey, mosques);
+    if (stored && mosquesInCity(stored, mosquesInSelectedCountry).length > 0) {
       return stored;
     }
     const m = mosques.find((x) => x.id === settings.selectedMosqueId);
@@ -123,21 +320,37 @@ export default function SettingsScreen() {
     settings.selectedCityGroupingKey,
     settings.selectedMosqueId,
     cities,
+    effectiveCountryKey,
   ]);
 
-  const mosquesInSelectedCity = useMemo(
-    () => (effectiveCityKey ? mosquesInCity(effectiveCityKey, mosques) : mosques),
-    [mosques, effectiveCityKey]
-  );
+  const mosquesInSelectedCity = useMemo(() => {
+    const countryMosques = mosquesInCountry(effectiveCountryKey, mosques);
+    if (!effectiveCityKey) return countryMosques;
+    return mosquesInCity(effectiveCityKey, countryMosques);
+  }, [mosques, effectiveCountryKey, effectiveCityKey]);
 
   const handleMosqueSelect = (mosque: Mosque) => {
-    settings.setSelectedMosque(mosque.id, mosque.slug, cityGroupingKey(mosque));
+    settings.setSelectedMosque(mosque.id, mosque.slug, cityGroupingKey(mosque), countryGroupingKey(mosque));
     rescheduleNotifications(useSettingsStore.getState());
+  };
+
+  const handleCountrySelect = (key: string) => {
+    settings.setSelectedCountryGroupingKey(key);
+    // Reset city selection when country changes
+    const inCountry = mosquesInCountry(key, mosques);
+    const inCity = mosquesInCity(effectiveCityKey, inCountry);
+    const currentOk = inCity.some((m) => m.id === settings.selectedMosqueId);
+    if (!currentOk && inCountry[0]) {
+      handleMosqueSelect(inCountry[0]);
+    } else {
+      rescheduleNotifications(useSettingsStore.getState());
+    }
   };
 
   const handleCitySelect = (key: string) => {
     settings.setSelectedCityGroupingKey(key);
-    const inCity = mosquesInCity(key, mosques);
+    const inCountry = mosquesInCountry(effectiveCountryKey, mosques);
+    const inCity = mosquesInCity(key, inCountry);
     const currentOk = inCity.some((m) => m.id === settings.selectedMosqueId);
     if (!currentOk && inCity[0]) {
       handleMosqueSelect(inCity[0]);
@@ -148,6 +361,11 @@ export default function SettingsScreen() {
 
   const handle24hToggle = (v: boolean) => {
     settings.setUses24HourTime(v);
+  };
+
+  const handleAsrIqamahPreference = (v: "first" | "second") => {
+    settings.setAsrIqamahPreference(v);
+    rescheduleNotifications(useSettingsStore.getState());
   };
 
   const handleQiblaToggle = (v: boolean) => {
@@ -165,20 +383,44 @@ export default function SettingsScreen() {
   };
 
   const handleAdhanToggle = (v: boolean) => {
-    settings.setAdhanEnabled(v);
-    const state = useSettingsStore.getState();
-    if (v && !state.notifications.masterEnabled) {
-      settings.setNotificationMaster(true);
-    }
+    const current = useSettingsStore.getState().notifications;
+    useSettingsStore.setState({
+      notifications: {
+        ...current,
+        masterEnabled:
+          v ||
+          current.iqamahEnabled ||
+          current.preAdhanReminderMinutes !== null ||
+          current.preIqamahReminderMinutes !== null,
+        adhanEnabled: v,
+        adhanFajr: v,
+        adhanDhuhrJummah: v,
+        adhanAsr: v,
+        adhanMaghrib: v,
+        adhanIsha: v,
+      },
+    });
     rescheduleNotifications(useSettingsStore.getState());
   };
 
   const handleIqamahToggle = (v: boolean) => {
-    settings.setIqamahEnabled(v);
-    const state = useSettingsStore.getState();
-    if (v && !state.notifications.masterEnabled) {
-      settings.setNotificationMaster(true);
-    }
+    const current = useSettingsStore.getState().notifications;
+    useSettingsStore.setState({
+      notifications: {
+        ...current,
+        masterEnabled:
+          current.adhanEnabled ||
+          v ||
+          current.preAdhanReminderMinutes !== null ||
+          current.preIqamahReminderMinutes !== null,
+        iqamahEnabled: v,
+        iqamahFajr: v,
+        iqamahDhuhrJummah: v,
+        iqamahAsr: v,
+        iqamahMaghrib: v,
+        iqamahIsha: v,
+      },
+    });
     rescheduleNotifications(useSettingsStore.getState());
   };
 
@@ -200,6 +442,61 @@ export default function SettingsScreen() {
     rescheduleNotifications(useSettingsStore.getState());
   };
 
+  const handleAdhanPrayerToggle = useCallback((prayer: NotificationPrayerKey, enabled: boolean) => {
+    const current = useSettingsStore.getState().notifications;
+    const next = {
+      ...current,
+      [notificationField("adhan", prayer)]: enabled,
+    };
+    const anyAdhanEnabled = NOTIFICATION_PRAYER_KEYS.some((key) =>
+      Boolean((next as unknown as Record<string, boolean>)[notificationField("adhan", key)])
+    );
+    useSettingsStore.setState({
+      notifications: {
+        ...next,
+        adhanEnabled: anyAdhanEnabled,
+        masterEnabled:
+          anyAdhanEnabled ||
+          next.iqamahEnabled ||
+          next.preAdhanReminderMinutes !== null ||
+          next.preIqamahReminderMinutes !== null,
+      },
+    });
+    rescheduleNotifications(useSettingsStore.getState());
+  }, []);
+
+  const handleIqamahPrayerToggle = useCallback((prayer: NotificationPrayerKey, enabled: boolean) => {
+    const current = useSettingsStore.getState().notifications;
+    const next = {
+      ...current,
+      [notificationField("iqamah", prayer)]: enabled,
+    };
+    const anyIqamahEnabled = NOTIFICATION_PRAYER_KEYS.some((key) =>
+      Boolean((next as unknown as Record<string, boolean>)[notificationField("iqamah", key)])
+    );
+    useSettingsStore.setState({
+      notifications: {
+        ...next,
+        iqamahEnabled: anyIqamahEnabled,
+        masterEnabled:
+          next.adhanEnabled ||
+          anyIqamahEnabled ||
+          next.preAdhanReminderMinutes !== null ||
+          next.preIqamahReminderMinutes !== null,
+      },
+    });
+    rescheduleNotifications(useSettingsStore.getState());
+  }, []);
+
+  const allAdhanPrayerTogglesEnabled = NOTIFICATION_PRAYER_KEYS.every((prayer) =>
+    Boolean((settings.notifications as unknown as Record<string, boolean>)[notificationField("adhan", prayer)])
+  );
+  const allIqamahPrayerTogglesEnabled = NOTIFICATION_PRAYER_KEYS.every((prayer) =>
+    Boolean((settings.notifications as unknown as Record<string, boolean>)[notificationField("iqamah", prayer)])
+  );
+  const adhanNotificationsEnabled = settings.notifications.adhanEnabled && allAdhanPrayerTogglesEnabled;
+  const iqamahNotificationsEnabled = settings.notifications.iqamahEnabled && allIqamahPrayerTogglesEnabled;
+
   const REMINDER_OPTIONS: { labelKey: TranslationKey; value: number | null }[] = [
     { labelKey: "settings.reminder.none", value: null },
     { labelKey: "settings.reminder.5min", value: 5 },
@@ -210,14 +507,26 @@ export default function SettingsScreen() {
 
   // ── Contact mailto ──
   const openSupportMail = useCallback(
-    (category: "feedback" | "prayerTimes") => {
+    (category: "feedback" | "prayerTimes" | "requestMasjid") => {
       const mosqueName =
         mosques.find((m) => m.id === settings.selectedMosqueId)?.name ?? null;
       const subject =
         category === "feedback"
           ? t("settings.email.feedback.subject", langCode)
-          : t("settings.email.prayer_times.subject", langCode);
+          : category === "prayerTimes"
+            ? t("settings.email.prayer_times.subject", langCode)
+            : t("settings.email.request_masjid.subject", langCode);
       const bodyLines: string[] = [];
+      if (category === "requestMasjid") {
+        bodyLines.push("Hi Masjidly team,");
+        bodyLines.push("");
+        bodyLines.push("I'd like to request adding a masjid to Masjidly.");
+        bodyLines.push("");
+        bodyLines.push("Masjid name:");
+        bodyLines.push("City / country:");
+        bodyLines.push("Website or contact details:");
+        bodyLines.push("Prayer timetable source:");
+      }
       bodyLines.push("");
       bodyLines.push("---");
       bodyLines.push(`App: Masjidly`);
@@ -348,6 +657,10 @@ export default function SettingsScreen() {
 
   const formatMosqueLabel = (mosque: Mosque) => mosque.name;
 
+  const selectedCountryLabel =
+    countries.find((c) => c.key === effectiveCountryKey)?.label ??
+    t("settings.reminder.none", langCode);
+
   const selectedCityLabel =
     cities.find((c) => c.key === effectiveCityKey)?.label ??
     t("settings.reminder.none", langCode);
@@ -357,6 +670,17 @@ export default function SettingsScreen() {
       const mosque = mosques.find((m) => m.id === settings.selectedMosqueId);
       return mosque ? formatMosqueLabel(mosque) : t("settings.reminder.none", langCode);
     })();
+
+  const closestMosque = useMemo(() => {
+    if (settings.hideQiblaCompass || !userCoordinates || mosques.length === 0) return null;
+    return mosques.reduce((closest, mosque) => {
+      const closestDistance = distanceInMeters(userCoordinates.latitude, userCoordinates.longitude, closest.lat, closest.lng);
+      const mosqueDistance = distanceInMeters(userCoordinates.latitude, userCoordinates.longitude, mosque.lat, mosque.lng);
+      return mosqueDistance < closestDistance ? mosque : closest;
+    }, mosques[0]);
+  }, [mosques, settings.hideQiblaCompass, userCoordinates]);
+
+  const closestMosqueName = closestMosque?.name ?? null;
 
   const reminderDisplayLabel = (minutes: number | null) => {
     const opt = REMINDER_OPTIONS.find((o) => o.value === minutes);
@@ -419,6 +743,20 @@ export default function SettingsScreen() {
           ) : (
             <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
               <SettingsMenuPickerRow
+                label={t("settings.country.picker", langCode)}
+                displayValue={selectedCountryLabel}
+                value={effectiveCountryKey}
+                options={countries.map((c) => ({ label: c.label, value: c.key }))}
+                onSelect={(key) => {
+                  handleCountrySelect(key);
+                }}
+                textColor={textColor}
+                invertSheet={invertSheet}
+                sheetTitle={t("settings.country.picker", langCode)}
+                testID="settings-country-picker"
+              />
+              <RowDivider />
+              <SettingsMenuPickerRow
                 label={t("settings.city.picker", langCode)}
                 displayValue={selectedCityLabel}
                 value={effectiveCityKey}
@@ -449,6 +787,31 @@ export default function SettingsScreen() {
                 sheetTitle={t("settings.section.mosque.title", langCode)}
                 testID="settings-mosque-picker"
               />
+              {closestMosque ? (
+                <>
+                  <RowDivider />
+                  <View style={styles.closestMosqueContainer}>
+                    <Text style={[styles.closestMosqueText, { color: textColor + "CC" }]}> 
+                      {t("settings.closest_mosque.format", langCode).replace("%s", closestMosqueName ?? closestMosque.name)}
+                    </Text>
+                    <Pressable
+                      onPress={() => handleMosqueSelect(closestMosque)}
+                      style={({ pressed }) => [
+                        styles.closestMosqueButton,
+                        { backgroundColor: textColor + "26", borderColor: textColor + "33" },
+                        pressed && { opacity: 0.75 },
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={t("settings.closest_mosque.select", langCode)}
+                      testID="settings-select-closest-mosque"
+                    >
+                      <Text style={[styles.closestMosqueButtonText, { color: textColor }]}> 
+                        {t("settings.closest_mosque.select", langCode)}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
             </View>
           )}
 
@@ -461,6 +824,25 @@ export default function SettingsScreen() {
               onValueChange={handle24hToggle}
               textColor={textColor}
             />
+            {supportsMultipleAsr ? (
+              <>
+                <View style={[styles.divider, { backgroundColor: textColor + "1A" }]} />
+                <SettingsMenuPickerRow
+                  label="Asr adhan time"
+                  displayValue={settings.asrIqamahPreference === "second" ? "Second Asr (Mithl 2)" : "First Asr (Mithl 1)"}
+                  value={settings.asrIqamahPreference}
+                  options={[
+                    { label: "First Asr (Mithl 1)", value: "first" as const },
+                    { label: "Second Asr (Mithl 2)", value: "second" as const },
+                  ]}
+                  onSelect={handleAsrIqamahPreference}
+                  textColor={textColor}
+                  invertSheet={invertSheet}
+                  sheetTitle="Asr adhan time"
+                  testID="settings-asr-adhan-picker"
+                />
+              </>
+            ) : null}
           </View>
 
           {/* Language Section */}
@@ -554,7 +936,7 @@ export default function SettingsScreen() {
                         : t("settings.location.open_settings", langCode)
                     }
                   >
-                    <Text style={[styles.locationRecoveryButtonText, { color: "#FFFFFF" }]}> 
+                    <Text style={[styles.locationRecoveryButtonText, { color: "#FFFFFF" }]}>
                       {locationPermissionStatus === Location.PermissionStatus.UNDETERMINED
                         ? t("settings.location.allow", langCode)
                         : t("settings.location.open_settings", langCode)}
@@ -578,19 +960,57 @@ export default function SettingsScreen() {
             {settings.notifications.masterEnabled ? (
               <>
                 <RowDivider />
-                <SettingsToggleRow
+                <NotificationPrayerToggleSection
                   title={t("notification.channel.adhan", langCode)}
-                  value={settings.notifications.adhanEnabled}
+                  expanded={adhanPrayerSettingsExpanded}
+                  enabled={adhanNotificationsEnabled}
+                  textColor={textColor}
+                  onToggleExpanded={() => {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setAdhanPrayerSettingsExpanded((expanded) => !expanded);
+                  }}
                   onValueChange={handleAdhanToggle}
-                  textColor={textColor}
-                />
+                >
+                  {NOTIFICATION_PRAYER_KEYS.map((prayer, idx) => (
+                    <React.Fragment key={prayer}>
+                      {idx > 0 && <RowDivider />}
+                      <SettingsToggleRow
+                        title={t(notificationPrayerLabelKey(prayer), langCode)}
+                        value={Boolean(
+                          (settings.notifications as unknown as Record<string, boolean>)[notificationField("adhan", prayer)]
+                        )}
+                        onValueChange={(v) => handleAdhanPrayerToggle(prayer, v)}
+                        textColor={textColor}
+                      />
+                    </React.Fragment>
+                  ))}
+                </NotificationPrayerToggleSection>
                 <RowDivider />
-                <SettingsToggleRow
+                <NotificationPrayerToggleSection
                   title={t("notification.channel.iqamah", langCode)}
-                  value={settings.notifications.iqamahEnabled}
-                  onValueChange={handleIqamahToggle}
+                  expanded={iqamahPrayerSettingsExpanded}
+                  enabled={iqamahNotificationsEnabled}
                   textColor={textColor}
-                />
+                  onToggleExpanded={() => {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setIqamahPrayerSettingsExpanded((expanded) => !expanded);
+                  }}
+                  onValueChange={handleIqamahToggle}
+                >
+                  {NOTIFICATION_PRAYER_KEYS.map((prayer, idx) => (
+                    <React.Fragment key={prayer}>
+                      {idx > 0 && <RowDivider />}
+                      <SettingsToggleRow
+                        title={t(notificationPrayerLabelKey(prayer), langCode)}
+                        value={Boolean(
+                          (settings.notifications as unknown as Record<string, boolean>)[notificationField("iqamah", prayer)]
+                        )}
+                        onValueChange={(v) => handleIqamahPrayerToggle(prayer, v)}
+                        textColor={textColor}
+                      />
+                    </React.Fragment>
+                  ))}
+                </NotificationPrayerToggleSection>
                 <RowDivider />
                 <SettingsMenuPickerRow
                   label={t("settings.reminder.before_adhan", langCode)}
@@ -627,60 +1047,44 @@ export default function SettingsScreen() {
 
           {/* Contact Section */}
           <SectionCaption>{t("settings.section.contact.title", langCode)}</SectionCaption>
-          <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
+          <View style={styles.contactSection}>
             <Pressable
               style={({ pressed }) => [
-                styles.contactRow,
+                styles.contactCard,
+                { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                 pressed && { opacity: 0.7 },
               ]}
               onPress={() => openSupportMail("feedback")}
               accessibilityRole="button"
             >
-              <Text style={[styles.listItemText, { color: textColor }]}>
+              <Text style={[styles.contactCardText, { color: textColor }]}>
                 {t("settings.contact.feedback.title", langCode)}
               </Text>
             </Pressable>
-            <RowDivider />
             <Pressable
               style={({ pressed }) => [
-                styles.contactRow,
+                styles.contactCard,
+                { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                 pressed && { opacity: 0.7 },
               ]}
               onPress={() => openSupportMail("prayerTimes")}
               accessibilityRole="button"
             >
-              <Text style={[styles.listItemText, { color: textColor }]}>
+              <Text style={[styles.contactCardText, { color: textColor }]}>
                 {t("settings.contact.prayer_times.title", langCode)}
               </Text>
             </Pressable>
-          </View>
-
-          {/* Legal Section */}
-          <SectionCaption>{t("settings.section.legal.title", langCode)}</SectionCaption>
-          <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
             <Pressable
               style={({ pressed }) => [
-                styles.contactRow,
+                styles.contactCard,
+                { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                 pressed && { opacity: 0.7 },
               ]}
-              onPress={() => router.push("/masjidly/terms")}
+              onPress={() => openSupportMail("requestMasjid")}
               accessibilityRole="button"
             >
-              <Text style={[styles.listItemText, { color: textColor }]}>
-                {t("settings.legal.terms", langCode)}
-              </Text>
-            </Pressable>
-            <RowDivider />
-            <Pressable
-              style={({ pressed }) => [
-                styles.contactRow,
-                pressed && { opacity: 0.7 },
-              ]}
-              onPress={() => router.push("/masjidly/privacy")}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.listItemText, { color: textColor }]}>
-                {t("settings.legal.privacy", langCode)}
+              <Text style={[styles.contactCardText, { color: textColor }]}>
+                {t("settings.contact.request_masjid.title", langCode)}
               </Text>
             </Pressable>
           </View>
@@ -689,11 +1093,12 @@ export default function SettingsScreen() {
           {__DEV__ ? (
             <>
               <SectionCaption>{t("settings.dev.title", langCode)}</SectionCaption>
-              <View style={[styles.listBlock, { backgroundColor: textColor + "0D" }]}>
+              <View style={styles.contactSection}>
                 {/* Test What\'s New */}
                 <Pressable
                   style={({ pressed }) => [
-                    styles.contactRow,
+                    styles.contactCard,
+                    { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                     pressed && { opacity: 0.7 },
                   ]}
                   onPress={() =>
@@ -701,17 +1106,16 @@ export default function SettingsScreen() {
                   }
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.listItemText, { color: textColor }]}>
+                  <Text style={[styles.contactCardText, { color: textColor }]}>
                     {"Test What's New"}
                   </Text>
                 </Pressable>
 
-                <RowDivider />
-
                 {/* Test Update Prompt */}
                 <Pressable
                   style={({ pressed }) => [
-                    styles.contactRow,
+                    styles.contactCard,
+                    { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                     pressed && { opacity: 0.7 },
                   ]}
                   onPress={() => {
@@ -719,16 +1123,16 @@ export default function SettingsScreen() {
                   }}
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.listItemText, { color: textColor }]}>
+                  <Text style={[styles.contactCardText, { color: textColor }]}>
                     {"Test Update Prompt"}
                   </Text>
                 </Pressable>
 
-                <RowDivider />
                 {/* Reset tutorial */}
                 <Pressable
                   style={({ pressed }) => [
-                    styles.contactRow,
+                    styles.contactCard,
+                    { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                     pressed && { opacity: 0.7 },
                   ]}
                   onPress={() => {
@@ -742,81 +1146,89 @@ export default function SettingsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={t("settings.dev.reset_tutorial", langCode)}
                 >
-                  <Text style={[styles.listItemText, { color: textColor }]}>
+                  <Text style={[styles.contactCardText, { color: textColor }]}>
                     {t("settings.dev.reset_tutorial", langCode)}
                   </Text>
                 </Pressable>
 
                 {/* Test notification: Adhan */}
-                <RowDivider />
                 <Pressable
                   style={({ pressed }) => [
-                    styles.devRow,
+                    styles.contactCard,
+                    { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                     pressed && { opacity: 0.7 },
                   ]}
                   onPress={() => fireTestNotification("adhan")}
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.listItemText, { color: textColor }]}>
-                    {t("settings.dev.test_adhan", langCode)}
-                  </Text>
-                  <Text style={[styles.devHint, { color: textColor + "8C" }]}>
-                    {t("settings.dev.instant", langCode)}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                    <Text style={[styles.contactCardText, { color: textColor }]}>
+                      {t("settings.dev.test_adhan", langCode)}
+                    </Text>
+                    <Text style={[styles.devHint, { color: textColor + "8C" }]}>
+                      {t("settings.dev.instant", langCode)}
+                    </Text>
+                  </View>
                 </Pressable>
 
                 {/* Test notification: Iqamah */}
-                <RowDivider />
                 <Pressable
                   style={({ pressed }) => [
-                    styles.devRow,
+                    styles.contactCard,
+                    { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                     pressed && { opacity: 0.7 },
                   ]}
                   onPress={() => fireTestNotification("iqamah")}
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.listItemText, { color: textColor }]}>
-                    {t("settings.dev.test_iqamah", langCode)}
-                  </Text>
-                  <Text style={[styles.devHint, { color: textColor + "8C" }]}>
-                    {t("settings.dev.instant", langCode)}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                    <Text style={[styles.contactCardText, { color: textColor }]}>
+                      {t("settings.dev.test_iqamah", langCode)}
+                    </Text>
+                    <Text style={[styles.devHint, { color: textColor + "8C" }]}>
+                      {t("settings.dev.instant", langCode)}
+                    </Text>
+                  </View>
                 </Pressable>
 
                 {/* Test notification: Reminder */}
-                <RowDivider />
                 <Pressable
                   style={({ pressed }) => [
-                    styles.devRow,
+                    styles.contactCard,
+                    { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                     pressed && { opacity: 0.7 },
                   ]}
                   onPress={() => fireTestNotification("reminder")}
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.listItemText, { color: textColor }]}>
-                    {t("settings.dev.test_reminder", langCode)}
-                  </Text>
-                  <Text style={[styles.devHint, { color: textColor + "8C" }]}>
-                    {t("settings.dev.instant", langCode)}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                    <Text style={[styles.contactCardText, { color: textColor }]}>
+                      {t("settings.dev.test_reminder", langCode)}
+                    </Text>
+                    <Text style={[styles.devHint, { color: textColor + "8C" }]}>
+                      {t("settings.dev.instant", langCode)}
+                    </Text>
+                  </View>
                 </Pressable>
 
                 {/* Test notification: All Three */}
-                <RowDivider />
                 <Pressable
                   style={({ pressed }) => [
-                    styles.devRow,
+                    styles.contactCard,
+                    { backgroundColor: textColor + "14", borderColor: textColor + "22" },
                     pressed && { opacity: 0.7 },
                   ]}
                   onPress={() => fireTestNotification("all")}
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.listItemText, { color: textColor }]}>
-                    {t("settings.dev.test_all", langCode)}
-                  </Text>
-                  <Text style={[styles.devHint, { color: textColor + "8C" }]}>
-                    {t("settings.dev.three_instant", langCode)}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                    <Text style={[styles.contactCardText, { color: textColor }]}>
+                      {t("settings.dev.test_all", langCode)}
+                    </Text>
+                    <Text style={[styles.devHint, { color: textColor + "8C" }]}>
+                      {t("settings.dev.three_instant", langCode)}
+                    </Text>
+                  </View>
                 </Pressable>
               </View>
             </>
@@ -837,6 +1249,70 @@ export default function SettingsScreen() {
       ) : null}
     </View>
   );
+}
+
+type NotificationPrayerToggleSectionProps = {
+  title: string;
+  expanded: boolean;
+  enabled: boolean;
+  textColor: string;
+  onToggleExpanded: () => void;
+  onValueChange: (value: boolean) => void;
+  children: React.ReactNode;
+};
+
+const NotificationPrayerToggleSection: React.FC<NotificationPrayerToggleSectionProps> = React.memo(({
+  title,
+  expanded,
+  enabled,
+  textColor,
+  onToggleExpanded,
+  onValueChange,
+  children,
+}) => {
+  return (
+    <View>
+      <View style={styles.notificationDisclosureHeader}>
+        <Pressable
+          style={styles.notificationDisclosureButton}
+          onPress={onToggleExpanded}
+          accessibilityRole="button"
+          accessibilityLabel={title}
+          accessibilityState={{ expanded }}
+        >
+          <View style={{ transform: [{ rotate: expanded ? "90deg" : "0deg" }] }}>
+            <ChevronRight
+              size={18}
+              color={textColor}
+              strokeWidth={2.5}
+            />
+          </View>
+          <Text style={[styles.notificationDisclosureTitle, { color: textColor }]}>
+            {title}
+          </Text>
+        </Pressable>
+        <Switch
+          value={enabled}
+          onValueChange={onValueChange}
+          trackColor={{ false: `${textColor}40`, true: "#47A6FF" }}
+          thumbColor={enabled ? "#FFFFFF" : "#F4F3F4"}
+          ios_backgroundColor={`${textColor}30`}
+        />
+      </View>
+      {expanded ? <View style={styles.notificationDisclosureContent}>{children}</View> : null}
+    </View>
+  );
+});
+
+function distanceInMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const earthRadiusMeters = 6_371_000;
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const deltaLat = toRadians(lat2 - lat1);
+  const deltaLng = toRadians(lng2 - lng1);
+  const a =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(deltaLng / 2) ** 2;
+  return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 const styles = StyleSheet.create({
@@ -883,9 +1359,58 @@ const styles = StyleSheet.create({
     fontFamily: "Comfortaa_400Regular",
     flex: 1,
   },
+
+  closestMosqueContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    gap: 10,
+  },
+  closestMosqueText: {
+    fontSize: 14,
+    fontFamily: "Comfortaa_400Regular",
+    lineHeight: 20,
+    textAlign: "center",
+  },
+  closestMosqueButton: {
+    minHeight: 42,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+  },
+  closestMosqueButtonText: {
+    fontSize: 14,
+    fontFamily: "Comfortaa_600SemiBold",
+  },
   divider: {
     height: 0.5,
     marginHorizontal: SPACING.md,
+  },
+  notificationDisclosureHeader: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+  },
+  notificationDisclosureButton: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingRight: SPACING.sm,
+  },
+  notificationDisclosureTitle: {
+    flex: 1,
+    flexShrink: 1,
+    fontSize: FONT_SIZES.md,
+    fontFamily: "Comfortaa_400Regular",
+  },
+  notificationDisclosureContent: {
+    paddingLeft: 26,
   },
   locationRecoveryContainer: {
     paddingHorizontal: SPACING.md,
@@ -905,6 +1430,23 @@ const styles = StyleSheet.create({
   locationRecoveryButtonText: {
     fontSize: 16,
     fontFamily: "Comfortaa_600SemiBold",
+  },
+  contactSection: {
+    gap: 10,
+  },
+  contactCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  contactCardText: {
+    fontSize: 17,
+    fontFamily: "Comfortaa_400Regular",
+    flex: 1,
   },
   contactRow: {
     flexDirection: "row",

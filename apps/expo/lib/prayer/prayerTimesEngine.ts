@@ -1,4 +1,5 @@
 import type {
+  AsrIqamahPreference,
   DailyIqamahTimes,
   DailyPrayerTimes,
   HeroCountdownLabelKind,
@@ -65,6 +66,46 @@ export function formatSystemHHMMSheffield(now: Date = new Date()): string {
 
 export function isoDateString(year: number, month: number, day: number): string {
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+export function splitIqamahTimes(raw: string | null | undefined): string[] {
+  const normalized = (raw ?? "")
+    .trim()
+    .replace(/(\d{1,2}:\d{2})\s+(?=\d{1,2}:\d{2})/g, "$1,");
+  if (!normalized) return [];
+  return normalized
+    .split(/[,/&|\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export function splitJummahIqamahTimes(raw: string | null | undefined): string[] {
+  return splitIqamahTimes(raw);
+}
+
+export function getAsrIqamahSlots(asrIqamah: string, adhanTime: string): string[] {
+  if (asrIqamah.trim().toLowerCase() === "entry time") return [adhanTime];
+  const slots = splitIqamahTimes(asrIqamah).map((slot) => resolveRelativeIqamah(slot, adhanTime));
+  return slots.length > 0 ? slots : [resolveRelativeIqamah(asrIqamah, adhanTime)];
+}
+
+export function selectAsrIqamahTime(
+  asrIqamah: string,
+  adhanTime: string,
+  preference: AsrIqamahPreference = "first"
+): string {
+  const slots = getAsrIqamahSlots(asrIqamah, adhanTime);
+  return preference === "second" ? (slots[1] ?? slots[0] ?? "") : (slots[0] ?? "");
+}
+
+export function selectAsrAdhanTime(
+  prayerTime: PrayerTime | RamadanPrayerDay,
+  preference: AsrIqamahPreference = "first"
+): string {
+  if (preference === "second" && "asrMithl2" in prayerTime && prayerTime.asrMithl2) {
+    return prayerTime.asrMithl2;
+  }
+  return prayerTime.asr;
 }
 
 export function normalizeMosqueSlug(slug: string): string {
@@ -212,7 +253,7 @@ export function getIqamahTime(
       return resolveRelativeIqamah(iqamahTimes.dhuhr, adhanTime);
     case "asr": {
       if (iqamahTimes.asr.trim().toLowerCase() === "entry time") return adhanTime;
-      return resolveRelativeIqamah(iqamahTimes.asr, adhanTime);
+      return selectAsrIqamahTime(iqamahTimes.asr, adhanTime);
     }
     case "maghrib": {
       const raw = iqamahTimes.maghrib === "sunset" ? adhanTime : iqamahTimes.maghrib;
@@ -609,7 +650,8 @@ export function resolvePrayerTimes(
   on: Date,
   monthly: MonthPrayerData | null | undefined,
   ramadan: RamadanPrayerData | null | undefined,
-  ukDst: UkDstYear[]
+  ukDst: UkDstYear[],
+  asrTimingPreference: AsrIqamahPreference = "first"
 ): DailyPrayerTimes {
   const { year: y, month: m, day: d } = getDateInSheffield(on);
   const dateStr = isoDateString(y, m, d);
@@ -622,7 +664,7 @@ export function resolvePrayerTimes(
       fajr: row.fajr,
       sunrise: row.shurooq,
       dhuhr: row.dhuhr,
-      asr: row.asr,
+      asr: selectAsrAdhanTime(row, asrTimingPreference),
       maghrib: row.maghrib,
       isha: row.isha,
     };
@@ -637,7 +679,7 @@ export function resolvePrayerTimes(
     fajr: adhan.fajr,
     sunrise: adhan.shurooq,
     dhuhr: adhan.dhuhr,
-    asr: adhan.asr,
+    asr: selectAsrAdhanTime(adhan, asrTimingPreference),
     maghrib: adhan.maghrib,
     isha: adhan.isha,
   };
@@ -689,8 +731,26 @@ export function getNextPrayerAndCountdown(
   prayerTimes: DailyPrayerTimes,
   iqamahTimes: DailyIqamahTimes,
   mosqueSlug: string,
-  now: Date = new Date()
-): NextPrayerCountdownResult {
+  now?: Date,
+  asrIqamahPreference?: AsrIqamahPreference,
+  includeTomorrowFajr?: true
+): NextPrayerCountdownResult;
+export function getNextPrayerAndCountdown(
+  prayerTimes: DailyPrayerTimes,
+  iqamahTimes: DailyIqamahTimes,
+  mosqueSlug: string,
+  now: Date | undefined,
+  asrIqamahPreference: AsrIqamahPreference | undefined,
+  includeTomorrowFajr: false
+): NextPrayerCountdownResult | null;
+export function getNextPrayerAndCountdown(
+  prayerTimes: DailyPrayerTimes,
+  iqamahTimes: DailyIqamahTimes,
+  mosqueSlug: string,
+  now: Date = new Date(),
+  asrIqamahPreference: AsrIqamahPreference = "first",
+  includeTomorrowFajr = true
+): NextPrayerCountdownResult | null {
   const dayStartParts = new Intl.DateTimeFormat("en-GB", {
     timeZone: SHEFFIELD_TIME_ZONE,
     year: "numeric",
@@ -722,10 +782,7 @@ export function getNextPrayerAndCountdown(
 
   const slug = mosqueSlug;
 
-  const jummahRaw = iqamahTimes.jummah
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  const jummahRaw = splitJummahIqamahTimes(iqamahTimes.jummah);
   const jummahTimes = jummahRaw.length === 0 ? [iqamahTimes.dhuhr] : jummahRaw;
   const jummahAdhan = nextHeroDisplayIqamahRaw(
     "dhuhr",
@@ -750,7 +807,7 @@ export function getNextPrayerAndCountdown(
     {
       name: "Asr",
       adhan: prayerTimes.asr,
-      iqamah: getIqamahTime("asr", prayerTimes.asr, iqamahTimes),
+      iqamah: selectAsrIqamahTime(iqamahTimes.asr, prayerTimes.asr, asrIqamahPreference),
     },
     {
       name: "Maghrib",
@@ -798,6 +855,10 @@ export function getNextPrayerAndCountdown(
     }
   }
 
+  if (!includeTomorrowFajr) {
+    return null;
+  }
+
   const fajrT = wallClockToday(prayers[0].adhan);
   if (fajrT) {
     const tomorrow = new Date(dsYear, dsMonth - 1, dsDay + 1);
@@ -822,16 +883,56 @@ export function getNextPrayerAndCountdown(
     };
   }
 
-  return {
-    nextName: "Fajr",
-    nextTime: prayers[0].adhan,
-    totalSeconds: 0,
-    isIqamah: false,
-    isJummah: false,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-  };
+  return null;
+}
+
+/** Parse "HH:mm" to total minutes since midnight. */
+export function timeToMinutes(time: string): number | null {
+  const p = time.split(":").map((s) => parseInt(s.trim(), 10));
+  if (p.length !== 2 || Number.isNaN(p[0]) || Number.isNaN(p[1])) return null;
+  return p[0] * 60 + p[1];
+}
+
+/** Format total minutes since midnight to "HH:mm". */
+export function minutesToTime(minutes: number): string {
+  const clamped = ((minutes % 1440) + 1440) % 1440;
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Compute Midnight and Last Third of the night.
+ * Night period: from today's Maghrib to **next day's Fajr**.
+ * Midnight = midpoint of the night; Last Third starts at 2/3 through.
+ * Returns null for both if inputs are invalid or night duration is zero.
+ */
+export function computeMidnightAndLastThird(
+  maghrib: string,
+  nextDayFajr: string | null | undefined
+): { midnight: string | null; lastThird: string | null } {
+  if (!nextDayFajr) return { midnight: null, lastThird: null };
+
+  const maghribMin = timeToMinutes(maghrib);
+  const fajrMin = timeToMinutes(nextDayFajr);
+  if (maghribMin === null || fajrMin === null) {
+    return { midnight: null, lastThird: null };
+  }
+
+  // Night duration (handles times crossing midnight)
+  let nightDuration: number;
+  if (fajrMin >= maghribMin) {
+    nightDuration = fajrMin - maghribMin;
+  } else {
+    nightDuration = 24 * 60 - maghribMin + fajrMin;
+  }
+
+  if (nightDuration <= 0) return { midnight: null, lastThird: null };
+
+  const midnight = minutesToTime(maghribMin + Math.floor(nightDuration / 2));
+  const lastThird = minutesToTime(maghribMin + Math.floor((nightDuration * 2) / 3));
+
+  return { midnight, lastThird };
 }
 
 function isParseableTime(t: string): boolean {
@@ -848,7 +949,8 @@ function nextHeroDisplayIqamahRaw(
   now: Date,
   wallClock: (hhmm: string) => Date | null
 ): string {
-  if (!(prayerId === "dhuhr" && isFriday && rawIqamahs.length > 1)) {
+  const supportsMultipleSlots = (prayerId === "dhuhr" && isFriday) || prayerId === "asr";
+  if (!(supportsMultipleSlots && rawIqamahs.length > 1)) {
     return rawIqamahs[0] ?? "";
   }
   const adhanDate = wallClock(adhan);
@@ -868,7 +970,8 @@ export function heroCountdownPresentation(
   prayerTimes: DailyPrayerTimes,
   iqamahTimes: DailyIqamahTimes,
   mosqueSlug: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  asrIqamahPreference: AsrIqamahPreference = "first"
 ): HeroCountdownPresentation | null {
   const dayStartParts = new Intl.DateTimeFormat("en-GB", {
     timeZone: SHEFFIELD_TIME_ZONE,
@@ -899,24 +1002,7 @@ export function heroCountdownPresentation(
     return new Date(dsYear, dsMonth - 1, dsDay, p[0], p[1], 0);
   }
 
-  function wallClockNextDay(hhmm: string): Date | null {
-    const p = hhmm.split(":").map((s) => parseInt(s.trim(), 10));
-    if (p.length !== 2 || Number.isNaN(p[0]) || Number.isNaN(p[1])) return null;
-    const tomorrow = new Date(dsYear, dsMonth - 1, dsDay + 1);
-    return new Date(
-      tomorrow.getFullYear(),
-      tomorrow.getMonth(),
-      tomorrow.getDate(),
-      p[0],
-      p[1],
-      0
-    );
-  }
-
-  const jummahRaw = iqamahTimes.jummah
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  const jummahRaw = splitJummahIqamahTimes(iqamahTimes.jummah);
   const jummahTimes = jummahRaw.length === 0 ? [iqamahTimes.dhuhr] : jummahRaw;
   const jummahAdhan = nextHeroDisplayIqamahRaw(
     "dhuhr",
@@ -956,7 +1042,7 @@ export function heroCountdownPresentation(
       id: "asr",
       name: "Asr",
       adhan: prayerTimes.asr,
-      iqamahs: [getIqamahTime("asr", prayerTimes.asr, iqamahTimes)],
+      iqamahs: [selectAsrIqamahTime(iqamahTimes.asr, prayerTimes.asr, asrIqamahPreference)],
       adhanDate: wallClockToday(prayerTimes.asr),
     },
     {
@@ -1012,21 +1098,9 @@ export function heroCountdownPresentation(
     }
   }
 
-  const isNextFajrTomorrow = !foundTodayEvent;
+  if (!foundTodayEvent || !nextEventDate) return null;
 
-  const next: Resolved = isNextFajrTomorrow
-    ? {
-        id: "fajr",
-        name: "Fajr",
-        adhan: prayersList[0].adhan,
-        iqamahs: prayersList[0].iqamahs,
-        adhanDate: wallClockNextDay(prayersList[0].adhan),
-      }
-    : prayersList[nextPrayerIndex];
-
-  const targetDate = isNextFajrTomorrow ? next.adhanDate : nextEventDate;
-  if (!targetDate) return null;
-
+  const next = prayersList[nextPrayerIndex];
   const dayStart = new Date(dsYear, dsMonth - 1, dsDay, 0, 0, 0, 0);
 
   let progressStartDate: Date;
@@ -1035,19 +1109,16 @@ export function heroCountdownPresentation(
   } else if (nextPrayerIndex > 0) {
     const prev = prayersList[nextPrayerIndex - 1]?.adhanDate;
     progressStartDate = prev ?? dayStart;
-  } else if (isNextFajrTomorrow) {
-    progressStartDate = prayersList[prayersList.length - 1]?.adhanDate ?? dayStart;
   } else {
     progressStartDate = dayStart;
   }
 
   let labelKind: HeroCountdownLabelKind;
   if (nextEventIsIqamah) labelKind = "iqamahIn";
-  else if (isNextFajrTomorrow) labelKind = "nextPrayer";
   else if (nextPrayerIndex === 0) labelKind = "adhanIn";
   else labelKind = "nextPrayer";
 
-  return { labelKind, targetDate, progressStartDate };
+  return { labelKind, targetDate: nextEventDate, progressStartDate };
 }
 
 export function heroRemainingSeconds(p: HeroCountdownPresentation, now: Date): number {

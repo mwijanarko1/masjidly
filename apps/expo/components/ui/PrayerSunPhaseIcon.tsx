@@ -23,7 +23,7 @@ function fourPointStarPath(cx: number, cy: number, size: number): string {
   );
 }
 
-export const PrayerSunPhaseIcon: React.FC<PrayerSunPhaseIconProps> = ({
+export const PrayerSunPhaseIcon: React.FC<PrayerSunPhaseIconProps> = React.memo(({
   theme,
   size = 100,
 }) => {
@@ -249,4 +249,4 @@ export const PrayerSunPhaseIcon: React.FC<PrayerSunPhaseIconProps> = ({
       </Svg>
     </View>
   );
-};
+});

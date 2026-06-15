@@ -3,16 +3,16 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   Modal,
   Platform,
-  ScrollView,
+  FlatList,
 } from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronDown, Check } from "lucide-react-native";
 import { SPACING, FONT_SIZES } from "@/constants";
 
-export type MenuOption<T> = { label: string; value: T };
+export type MenuOption<T> = { label: string; value: T; accessory?: React.ReactNode };
 
 function optionKey<T>(value: T): string {
   if (value === null || value === undefined) return "none";
@@ -30,10 +30,14 @@ type Props<T> = {
   options: MenuOption<T>[];
   onSelect: (value: T) => void;
   textColor: string;
+  /** Optional small visual shown before the selected value (e.g. gradient swatch). */
+  valueAccessory?: React.ReactNode;
   /** Dark timetable-style chrome (light text on sky): use dark grouped sheet like iOS in dark mode. */
   invertSheet?: boolean;
   sheetTitle?: string;
   testID?: string;
+  /** Optional fixed label width for stacked picker groups, keeping values/chevrons aligned row-to-row. */
+  labelWidth?: number;
 };
 
 /**
@@ -46,9 +50,11 @@ export function SettingsMenuPickerRow<T>({
   options,
   onSelect,
   textColor,
+  valueAccessory,
   invertSheet = false,
   sheetTitle,
   testID,
+  labelWidth,
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const title = sheetTitle ?? label;
@@ -83,12 +89,17 @@ export function SettingsMenuPickerRow<T>({
         ]}
       >
         <Text
-          style={[styles.label, { color: textColor, fontFamily: "Comfortaa_400Regular" }]}
+          style={[
+            styles.label,
+            { color: textColor, fontFamily: "Comfortaa_400Regular" },
+            labelWidth !== undefined && { width: labelWidth, flexShrink: 0 },
+          ]}
           numberOfLines={1}
         >
           {label}
         </Text>
         <View style={styles.valueWrap}>
+          {valueAccessory}
           <Text
             style={[styles.value, { color: textColor, fontFamily: "Comfortaa_400Regular" }]}
             numberOfLines={1}
@@ -122,16 +133,16 @@ export function SettingsMenuPickerRow<T>({
               <Text style={styles.doneText}>Done</Text>
             </Pressable>
           </View>
-          <ScrollView
+          <FlatList
+            data={options}
+            keyExtractor={(item) => optionKey(item.value)}
             keyboardShouldPersistTaps="handled"
             style={styles.listScroll}
             contentContainerStyle={styles.listContent}
-          >
-            {options.map((item) => {
+            renderItem={({ item }) => {
               const selected = sameValue(item.value, value);
               return (
                 <Pressable
-                  key={optionKey(item.value)}
                   onPress={() => onPick(item.value)}
                   style={({ pressed }) => [
                     styles.optionRow,
@@ -141,6 +152,9 @@ export function SettingsMenuPickerRow<T>({
                   accessibilityRole="radio"
                   accessibilityState={{ checked: selected }}
                 >
+                  {item.accessory ? (
+                    <View style={styles.optionAccessory}>{item.accessory}</View>
+                  ) : null}
                   <Text
                     style={[
                       styles.optionLabel,
@@ -156,8 +170,8 @@ export function SettingsMenuPickerRow<T>({
                   {selected ? <Check size={20} color="#47A6FF" strokeWidth={2.5} /> : null}
                 </Pressable>
               );
-            })}
-          </ScrollView>
+            }}
+          />
         </SafeAreaView>
       </Modal>
     </>
@@ -229,6 +243,9 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     borderRadius: 12,
     backgroundColor: "#FFFFFF",
+  },
+  optionAccessory: {
+    marginRight: 10,
   },
   optionLabel: {
     fontSize: 17,

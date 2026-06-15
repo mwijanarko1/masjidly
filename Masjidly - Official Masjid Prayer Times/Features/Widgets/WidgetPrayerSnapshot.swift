@@ -3,12 +3,21 @@ import Foundation
 enum WidgetPrayerSharedConfig {
     static let appGroupIdentifier = "group.mikhailspeaks.masjidly"
     static let snapshotKey = "widgetPrayerSnapshot.v1"
+    static let snapshotByMosquePrefix = "widgetPrayerSnapshot.v1.mosque."
+    static let mosqueDirectoryKey = "widgetMosqueDirectory.v1"
+    static let appSelectedMosqueIdKey = "appSelectedMosqueId"
+    static let themeModeKey = "widgetThemeMode"
+    static let fixedThemeKey = "widgetFixedTheme"
 }
 
 struct WidgetMosqueSnapshot: Codable, Equatable, Sendable {
     let id: String
     let name: String
     let slug: String
+    let citySlug: String?
+    let cityName: String?
+    let countryCode: String?
+    let countryName: String?
 }
 
 struct WidgetPrayerDaySnapshot: Codable, Equatable, Sendable {
@@ -26,6 +35,7 @@ struct WidgetPrayerSnapshot: Codable, Equatable, Sendable {
     let days: [WidgetPrayerDaySnapshot]
     let uses24HourTime: Bool
     let appLanguageRawValue: String
+    let asrIqamahPreference: AsrIqamahPreference?
 }
 
 enum WidgetPrayerStateKind: String, Codable, Equatable, Sendable {
@@ -82,8 +92,13 @@ struct WidgetPrayerSnapshotStore {
     }
 
     func readSnapshot() throws -> WidgetPrayerSnapshot {
+        try readSnapshot(forMosqueId: nil)
+    }
+
+    func readSnapshot(forMosqueId mosqueId: String?) throws -> WidgetPrayerSnapshot {
         guard let defaults else { throw WidgetPrayerSnapshotError.missingAppGroup }
-        guard let data = defaults.data(forKey: WidgetPrayerSharedConfig.snapshotKey) else {
+        let keys = snapshotKeys(forMosqueId: mosqueId)
+        guard let data = keys.lazy.compactMap({ defaults.data(forKey: $0) }).first else {
             throw WidgetPrayerSnapshotError.missingSnapshot
         }
         let snapshot = try JSONDecoder().decode(WidgetPrayerSnapshot.self, from: data)
@@ -93,10 +108,28 @@ struct WidgetPrayerSnapshotStore {
         return snapshot
     }
 
-    func writeSnapshot(_ snapshot: WidgetPrayerSnapshot) throws {
+    func writeSnapshot(_ snapshot: WidgetPrayerSnapshot, updateDefault: Bool = true) throws {
         guard let defaults else { throw WidgetPrayerSnapshotError.missingAppGroup }
         let data = try JSONEncoder().encode(snapshot)
-        defaults.set(data, forKey: WidgetPrayerSharedConfig.snapshotKey)
+        if updateDefault {
+            defaults.set(data, forKey: WidgetPrayerSharedConfig.snapshotKey)
+        }
+        defaults.set(data, forKey: Self.snapshotKey(forMosqueId: snapshot.mosque.id))
+    }
+
+    func writeMosqueDirectory(_ mosques: [WidgetMosqueSnapshot]) throws {
+        guard let defaults else { throw WidgetPrayerSnapshotError.missingAppGroup }
+        let data = try JSONEncoder().encode(mosques)
+        defaults.set(data, forKey: WidgetPrayerSharedConfig.mosqueDirectoryKey)
+    }
+
+    private func snapshotKeys(forMosqueId mosqueId: String?) -> [String] {
+        guard let mosqueId, !mosqueId.isEmpty else { return [WidgetPrayerSharedConfig.snapshotKey] }
+        return [Self.snapshotKey(forMosqueId: mosqueId), WidgetPrayerSharedConfig.snapshotKey]
+    }
+
+    private static func snapshotKey(forMosqueId mosqueId: String) -> String {
+        WidgetPrayerSharedConfig.snapshotByMosquePrefix + mosqueId
     }
 }
 
@@ -112,12 +145,15 @@ enum WidgetPrayerResolver {
             return .stale(generatedAt: snapshot.generatedAt)
         }
 
-        let next = PrayerTimesEngine.getNextPrayerAndCountdown(
+        guard let next = PrayerTimesEngine.getNextPrayerAndCountdown(
             prayerTimes: day.prayers,
             iqamahTimes: day.iqamah,
             mosqueSlug: snapshot.mosque.slug,
-            now: now
-        )
+            now: now,
+            asrIqamahPreference: snapshot.asrIqamahPreference ?? .first
+        ) else {
+            return .stale(generatedAt: snapshot.generatedAt)
+        }
 
         // Post-Isha wrap: when the next prayer is Fajr but today's Fajr wall clock has passed,
         // load tomorrow's snapshot for the adhan/iqamah display values
@@ -149,7 +185,8 @@ enum WidgetPrayerResolver {
             prayers: useDay.prayers,
             iqamah: useDay.iqamah,
             mosqueSlug: snapshot.mosque.slug,
-            now: now
+            now: now,
+            asrIqamahPreference: snapshot.asrIqamahPreference ?? .first
         )
         let locale = snapshotLocale(from: snapshot.appLanguageRawValue)
 
@@ -166,12 +203,12 @@ enum WidgetPrayerResolver {
 
     private static func adhanTime(for prayerName: String, prayers: DailyPrayerTimes) -> String {
         switch prayerName {
-        case "Fajr": prayers.fajr
-        case "Jummah", "Dhuhr": prayers.dhuhr
-        case "Asr": prayers.asr
-        case "Maghrib": prayers.maghrib
-        case "Isha": prayers.isha
-        default: prayers.fajr
+        case "Fajr": return prayers.fajr
+        case "Jummah", "Dhuhr": return prayers.dhuhr
+        case "Asr": return prayers.asr
+        case "Maghrib": return prayers.maghrib
+        case "Isha": return prayers.isha
+        default: return prayers.fajr
         }
     }
 
@@ -180,21 +217,28 @@ enum WidgetPrayerResolver {
         prayers: DailyPrayerTimes,
         iqamah: DailyIqamahTimes,
         mosqueSlug: String,
-        now: Date
+        now: Date,
+        asrIqamahPreference: AsrIqamahPreference
     ) -> String {
         switch prayerName {
         case "Fajr":
-            PrayerTimesEngine.getIqamahTime(prayer: "fajr", adhanTime: prayers.fajr, iqamahTimes: iqamah)
+            return PrayerTimesEngine.getIqamahTime(prayer: "fajr", adhanTime: prayers.fajr, iqamahTimes: iqamah)
         case "Jummah":
-            iqamah.jummah
+            let slots = PrayerTimesEngine.splitJummahIqamahTimes(iqamah.jummah)
+            guard !slots.isEmpty else { return iqamah.dhuhr }
+            guard let dhuhrDate = wallClockToday(prayers.dhuhr, now: now), now >= dhuhrDate else { return slots[0] }
+            for slot in slots {
+                if let slotDate = wallClockToday(slot, now: now), slotDate > now { return slot }
+            }
+            return slots.last ?? iqamah.dhuhr
         case "Dhuhr":
-            PrayerTimesEngine.getIqamahTime(prayer: "dhuhr", adhanTime: prayers.dhuhr, iqamahTimes: iqamah)
+            return PrayerTimesEngine.getIqamahTime(prayer: "dhuhr", adhanTime: prayers.dhuhr, iqamahTimes: iqamah)
         case "Asr":
-            PrayerTimesEngine.getIqamahTime(prayer: "asr", adhanTime: prayers.asr, iqamahTimes: iqamah)
+            return PrayerTimesEngine.selectAsrIqamahTime(iqamah.asr, adhanTime: prayers.asr, preference: asrIqamahPreference)
         case "Maghrib":
-            PrayerTimesEngine.getIqamahTime(prayer: "maghrib", adhanTime: prayers.maghrib, iqamahTimes: iqamah)
+            return PrayerTimesEngine.getIqamahTime(prayer: "maghrib", adhanTime: prayers.maghrib, iqamahTimes: iqamah)
         case "Isha":
-            PrayerTimesEngine.resolveIshaIqamahForDisplay(
+            return PrayerTimesEngine.resolveIshaIqamahForDisplay(
                 slug: mosqueSlug,
                 date: now,
                 ishaAdhan: prayers.isha,
@@ -202,8 +246,16 @@ enum WidgetPrayerResolver {
                 maghribAdhan: prayers.maghrib
             )
         default:
-            ""
+            return ""
         }
+    }
+
+    private static func wallClockToday(_ time: String, now: Date) -> Date? {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        return cal.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: cal.startOfDay(for: now))
     }
 
     private static func snapshotLocale(from raw: String) -> Locale {

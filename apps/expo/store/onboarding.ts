@@ -1,18 +1,20 @@
 import { create } from "zustand";
-import { useSettingsStore } from "@/store/settings";
+import { useSettingsStore, type AppLanguage } from "@/store/settings";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
+import { prayerTimesCache } from "@/lib/prayer/prayerTimesCache";
 import {
   cancelAllPrayerNotifications,
   requestNotificationAuthorizationIfNeeded,
   rescheduleUpcomingPrayerNotifications,
 } from "@/lib/notifications/prayerNotifications";
-import { resolveSelectedMosque, cityGroupingKey } from "@/lib/prayer/mosqueDefaults";
+import { resolveSelectedMosque, cityGroupingKey, countryGroupingKey } from "@/lib/prayer/mosqueDefaults";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export type OnboardingStep =
+  | { type: "chooseLanguage" }
   | { type: "chooseMosque" }
   | { type: "prayerShortcut"; index: number }
   | { type: "qiblaCountdown" }
@@ -30,6 +32,22 @@ export interface NotificationDraft {
   iqamahEnabled: boolean;
   preAdhanReminderMinutes: number | null;
   preIqamahReminderMinutes: number | null;
+  fajr: boolean;
+  dhuhrJummah: boolean;
+  asr: boolean;
+  maghrib: boolean;
+  isha: boolean;
+  // Per-type per-prayer flags
+  adhanFajr: boolean;
+  adhanDhuhrJummah: boolean;
+  adhanAsr: boolean;
+  adhanMaghrib: boolean;
+  adhanIsha: boolean;
+  iqamahFajr: boolean;
+  iqamahDhuhrJummah: boolean;
+  iqamahAsr: boolean;
+  iqamahMaghrib: boolean;
+  iqamahIsha: boolean;
 }
 
 interface MosqueStub {
@@ -44,9 +62,11 @@ interface OnboardingState {
   currentStep: OnboardingStep | null;
   selectedMosqueId: string;
   notificationDraft: NotificationDraft;
+  isSelectingMosque: boolean;
   isCompletingNotifications: boolean;
 
   startIfNeeded: (mosques: MosqueStub[]) => void;
+  selectLanguage: (language: AppLanguage) => void;
   selectMosque: (mosqueId: string) => Promise<void>;
   handlePrayerShortcutTap: (index: number) => void;
   completeQiblaCountdown: () => void;
@@ -60,6 +80,7 @@ interface OnboardingState {
   acknowledgeSettingsExplore: () => void;
   handleSettingsClosed: () => void;
   completeNotificationSetup: () => Promise<void>;
+  skipTutorialToNotifications: () => void;
   restartTutorial: () => void;
 }
 
@@ -70,6 +91,21 @@ function defaultDraftFromSettings(): NotificationDraft {
     iqamahEnabled: s.iqamahEnabled,
     preAdhanReminderMinutes: s.preAdhanReminderMinutes,
     preIqamahReminderMinutes: s.preIqamahReminderMinutes,
+    fajr: s.fajr,
+    dhuhrJummah: s.dhuhrJummah,
+    asr: s.asr,
+    maghrib: s.maghrib,
+    isha: s.isha,
+    adhanFajr: s.adhanFajr,
+    adhanDhuhrJummah: s.adhanDhuhrJummah,
+    adhanAsr: s.adhanAsr,
+    adhanMaghrib: s.adhanMaghrib,
+    adhanIsha: s.adhanIsha,
+    iqamahFajr: s.iqamahFajr,
+    iqamahDhuhrJummah: s.iqamahDhuhrJummah,
+    iqamahAsr: s.iqamahAsr,
+    iqamahMaghrib: s.iqamahMaghrib,
+    iqamahIsha: s.iqamahIsha,
   };
 }
 
@@ -77,6 +113,7 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
   currentStep: null,
   selectedMosqueId: "",
   notificationDraft: defaultDraftFromSettings(),
+  isSelectingMosque: false,
   isCompletingNotifications: false,
 
   startIfNeeded: (mosques) => {
@@ -98,21 +135,39 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
     set({
       selectedMosqueId: selectedId,
       notificationDraft: defaultDraftFromSettings(),
-      currentStep: { type: "chooseMosque" },
+      isSelectingMosque: false,
+      currentStep: { type: "chooseLanguage" },
     });
   },
 
+  selectLanguage: (language) => {
+    const step = get().currentStep;
+    if (!step || step.type !== "chooseLanguage") return;
+    useSettingsStore.getState().setAppLanguage(language);
+    set({ currentStep: { type: "chooseMosque" } });
+  },
+
   selectMosque: async (mosqueId) => {
-    set({ selectedMosqueId: mosqueId });
+    const step = get().currentStep;
+    if (!step || step.type !== "chooseMosque" || get().isSelectingMosque) return;
 
-    const settings = useSettingsStore.getState();
-    const allMosques = await prayerRepository.listMosques();
-    const mosque = allMosques.find((m) => m.id === mosqueId);
-    if (mosque) {
-      settings.setSelectedMosque(mosque.id, mosque.slug, cityGroupingKey(mosque));
+    set({ selectedMosqueId: mosqueId, isSelectingMosque: true });
+
+    try {
+      const settings = useSettingsStore.getState();
+      const allMosques = await prayerRepository.listMosques().then(async (all) => {
+        await prayerTimesCache.saveMosques(all);
+        return all;
+      }).catch(async () => (await prayerTimesCache.loadMosques()) ?? []);
+      const mosque = allMosques.find((m) => m.id === mosqueId);
+      if (mosque) {
+        settings.setSelectedMosque(mosque.id, mosque.slug, cityGroupingKey(mosque), countryGroupingKey(mosque));
+      }
+
+      set({ currentStep: { type: "prayerShortcut", index: 0 }, isSelectingMosque: false });
+    } catch {
+      set({ isSelectingMosque: false });
     }
-
-    set({ currentStep: { type: "prayerShortcut", index: 0 } });
   },
 
   handlePrayerShortcutTap: (index) => {
@@ -214,6 +269,21 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
           iqamahEnabled: draft.iqamahEnabled,
           preAdhanReminderMinutes: draft.preAdhanReminderMinutes,
           preIqamahReminderMinutes: draft.preIqamahReminderMinutes,
+          fajr: draft.fajr,
+          dhuhrJummah: draft.dhuhrJummah,
+          asr: draft.asr,
+          maghrib: draft.maghrib,
+          isha: draft.isha,
+          adhanFajr: draft.adhanFajr,
+          adhanDhuhrJummah: draft.adhanDhuhrJummah,
+          adhanAsr: draft.adhanAsr,
+          adhanMaghrib: draft.adhanMaghrib,
+          adhanIsha: draft.adhanIsha,
+          iqamahFajr: draft.iqamahFajr,
+          iqamahDhuhrJummah: draft.iqamahDhuhrJummah,
+          iqamahAsr: draft.iqamahAsr,
+          iqamahMaghrib: draft.iqamahMaghrib,
+          iqamahIsha: draft.iqamahIsha,
         },
       }));
 
@@ -222,7 +292,10 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
       if (masterEnabled) {
         await requestNotificationAuthorizationIfNeeded();
 
-        const allMosques = await prayerRepository.listMosques();
+        const allMosques = await prayerRepository.listMosques().then(async (all) => {
+          await prayerTimesCache.saveMosques(all);
+          return all;
+        }).catch(async () => (await prayerTimesCache.loadMosques()) ?? []);
         const mosque = resolveSelectedMosque(
           allMosques,
           settings.selectedMosqueId,
@@ -247,6 +320,10 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
     }
   },
 
+  skipTutorialToNotifications: () => {
+    set({ currentStep: { type: "notifications" } });
+  },
+
   restartTutorial: () => {
     useSettingsStore.getState().setHasCompletedOnboarding(false);
     const s = useSettingsStore.getState();
@@ -256,8 +333,24 @@ export const useOnboardingStore = create<OnboardingState>()((set, get) => ({
         iqamahEnabled: s.notifications.iqamahEnabled,
         preAdhanReminderMinutes: s.notifications.preAdhanReminderMinutes,
         preIqamahReminderMinutes: s.notifications.preIqamahReminderMinutes,
+        fajr: s.notifications.fajr,
+        dhuhrJummah: s.notifications.dhuhrJummah,
+        asr: s.notifications.asr,
+        maghrib: s.notifications.maghrib,
+        isha: s.notifications.isha,
+        adhanFajr: s.notifications.adhanFajr,
+        adhanDhuhrJummah: s.notifications.adhanDhuhrJummah,
+        adhanAsr: s.notifications.adhanAsr,
+        adhanMaghrib: s.notifications.adhanMaghrib,
+        adhanIsha: s.notifications.adhanIsha,
+        iqamahFajr: s.notifications.iqamahFajr,
+        iqamahDhuhrJummah: s.notifications.iqamahDhuhrJummah,
+        iqamahAsr: s.notifications.iqamahAsr,
+        iqamahMaghrib: s.notifications.iqamahMaghrib,
+        iqamahIsha: s.notifications.iqamahIsha,
       },
-      currentStep: { type: "chooseMosque" },
+      isSelectingMosque: false,
+      currentStep: { type: "chooseLanguage" },
     });
   },
 }));

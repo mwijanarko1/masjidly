@@ -164,7 +164,7 @@ struct OnboardingCoachMarkView: View {
                         Text(primaryButtonTitle)
                             .onboardingPrimaryCapsule()
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.hapticPlain)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 6)
                     .accessibilityIdentifier(primaryButtonAccessibilityIdentifier ?? "Onboarding.CoachContinue")
@@ -177,7 +177,7 @@ struct OnboardingCoachMarkView: View {
                                 .underline(true, color: timeTheme.textColor.opacity(0.3))
                                 .frame(maxWidth: .infinity, alignment: .center)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hapticPlain)
                         .padding(.top, 4)
                         .accessibilityIdentifier(secondaryButtonAccessibilityIdentifier ?? "Onboarding.CoachSecondary")
                     }

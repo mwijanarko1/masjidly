@@ -32,6 +32,7 @@ import {
   normalizeMosqueSlug,
   isMasjidRisalah,
   mosqueTimetableAlreadyIncludesDst,
+  splitJummahIqamahTimes,
 } from "@/lib/prayer/prayerTimesEngine";
 import { PrayerEngineError } from "@/types/prayer";
 import type { PrayerTime, IqamahTimeRange, MonthPrayerData, RamadanPrayerData, UkDstYear, DailyPrayerTimes, DailyIqamahTimes } from "@/types/prayer";
@@ -76,6 +77,12 @@ describe("PrayerTimesEngine", () => {
       const d = sheffieldNoonUTC(2025, 3, 15);
       expect(d.getUTCHours()).toBe(12);
       expect(d.getUTCMinutes()).toBe(0);
+    });
+
+    it("splits multiple Jummah iqamah formats", () => {
+      expect(splitJummahIqamahTimes("12:30 / 13:15")).toEqual(["12:30", "13:15"]);
+      expect(splitJummahIqamahTimes("12:30 13:15")).toEqual(["12:30", "13:15"]);
+      expect(splitJummahIqamahTimes("12:30, 13:15")).toEqual(["12:30", "13:15"]);
     });
 
     it("isoDateString formats correctly", () => {
@@ -227,6 +234,18 @@ describe("PrayerTimesEngine", () => {
         jummah: "13:25",
       };
       expect(getIqamahTime("asr", "18:00", iq)).toBe("18:00");
+    });
+
+    it("defaults multiple asr iqamah slots to the first slot", () => {
+      const iq: DailyIqamahTimes = {
+        fajr: "03:30",
+        dhuhr: "13:00",
+        asr: "18:00, 18:30",
+        maghrib: "20:00",
+        isha: "21:00",
+        jummah: "13:25",
+      };
+      expect(getIqamahTime("asr", "17:30", iq)).toBe("18:00");
     });
 
     it("returns maghrib adhan for Straight after Maghrib isha", () => {
@@ -663,6 +682,19 @@ describe("PrayerTimesEngine", () => {
       };
       const result = resolvePrayerTimes("x", sheffieldNoonUTC(2025, 5, 1), monthly, null, []);
       expect(result.dhuhr).toBe("13:00");
+    });
+
+    it("uses Asr Mithl 2 when second Asr entry is selected", () => {
+      const monthly: MonthPrayerData = {
+        month: "May",
+        prayerTimes: [{ ...pt(1, "13:00"), asr: "17:01", asrMithl2: "18:06" }],
+        iqamahTimes: [iq("1-31")],
+        jummahIqamah: "13:30",
+      };
+      const first = resolvePrayerTimes("x", sheffieldNoonUTC(2025, 5, 1), monthly, null, [], "first");
+      const second = resolvePrayerTimes("x", sheffieldNoonUTC(2025, 5, 1), monthly, null, [], "second");
+      expect(first.asr).toBe("17:01");
+      expect(second.asr).toBe("18:06");
     });
 
     it("throws missingMonthly when no data", () => {

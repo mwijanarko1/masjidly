@@ -1,6 +1,13 @@
 import Foundation
 import Observation
 
+enum AsrIqamahPreference: String, CaseIterable, Identifiable, Codable, Sendable {
+    case first
+    case second
+
+    var id: String { rawValue }
+}
+
 @Observable
 @MainActor
 final class SettingsStore: SettingsPersisting {
@@ -10,6 +17,7 @@ final class SettingsStore: SettingsPersisting {
         case selectedMosqueId
         case selectedMosqueSlug
         case selectedCityGroupingKey
+        case selectedCountryGroupingKey
         case uses24HourTime
         case notificationsJSON
         case appLanguage
@@ -17,6 +25,7 @@ final class SettingsStore: SettingsPersisting {
         case appFontName
         case themeMode
         case fixedTheme
+        case asrIqamahPreference
         case hideQiblaCompass
         case firstAppOpenTrackedAt1970
         case hasCompletedEnjoymentReviewFlow
@@ -35,6 +44,11 @@ final class SettingsStore: SettingsPersisting {
     /// When set, filters the mosque list in settings; when `nil`, the UI derives the city from the selected mosque.
     var selectedCityGroupingKey: String? {
         didSet { defaults.set(selectedCityGroupingKey, forKey: Key.selectedCityGroupingKey.rawValue) }
+    }
+
+    /// When set, filters the country list in settings; when `nil`, the UI derives the country from the selected mosque.
+    var selectedCountryGroupingKey: String? {
+        didSet { defaults.set(selectedCountryGroupingKey, forKey: Key.selectedCountryGroupingKey.rawValue) }
     }
 
     var uses24HourTime: Bool {
@@ -65,11 +79,21 @@ final class SettingsStore: SettingsPersisting {
     }
 
     var themeMode: HomeDesign.ThemeMode {
-        didSet { defaults.set(themeMode.rawValue, forKey: Key.themeMode.rawValue) }
+        didSet {
+            defaults.set(themeMode.rawValue, forKey: Key.themeMode.rawValue)
+            syncWidgetThemeSettings()
+        }
     }
 
     var fixedTheme: HomeDesign.TimeTheme {
-        didSet { defaults.set(fixedTheme.rawValue, forKey: Key.fixedTheme.rawValue) }
+        didSet {
+            defaults.set(fixedTheme.rawValue, forKey: Key.fixedTheme.rawValue)
+            syncWidgetThemeSettings()
+        }
+    }
+
+    var asrIqamahPreference: AsrIqamahPreference {
+        didSet { defaults.set(asrIqamahPreference.rawValue, forKey: Key.asrIqamahPreference.rawValue) }
     }
 
     func resolvedTheme(dynamicTheme: HomeDesign.TimeTheme) -> HomeDesign.TimeTheme {
@@ -103,11 +127,13 @@ final class SettingsStore: SettingsPersisting {
         didSet { defaults.set(lastSeenBuildVersion, forKey: Key.lastSeenBuildVersion.rawValue) }
     }
 
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         selectedMosqueId = defaults.string(forKey: Key.selectedMosqueId.rawValue)
         selectedMosqueSlug = defaults.string(forKey: Key.selectedMosqueSlug.rawValue)
         selectedCityGroupingKey = defaults.string(forKey: Key.selectedCityGroupingKey.rawValue)
+        selectedCountryGroupingKey = defaults.string(forKey: Key.selectedCountryGroupingKey.rawValue)
         if defaults.object(forKey: Key.uses24HourTime.rawValue) == nil {
             uses24HourTime = false
         } else {
@@ -128,6 +154,7 @@ final class SettingsStore: SettingsPersisting {
         appFontName = defaults.string(forKey: Key.appFontName.rawValue) ?? "Gill Sans"
         themeMode = HomeDesign.ThemeMode(rawValue: defaults.string(forKey: Key.themeMode.rawValue) ?? "") ?? .dynamic
         fixedTheme = HomeDesign.TimeTheme(rawValue: defaults.string(forKey: Key.fixedTheme.rawValue) ?? "") ?? .fajr
+        asrIqamahPreference = AsrIqamahPreference(rawValue: defaults.string(forKey: Key.asrIqamahPreference.rawValue) ?? "") ?? .first
         if defaults.object(forKey: Key.hideQiblaCompass.rawValue) == nil {
             hideQiblaCompass = false
         } else {
@@ -144,6 +171,13 @@ final class SettingsStore: SettingsPersisting {
             hasCompletedEnjoymentReviewFlow = defaults.bool(forKey: Key.hasCompletedEnjoymentReviewFlow.rawValue)
         }
         lastSeenBuildVersion = defaults.string(forKey: Key.lastSeenBuildVersion.rawValue)
+        syncWidgetThemeSettings()
+    }
+
+    private func syncWidgetThemeSettings() {
+        guard let appGroupDefaults = UserDefaults(suiteName: WidgetPrayerSharedConfig.appGroupIdentifier) else { return }
+        appGroupDefaults.set(themeMode.rawValue, forKey: WidgetPrayerSharedConfig.themeModeKey)
+        appGroupDefaults.set(fixedTheme.rawValue, forKey: WidgetPrayerSharedConfig.fixedThemeKey)
     }
 
     func ensureFirstAppOpenTrackedAtRecordedIfNeeded() {

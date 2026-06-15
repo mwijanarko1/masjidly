@@ -66,7 +66,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         mosque: Mosque,
         days: Int,
         settings: NotificationSettings,
-        locale: Locale
+        locale: Locale,
+        asrIqamahPreference: AsrIqamahPreference
     ) async throws {
         await cancelAllPrayerNotifications()
         guard settings.masterEnabled else { return }
@@ -93,7 +94,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             let displayed: DailyPrayerTimes
             let iq: DailyIqamahTimes
             do {
-                let raw = try PrayerTimesEngine.resolvePrayerTimes(slug: slug, on: dayDate, monthly: monthly, ramadan: ramadan, ukDst: ukDst)
+                let raw = try PrayerTimesEngine.resolvePrayerTimes(slug: slug, on: dayDate, monthly: monthly, ramadan: ramadan, ukDst: ukDst, asrTimingPreference: asrIqamahPreference)
                 displayed = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date: dayDate, mosqueSlug: slug)
                 iq = try PrayerTimesEngine.resolveIqamahTimesWithDstMapping(slug: slug, on: dayDate, monthly: monthly, ramadan: ramadan, ukDst: ukDst)
             } catch {
@@ -168,7 +169,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 civilDay: dayDate,
                 locale: locale
             )
-            let asrIq = PrayerTimesEngine.getIqamahTime(prayer: "asr", adhanTime: displayed.asr, iqamahTimes: iq)
+            let asrIq = PrayerTimesEngine.selectAsrIqamahTime(iq.asr, adhanTime: displayed.asr, preference: asrIqamahPreference)
             try await scheduleIqamahIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
@@ -242,6 +243,30 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         }
     }
 
+    /// Returns `true` if the given prayerKey's adhan flag is enabled in settings.
+    private func isAdhanForPrayerEnabled(prayerKey: String, settings: NotificationSettings) -> Bool {
+        switch prayerKey {
+        case "fajr":    return settings.adhanFajr
+        case "dhuhr":   return settings.adhanDhuhrJummah
+        case "asr":     return settings.adhanAsr
+        case "maghrib": return settings.adhanMaghrib
+        case "isha":    return settings.adhanIsha
+        default:         return true
+        }
+    }
+
+    /// Returns `true` if the given prayerKey's iqamah flag is enabled in settings.
+    private func isIqamahForPrayerEnabled(prayerKey: String, settings: NotificationSettings) -> Bool {
+        switch prayerKey {
+        case "fajr":    return settings.iqamahFajr
+        case "dhuhr":   return settings.iqamahDhuhrJummah
+        case "asr":     return settings.iqamahAsr
+        case "maghrib": return settings.iqamahMaghrib
+        case "isha":    return settings.iqamahIsha
+        default:         return true
+        }
+    }
+
     // MARK: - Scheduling helpers
 
     private func scheduleAdhanIfEnabled(
@@ -256,6 +281,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         civilDay: Date,
         locale: Locale
     ) async throws {
+        guard isAdhanForPrayerEnabled(prayerKey: prayerKey, settings: settings) else { return }
         if settings.adhanEnabled {
             let copy = PrayerNotificationContent.adhanCopy(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
             let info = Self.adhanUserInfo(prayerKey: prayerKey, mosqueSlug: mosqueSlug, iso: iso)
@@ -298,6 +324,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         civilDay: Date,
         locale: Locale
     ) async throws {
+        guard isIqamahForPrayerEnabled(prayerKey: prayerKey, settings: settings) else { return }
         if settings.iqamahEnabled {
             let copy = PrayerNotificationContent.iqamahCopy(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
             let info = Self.iqamahUserInfo(prayerKey: prayerKey, mosqueSlug: mosqueSlug, iso: iso)

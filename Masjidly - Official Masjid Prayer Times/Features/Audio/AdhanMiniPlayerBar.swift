@@ -45,7 +45,7 @@ struct AdhanMiniPlayerBar: View {
                                 )
                                 .contentShape(Circle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hapticPlain)
                         .shadow(color: HomeDesign.Colors.accent.opacity(0.35), radius: 15, y: 8)
                         .accessibilityLabel(playback.isPlayingForUI ? localized("audio.adhan.pause_a11y") : localized("audio.adhan.play_a11y"))
 
@@ -58,7 +58,7 @@ struct AdhanMiniPlayerBar: View {
                                 .frame(width: 40, height: 44)
                                 .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hapticPlain)
                         .accessibilityLabel(localized("audio.adhan.stop_a11y"))
                     }
                 }

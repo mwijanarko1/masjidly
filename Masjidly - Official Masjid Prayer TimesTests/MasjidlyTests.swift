@@ -64,7 +64,8 @@ struct PrayerEngineTests {
         let d = DailyPrayerTimes(date: "2026-01-02", fajr: "03:00", sunrise: "04:00", dhuhr: "13:00", asr: "18:00", maghrib: "20:00", isha: "21:00")
         let iq = DailyIqamahTimes(fajr: "03:30", dhuhr: "13:20", asr: "18:10", maghrib: "20:05", isha: "21:10", jummah: "13:25")
         let n = PrayerTimesEngine.getNextPrayerAndCountdown(prayerTimes: d, iqamahTimes: iq, mosqueSlug: "x", now: fri)
-        #expect(["Jummah", "Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"].contains(n.nextName))
+        #expect(n != nil)
+        #expect(["Jummah", "Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"].contains(n?.nextName ?? ""))
     }
 
     @Test func risalahIshaDisplayUsesAdhanInMayJuly() throws {
@@ -284,7 +285,7 @@ struct OnboardingFlowControllerTests {
 
         harness.controller.startIfNeeded()
 
-        #expect(harness.controller.currentStep == .chooseMosque)
+        #expect(harness.controller.currentStep == .chooseLanguage)
         #expect(harness.controller.isActive == true)
     }
 
@@ -299,6 +300,17 @@ struct OnboardingFlowControllerTests {
         #expect(harness.controller.isActive == false)
     }
 
+    @Test func choosingLanguagePersistsSelectionAndAdvancesToMosqueSelection() {
+        let harness = OnboardingHarness()
+        harness.controller.currentStep = .chooseLanguage
+
+        harness.controller.selectLanguage(.urdu)
+
+        #expect(harness.settings.appLanguage == .urdu)
+        #expect(harness.controller.selectedLanguage == .urdu)
+        #expect(harness.controller.currentStep == .chooseMosque)
+    }
+
     @Test func choosingMosquePersistsSelectionAndStartsPrayerShortcuts() async {
         let harness = OnboardingHarness()
         harness.settings.hasCompletedOnboarding = false
@@ -310,6 +322,18 @@ struct OnboardingFlowControllerTests {
 
         #expect(harness.settings.selectedMosqueId == "b")
         #expect(harness.settings.selectedMosqueSlug == "mosque-b")
+        #expect(harness.controller.currentStep == .prayerShortcut(index: 0))
+        #expect(harness.controller.isSelectingMosque == false)
+    }
+
+    @Test func choosingMosqueIsIgnoredOutsideSelectionStep() async {
+        let harness = OnboardingHarness()
+        harness.settings.selectedMosqueId = "a"
+        harness.controller.currentStep = .prayerShortcut(index: 0)
+
+        await harness.controller.selectMosque(harness.mosques[1])
+
+        #expect(harness.settings.selectedMosqueId == "a")
         #expect(harness.controller.currentStep == .prayerShortcut(index: 0))
     }
 
@@ -403,7 +427,7 @@ struct OnboardingFlowControllerTests {
 
         #expect(harness.settings.hasCompletedOnboarding == false)
         #expect(harness.settings.hideQiblaCompass == false)
-        #expect(harness.controller.currentStep == .chooseMosque)
+        #expect(harness.controller.currentStep == .chooseLanguage)
     }
 }
 
@@ -489,7 +513,8 @@ private final class MockPrayerNotificationScheduler: PrayerNotificationSchedulin
         mosque: Mosque,
         days: Int,
         settings: NotificationSettings,
-        locale: Locale
+        locale: Locale,
+        asrIqamahPreference: AsrIqamahPreference
     ) async throws {
         rescheduleCount += 1
     }

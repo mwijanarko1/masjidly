@@ -32,8 +32,25 @@ struct PrayerTime: Codable, Equatable, Sendable {
     let shurooq: String
     let dhuhr: String
     let asr: String
+    let asrMithl2: String?
     let maghrib: String
     let isha: String
+
+    enum CodingKeys: String, CodingKey {
+        case date, fajr, shurooq, dhuhr, asr, maghrib, isha
+        case asrMithl2 = "asr_mithl2"
+    }
+
+    init(date: Int, fajr: String, shurooq: String, dhuhr: String, asr: String, asrMithl2: String? = nil, maghrib: String, isha: String) {
+        self.date = date
+        self.fajr = fajr
+        self.shurooq = shurooq
+        self.dhuhr = dhuhr
+        self.asr = asr
+        self.asrMithl2 = asrMithl2
+        self.maghrib = maghrib
+        self.isha = isha
+    }
 }
 
 struct IqamahTimeRange: Codable, Equatable, Sendable {
@@ -48,6 +65,40 @@ struct IqamahTimeRange: Codable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case dateRange = "date_range"
         case fajr, dhuhr, asr, maghrib, isha, jummah
+    }
+
+    init(dateRange: String, fajr: String, dhuhr: String, asr: String, maghrib: String?, isha: String, jummah: String?) {
+        self.dateRange = dateRange
+        self.fajr = fajr
+        self.dhuhr = dhuhr
+        self.asr = asr
+        self.maghrib = maghrib
+        self.isha = isha
+        self.jummah = jummah
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        dateRange = try c.decode(String.self, forKey: .dateRange)
+        fajr = try Self.decodeIqamahValue(c, forKey: .fajr)
+        dhuhr = try Self.decodeIqamahValue(c, forKey: .dhuhr)
+        asr = try Self.decodeIqamahValue(c, forKey: .asr)
+        maghrib = try Self.decodeOptionalIqamahValue(c, forKey: .maghrib)
+        isha = try Self.decodeIqamahValue(c, forKey: .isha)
+        jummah = try Self.decodeOptionalIqamahValue(c, forKey: .jummah)
+    }
+
+    private static func decodeIqamahValue(_ c: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) throws -> String {
+        if let value = try? c.decode(String.self, forKey: key) { return value }
+        if let values = try? c.decode([String].self, forKey: key) { return values.joined(separator: ", ") }
+        throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: c.codingPath + [key], debugDescription: "Expected string or string array"))
+    }
+
+    private static func decodeOptionalIqamahValue(_ c: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) throws -> String? {
+        guard c.contains(key), !(try c.decodeNil(forKey: key)) else { return nil }
+        if let value = try? c.decode(String.self, forKey: key) { return value }
+        if let values = try? c.decode([String].self, forKey: key) { return values.joined(separator: ", ") }
+        return nil
     }
 }
 
@@ -72,12 +123,26 @@ struct RamadanPrayerDay: Codable, Equatable, Sendable {
     let shurooq: String
     let dhuhr: String
     let asr: String
+    let asrMithl2: String?
     let maghrib: String
     let isha: String
 
     enum CodingKeys: String, CodingKey {
         case ramadanDay = "ramadan_day"
         case gregorian, fajr, shurooq, dhuhr, asr, maghrib, isha
+        case asrMithl2 = "asr_mithl2"
+    }
+
+    init(ramadanDay: Int, gregorian: String, fajr: String, shurooq: String, dhuhr: String, asr: String, asrMithl2: String? = nil, maghrib: String, isha: String) {
+        self.ramadanDay = ramadanDay
+        self.gregorian = gregorian
+        self.fajr = fajr
+        self.shurooq = shurooq
+        self.dhuhr = dhuhr
+        self.asr = asr
+        self.asrMithl2 = asrMithl2
+        self.maghrib = maghrib
+        self.isha = isha
     }
 }
 

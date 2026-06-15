@@ -100,8 +100,7 @@ store/                  # Zustand stores
  types/                 # Zod schemas + TypeScript types
   prayer.ts
 constants/              # Design tokens
-assets/                 # Images, icons
-  prayers/              # Prayer illustration PNGs
+assets/                 # Images, icons, audio
 ```
 
 ## Key Dependencies

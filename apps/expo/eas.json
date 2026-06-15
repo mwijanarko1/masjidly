@@ -7,6 +7,19 @@
       "android": {
         "buildType": "apk"
       }
+    },
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "autoIncrement": {
+          "version": true
+        }
+      },
+      "env": {
+        "NODE_ENV": "production"
+      }
     }
   }
 }

@@ -5,8 +5,15 @@ private func ttLS(_ key: String, locale: Locale) -> String {
 }
 
 private enum TimetableTimeColumns {
-    /// Adhan / Iqamah — 65pt was too narrow for 12-hour strings (e.g. `10:07 PM`) at 18pt.
-    static let width: CGFloat = 94
+    /// Adhan / Iqamah — 105pt accommodates bold 18pt 12-hour strings
+    /// (e.g. `10:07 PM`) even with Arabic (1.20×) or Urdu (1.25×) font scaling.
+    /// Width increased from 94 to prevent minimumScaleFactor from shrinking
+    /// the next-prayer row's bold text below the nominal 18pt.
+    static let width: CGFloat = 105
+
+    /// Shared row font size for prayer name, adhan, and iqamah.
+    /// Uniform for all rows/dates; time column width accommodates this size.
+    static let rowFontSize: CGFloat = 18
 }
 
 struct TimetableView: View {
@@ -21,8 +28,10 @@ struct TimetableView: View {
     @State private var currentMonth: Int
     @State private var currentYear: Int
     @State private var isLoadingMonth = false
+    @State private var noDataForCurrentMonth = false
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(SettingsStore.self) private var settings
     @Environment(OnboardingFlowController.self) private var onboarding
     /// Derived from the observable store so language changes re-localize immediately.
@@ -90,25 +99,32 @@ struct TimetableView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 24)
 
-                dateStrip
-                    .padding(.bottom, 32)
+                if !noDataForCurrentMonth {
+                    dateStrip
+                        .padding(.bottom, 32)
+                }
 
                 if isLoadingMonth {
                     Spacer()
                     ProgressView()
                         .tint(timeTheme.textColor)
                     Spacer()
+                } else if noDataForCurrentMonth {
+                    missingMonthMessage
+                    Spacer()
                 } else if let currentPrayerTime = currentMonthData.prayerTimes.first(where: { $0.date == selectedDate }) {
                     prayersStack(for: currentPrayerTime)
                         .padding(.horizontal, 16)
                     Spacer(minLength: 0)
                 } else {
+                    missingMonthMessage
                     Spacer()
                 }
             }
         }
         .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
         .onAppear {
+            noDataForCurrentMonth = currentMonthData.prayerTimes.isEmpty
             let today = currentDayOfSystem
             if currentMonthData.prayerTimes.contains(where: { $0.date == today }) {
                 selectedDate = today
@@ -153,6 +169,7 @@ struct TimetableView: View {
                     .foregroundStyle(timeTheme.textColor)
                     .frame(width: 44, height: 44)
             }
+            .buttonStyle(.hapticPlain)
             .disabled(isLoadingMonth)
             
             Spacer()
@@ -171,6 +188,7 @@ struct TimetableView: View {
                     .foregroundStyle(timeTheme.textColor)
                     .frame(width: 44, height: 44)
             }
+            .buttonStyle(.hapticPlain)
             .disabled(isLoadingMonth)
         }
     }
@@ -190,23 +208,31 @@ struct TimetableView: View {
             y += 1
         }
         
-        if let newData = await model.fetchMonthData(mosqueSlug: mosqueSlug, month: m, year: y) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                currentMonthData = newData
-                currentMonth = m
-                currentYear = y
-                
-                let systemMonth = Calendar.current.component(.month, from: Date())
-                let systemYear = Calendar.current.component(.year, from: Date())
-                
-                if m == systemMonth && y == systemYear {
-                    selectedDate = currentDayOfSystem
-                } else {
-                    selectedDate = 1
-                }
+        let newData = await model.fetchMonthData(mosqueSlug: mosqueSlug, month: m, year: y)
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            currentMonth = m
+            currentYear = y
+
+            guard let newData, !newData.prayerTimes.isEmpty else {
+                noDataForCurrentMonth = true
+                selectedDate = 1
+                isLoadingMonth = false
+                return
             }
+
+            currentMonthData = newData
+            noDataForCurrentMonth = false
+
+            let systemMonth = Calendar.current.component(.month, from: Date())
+            let systemYear = Calendar.current.component(.year, from: Date())
+
+            if m == systemMonth && y == systemYear && newData.prayerTimes.contains(where: { $0.date == currentDayOfSystem }) {
+                selectedDate = currentDayOfSystem
+            } else {
+                selectedDate = newData.prayerTimes.first?.date ?? 1
+            }
+            isLoadingMonth = false
         }
-        isLoadingMonth = false
     }
 
     private var headerBar: some View {
@@ -232,7 +258,7 @@ struct TimetableView: View {
                     .padding(8)
                     .background(Circle().fill(timeTheme.textColor.opacity(0.1)))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hapticPlain)
             .onboardingHighlight(onboarding.currentStep == .closeTimetable, timeTheme: timeTheme)
             .accessibilityIdentifier("Onboarding.TimetableClose")
             .accessibilityLabel(Text(ttLS("timetable.close_a11y", locale: locale)))
@@ -274,6 +300,7 @@ struct TimetableView: View {
                                 .fill(isSelected ? timeTheme.textColor.opacity(0.12) : Color.clear)
                         )
                         .onTapGesture {
+                            HapticFeedback.buttonTap()
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 selectedDate = time.date
                             }
@@ -299,6 +326,48 @@ struct TimetableView: View {
         let adhanSortKey: String
         let adhanDisplay: String
         let iqamahDisplay: String
+    }
+
+    private var missingMonthMessage: some View {
+        VStack(spacing: 16) {
+            Text(ttLS("timetable.missing_month", locale: locale))
+                .appFont(size: 16, weight: .regular)
+                .foregroundStyle(timeTheme.textColor.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+
+            Button {
+                openMissingTimesEmail()
+            } label: {
+                Text(ttLS("home.request_times_button", locale: locale))
+                    .appFont(size: 15, weight: .semibold)
+                    .foregroundColor(timeTheme.textColor)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(timeTheme.textColor.opacity(0.14))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(timeTheme.textColor.opacity(0.22), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.hapticPlain)
+            .accessibilityIdentifier("Timetable.MissingTimes.EmailButton")
+        }
+        .padding(.horizontal, 32)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func openMissingTimesEmail() {
+        let context = MasjidlySupportMail.currentContext(mosqueName: mosqueName)
+        guard let url = MasjidlySupportMail.missingPrayerTimesURL(
+            locale: locale,
+            context: context,
+            monthDisplay: monthSwitcherTitle
+        ) else { return }
+        openURL(url)
     }
 
     private func prayersStack(for time: PrayerTime) -> some View {
@@ -334,9 +403,10 @@ struct TimetableView: View {
         let iIqamah = resolveIqamahString(id: "isha", adhan: time.isha, iqamahRaw: dailyIqamah, maghrib: time.maghrib, for: prayerDate)
         rows.append(RowData(id: "isha", name: ttLS("timetable.header.ish", locale: locale), adhanSortKey: time.isha, adhanDisplay: iAdhan, iqamahDisplay: iIqamah))
 
-        let currentHHMM = formatSystemTime() 
+        // Compute next prayer BEFORE adding midnight/lastThird (informational rows)
+        let currentHHMM = formatSystemTime()
         var nextId: String? = nil
-        
+
         if isToday {
             for r in rows {
                 if r.adhanSortKey > currentHHMM {
@@ -344,6 +414,32 @@ struct TimetableView: View {
                     break
                 }
             }
+        }
+
+        // Midnight & Last Third of the Night (informational — excluded from next-prayer)
+        let nextDayFajr: String? = {
+            let sorted = currentMonthData.prayerTimes.sorted { $0.date < $1.date }
+            guard let currentIndex = sorted.firstIndex(where: { $0.date == time.date }),
+                  currentIndex + 1 < sorted.count else { return nil }
+            return sorted[currentIndex + 1].fajr
+        }()
+        let nightPeriods = PrayerTimesEngine.computeMidnightAndLastThird(
+            maghrib: time.maghrib, nextDayFajr: nextDayFajr)
+        if let midnight = nightPeriods.midnight {
+            rows.append(RowData(
+                id: "midnight",
+                name: ttLS("timetable.header.midnight", locale: locale),
+                adhanSortKey: midnight,
+                adhanDisplay: formatTime(midnight),
+                iqamahDisplay: "-"))
+        }
+        if let lastThird = nightPeriods.lastThird {
+            rows.append(RowData(
+                id: "lastThird",
+                name: ttLS("timetable.header.lastThird", locale: locale),
+                adhanSortKey: lastThird,
+                adhanDisplay: formatTime(lastThird),
+                iqamahDisplay: "-"))
         }
 
         return VStack(spacing: 8) {
@@ -375,7 +471,7 @@ struct TimetableView: View {
                     adhanDisplay: r.adhanDisplay,
                     iqamahDisplay: r.iqamahDisplay,
                     isNext: r.id == nextId,
-                    isPast: isToday && (r.adhanSortKey <= currentHHMM)
+                    isPast: isToday && isTimePast(r.adhanSortKey, now: currentHHMM, isNextDayRow: r.id == "midnight" || r.id == "lastThird")
                 )
             }
         }
@@ -389,15 +485,13 @@ struct TimetableView: View {
     ) -> [RowData] {
         let label = PrayerLocalization.displayName(canonicalEnglish: "Jummah", locale: locale)
         let rawJummah = resolvedRawJummahString(dailyIqamah: dailyIqamah)
-        let jTimes = rawJummah.components(separatedBy: CharacterSet(charactersIn: ",/&|"))
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        let jTimes = PrayerTimesEngine.splitJummahIqamahTimes(rawJummah)
 
         var out: [RowData] = []
         if jTimes.isEmpty {
             out.append(RowData(
                 id: "jummah_0",
-                name: label,
+                name: numberedJummahLabel(base: label, index: 0, total: 1),
                 adhanSortKey: time.dhuhr,
                 adhanDisplay: dhuhrAdhanFormatted,
                 iqamahDisplay: "-"
@@ -413,7 +507,7 @@ struct TimetableView: View {
                 }
                 out.append(RowData(
                     id: "jummah_\(idx)",
-                    name: label,
+                    name: numberedJummahLabel(base: label, index: idx, total: jTimes.count),
                     adhanSortKey: time.dhuhr,
                     adhanDisplay: dhuhrAdhanFormatted,
                     iqamahDisplay: iqamahCell
@@ -421,6 +515,10 @@ struct TimetableView: View {
             }
         }
         return out
+    }
+
+    private func numberedJummahLabel(base: String, index: Int, total: Int) -> String {
+        total > 1 ? "\(base) \(index + 1)" : base
     }
 
     private func resolvedRawJummahString(dailyIqamah: DailyIqamahTimes?) -> String {
@@ -445,30 +543,30 @@ struct TimetableView: View {
 
         return HStack(alignment: .top, spacing: 12) {
             Text(name)
-                .appFont(size: 18, weight: weight)
+                .appFont(size: TimetableTimeColumns.rowFontSize, weight: weight)
                 .foregroundStyle(timeTheme.textColor.opacity(opacity))
                 .multilineTextAlignment(.leading)
                 .lineLimit(5)
                 .fixedSize(horizontal: false, vertical: true)
-                .minimumScaleFactor(0.75)
+                .minimumScaleFactor(isNext ? 1.0 : 0.75)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
 
             Text(adhanDisplay)
-                .appFont(size: 18, weight: weight)
+                .appFont(size: TimetableTimeColumns.rowFontSize, weight: weight)
                 .monospacedDigit()
                 .foregroundStyle(timeTheme.textColor.opacity(opacity * 0.75))
                 .lineLimit(1)
-                .minimumScaleFactor(0.78)
+                .minimumScaleFactor(isNext ? 1.0 : 0.78)
                 .multilineTextAlignment(.trailing)
                 .frame(width: TimetableTimeColumns.width, alignment: .trailing)
 
             Text(iqamahDisplay)
-                .appFont(size: 18, weight: iqamahWeight)
+                .appFont(size: TimetableTimeColumns.rowFontSize, weight: iqamahWeight)
                 .monospacedDigit()
                 .foregroundStyle(timeTheme.textColor.opacity(opacity))
                 .lineLimit(1)
-                .minimumScaleFactor(0.78)
+                .minimumScaleFactor(isNext ? 1.0 : 0.78)
                 .multilineTextAlignment(.trailing)
                 .frame(width: TimetableTimeColumns.width, alignment: .trailing)
         }
@@ -513,17 +611,24 @@ struct TimetableView: View {
         return formatter.string(from: Date())
     }
 
+    /// Compare two HH:mm strings with next-day awareness for cross-midnight times.
+    /// For `isNextDayRow` times (midnight/lastThird), if `now` is in PM (>= 12:00)
+    /// the time belongs to the next day and hasn't happened yet.
+    private func isTimePast(_ time: String, now: String, isNextDayRow: Bool = false) -> Bool {
+        guard let tMin = PrayerTimesEngine.timeToMinutes(time),
+              let nMin = PrayerTimesEngine.timeToMinutes(now) else {
+            return false
+        }
+        if isNextDayRow && nMin >= 720 {
+            return false
+        }
+        return tMin <= nMin
+    }
+
     private func dateFor(day: Int) -> Date? {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "d MMMM yyyy"
-        if let d = formatter.date(from: "\(day) \(currentMonthData.month)") { return d }
-        formatter.dateFormat = "d MMM yyyy"
-        if let d = formatter.date(from: "\(day) \(currentMonthData.month)") { return d }
-        let year = Calendar.current.component(.year, from: Date())
-        formatter.dateFormat = "d MMMM yyyy"
-        if let d = formatter.date(from: "\(day) \(currentMonthData.month) \(year)") { return d }
-        return nil
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        return cal.date(from: DateComponents(year: currentYear, month: currentMonth, day: day))
     }
 
     private func shortWeekday(for day: Int) -> String {
@@ -545,14 +650,16 @@ struct TimetableView: View {
     private func resolveIqamahString(id: String, adhan: String, iqamahRaw: DailyIqamahTimes?, maghrib: String, for date: Date) -> String {
         if id == "sunrise" { return "-" }
         guard let iq = iqamahRaw else { return "-" }
-        let resolved = PrayerTimesEngine.getDisplayIqamah(
-            prayer: id,
-            adhanTime: adhan,
-            iqamahTimes: iq,
-            mosqueSlug: mosqueSlug,
-            date: date,
-            maghribAdhan: maghrib
-        )
+        let resolved = id == "asr"
+            ? PrayerTimesEngine.selectAsrIqamahTime(iq.asr, adhanTime: adhan, preference: settings.asrIqamahPreference)
+            : PrayerTimesEngine.getDisplayIqamah(
+                prayer: id,
+                adhanTime: adhan,
+                iqamahTimes: iq,
+                mosqueSlug: mosqueSlug,
+                date: date,
+                maghribAdhan: maghrib
+            )
         let trimmed = resolved.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty || trimmed.lowercased() == "no iqamah" { return "-" }
         return formatTime(resolved)
@@ -572,7 +679,8 @@ private final class TimetablePreviewNotificationScheduler: PrayerNotificationSch
         mosque: Mosque,
         days: Int,
         settings: NotificationSettings,
-        locale: Locale
+        locale: Locale,
+        asrIqamahPreference: AsrIqamahPreference
     ) async throws {}
     func cancelAllPrayerNotifications() async {}
 }

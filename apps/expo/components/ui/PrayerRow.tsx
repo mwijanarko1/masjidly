@@ -21,7 +21,7 @@ function formatTime(time: string, uses24h: boolean, locale: string): string {
   return formatPrayerClockForDisplay(time, uses24h, locale);
 }
 
-export const PrayerRow: React.FC<PrayerRowProps> = ({
+export const PrayerRow: React.FC<PrayerRowProps> = React.memo(({
   name,
   adhan,
   iqamah,
@@ -35,6 +35,9 @@ export const PrayerRow: React.FC<PrayerRowProps> = ({
   const nameWeight = isNext ? "600" : "400";
   const iqamahWeight = isNext ? "700" : "500";
   const fontScale = getFontScale(locale as AppLanguage);
+
+  // Shared row font size — uniform for all rows/dates; time column accommodates this size.
+  const ROW_FONT_SIZE = 18;
 
   return (
     <View
@@ -52,7 +55,7 @@ export const PrayerRow: React.FC<PrayerRowProps> = ({
           {
             color: textColor + Math.round(opacity * 255).toString(16).padStart(2, "0"),
             fontFamily: isNext ? "Comfortaa_600SemiBold" : "Comfortaa_400Regular",
-            fontSize: 18 * fontScale,
+            fontSize: ROW_FONT_SIZE * fontScale,
           },
         ]}
         numberOfLines={1}
@@ -66,12 +69,11 @@ export const PrayerRow: React.FC<PrayerRowProps> = ({
           {
             color: textColor + Math.round(opacity * 0.75 * 255).toString(16).padStart(2, "0"),
             fontFamily: isNext ? "Comfortaa_600SemiBold" : "Comfortaa_400Regular",
-            fontSize: 18 * fontScale,
+            fontSize: ROW_FONT_SIZE * fontScale,
           },
         ]}
         numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.78}
+        {...(!isNext && { adjustsFontSizeToFit: true as const, minimumFontScale: 0.78 })}
       >
         {formatTime(adhan, uses24HourTime, locale)}
       </Text>
@@ -82,18 +84,17 @@ export const PrayerRow: React.FC<PrayerRowProps> = ({
           {
             color: textColor + Math.round(opacity * 255).toString(16).padStart(2, "0"),
             fontFamily: iqamahWeight === "700" ? "Comfortaa_700Bold" : "Comfortaa_500Medium",
-            fontSize: 18 * fontScale,
+            fontSize: ROW_FONT_SIZE * fontScale,
           },
         ]}
         numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.78}
+        {...(!isNext && { adjustsFontSizeToFit: true as const, minimumFontScale: 0.78 })}
       >
         {formatTime(iqamah, uses24HourTime, locale)}
       </Text>
     </View>
   );
-};
+});
 
 
 const styles = StyleSheet.create({
@@ -111,8 +112,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   timeCell: {
-    width: 94,
-    maxWidth: 94,
+    width: 105,
+    maxWidth: 105,
     textAlign: "right",
     fontVariant: ["tabular-nums"],
   },

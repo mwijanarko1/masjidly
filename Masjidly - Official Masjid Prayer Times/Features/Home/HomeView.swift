@@ -12,6 +12,7 @@ struct HomeView: View {
     @Environment(OnboardingFlowController.self) private var onboarding
     @Environment(AppReviewPromptCoordinator.self) private var reviewPrompt
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
     /// Derived from the observable store so language changes re-localize the entire home immediately.
     private var locale: Locale { settings.resolvedLocale }
 
@@ -19,6 +20,7 @@ struct HomeView: View {
     @State private var showingTimetable = false
     @State private var showingWhatsNew = false
     @State private var showUpdateAlert = false
+    @State private var showReviewFeedbackPrompt = false
     @State private var pendingRelease: MasjidlyRelease?
     @State private var hasCheckedForUpdate = false
     @State private var qiblaDirectionProvider = QiblaDirectionProvider()
@@ -61,18 +63,38 @@ struct HomeView: View {
                 },
                 onNotReally: {
                     reviewPrompt.userConfirmedEnjoymentNegative()
-                    presentUpdateAlertIfReady()
+                    showReviewFeedbackPrompt = true
                 }
             )
+            .alert(
+                reviewFeedbackTitle,
+                isPresented: $showReviewFeedbackPrompt
+            ) {
+                Button(reviewFeedbackLaterLabel, role: .cancel) {
+                    HapticFeedback.buttonTap()
+                    showReviewFeedbackPrompt = false
+                    presentUpdateAlertIfReady()
+                }
+                Button(reviewFeedbackSendLabel) {
+                    HapticFeedback.buttonTap()
+                    openReviewFeedbackEmail()
+                    showReviewFeedbackPrompt = false
+                    presentUpdateAlertIfReady()
+                }
+            } message: {
+                Text(reviewFeedbackMessage)
+            }
             .alert(
                 updateAlertTitle,
                 isPresented: $showUpdateAlert,
                 presenting: pendingRelease
             ) { _ in
                 Button(updateLaterLabel) {
+                    HapticFeedback.buttonTap()
                     showUpdateAlert = false
                 }
                 Button(updateNowLabel) {
+                    HapticFeedback.buttonTap()
                     AppUpdateChecker.openAppStore()
                     showUpdateAlert = false
                 }
@@ -198,8 +220,11 @@ struct HomeView: View {
 
                 if let d = model.displayedPrayerTimes {
                     homePrayerPage(for: d)
+                } else if shouldShowMissingCurrentMonthTimes {
+                    missingCurrentMonthTimesView(metrics: metrics)
                 } else {
                     ProgressView()
+                        .tint(currentTheme.textColor)
                 }
 
                 VStack {
@@ -225,12 +250,80 @@ struct HomeView: View {
         )
     }
 
+    private var shouldShowMissingCurrentMonthTimes: Bool {
+        model.selectedMosque != nil && (model.loadState == .loaded || model.loadState == .empty)
+    }
+
+    private func missingCurrentMonthTimesView(metrics: HomeViewportMetrics) -> some View {
+        VStack(spacing: 18) {
+            Image(systemName: "calendar.badge.exclamationmark")
+                .appFont(size: 44, weight: .light)
+                .foregroundStyle(currentTheme.textColor.opacity(0.9))
+
+            Text(homeLS("home.current_month_times_missing", locale: locale))
+                .appFont(size: 22, weight: .semibold)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(currentTheme.textColor)
+
+            Text(currentMissingMonthTitle)
+                .appFont(size: 15, weight: .regular)
+                .foregroundStyle(currentTheme.textColor.opacity(0.72))
+
+            if model.hasAvailablePrayerTimesFallback {
+                Button {
+                    model.goToLastAvailablePrayerDate()
+                } label: {
+                    Text(homeLS("home.go_to_available_times_button", locale: locale))
+                        .appFont(size: 16, weight: .semibold)
+                        .foregroundStyle(currentTheme.usesLightForeground ? Color.black : Color.white)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 13)
+                        .background(Capsule().fill(currentTheme.textColor.opacity(0.92)))
+                }
+                .buttonStyle(.hapticPlain)
+                .accessibilityIdentifier("Home.MissingTimes.AvailableTimesButton")
+            }
+
+            Button {
+                openMissingTimesEmail()
+            } label: {
+                Text(homeLS("home.request_times_button", locale: locale))
+                    .appFont(size: 15, weight: .semibold)
+                    .foregroundStyle(currentTheme.textColor)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Capsule().strokeBorder(currentTheme.textColor.opacity(0.55), lineWidth: 1))
+            }
+            .buttonStyle(.hapticPlain)
+            .accessibilityIdentifier("Home.MissingTimes.EmailButton")
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, metrics.topChromeInset + 56)
+        .frame(maxWidth: 420)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+    }
+
+    private var currentMissingMonthTitle: String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        formatter.dateFormat = "LLLL yyyy"
+        return formatter.string(from: model.displayedDate)
+    }
+
+    private func openMissingTimesEmail() {
+        let context = MasjidlySupportMail.currentContext(mosqueName: model.selectedMosque?.name)
+        guard let url = MasjidlySupportMail.missingPrayerTimesURL(
+            locale: locale,
+            context: context,
+            monthDisplay: currentMissingMonthTitle
+        ) else { return }
+        openURL(url)
+    }
+
     private func homePrayerPage(for daily: DailyPrayerTimes) -> AnyView {
-        let isFriday = isFridayInSheffield(Date())
-        let jummahTime = model.iqamahTimes?.jummah
-            .components(separatedBy: ",")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .first(where: { !$0.isEmpty }) ?? daily.dhuhr
+        let isFriday = isFridayInSheffield(model.displayedDate)
+        let jummahTime = displayJummahTime(raw: model.iqamahTimes?.jummah, fallbackDhuhr: daily.dhuhr)
         let prayers: [(canonical: String, time: String, theme: HomeDesign.TimeTheme)] = [
             ("Fajr", daily.fajr, .fajr),
             ("Sunrise", daily.sunrise, .sunrise),
@@ -252,13 +345,15 @@ struct HomeView: View {
             }
             return heroParts.clock
         }()
-        let iqSubtitle = iqamahSubtitleLine(
-            prayerName: prayer.canonical,
-            adhanRaw: prayer.time,
-            daily: daily,
-            iq: model.iqamahTimes,
-            mosqueSlug: slug
-        )
+        let iqSubtitle = prayer.canonical == "Jummah"
+            ? secondJummahSubtitleLine(raw: model.iqamahTimes?.jummah)
+            : iqamahSubtitleLine(
+                prayerName: prayer.canonical,
+                adhanRaw: prayer.time,
+                daily: daily,
+                iq: model.iqamahTimes,
+                mosqueSlug: slug
+            )
         let displayName = PrayerLocalization.displayName(canonicalEnglish: prayer.canonical, locale: locale)
         let labels = prayers.map { PrayerLocalization.displayName(canonicalEnglish: $0.canonical, locale: locale) }
 
@@ -274,6 +369,7 @@ struct HomeView: View {
                 mosqueSlug: slug,
                 dailyPrayerTimes: daily,
                 dailyIqamahTimes: model.iqamahTimes,
+                asrIqamahPreference: settings.asrIqamahPreference,
                 prayerLabels: labels,
                 selectedIndex: model.selectedPrayerIndex,
                 totalCount: prayers.count,
@@ -292,6 +388,8 @@ struct HomeView: View {
                     if let index = prayers.firstIndex(where: { $0.canonical == nextName }) {
                         model.selectedPrayerIndex = index
                     }
+                } else if isTodayInSheffield(model.displayedDate), let ishaIndex = prayers.firstIndex(where: { $0.canonical == "Isha" }) {
+                    model.selectedPrayerIndex = ishaIndex
                 }
             }
         )
@@ -305,15 +403,16 @@ struct HomeView: View {
                 ZStack {
                     Color.black.opacity(0.4)
                     
+                    let whatsNewSky = currentTheme.sky
                     LinearGradient(
-                        colors: currentTheme.sky.baseColors.map { $0.opacity(0.55) },
+                        colors: whatsNewSky.baseColors.map { $0.opacity(0.55) },
                         startPoint: .top,
                         endPoint: .bottom
                     )
                     
-                    if let glow = currentTheme.sky.glowColor {
+                    if let glow = whatsNewSky.glowColor {
                         RadialGradient(
-                            colors: [glow.opacity(0.4), glow.opacity(0.15), .clear],
+                            colors: [glow.opacity(0.4 * whatsNewSky.glowBaseAlpha), glow.opacity(0.15 * whatsNewSky.glowBaseAlpha), .clear],
                             center: UnitPoint(x: 0.5, y: 0.82),
                             startRadius: 0,
                             endRadius: 500
@@ -323,6 +422,7 @@ struct HomeView: View {
                 }
                 .ignoresSafeArea()
                 .onTapGesture {
+                    HapticFeedback.buttonTap()
                     dismissWhatsNew()
                 }
 
@@ -430,7 +530,7 @@ struct HomeView: View {
             // 2. Horizon Glow (Cinematic Lighting)
             if let glow = sky.glowColor {
                 RadialGradient(
-                    colors: [glow.opacity(0.6), glow.opacity(0.3), .clear],
+                    colors: [glow.opacity(0.6 * sky.glowBaseAlpha), glow.opacity(0.3 * sky.glowBaseAlpha), .clear],
                     center: UnitPoint(x: 0.5, y: 0.82),
                     startRadius: 0,
                     endRadius: metrics.height * 0.7
@@ -463,7 +563,7 @@ struct HomeView: View {
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(Color.white.opacity(0.18)))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hapticPlain)
         .onboardingHighlight(onboarding.currentStep == .openSettings, timeTheme: currentTheme)
         .accessibilityLabel(Text(homeLS("accessibility.settings", locale: locale)))
     }
@@ -479,14 +579,24 @@ struct HomeView: View {
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(Color.white.opacity(0.18)))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hapticPlain)
         .onboardingHighlight(onboarding.currentStep == .openTimetable, timeTheme: currentTheme)
         .accessibilityLabel(Text(homeLS("accessibility.timetable", locale: locale)))
     }
 
-    @ViewBuilder
-    private var onboardingOverlay: some View {
+    @ViewBuilder private var onboardingOverlay: some View {
         switch onboarding.currentStep {
+        case .chooseLanguage:
+            LanguageSelectionOnboardingView(
+                timeTheme: currentTheme,
+                selectedLanguage: Binding(
+                    get: { onboarding.selectedLanguage },
+                    set: { onboarding.selectedLanguage = $0 }
+                ),
+                onContinue: { language in
+                    onboarding.selectLanguage(language)
+                }
+            )
         case .chooseMosque:
             MosqueSelectionOnboardingView(
                 mosques: model.mosques,
@@ -495,18 +605,38 @@ struct HomeView: View {
                     get: { onboarding.selectedMosqueId },
                     set: { onboarding.selectedMosqueId = $0 }
                 ),
+                isContinuing: onboarding.isSelectingMosque,
                 onContinue: { mosque in
                     Task { await onboarding.selectMosque(mosque) }
                 }
             )
         case .prayerShortcut:
-            OnboardingCoachMarkView(
-                title: homeLS("onboarding.shortcut.title", locale: locale),
-                message: homeLS("onboarding.shortcut.message_format", locale: locale),
-                timeTheme: currentTheme,
-                variant: .aboveShortcutRow
-            )
-            .allowsHitTesting(false)
+            ZStack(alignment: .bottom) {
+                OnboardingCoachMarkView(
+                    title: homeLS("onboarding.shortcut.title", locale: locale),
+                    message: homeLS("onboarding.shortcut.message_format", locale: locale),
+                    timeTheme: currentTheme,
+                    variant: .aboveShortcutRow
+                )
+                .allowsHitTesting(false)
+
+                Button {
+                    onboarding.skipToTutorialEnd()
+                } label: {
+                    Text("Skip tutorial")
+                        .appFont(size: 15, weight: .semibold)
+                        .foregroundColor(currentTheme.textColor.opacity(0.7))
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 28)
+                        .background(
+                            Capsule()
+                                .strokeBorder(currentTheme.textColor.opacity(0.25), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.hapticPlain)
+                .accessibilityIdentifier("Onboarding.SkipTutorial")
+                .padding(.bottom, 32)
+            }
         case .qiblaCountdown:
             OnboardingCoachMarkView(
                 title: homeLS("onboarding.qibla_countdown.title", locale: locale),
@@ -591,33 +721,55 @@ struct HomeView: View {
     }
 
     private var dateDisplay: some View {
-        VStack(alignment: .center, spacing: 2) {
-            Text(currentDateString.uppercased())
-                .appFont(size: 13, weight: .semibold)
-                .kerning(1.0)
-                .foregroundColor(currentTheme.textColor.opacity(0.6))
+        HStack(spacing: 12) {
+            Button {
+                model.goToPreviousDay()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .appFont(size: 13, weight: .semibold)
+                    .foregroundColor(currentTheme.textColor.opacity(0.5))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.hapticPlain)
             
-            Text(currentHijriDateString.uppercased())
-                .appFont(size: 10, weight: .medium)
-                .kerning(0.8)
-                .foregroundColor(currentTheme.textColor.opacity(0.4))
+            VStack(alignment: .center, spacing: 2) {
+                Text(dateString(for: model.displayedDate).uppercased())
+                    .appFont(size: 13, weight: .semibold)
+                    .kerning(1.0)
+                    .foregroundColor(currentTheme.textColor.opacity(0.6))
+                
+                Text(hijriDateString(for: model.displayedDate).uppercased())
+                    .appFont(size: 10, weight: .medium)
+                    .kerning(0.8)
+                    .foregroundColor(currentTheme.textColor.opacity(0.4))
+            }
+            
+            Button {
+                model.goToNextDay()
+            } label: {
+                Image(systemName: "chevron.right")
+                    .appFont(size: 13, weight: .semibold)
+                    .foregroundColor(currentTheme.textColor.opacity(0.5))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.hapticPlain)
         }
     }
 
-    private var currentDateString: String {
+    private func dateString(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = locale
         formatter.dateFormat = "EEEE, d MMMM"
-        return formatter.string(from: Date())
+        return formatter.string(from: date)
     }
 
-    private var currentHijriDateString: String {
+    private func hijriDateString(for date: Date) -> String {
         let islamicCalendar = Calendar(identifier: .islamicUmmAlQura)
         let formatter = DateFormatter()
         formatter.calendar = islamicCalendar
         formatter.locale = locale
         formatter.dateFormat = "d MMMM yyyy"
-        return formatter.string(from: Date())
+        return formatter.string(from: date)
     }
 
     private func checkWhatsNew() {
@@ -658,9 +810,36 @@ struct HomeView: View {
         guard !onboarding.isActive else { return }
         guard !showingWhatsNew else { return }
         guard !reviewPrompt.showEnjoymentPrompt else { return }
+        guard !showReviewFeedbackPrompt else { return }
         guard !showingSettings else { return }
         guard !showingTimetable else { return }
         showUpdateAlert = true
+    }
+
+    private func openReviewFeedbackEmail() {
+        let mosqueName: String? = {
+            guard let id = settings.selectedMosqueId else { return nil }
+            return model.mosques.first { $0.id == id }?.name
+        }()
+        let context = MasjidlySupportMail.currentContext(mosqueName: mosqueName)
+        guard let url = MasjidlySupportMail.mailtoURL(category: .feedback, locale: locale, context: context) else { return }
+        openURL(url)
+    }
+
+    private var reviewFeedbackTitle: String {
+        homeLS("review.feedback.title", locale: locale)
+    }
+
+    private var reviewFeedbackMessage: String {
+        homeLS("review.feedback.message", locale: locale)
+    }
+
+    private var reviewFeedbackSendLabel: String {
+        homeLS("review.feedback.send", locale: locale)
+    }
+
+    private var reviewFeedbackLaterLabel: String {
+        homeLS("review.feedback.later", locale: locale)
     }
 
     private var updateAlertTitle: String {
@@ -711,6 +890,7 @@ struct HomeView: View {
         settings.selectedMosqueId = mosque.id
         settings.selectedMosqueSlug = mosque.slug
         settings.selectedCityGroupingKey = mosque.cityGroupingKey
+        settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: mosque)
         Task {
             try? await model.refreshPrayerPayload(for: mosque)
             await model.refreshWidgetSnapshotForCurrentMosque()
@@ -728,36 +908,59 @@ struct HomeView: View {
         return cal.component(.weekday, from: date) == 6
     }
 
+    private func isTodayInSheffield(_ date: Date) -> Bool {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        return cal.isDate(date, inSameDayAs: Date())
+    }
+
+    private func secondJummahSubtitleLine(raw: String?) -> String? {
+        let slots = PrayerTimesEngine.splitJummahIqamahTimes(raw)
+        guard slots.count >= 2 else { return nil }
+        let base = PrayerLocalization.displayName(canonicalEnglish: "Jummah", locale: locale)
+        return "\(base) 2: \(formatTime(slots[1]))"
+    }
+
+    private func displayJummahTime(raw: String?, fallbackDhuhr: String) -> String {
+        let slots = PrayerTimesEngine.splitJummahIqamahTimes(raw)
+        return slots.first ?? fallbackDhuhr
+    }
+
+    private func wallClockToday(_ time: String, now: Date) -> Date? {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        return cal.date(bySettingHour: parts[0], minute: parts[1], second: 0, of: cal.startOfDay(for: now))
+    }
+
     private func iqamahString(for prayerName: String, daily: DailyPrayerTimes, iq: DailyIqamahTimes?, mosqueSlug: String) -> String? {
         guard let iq else { return nil }
-        let now = Date()
+        let date = model.displayedDate
         switch prayerName {
         case "Fajr":
             return PrayerTimesEngine.getIqamahTime(prayer: "fajr", adhanTime: daily.fajr, iqamahTimes: iq)
         case "Sunrise":
             return nil
         case "Dhuhr":
-            if isFridayInSheffield(now) { return nil }
+            if isFridayInSheffield(date) { return nil }
             return PrayerTimesEngine.getDisplayIqamah(
                 prayer: "dhuhr", adhanTime: daily.dhuhr, iqamahTimes: iq,
-                mosqueSlug: mosqueSlug, date: now, maghribAdhan: daily.maghrib
+                mosqueSlug: mosqueSlug, date: date, maghribAdhan: daily.maghrib
             )
         case "Jummah":
             return nil
         case "Asr":
-            return PrayerTimesEngine.getDisplayIqamah(
-                prayer: "asr", adhanTime: daily.asr, iqamahTimes: iq,
-                mosqueSlug: mosqueSlug, date: now, maghribAdhan: daily.maghrib
-            )
+            return PrayerTimesEngine.selectAsrIqamahTime(iq.asr, adhanTime: daily.asr, preference: settings.asrIqamahPreference)
         case "Maghrib":
             return PrayerTimesEngine.getDisplayIqamah(
                 prayer: "maghrib", adhanTime: daily.maghrib, iqamahTimes: iq,
-                mosqueSlug: mosqueSlug, date: now, maghribAdhan: daily.maghrib
+                mosqueSlug: mosqueSlug, date: date, maghribAdhan: daily.maghrib
             )
         case "Isha":
             return PrayerTimesEngine.resolveIshaIqamahForDisplay(
                 slug: mosqueSlug,
-                date: now,
+                date: date,
                 ishaAdhan: daily.isha,
                 iqamahTimes: iq,
                 maghribAdhan: daily.maghrib
@@ -779,7 +982,8 @@ struct HomeView: View {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty { return nil }
         let adhanFormatted = formatTime(adhanRaw)
-        let iqFormatted = formatTime(raw)
+        let iqFormatted: String
+        iqFormatted = formatTime(raw)
         let displayTime = iqFormatted == adhanFormatted ? adhanFormatted : iqFormatted
         let format = homeLS("home.iqamah_format", locale: locale)
         return String(format: format, locale: locale, arguments: [displayTime])
@@ -797,8 +1001,14 @@ private extension View {
         onNotReally: @escaping () -> Void
     ) -> some View {
         alert(title, isPresented: isPresented) {
-            Button(loveTitle, action: onLoveIt)
-            Button(notReallyTitle, role: .cancel, action: onNotReally)
+            Button(loveTitle) {
+                HapticFeedback.buttonTap()
+                onLoveIt()
+            }
+            Button(notReallyTitle, role: .cancel) {
+                HapticFeedback.buttonTap()
+                onNotReally()
+            }
         } message: {
             Text(message)
         }

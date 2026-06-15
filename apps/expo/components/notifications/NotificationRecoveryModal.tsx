@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { LinearGradient } from "expo-linear-gradient";
 import { Bell, BellOff, ShieldAlert } from "lucide-react-native";
 import { getSkyTheme, getTextColor, ACCENT } from "@/lib/design/themes";

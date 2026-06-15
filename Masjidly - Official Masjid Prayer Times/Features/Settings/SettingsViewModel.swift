@@ -19,6 +19,7 @@ final class SettingsViewModel {
 
     var mosques: [Mosque] = []
     var loadError: String?
+    var supportsMultipleAsrAdhan = false
 
     init(
         repository: any PrayerRepository,
@@ -45,6 +46,7 @@ final class SettingsViewModel {
             let all = try await repository.listMosques()
             mosques = MosqueDefaults.visibleMosques(all)
             try? diskCache.saveMosques(all)
+            await refreshAsrAdhanSupport()
         } catch {
             loadError = error.localizedDescription
         }
@@ -54,7 +56,32 @@ final class SettingsViewModel {
         settings.selectedMosqueId = mosque.id
         settings.selectedMosqueSlug = mosque.slug
         settings.selectedCityGroupingKey = mosque.cityGroupingKey
+        settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: mosque)
+        await refreshAsrAdhanSupport()
         await applyNotificationPolicy()
+    }
+
+    func refreshAsrAdhanSupport() async {
+        guard let slug = settings.selectedMosqueSlug ?? mosques.first(where: { $0.id == settings.selectedMosqueId })?.slug else {
+            supportsMultipleAsrAdhan = false
+            return
+        }
+        let parts = PrayerTimesEngine.getDateInSheffield(Date())
+        guard let month = MonthName.from(monthNumber: parts.month) else {
+            supportsMultipleAsrAdhan = false
+            return
+        }
+        do {
+            let monthly = try await repository.getMonthlyPrayerTimes(mosqueSlug: slug, month: month, year: parts.year)
+            if let monthly {
+                try? diskCache.saveMonthly(slug: slug, month: month.rawValue, year: parts.year, data: monthly)
+            }
+            let resolved = monthly ?? diskCache.loadMonthly(slug: slug, month: month.rawValue, year: parts.year)
+            supportsMultipleAsrAdhan = resolved?.prayerTimes.contains { ($0.asrMithl2?.isEmpty == false) } ?? false
+        } catch {
+            let cached = diskCache.loadMonthly(slug: slug, month: month.rawValue, year: parts.year)
+            supportsMultipleAsrAdhan = cached?.prayerTimes.contains { ($0.asrMithl2?.isEmpty == false) } ?? false
+        }
     }
 
     func onNotificationsChanged() async {
@@ -159,7 +186,8 @@ final class SettingsViewModel {
                 mosque: mosque,
                 days: 7,
                 settings: n,
-                locale: settings.resolvedLocale
+                locale: settings.resolvedLocale,
+                asrIqamahPreference: settings.asrIqamahPreference
             )
         } else {
             await notificationScheduler.cancelAllPrayerNotifications()

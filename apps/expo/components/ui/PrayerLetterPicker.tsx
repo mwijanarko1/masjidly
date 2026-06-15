@@ -3,10 +3,10 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   ScrollView,
   Dimensions,
 } from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { useAppLanguage, getFontScale } from "@/lib/i18n/language";
 import { t, type TranslationKey } from "@/lib/i18n/translations";
 import { TutorialHighlight } from "@/components/onboarding/CoachMarkCard";
@@ -35,7 +35,7 @@ const PRAYER_KEYS: Record<PrayerName, TranslationKey> = {
   Isha: "prayer.isha",
 };
 
-export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
+export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = React.memo(({
   prayers,
   selectedPrayer,
   onSelectPrayer,
@@ -126,7 +126,7 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = ({
       </View>
     </ScrollView>
   );
-};
+});
 
 
 const styles = StyleSheet.create({

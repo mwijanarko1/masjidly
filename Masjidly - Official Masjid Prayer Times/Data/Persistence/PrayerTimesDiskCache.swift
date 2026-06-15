@@ -98,6 +98,12 @@ final class PrayerTimesDiskCache: Sendable {
         try saveJSON(data, to: url(for: Self.monthlyFilename(slug: slug, month: month, year: year)))
     }
 
+    func removeMonthly(slug: String, month: String, year: Int) {
+        let fileURL = url(for: Self.monthlyFilename(slug: slug, month: month, year: year))
+        guard fileManager.fileExists(atPath: fileURL.path) else { return }
+        try? fileManager.removeItem(at: fileURL)
+    }
+
     // MARK: - Ramadan
 
     private static func ramadanFilename(slug: String, date: String) -> String {

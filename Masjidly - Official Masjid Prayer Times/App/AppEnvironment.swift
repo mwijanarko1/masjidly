@@ -20,8 +20,8 @@ final class AppEnvironment {
         let conv = ConvexService()
         let repo = ConvexPrayerRepository(service: conv)
         let sched = PrayerNotificationScheduler(repository: repo)
-        let widgets = WidgetPrayerSnapshotService(repository: repo, settings: s)
         let cache = PrayerTimesDiskCache()
+        let widgets = WidgetPrayerSnapshotService(repository: repo, settings: s, diskCache: cache)
         settings = s
         convexService = conv
         repository = repo

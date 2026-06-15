@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { X, Play, Pause } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AdhanPlayer, togglePlayPause, stopAdhan } from "@/lib/audio/AdhanSoundPlayer";
@@ -15,7 +16,7 @@ function formatTime(seconds: number): string {
   return `${m}:${r.toString().padStart(2, "0")}`;
 }
 
-export const AdhanMiniPlayerBar: React.FC<Props> = ({ textColor }) => {
+export const AdhanMiniPlayerBar: React.FC<Props> = React.memo(({ textColor }) => {
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export const AdhanMiniPlayerBar: React.FC<Props> = ({ textColor }) => {
       </LinearGradient>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   wrapper: {

@@ -11,10 +11,52 @@ export function cityGroupingKey(m: Pick<Mosque, "citySlug" | "cityName">): strin
   return `name:${label}`;
 }
 
-export function cityOptions(mosques: Mosque[]): { key: string; label: string }[] {
+// ── Country ──
+
+/** Stable key for grouping mosques by country (matches native `MosqueDefaults.countryGroupingKey`). */
+export function countryGroupingKey(m: Pick<Mosque, "countryCode">): string {
+  const code = (m.countryCode ?? "").trim();
+  return code.length > 0 ? code.toUpperCase() : "unknown";
+}
+
+export function countryOptions(mosques: Mosque[]): { key: string; label: string }[] {
   const visible = visibleMosques(mosques);
   const map = new Map<string, Mosque[]>();
   for (const m of visible) {
+    const k = countryGroupingKey(m);
+    if (!map.has(k)) map.set(k, []);
+    map.get(k)!.push(m);
+  }
+  const keys = [...map.keys()].sort((a, b) =>
+    countryLabelForKey(map, a).localeCompare(countryLabelForKey(map, b), undefined, {
+      sensitivity: "base",
+    })
+  );
+  return keys.map((key) => ({ key, label: countryLabelForKey(map, key) }));
+}
+
+function countryLabelForKey(grouped: Map<string, Mosque[]>, key: string): string {
+  const list = grouped.get(key);
+  const first = list?.[0];
+  return first?.countryName ?? first?.countryCode ?? key;
+}
+
+export function mosquesInCountry(key: string, mosques: Mosque[]): Mosque[] {
+  return visibleMosques(mosques).filter((m) => countryGroupingKey(m) === key);
+}
+
+// ── City ──
+
+export function cityOptions(
+  mosques: Mosque[],
+  countryKey?: string
+): { key: string; label: string }[] {
+  const filtered = countryKey && countryKey.length > 0
+    ? mosquesInCountry(countryKey, mosques)
+    : visibleMosques(mosques);
+  if (filtered.length === 0) return [];
+  const map = new Map<string, Mosque[]>();
+  for (const m of filtered) {
     const k = cityGroupingKey(m);
     if (!map.has(k)) map.set(k, []);
     map.get(k)!.push(m);

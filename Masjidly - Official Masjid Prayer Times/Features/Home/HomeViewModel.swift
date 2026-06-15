@@ -16,12 +16,21 @@ final class HomeViewModel {
     var ramadanData: RamadanPrayerData?
     var ukDst: [UkDstYear] = []
 
+    private var loadedMonthNumber: Int?
+    private var loadedMonthYear: Int?
+    private var lastAvailablePrayerDate: Date?
+
+    var hasAvailablePrayerTimesFallback: Bool { lastAvailablePrayerDate != nil }
+
     var displayedPrayerTimes: DailyPrayerTimes?
     var iqamahTimes: DailyIqamahTimes?
     var nextCountdown: NextPrayerCountdownResult?
 
     /// Which prayer is shown on the home hero; drives sky / glass theme (shared with chrome like `AdhanMiniPlayerBar`).
     var selectedPrayerIndex: Int = 0
+
+    /// The date currently displayed on the home screen. Changed by left/right arrow navigation.
+    var displayedDate: Date = Date()
 
     var loadState: LoadState = .idle
     var lastError: String?
@@ -93,9 +102,12 @@ final class HomeViewModel {
 
         let isoDate = PrayerTimesEngine.isoDateString(year: sh.year, month: sh.month, day: sh.day)
 
-        // Persist to disk cache on success.
-        if let monthData {
+        // Persist to disk cache on success. If the backend has no usable current-month
+        // timetable, remove any stale cache so Home and Timetable agree.
+        if let monthData, !monthData.prayerTimes.isEmpty {
             try? diskCache.saveMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year, data: monthData)
+        } else {
+            diskCache.removeMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year)
         }
         if let ramadanData {
             try? diskCache.saveRamadan(slug: mosque.slug, date: isoDate, data: ramadanData)
@@ -107,30 +119,10 @@ final class HomeViewModel {
         self.monthData = monthData
         self.ramadanData = ramadanData
         self.ukDst = ukDst
+        self.loadedMonthNumber = sh.month
+        self.loadedMonthYear = sh.year
 
-        let raw = try PrayerTimesEngine.resolvePrayerTimes(
-            slug: mosque.slug,
-            on: now,
-            monthly: monthData,
-            ramadan: ramadanData,
-            ukDst: ukDst
-        )
-        displayedPrayerTimes = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date: now, mosqueSlug: mosque.slug)
-        iqamahTimes = try PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
-            slug: mosque.slug,
-            on: now,
-            monthly: monthData,
-            ramadan: ramadanData,
-            ukDst: ukDst
-        )
-        if let d = displayedPrayerTimes, let iq = iqamahTimes {
-            nextCountdown = PrayerTimesEngine.getNextPrayerAndCountdown(
-                prayerTimes: d,
-                iqamahTimes: iq,
-                mosqueSlug: mosque.slug,
-                now: now
-            )
-        }
+        applyPrayerTimes(for: displayedDate, mosque: mosque)
 
         lastPrayerPayloadRefreshAt = Date()
     }
@@ -146,6 +138,156 @@ final class HomeViewModel {
         } catch {
             lastError = error.localizedDescription
             loadState = .loaded
+        }
+    }
+
+    // MARK: - Date navigation
+
+    /// Navigate to the previous day (resolves prayer times from cached monthly data).
+    func goToPreviousDay() {
+        guard let newDate = Calendar.current.date(byAdding: .day, value: -1, to: displayedDate) else { return }
+        displayedDate = newDate
+        loadOrApplyPrayerTimesForDisplayedDate()
+    }
+
+    /// Navigate to the next day (resolves prayer times from cached monthly data, fetching the next month if needed).
+    func goToNextDay() {
+        guard let newDate = Calendar.current.date(byAdding: .day, value: 1, to: displayedDate) else { return }
+        displayedDate = newDate
+        loadOrApplyPrayerTimesForDisplayedDate()
+    }
+
+    /// Reset the displayed date back to today.
+    func goToToday() {
+        displayedDate = Date()
+        loadOrApplyPrayerTimesForDisplayedDate()
+    }
+
+    /// Return to the most recent date that successfully displayed prayer times.
+    func goToLastAvailablePrayerDate() {
+        guard let lastAvailablePrayerDate else { return }
+        displayedDate = lastAvailablePrayerDate
+        loadOrApplyPrayerTimesForDisplayedDate()
+    }
+
+    /// Resolve prayer times and iqamah times for the given date using the currently loaded monthly data.
+    /// Only shows countdown when viewing today.
+    private func applyPrayerTimes(for date: Date, mosque: Mosque?) {
+        guard let mosque, let monthly = monthData, loadedMonthMatches(date) else {
+            clearDisplayedPrayerTimes()
+            return
+        }
+        do {
+            let raw = try PrayerTimesEngine.resolvePrayerTimes(
+                slug: mosque.slug,
+                on: date,
+                monthly: monthly,
+                ramadan: ramadanData,
+                ukDst: ukDst,
+                asrTimingPreference: settings.asrIqamahPreference
+            )
+            displayedPrayerTimes = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date: date, mosqueSlug: mosque.slug)
+            lastAvailablePrayerDate = date
+        } catch {
+            displayedPrayerTimes = nil
+        }
+        if let iq = try? PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
+            slug: mosque.slug,
+            on: date,
+            monthly: monthly,
+            ramadan: ramadanData,
+            ukDst: ukDst
+        ) {
+            iqamahTimes = iq
+        } else {
+            iqamahTimes = nil
+        }
+        var sheffieldCal = Calendar(identifier: .gregorian)
+        sheffieldCal.timeZone = PrayerTimesEngine.sheffieldTimeZone
+        let isToday = sheffieldCal.isDate(date, inSameDayAs: Date())
+        if isToday, let d = displayedPrayerTimes, let iq = iqamahTimes {
+            nextCountdown = PrayerTimesEngine.getNextPrayerAndCountdown(
+                prayerTimes: d,
+                iqamahTimes: iq,
+                mosqueSlug: mosque.slug,
+                now: Date(),
+                asrIqamahPreference: settings.asrIqamahPreference,
+                includeTomorrowFajr: false
+            )
+        } else {
+            nextCountdown = nil
+        }
+    }
+
+    private func loadOrApplyPrayerTimesForDisplayedDate() {
+        guard let mosque = selectedMosque else {
+            clearDisplayedPrayerTimes()
+            return
+        }
+        let targetDate = displayedDate
+        if loadedMonthMatches(targetDate) {
+            applyPrayerTimes(for: targetDate, mosque: mosque)
+            return
+        }
+
+        clearDisplayedPrayerTimes()
+        Task { [weak self] in
+            guard let self else { return }
+            await self.loadPrayerPayload(for: targetDate, mosque: mosque)
+        }
+    }
+
+    private func loadedMonthMatches(_ date: Date) -> Bool {
+        let parts = PrayerTimesEngine.getDateInSheffield(date)
+        return loadedMonthNumber == parts.month && loadedMonthYear == parts.year
+    }
+
+    private func clearDisplayedPrayerTimes() {
+        displayedPrayerTimes = nil
+        iqamahTimes = nil
+        nextCountdown = nil
+    }
+
+    private func loadPrayerPayload(for date: Date, mosque: Mosque) async {
+        let parts = PrayerTimesEngine.getDateInSheffield(date)
+        guard let monthName = MonthName.from(monthNumber: parts.month) else { return }
+        let isoDate = PrayerTimesEngine.isoDateString(year: parts.year, month: parts.month, day: parts.day)
+
+        do {
+            async let monthly = repository.getMonthlyPrayerTimes(mosqueSlug: mosque.slug, month: monthName, year: parts.year)
+            async let ramadan = repository.getRamadanTimetable(mosqueSlug: mosque.slug, date: isoDate)
+            async let dst = repository.getUkDstDates()
+            let fetchedMonthly = try await monthly
+            let fetchedRamadan = try await ramadan
+            let dstCalendar = try await dst
+
+            if let fetchedMonthly, !fetchedMonthly.prayerTimes.isEmpty {
+                try? diskCache.saveMonthly(slug: mosque.slug, month: monthName.rawValue, year: parts.year, data: fetchedMonthly)
+            } else {
+                diskCache.removeMonthly(slug: mosque.slug, month: monthName.rawValue, year: parts.year)
+            }
+            if let fetchedRamadan { try? diskCache.saveRamadan(slug: mosque.slug, date: isoDate, data: fetchedRamadan) }
+            if let dstCalendar { try? diskCache.saveUkDst(dstCalendar) }
+
+            guard PrayerTimesEngine.getDateInSheffield(displayedDate).month == parts.month,
+                  PrayerTimesEngine.getDateInSheffield(displayedDate).year == parts.year,
+                  selectedMosque?.slug == mosque.slug else { return }
+
+            monthData = fetchedMonthly
+            ramadanData = fetchedRamadan
+            ukDst = dstCalendar?.ukDstDates ?? ukDst
+            loadedMonthNumber = parts.month
+            loadedMonthYear = parts.year
+            applyPrayerTimes(for: displayedDate, mosque: mosque)
+        } catch {
+            if let cached = diskCache.loadMonthly(slug: mosque.slug, month: monthName.rawValue, year: parts.year) {
+                monthData = cached
+                ramadanData = diskCache.loadRamadan(slug: mosque.slug, date: isoDate)
+                ukDst = diskCache.loadUkDst()?.ukDstDates ?? ukDst
+                loadedMonthNumber = parts.month
+                loadedMonthYear = parts.year
+                applyPrayerTimes(for: displayedDate, mosque: mosque)
+            }
         }
     }
 
@@ -222,8 +364,10 @@ final class HomeViewModel {
             settings.selectedMosqueId = mosque.id
             settings.selectedMosqueSlug = mosque.slug
             settings.selectedCityGroupingKey = mosque.cityGroupingKey
+            settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: mosque)
             try await refreshPrayerPayload(for: mosque)
             await refreshWidgetSnapshot(for: mosque)
+            refreshWidgetSnapshotsInBackground(selected: mosque)
             loadState = .loaded
         } catch {
             lastError = error.localizedDescription
@@ -233,8 +377,8 @@ final class HomeViewModel {
 
     /// Fill in-memory state from disk cache for the given mosque (no-op if cache miss).
     private func hydrateFromCache(for mosque: Mosque) {
-        let now = Date()
-        let sh = PrayerTimesEngine.getDateInSheffield(now)
+        let date = displayedDate
+        let sh = PrayerTimesEngine.getDateInSheffield(date)
         guard let monthName = MonthName.from(monthNumber: sh.month) else { return }
 
         let isoDate = PrayerTimesEngine.isoDateString(year: sh.year, month: sh.month, day: sh.day)
@@ -247,33 +391,10 @@ final class HomeViewModel {
         monthData = monthly
         ramadanData = cachedRamadan
         ukDst = cachedDst?.ukDstDates ?? []
+        loadedMonthNumber = sh.month
+        loadedMonthYear = sh.year
 
-        if let raw = try? PrayerTimesEngine.resolvePrayerTimes(
-            slug: mosque.slug,
-            on: now,
-            monthly: monthly,
-            ramadan: cachedRamadan,
-            ukDst: ukDst
-        ) {
-            displayedPrayerTimes = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date: now, mosqueSlug: mosque.slug)
-        }
-        if let iq = try? PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
-            slug: mosque.slug,
-            on: now,
-            monthly: monthly,
-            ramadan: cachedRamadan,
-            ukDst: ukDst
-        ) {
-            iqamahTimes = iq
-        }
-        if let d = displayedPrayerTimes, let iq = iqamahTimes {
-            nextCountdown = PrayerTimesEngine.getNextPrayerAndCountdown(
-                prayerTimes: d,
-                iqamahTimes: iq,
-                mosqueSlug: mosque.slug,
-                now: now
-            )
-        }
+        applyPrayerTimes(for: date, mosque: mosque)
         loadState = .loaded
     }
 
@@ -292,27 +413,36 @@ final class HomeViewModel {
             mosque: mosque,
             days: 7,
             settings: n,
-            locale: settings.resolvedLocale
+            locale: settings.resolvedLocale,
+            asrIqamahPreference: settings.asrIqamahPreference
         )
     }
 
     func fetchMonthData(mosqueSlug: String, month: Int, year: Int) async -> MonthPrayerData? {
         guard let monthName = MonthName.from(monthNumber: month) else { return nil }
 
-        // Return cached data immediately if available.
-        if let cached = diskCache.loadMonthly(slug: mosqueSlug, month: monthName.rawValue, year: year) {
-            return cached
-        }
-
-        // Fetch from network and cache on success.
-        if let data = try? await repository.getMonthlyPrayerTimes(mosqueSlug: mosqueSlug, month: monthName, year: year) {
-            try? diskCache.saveMonthly(slug: mosqueSlug, month: monthName.rawValue, year: year, data: data)
+        do {
+            let data = try await repository.getMonthlyPrayerTimes(mosqueSlug: mosqueSlug, month: monthName, year: year)
+            if let data, !data.prayerTimes.isEmpty {
+                try? diskCache.saveMonthly(slug: mosqueSlug, month: monthName.rawValue, year: year, data: data)
+                return data
+            }
+            diskCache.removeMonthly(slug: mosqueSlug, month: monthName.rawValue, year: year)
             return data
+        } catch {
+            return diskCache.loadMonthly(slug: mosqueSlug, month: monthName.rawValue, year: year)
         }
-        return nil
     }
 
     private func refreshWidgetSnapshot(for mosque: Mosque) async {
         await widgetSnapshotWriter?.refreshSnapshot(for: mosque, days: 7)
+    }
+
+    private func refreshWidgetSnapshotsInBackground(selected mosque: Mosque) {
+        let visibleMosques = mosques
+        let writer = widgetSnapshotWriter
+        Task { @MainActor in
+            await writer?.refreshSnapshots(for: visibleMosques, selectedMosque: mosque, days: 7)
+        }
     }
 }

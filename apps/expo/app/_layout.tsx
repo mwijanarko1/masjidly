@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useEffect, useState } from "react";
-import { Platform, DeviceEventEmitter } from "react-native";
+import { DeviceEventEmitter } from "react-native";
 import { useFonts } from "expo-font";
 import {
   Comfortaa_300Light,
@@ -18,7 +18,7 @@ import { useAppLanguage } from "@/lib/i18n/language";
 import { t } from "@/lib/i18n/translations";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Notification categories & action identifiers (iOS parity)
+// Notification categories & action identifiers
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CATEGORY = {
@@ -36,8 +36,7 @@ const ACTION = {
 } as const;
 
 /**
- * Register notification categories with action buttons, matching iOS
- * `PrayerNotificationContent.registerCategories()`.
+ * Register notification categories with action buttons.
  */
 function useNotificationCategories() {
   const appLanguage = useAppLanguage();
@@ -66,12 +65,11 @@ function useNotificationCategories() {
 }
 
 /**
- * Present foreground notifications as banners with sound (iOS parity for
- * `UNUserNotificationCenterDelegate.willPresent` → `.banner, .list, .sound`).
+ * Present foreground notifications as banners with sound.
  */
 function useNotificationHandler() {
   useEffect(() => {
-    // Configure audio for adhan playback (iOS parity: .playback with duckOthers)
+    // Configure audio for adhan playback
     import("expo-audio").then((EA) => {
       EA.setAudioModeAsync({
         playsInSilentMode: true,
@@ -97,8 +95,7 @@ function useNotificationHandler() {
 }
 
 /**
- * Handle notification taps + action button presses, matching iOS
- * `MasjidlyNotificationDelegate.userNotificationCenter(_:didReceive:)`.
+ * Handle notification taps + action button presses.
  *
  * - Default tap on adhan notification → navigates to home
  * - View Times → navigates to home
@@ -141,7 +138,6 @@ function useNotificationResponseListener() {
                     body: base.body ?? "",
                     sound: base.sound ?? true,
                     data: base.data ?? {},
-                    ...(Platform.OS === "ios" ? { categoryIdentifier: base.categoryIdentifier ?? CATEGORY.reminder } : {}),
                   },
                   trigger: {
                     type: SchedulableTriggerInputTypes.TIME_INTERVAL,
@@ -167,7 +163,6 @@ function useNotificationResponseListener() {
             }
 
             // ── Default: adhan/iqamah tap or "View Times" → home ──
-            // On iOS, tapping an adhan notification plays the adhan in-app
             if (kind === "adhan") {
               await playAdhan(1);
             }
@@ -228,14 +223,6 @@ export default function RootLayout() {
             <Stack.Screen
               name="settings"
               options={{ presentation: "modal", headerShown: false }}
-            />
-            <Stack.Screen
-              name="masjidly/terms"
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="masjidly/privacy"
-              options={{ headerShown: false }}
             />
           </Stack>
         </MasjidlyConvexProvider>

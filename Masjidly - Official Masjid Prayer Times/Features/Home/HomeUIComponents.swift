@@ -30,67 +30,6 @@ struct StatusChip: View {
     }
 }
 
-struct HeroIllustration: View {
-    /// Next salat name from `NextPrayerCountdownResult.nextName` (e.g. Fajr, Dhuhr, Jummah, Asr).
-    let nextPrayerName: String
-    @Environment(\.locale) private var locale
-
-    private var assetName: String {
-        switch nextPrayerName {
-        case "Fajr": "FajrIllustration"
-        case "Dhuhr", "Jummah": "DhuhrIllustration"
-        case "Asr": "AsrIllustration"
-        case "Maghrib": "MaghribIllustration"
-        case "Isha": "IshaIllustration"
-        default: "FajrIllustration"
-        }
-    }
-
-    private var accessibilityLabelText: String {
-        let key: String = switch nextPrayerName {
-        case "Fajr": "illustration.fajr"
-        case "Dhuhr": "illustration.dhuhr"
-        case "Jummah": "illustration.jummah"
-        case "Asr": "illustration.asr"
-        case "Maghrib": "illustration.maghrib"
-        case "Isha": "illustration.isha"
-        default: "illustration.prayer_generic"
-        }
-        return componentLS(key, locale: locale)
-    }
-
-    /// When nil, uses design defaults for narrow phone width.
-    var illustrationWidth: CGFloat?
-    var illustrationHeight: CGFloat?
-    var containerHeight: CGFloat?
-
-    init(
-        nextPrayerName: String,
-        illustrationWidth: CGFloat? = nil,
-        illustrationHeight: CGFloat? = nil,
-        containerHeight: CGFloat? = nil
-    ) {
-        self.nextPrayerName = nextPrayerName
-        self.illustrationWidth = illustrationWidth
-        self.illustrationHeight = illustrationHeight
-        self.containerHeight = containerHeight
-    }
-
-    private var resolvedImageWidth: CGFloat { illustrationWidth ?? 200 }
-    private var resolvedImageHeight: CGFloat { illustrationHeight ?? 160 }
-    private var resolvedContainerHeight: CGFloat { containerHeight ?? 200 }
-
-    var body: some View {
-        Image(assetName)
-            .resizable()
-            .interpolation(.high)
-            .scaledToFit()
-            .frame(width: resolvedImageWidth, height: resolvedImageHeight)
-            .accessibilityLabel(accessibilityLabelText)
-            .frame(height: resolvedContainerHeight)
-    }
-}
-
 struct HeroContent: View {
     let prayerName: String
     let prayerTime: String
@@ -412,6 +351,7 @@ struct MinimalistPrayerPage: View {
     /// When set with `dailyIqamahTimes`, enables tap/long-press hero countdown.
     var dailyPrayerTimes: DailyPrayerTimes?
     var dailyIqamahTimes: DailyIqamahTimes?
+    var asrIqamahPreference: AsrIqamahPreference = .first
     /// Full prayer names (same order as shortcuts); used for accessibility.
     let prayerLabels: [String]
     let selectedIndex: Int
@@ -488,32 +428,39 @@ struct MinimalistPrayerPage: View {
                     prayerTimes: daily,
                     iqamahTimes: iq,
                     mosqueSlug: mosqueSlug,
-                    now: context.date
+                    now: context.date,
+                    asrIqamahPreference: asrIqamahPreference
                 )
-                let labelText = pres.map { localizedHeroCountdownLabel($0.labelKind) } ?? ""
-                let secs = pres.map { $0.remainingSeconds(at: context.date) } ?? 0
-                let timeStr = PrayerTimesEngine.formatHeroCountdownClock(totalSeconds: secs)
-                let prog = pres.map { $0.progress01(at: context.date) } ?? 0
 
-                QiblaPrayerIcon(
-                    theme: theme,
-                    rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil,
-                    size: 120,
-                    showCountdown: showHeroCountdown,
-                    countdownLabel: labelText,
-                    countdownTime: timeStr,
-                    countdownProgress: prog
-                )
-                .contentShape(Circle())
-                .onTapGesture(perform: handleHeroOrbTap)
-                .onLongPressGesture(minimumDuration: 0.45, perform: handleHeroOrbLongPress)
-                .accessibilityIdentifier("HeroPrayerOrb")
-                .accessibilityHint(Text(LocaleBundle.string(forKey: "home.countdown.a11y.hint", locale: locale)))
+                if let pres {
+                    let labelText = localizedHeroCountdownLabel(pres.labelKind)
+                    let secs = pres.remainingSeconds(at: context.date)
+                    let timeStr = PrayerTimesEngine.formatHeroCountdownClock(totalSeconds: secs)
+                    let prog = pres.progress01(at: context.date)
+
+                    QiblaPrayerIcon(
+                        theme: theme,
+                        rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil,
+                        size: 120,
+                        showCountdown: showHeroCountdown,
+                        countdownLabel: labelText,
+                        countdownTime: timeStr,
+                        countdownProgress: prog
+                    )
+                    .contentShape(Circle())
+                    .onTapGesture(perform: handleHeroOrbTap)
+                    .onLongPressGesture(minimumDuration: 0.45, perform: handleHeroOrbLongPress)
+                    .accessibilityIdentifier("HeroPrayerOrb")
+                    .accessibilityHint(Text(LocaleBundle.string(forKey: "home.countdown.a11y.hint", locale: locale)))
+                } else {
+                    QiblaPrayerIcon(theme: theme, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
+                        .contentShape(Circle())
+                        .accessibilityIdentifier("HeroPrayerOrb")
+                }
             }
         } else {
             QiblaPrayerIcon(theme: theme, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
                 .contentShape(Circle())
-                .onTapGesture(perform: handleHeroOrbTap)
         }
     }
 
@@ -593,9 +540,6 @@ struct MinimalistPrayerPage: View {
                                 let letter = shortcutLetter(for: index)
                                 let isSelected = index == selectedIndex
                                 Button {
-                                    let generator = UIImpactFeedbackGenerator(style: .light)
-                                    generator.prepare()
-                                    generator.impactOccurred()
                                     onShortcutTapped?(index)
                                     onSelectPrayer(index)
                                 } label: {
@@ -605,7 +549,7 @@ struct MinimalistPrayerPage: View {
                                         .frame(minWidth: 28, minHeight: 36)
                                         .contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(.hapticPlain)
                                 .id(index)
                                 .accessibilityIdentifier(shortcutAccessibilityIdentifier(for: index))
                                 .accessibilityLabel(carouselA11yLabel(nameLabel: nameLabel, letter: letter, index: index))

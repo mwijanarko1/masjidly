@@ -1,4 +1,10 @@
-import { Pressable, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  ViewStyle,
+  TextStyle,
+} from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 
 interface ButtonProps {
   /** The label text displayed inside the button. */

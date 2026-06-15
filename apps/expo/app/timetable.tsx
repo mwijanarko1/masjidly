@@ -1,7 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Linking,
 } from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, ChevronLeft, ChevronRight } from "lucide-react-native";
@@ -12,8 +18,9 @@ import { useOnboardingStore } from "@/store/onboarding";
 import { SPACING, FONT_SIZES } from "@/constants";
 import { PrayerRow } from "@/components/ui/PrayerRow";
 import { prayerRepository } from "@/lib/prayer/prayerRepository";
+import { prayerTimesCache } from "@/lib/prayer/prayerTimesCache";
 import { useSettingsStore } from "@/store/settings";
-import { formatPrayerClockForDisplay, getIqamahTimesForDate, getDisplayIqamah, formatSystemHHMMSheffield, isFridaySheffieldCalendar, findDayData, sheffieldNoonUTC } from "@/lib/prayer/prayerTimesEngine";
+import { formatPrayerClockForDisplay, getIqamahTimesForDate, getDisplayIqamah, formatSystemHHMMSheffield, isFridaySheffieldCalendar, findDayData, sheffieldNoonUTC, selectAsrIqamahTime, splitJummahIqamahTimes, computeMidnightAndLastThird, timeToMinutes } from "@/lib/prayer/prayerTimesEngine";
 import { t } from "@/lib/i18n/translations";
 import { resolvedLocale, useAppLanguage, getFontScale } from "@/lib/i18n/language";
 import type { MonthPrayerData, DailyIqamahTimes } from "@/types/prayer";
@@ -25,9 +32,28 @@ import {
   resolveTheme,
 } from "@/lib/design/themes";
 
+const SUPPORT_EMAIL = "mikhailbuilds@gmail.com";
+
 function formatTime(time: string, uses24h: boolean, locale: string): string {
   if (!time || time === "-" || time === "\u2014") return "-";
   return formatPrayerClockForDisplay(time, uses24h, locale);
+}
+
+function openMissingPrayerTimesEmail(input: {
+  mosqueName: string;
+  monthLabel: string;
+  languageCode: ReturnType<typeof useAppLanguage>;
+}) {
+  const subject = t("home.missing_times.email_subject", input.languageCode)
+    .replace("%s", input.mosqueName)
+    .replace("%s", input.monthLabel);
+  const body = t("home.missing_times.email_body", input.languageCode)
+    .replace("%s", input.mosqueName)
+    .replace("%s", input.monthLabel);
+  const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  Linking.openURL(mailto).catch(() => {
+    // Fail silently if no mail client is configured.
+  });
 }
 
 function timetableIqamahDisplay(
@@ -38,10 +64,13 @@ function timetableIqamahDisplay(
   uses24h: boolean,
   locale: string,
   mosqueSlug: string,
-  date: Date
+  date: Date,
+  asrIqamahPreference: "first" | "second"
 ): string {
   if (!daily) return "-";
-  const raw = getDisplayIqamah(prayerId, adhan, daily, mosqueSlug, date, maghribAdhan);
+  const raw = prayerId === "asr"
+    ? selectAsrIqamahTime(daily.asr, adhan, asrIqamahPreference)
+    : getDisplayIqamah(prayerId, adhan, daily, mosqueSlug, date, maghribAdhan);
   const trimmed = raw.trim();
   if (!trimmed || trimmed.toLowerCase() === "no iqamah") return "-";
   return formatPrayerClockForDisplay(trimmed, uses24h, locale);
@@ -54,11 +83,11 @@ function resolvedJummahRaw(daily: DailyIqamahTimes | null, monthFallback: string
 }
 
 function splitJummahTimes(input: string): string[] {
-  if (!input.trim()) return [];
-  return input
-    .split(/[,/&|]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return splitJummahIqamahTimes(input);
+}
+
+function numberedJummahLabel(base: string, index: number, total: number): string {
+  return total > 1 ? `${base} ${index + 1}` : base;
 }
 
 function isToday(date: Date, year: number, month: number, day: number): boolean {
@@ -76,6 +105,7 @@ export default function TimetableScreen() {
   const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
   const themeMode = useSettingsStore((s) => s.themeMode);
   const fixedTheme = useSettingsStore((s) => s.fixedTheme);
+  const asrIqamahPreference = useSettingsStore((s) => s.asrIqamahPreference);
   const activeMosqueSlug = mosqueSlug ?? selectedMosqueSlug;
   const languageCode = useAppLanguage();
   const locale = resolvedLocale(languageCode);
@@ -114,11 +144,30 @@ export default function TimetableScreen() {
   const fetchMonth = useCallback(async () => {
     if (!activeMosqueSlug) return;
     setLoading(true); setError(false);
+    const monthNames = ["january","february","march","april","may","june","july","august","september","october","november","december"] as const;
+    const monthName = monthNames[month - 1];
+    const cached = await prayerTimesCache.loadMonthly(activeMosqueSlug, monthName, year);
+    if (cached) {
+      setMonthData(cached);
+      setLoading(false);
+    }
     try {
-      const monthNames = ["january","february","march","april","may","june","july","august","september","october","november","december"] as const;
-      const data = await prayerRepository.getMonthlyPrayerTimes(activeMosqueSlug, monthNames[month - 1], year);
+      const data = await prayerRepository.getMonthlyPrayerTimes(activeMosqueSlug, monthName, year);
       setMonthData(data);
-    } catch { setError(true); } finally { setLoading(false); }
+      if (data && data.prayerTimes.length > 0) {
+        await prayerTimesCache.saveMonthly(activeMosqueSlug, monthName, year, data);
+      } else {
+        await prayerTimesCache.removeMonthly(activeMosqueSlug, monthName, year);
+      }
+      setError(false);
+    } catch {
+      if (!cached) {
+        setError(true);
+        setMonthData(null);
+      }
+    } finally {
+      setLoading(false);
+    }
   }, [activeMosqueSlug, month, year]);
 
   useEffect(() => { fetchMonth(); }, [fetchMonth]);
@@ -174,6 +223,7 @@ export default function TimetableScreen() {
 
   const goPrev = () => setCurrentDate((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1));
   const goNext = () => setCurrentDate((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1));
+  const hasMonthTimes = (monthData?.prayerTimes.length ?? 0) > 0;
 
   const shortWeekday = (day: number): string => {
     const d = new Date(year, month - 1, day);
@@ -238,7 +288,7 @@ export default function TimetableScreen() {
         </View>
 
         {/* Date Strip */}
-        {monthData ? (
+        {hasMonthTimes && monthData ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}>
             {monthData.prayerTimes.map((pt) => {
               const sel = pt.date === selectedDay;
@@ -272,14 +322,45 @@ export default function TimetableScreen() {
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
             <ActivityIndicator color={textColor} />
           </View>
-        ) : error || !dayData ? (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ color: textColor + "B3", fontFamily: "Comfortaa_400Regular", fontSize: FONT_SIZES.md }}>
+        ) : error ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 32 }}>
+            <Text style={{ color: textColor + "B3", fontFamily: "Comfortaa_400Regular", fontSize: FONT_SIZES.md, textAlign: "center" }}>
               {t("timetable.load_error", languageCode)}
             </Text>
             <Pressable onPress={fetchMonth} accessibilityRole="button" style={{ marginTop: SPACING.sm }}>
               <Text style={{ color: "#47A6FF", fontFamily: "Comfortaa_600SemiBold", fontSize: FONT_SIZES.md }}>
                 {t("action.retry", languageCode)}
+              </Text>
+            </Pressable>
+          </View>
+        ) : !hasMonthTimes || !dayData ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 32 }}>
+            <Text style={{ color: textColor + "B3", fontFamily: "Comfortaa_400Regular", fontSize: FONT_SIZES.md, textAlign: "center", lineHeight: 24 * fontScale }}>
+              {t("timetable.missing_month", languageCode)}
+            </Text>
+            <Pressable
+              onPress={() => openMissingPrayerTimesEmail({
+                mosqueName: mosqueNameParam || activeMosqueSlug,
+                monthLabel: monthSwitcherTitle,
+                languageCode,
+              })}
+              accessibilityRole="button"
+              style={{
+                marginTop: SPACING.md,
+                minHeight: 42,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: textColor + "33",
+                backgroundColor: textColor + "26",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingHorizontal: SPACING.md,
+                paddingVertical: 10,
+                alignSelf: "stretch",
+              }}
+            >
+              <Text style={{ color: textColor, fontFamily: "Comfortaa_600SemiBold", fontSize: 14 }}>
+                {t("home.missing_times.email_button", languageCode)}
               </Text>
             </Pressable>
           </View>
@@ -302,7 +383,7 @@ export default function TimetableScreen() {
             <PrayerRow
               name={t("timetable.header.fajr", languageCode)}
               adhan={dayData.fajr}
-              iqamah={timetableIqamahDisplay("fajr", dayData.fajr, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
+              iqamah={timetableIqamahDisplay("fajr", dayData.fajr, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay), asrIqamahPreference)}
               isNext={nextPrayerId === "fajr"}
               isPast={selectedIsToday && dayData.fajr <= currentHHMM}
               uses24HourTime={uses24HourTime}
@@ -326,7 +407,7 @@ export default function TimetableScreen() {
                 if (jTimes.length === 0) {
                   return (
                     <PrayerRow
-                      name={t("prayer.jummah", languageCode)}
+                      name={numberedJummahLabel(t("prayer.jummah", languageCode), 0, 1)}
                       adhan={dayData.dhuhr}
                       iqamah="-"
                       isNext={nextPrayerId === "dhuhr"}
@@ -345,7 +426,7 @@ export default function TimetableScreen() {
                   return (
                     <PrayerRow
                       key={idx}
-                      name={t("prayer.jummah", languageCode)}
+                      name={numberedJummahLabel(t("prayer.jummah", languageCode), idx, jTimes.length)}
                       adhan={dayData.dhuhr}
                       iqamah={iqCell}
                       isNext={nextPrayerId === "dhuhr" && idx === 0}
@@ -361,7 +442,7 @@ export default function TimetableScreen() {
               <PrayerRow
                 name={t("timetable.header.dhu", languageCode)}
                 adhan={dayData.dhuhr}
-                iqamah={timetableIqamahDisplay("dhuhr", dayData.dhuhr, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
+                iqamah={timetableIqamahDisplay("dhuhr", dayData.dhuhr, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay), asrIqamahPreference)}
                 isNext={nextPrayerId === "dhuhr"}
                 isPast={selectedIsToday && dayData.dhuhr <= currentHHMM}
                 uses24HourTime={uses24HourTime}
@@ -372,7 +453,7 @@ export default function TimetableScreen() {
             <PrayerRow
               name={t("timetable.header.asr", languageCode)}
               adhan={dayData.asr}
-              iqamah={timetableIqamahDisplay("asr", dayData.asr, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
+              iqamah={timetableIqamahDisplay("asr", dayData.asr, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay), asrIqamahPreference)}
               isNext={nextPrayerId === "asr"}
               isPast={selectedIsToday && dayData.asr <= currentHHMM}
               uses24HourTime={uses24HourTime}
@@ -382,7 +463,7 @@ export default function TimetableScreen() {
             <PrayerRow
               name={t("timetable.header.mag", languageCode)}
               adhan={dayData.maghrib}
-              iqamah={timetableIqamahDisplay("maghrib", dayData.maghrib, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
+              iqamah={timetableIqamahDisplay("maghrib", dayData.maghrib, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay), asrIqamahPreference)}
               isNext={nextPrayerId === "maghrib"}
               isPast={selectedIsToday && dayData.maghrib <= currentHHMM}
               uses24HourTime={uses24HourTime}
@@ -392,13 +473,56 @@ export default function TimetableScreen() {
             <PrayerRow
               name={t("timetable.header.ish", languageCode)}
               adhan={dayData.isha}
-              iqamah={timetableIqamahDisplay("isha", dayData.isha, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay))}
+              iqamah={timetableIqamahDisplay("isha", dayData.isha, iqamah, dayData.maghrib, uses24HourTime, locale, activeMosqueSlug, sheffieldNoonUTC(year, month, selectedDay), asrIqamahPreference)}
               isNext={nextPrayerId === "isha"}
               isPast={selectedIsToday && dayData.isha <= currentHHMM}
               uses24HourTime={uses24HourTime}
               locale={locale}
               textColor={textColor}
             />
+
+            {/* Midnight & Last Third of the Night */}
+            {(() => {
+              const sorted = [...(monthData?.prayerTimes ?? [])].sort((a, b) => a.date - b.date);
+              const curIdx = sorted.findIndex((pt) => pt.date === selectedDay);
+              const nextFajr = curIdx >= 0 && curIdx + 1 < sorted.length ? sorted[curIdx + 1].fajr : null;
+              const { midnight, lastThird } = computeMidnightAndLastThird(dayData.maghrib, nextFajr);
+              const isNextDayPast = (t: string) => {
+                const tMin = timeToMinutes(t);
+                const nMin = timeToMinutes(currentHHMM);
+                if (tMin === null || nMin === null) return false;
+                if (nMin >= 720) return false; // PM → next-day AM hasn't occurred yet
+                return tMin <= nMin;
+              };
+              return (
+                <>
+                  {midnight && (
+                    <PrayerRow
+                      name={t("timetable.header.midnight", languageCode)}
+                      adhan={midnight}
+                      iqamah="-"
+                      isNext={false}
+                      isPast={selectedIsToday && isNextDayPast(midnight)}
+                      uses24HourTime={uses24HourTime}
+                      locale={locale}
+                      textColor={textColor}
+                    />
+                  )}
+                  {lastThird && (
+                    <PrayerRow
+                      name={t("timetable.header.lastThird", languageCode)}
+                      adhan={lastThird}
+                      iqamah="-"
+                      isNext={false}
+                      isPast={selectedIsToday && isNextDayPast(lastThird)}
+                      uses24HourTime={uses24HourTime}
+                      locale={locale}
+                      textColor={textColor}
+                    />
+                  )}
+                </>
+              );
+            })()}
           </ScrollView>
         )}
       </SafeAreaView>
@@ -434,5 +558,5 @@ const styles = StyleSheet.create({
   tableHeader: { flexDirection: "row", alignItems: "center", marginTop: 8 },
   headerCell: { fontSize: 13, fontFamily: "Comfortaa_500Medium" },
   nameCell: { flex: 1 },
-  timeCell: { width: 94, maxWidth: 94, textAlign: "right" },
+  timeCell: { width: 105, maxWidth: 105, textAlign: "right" },
 });

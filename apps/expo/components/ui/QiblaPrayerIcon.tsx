@@ -55,7 +55,7 @@ const QiblaPointerTriangle: React.FC<{ color: string; size: number }> = ({
   );
 };
 
-export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
+export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = React.memo(({
   theme,
   rotationDegrees,
   animatedRotation,
@@ -250,4 +250,4 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = ({
       ) : null}
     </View>
   );
-};
+});

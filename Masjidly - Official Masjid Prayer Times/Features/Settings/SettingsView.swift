@@ -22,7 +22,9 @@ struct SettingsView: View {
         let manager = CLLocationManager()
         return manager.authorizationStatus
     }()
-
+    @State private var closestMosqueLocationProvider = SettingsClosestMosqueLocationProvider()
+    @State private var adhanPrayerSettingsExpanded = false
+    @State private var iqamahPrayerSettingsExpanded = false
     init(model: SettingsViewModel, timeTheme: HomeDesign.TimeTheme, onDismiss: (() -> Void)? = nil) {
         self.model = model
         self.dynamicTimeTheme = timeTheme
@@ -44,21 +46,37 @@ struct SettingsView: View {
 
                 settingsSectionBlock(titleKey: "settings.section.mosque.title") {
                     VStack(spacing: 0) {
+                        countryPickerRow
+                            .padding(.vertical, 12)
+                        settingsRowDivider
                         cityPickerRow
                             .padding(.vertical, 12)
                         settingsRowDivider
                         mosquePickerRow
                             .padding(.vertical, 12)
+                        if let closestMosque {
+                            settingsRowDivider
+                            closestMosqueRow(closestMosque)
+                                .padding(.vertical, 12)
+                        }
                     }
                 }
 
                 settingsSectionBlock(titleKey: "settings.section.display.title") {
-                    SettingsToggleRow(
-                        title: localized("settings.time.24h.title"),
-                        isOn: Bindable(settings).uses24HourTime,
-                        timeTheme: timeTheme
-                    )
-                    .padding(.vertical, 12)
+                    VStack(spacing: 0) {
+                        SettingsToggleRow(
+                            title: localized("settings.time.24h.title"),
+                            isOn: Bindable(settings).uses24HourTime,
+                            timeTheme: timeTheme
+                        )
+                        .padding(.vertical, 12)
+
+                        if model.supportsMultipleAsrAdhan {
+                            settingsRowDivider
+                            asrIqamahPickerRow
+                                .padding(.vertical, 12)
+                        }
+                    }
                 }
 
                 settingsSectionBlock(titleKey: "settings.section.language.title") {
@@ -77,6 +95,7 @@ struct SettingsView: View {
                         }
                     }
                 }
+
 
                 settingsSectionBlock(titleKey: "settings.section.qibla.title") {
                     SettingsToggleRow(
@@ -105,11 +124,39 @@ struct SettingsView: View {
 
                         if settings.notifications.masterEnabled {
                             settingsRowDivider
-                            NotificationToggleRow(title: localized("notification.channel.adhan"), isOn: notificationChannelBinding(\.adhanEnabled), timeTheme: timeTheme)
-                                .padding(.vertical, 12)
+                            NotificationPrayerToggleSection(
+                                title: localized("notification.channel.adhan"),
+                                isExpanded: $adhanPrayerSettingsExpanded,
+                                isOn: adhanNotificationsBinding,
+                                timeTheme: timeTheme
+                            ) {
+                                ForEach(Array(AdhanPrayerToggleKey.allCases.enumerated()), id: \.element.rawValue) { index, prayer in
+                                    if index > 0 { settingsRowDivider }
+                                    NotificationToggleRow(
+                                        title: localized(prayer.labelKey),
+                                        isOn: adhanPrayerBinding(prayer),
+                                        timeTheme: timeTheme
+                                    )
+                                    .padding(.vertical, 12)
+                                }
+                            }
                             settingsRowDivider
-                            NotificationToggleRow(title: localized("notification.channel.iqamah"), isOn: notificationChannelBinding(\.iqamahEnabled), timeTheme: timeTheme)
-                                .padding(.vertical, 12)
+                            NotificationPrayerToggleSection(
+                                title: localized("notification.channel.iqamah"),
+                                isExpanded: $iqamahPrayerSettingsExpanded,
+                                isOn: iqamahNotificationsBinding,
+                                timeTheme: timeTheme
+                            ) {
+                                ForEach(Array(IqamahPrayerToggleKey.allCases.enumerated()), id: \.element.rawValue) { index, prayer in
+                                    if index > 0 { settingsRowDivider }
+                                    NotificationToggleRow(
+                                        title: localized(prayer.labelKey),
+                                        isOn: iqamahPrayerBinding(prayer),
+                                        timeTheme: timeTheme
+                                    )
+                                    .padding(.vertical, 12)
+                                }
+                            }
                             settingsRowDivider
                             adhanReminderPickerRow
                                 .padding(.vertical, 12)
@@ -132,6 +179,11 @@ struct SettingsView: View {
                         ) {
                             openSupportEmail(.prayerTimes)
                         }
+                        contactActionButton(
+                            title: localized("settings.contact.request_masjid.title")
+                        ) {
+                            openSupportEmail(.requestMasjid)
+                        }
                     }
                 }
 
@@ -151,7 +203,7 @@ struct SettingsView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hapticPlain)
 
                         ForEach(TestNotificationType.allCases, id: \.rawValue) { testType in
                             Button {
@@ -170,7 +222,7 @@ struct SettingsView: View {
                                     }
                                 }
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.hapticPlain)
                         }
 
                         Button {
@@ -186,7 +238,7 @@ struct SettingsView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hapticPlain)
 
                         Button {
                             NotificationCenter.default.post(name: .masjidlyShowUpdatePrompt, object: nil)
@@ -201,7 +253,7 @@ struct SettingsView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hapticPlain)
 
                         Button {
                             reviewPrompt.resetAndPresentEnjoymentPromptForTesting()
@@ -216,7 +268,7 @@ struct SettingsView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.hapticPlain)
                     }
                 }
                 #endif
@@ -233,9 +285,25 @@ struct SettingsView: View {
         }
         .onAppear {
             locationAuthStatus = CLLocationManager().authorizationStatus
+            if !settings.hideQiblaCompass {
+                closestMosqueLocationProvider.start()
+            } else {
+                closestMosqueLocationProvider.clear()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             locationAuthStatus = CLLocationManager().authorizationStatus
+            if !settings.hideQiblaCompass {
+                closestMosqueLocationProvider.start()
+            }
+        }
+        .onChange(of: settings.hideQiblaCompass) { _, isHidden in
+            if isHidden {
+                closestMosqueLocationProvider.clear()
+            } else {
+                locationAuthStatus = CLLocationManager().authorizationStatus
+                closestMosqueLocationProvider.start()
+            }
         }
         .overlay {
             Group {
@@ -274,6 +342,7 @@ struct SettingsView: View {
                 .multilineTextAlignment(.leading)
             Spacer(minLength: 8)
             Button {
+                HapticFeedback.buttonTap()
                 onDismiss?()
                 dismiss()
             } label: {
@@ -342,7 +411,7 @@ struct SettingsView: View {
                             .fill(timeTheme.textColor.opacity(0.25))
                     )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.hapticPlain)
             .accessibilityIdentifier("Settings.LocationRecoveryAction")
         }
     }
@@ -395,7 +464,7 @@ struct SettingsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hapticPlain)
     }
 
     private func openSupportEmail(_ category: MasjidlySupportMail.Category) {
@@ -434,8 +503,24 @@ struct SettingsView: View {
     }
     #endif
 
+    private var countryOptions: [(key: String, label: String)] {
+        MosqueDefaults.countryOptions(from: model.mosques)
+    }
+
+    private var effectiveCountryGroupingKey: String {
+        if let k = settings.selectedCountryGroupingKey,
+           !MosqueDefaults.mosques(inCountryGroupingKey: k, mosques: model.mosques).isEmpty {
+            return k
+        }
+        if let id = settings.selectedMosqueId,
+           let m = model.mosques.first(where: { $0.id == id }) {
+            return MosqueDefaults.countryGroupingKey(for: m)
+        }
+        return countryOptions.first?.key ?? ""
+    }
+
     private var cityOptions: [(key: String, label: String)] {
-        MosqueDefaults.cityOptions(from: model.mosques)
+        MosqueDefaults.cityOptions(from: model.mosques, countryKey: effectiveCountryGroupingKey)
     }
 
     private var effectiveCityGroupingKey: String {
@@ -451,9 +536,84 @@ struct SettingsView: View {
     }
 
     private var mosquesInSelectedCity: [Mosque] {
+        let countryMosques = MosqueDefaults.mosques(inCountryGroupingKey: effectiveCountryGroupingKey, mosques: model.mosques)
         let key = effectiveCityGroupingKey
-        guard !key.isEmpty else { return model.mosques }
-        return MosqueDefaults.mosques(inCityGroupingKey: key, mosques: model.mosques)
+        guard !key.isEmpty else { return countryMosques }
+        return MosqueDefaults.mosques(inCityGroupingKey: key, mosques: countryMosques)
+    }
+
+    private var closestMosque: Mosque? {
+        guard !settings.hideQiblaCompass,
+              locationAuthStatus == .authorizedWhenInUse || locationAuthStatus == .authorizedAlways,
+              let userLocation = closestMosqueLocationProvider.currentLocation else {
+            return nil
+        }
+        return model.mosques.min { lhs, rhs in
+            let lhsLocation = CLLocation(latitude: lhs.lat, longitude: lhs.lng)
+            let rhsLocation = CLLocation(latitude: rhs.lat, longitude: rhs.lng)
+            return lhsLocation.distance(from: userLocation) < rhsLocation.distance(from: userLocation)
+        }
+    }
+
+    private func closestMosqueText(for mosqueName: String) -> String {
+        "Closest mosque: \(mosqueName)"
+    }
+
+    private func closestMosqueRow(_ mosque: Mosque) -> some View {
+        VStack(spacing: 10) {
+            Text(closestMosqueText(for: mosque.name))
+                .appFont(size: 14, weight: .regular)
+                .foregroundColor(timeTheme.textColor.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            Button {
+                Task { await model.selectMosque(mosque) }
+            } label: {
+                Text(localized("Use closest mosque"))
+                    .appFont(size: 15, weight: .semibold)
+                    .foregroundColor(timeTheme.textColor)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(timeTheme.textColor.opacity(0.14))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(timeTheme.textColor.opacity(0.22), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.hapticPlain)
+            .accessibilityIdentifier("Settings.UseClosestMosque")
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var countryPickerRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(localized("settings.country.picker"))
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(timeTheme.textColor)
+                .multilineTextAlignment(.leading)
+                .lineLimit(1)
+                .layoutPriority(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 12)
+
+            Picker("", selection: countrySelectionBinding) {
+                ForEach(countryOptions, id: \.key) { opt in
+                    Text(opt.label)
+                        .appFont(size: 17)
+                        .tag(opt.key)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(timeTheme.textColor)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(minHeight: 44)
     }
 
     private var cityPickerRow: some View {
@@ -534,6 +694,39 @@ struct SettingsView: View {
         .frame(minHeight: 44)
     }
 
+    private var asrIqamahPickerRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text("Asr adhan time")
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(timeTheme.textColor)
+                .multilineTextAlignment(.leading)
+                .lineLimit(1)
+                .layoutPriority(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 12)
+
+            Picker("", selection: asrIqamahPreferenceBinding) {
+                Text("First Asr (Mithl 1)").appFont(size: 17).tag(AsrIqamahPreference.first)
+                Text("Second Asr (Mithl 2)").appFont(size: 17).tag(AsrIqamahPreference.second)
+            }
+            .pickerStyle(.menu)
+            .tint(timeTheme.textColor)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(minHeight: 44)
+    }
+
+    private var asrIqamahPreferenceBinding: Binding<AsrIqamahPreference> {
+        Binding(
+            get: { settings.asrIqamahPreference },
+            set: { value in
+                settings.asrIqamahPreference = value
+                Task { await model.onNotificationsChanged() }
+            }
+        )
+    }
+
     private var fixedThemePickerRow: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(localized("settings.theme.fixed_theme"))
@@ -580,8 +773,20 @@ struct SettingsView: View {
         return localized(key)
     }
 
+    private func gradientLabel(_ theme: HomeDesign.TimeTheme) -> String {
+        themeLabel(theme)
+    }
+
+    private var selectedMosqueDisplayName: String {
+        if let id = settings.selectedMosqueId,
+           let selected = mosquesInSelectedCity.first(where: { $0.id == id }) {
+            return selected.name
+        }
+        return mosquesInSelectedCity.first?.name ?? ""
+    }
+
     private var mosquePickerRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             Text(localized("settings.mosque.picker"))
                 .appFont(size: 17, weight: .regular)
                 .foregroundColor(timeTheme.textColor)
@@ -592,15 +797,42 @@ struct SettingsView: View {
 
             Spacer(minLength: 12)
 
-            Picker("", selection: mosqueSelectionBinding) {
-                ForEach(mosquesInSelectedCity) { m in
-                    Text(m.name)
-                        .appFont(size: 17)
-                        .tag(m.id)
+            Menu {
+                ForEach(mosquesInSelectedCity) { mosque in
+                    Button {
+                        Task { await model.selectMosque(mosque) }
+                    } label: {
+                        if mosque.id == mosqueSelectionBinding.wrappedValue {
+                            Label(mosque.name, systemImage: "checkmark")
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else {
+                            Text(mosque.name)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
+            } label: {
+                HStack(alignment: .top, spacing: 6) {
+                    Text(selectedMosqueDisplayName)
+                        .appFont(size: 17, weight: .regular)
+                        .foregroundColor(timeTheme.textColor)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+
+                    Image(systemName: "chevron.down")
+                        .appFont(size: 13, weight: .semibold)
+                        .foregroundColor(timeTheme.textColor.opacity(0.7))
+                        .padding(.top, 2)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .contentShape(Rectangle())
             }
-            .pickerStyle(.menu)
             .tint(timeTheme.textColor)
+            .layoutPriority(1)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(minHeight: 44)
@@ -648,12 +880,28 @@ struct SettingsView: View {
         .frame(minHeight: 44)
     }
 
+    private var countrySelectionBinding: Binding<String> {
+        Binding(
+            get: { effectiveCountryGroupingKey },
+            set: { newKey in
+                settings.selectedCountryGroupingKey = newKey
+                // Reset city selection when country changes
+                let inCountry = MosqueDefaults.mosques(inCountryGroupingKey: newKey, mosques: model.mosques)
+                let inCity = MosqueDefaults.mosques(inCityGroupingKey: effectiveCityGroupingKey, mosques: inCountry)
+                if inCity.contains(where: { $0.id == settings.selectedMosqueId }) { return }
+                guard let first = inCountry.first else { return }
+                Task { await model.selectMosque(first) }
+            }
+        )
+    }
+
     private var citySelectionBinding: Binding<String> {
         Binding(
             get: { effectiveCityGroupingKey },
             set: { newKey in
                 settings.selectedCityGroupingKey = newKey
-                let inCity = MosqueDefaults.mosques(inCityGroupingKey: newKey, mosques: model.mosques)
+                let inCountry = MosqueDefaults.mosques(inCountryGroupingKey: effectiveCountryGroupingKey, mosques: model.mosques)
+                let inCity = MosqueDefaults.mosques(inCityGroupingKey: newKey, mosques: inCountry)
                 guard let first = inCity.first else { return }
                 if inCity.contains(where: { $0.id == settings.selectedMosqueId }) { return }
                 Task { await model.selectMosque(first) }
@@ -716,20 +964,101 @@ struct SettingsView: View {
         )
     }
 
-    private func notificationChannelBinding(_ keyPath: WritableKeyPath<NotificationSettings, Bool>) -> Binding<Bool> {
+    private var adhanNotificationsBinding: Binding<Bool> {
         Binding(
-            get: { settings.notifications[keyPath: keyPath] },
+            get: {
+                let n = settings.notifications
+                return n.adhanEnabled && allAdhanPrayerTogglesEnabled(in: n)
+            },
             set: { newValue in
                 var n = settings.notifications
-                n[keyPath: keyPath] = newValue
-                n.masterEnabled = n.adhanEnabled || 
-                                  n.iqamahEnabled || 
-                                  n.preAdhanReminderMinutes != nil ||
-                                  n.preIqamahReminderMinutes != nil
+                n.adhanEnabled = newValue
+                setAllAdhanPrayerToggles(newValue, in: &n)
+                updateMasterNotificationsFlag(in: &n)
                 settings.notifications = n
                 Task { await model.onNotificationsChanged() }
             }
         )
+    }
+
+    private var iqamahNotificationsBinding: Binding<Bool> {
+        Binding(
+            get: {
+                let n = settings.notifications
+                return n.iqamahEnabled && allIqamahPrayerTogglesEnabled(in: n)
+            },
+            set: { newValue in
+                var n = settings.notifications
+                n.iqamahEnabled = newValue
+                setAllIqamahPrayerToggles(newValue, in: &n)
+                updateMasterNotificationsFlag(in: &n)
+                settings.notifications = n
+                Task { await model.onNotificationsChanged() }
+            }
+        )
+    }
+
+    private func adhanPrayerBinding(_ prayer: AdhanPrayerToggleKey) -> Binding<Bool> {
+        Binding(
+            get: { settings.notifications[keyPath: prayer.keyPath] },
+            set: { newValue in
+                var n = settings.notifications
+                n[keyPath: prayer.keyPath] = newValue
+                n.adhanEnabled = anyAdhanPrayerToggleEnabled(in: n)
+                updateMasterNotificationsFlag(in: &n)
+                settings.notifications = n
+                Task { await model.onNotificationsChanged() }
+            }
+        )
+    }
+
+    private func iqamahPrayerBinding(_ prayer: IqamahPrayerToggleKey) -> Binding<Bool> {
+        Binding(
+            get: { settings.notifications[keyPath: prayer.keyPath] },
+            set: { newValue in
+                var n = settings.notifications
+                n[keyPath: prayer.keyPath] = newValue
+                n.iqamahEnabled = anyIqamahPrayerToggleEnabled(in: n)
+                updateMasterNotificationsFlag(in: &n)
+                settings.notifications = n
+                Task { await model.onNotificationsChanged() }
+            }
+        )
+    }
+
+    private func updateMasterNotificationsFlag(in notifications: inout NotificationSettings) {
+        notifications.masterEnabled = notifications.adhanEnabled ||
+                                      notifications.iqamahEnabled ||
+                                      notifications.preAdhanReminderMinutes != nil ||
+                                      notifications.preIqamahReminderMinutes != nil
+    }
+
+    private func allAdhanPrayerTogglesEnabled(in n: NotificationSettings) -> Bool {
+        AdhanPrayerToggleKey.allCases.allSatisfy { n[keyPath: $0.keyPath] }
+    }
+
+    private func anyAdhanPrayerToggleEnabled(in n: NotificationSettings) -> Bool {
+        AdhanPrayerToggleKey.allCases.contains { n[keyPath: $0.keyPath] }
+    }
+
+    private func setAllAdhanPrayerToggles(_ enabled: Bool, in n: inout NotificationSettings) {
+        for prayer in AdhanPrayerToggleKey.allCases {
+            n[keyPath: prayer.keyPath] = enabled
+        }
+    }
+
+    private func allIqamahPrayerTogglesEnabled(in n: NotificationSettings) -> Bool {
+        IqamahPrayerToggleKey.allCases.allSatisfy { n[keyPath: $0.keyPath] }
+    }
+
+    private func anyIqamahPrayerToggleEnabled(in n: NotificationSettings) -> Bool {
+        IqamahPrayerToggleKey.allCases.contains { n[keyPath: $0.keyPath] }
+    }
+
+    private func setAllIqamahPrayerToggles(_ enabled: Bool, in n: inout NotificationSettings) {
+        for prayer in IqamahPrayerToggleKey.allCases {
+            n[keyPath: prayer.keyPath] = enabled
+        }
     }
 
     private var adhanReminderMinutesBinding: Binding<Int?> {
@@ -766,6 +1095,53 @@ struct SettingsView: View {
 
 }
 
+@Observable
+@MainActor
+private final class SettingsClosestMosqueLocationProvider: NSObject {
+    private let locationManager = CLLocationManager()
+
+    private(set) var currentLocation: CLLocation?
+
+    override init() {
+        super.init()
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        locationManager.distanceFilter = 250
+    }
+
+    func start() {
+        switch locationManager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            locationManager.requestLocation()
+        case .notDetermined, .denied, .restricted:
+            currentLocation = nil
+        @unknown default:
+            currentLocation = nil
+        }
+    }
+
+    func clear() {
+        currentLocation = nil
+    }
+}
+
+extension SettingsClosestMosqueLocationProvider: CLLocationManagerDelegate {
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
+            manager.requestLocation()
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        currentLocation = locations.last
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        currentLocation = nil
+    }
+}
+
+
 private struct SettingsToggleRow: View {
     let title: String
     @Binding var isOn: Bool
@@ -780,6 +1156,133 @@ private struct SettingsToggleRow: View {
         }
         .tint(timeTheme.textColor)
         .frame(minHeight: 44)
+    }
+}
+
+/// Per-prayer Adhan toggle keys for use in the notifications settings section.
+private enum AdhanPrayerToggleKey: String, CaseIterable {
+    case fajr
+    case dhuhrJummah
+    case asr
+    case maghrib
+    case isha
+
+    var keyPath: WritableKeyPath<NotificationSettings, Bool> {
+        switch self {
+        case .fajr: return \.adhanFajr
+        case .dhuhrJummah: return \.adhanDhuhrJummah
+        case .asr: return \.adhanAsr
+        case .maghrib: return \.adhanMaghrib
+        case .isha: return \.adhanIsha
+        }
+    }
+
+    var labelKey: String {
+        switch self {
+        case .fajr: return "settings.notification.fajr"
+        case .dhuhrJummah: return "settings.notification.dhuhr_jummah"
+        case .asr: return "settings.notification.asr"
+        case .maghrib: return "settings.notification.maghrib"
+        case .isha: return "settings.notification.isha"
+        }
+    }
+}
+
+/// Per-prayer Iqamah toggle keys for use in the notifications settings section.
+private enum IqamahPrayerToggleKey: String, CaseIterable {
+    case fajr
+    case dhuhrJummah
+    case asr
+    case maghrib
+    case isha
+
+    var keyPath: WritableKeyPath<NotificationSettings, Bool> {
+        switch self {
+        case .fajr: return \.iqamahFajr
+        case .dhuhrJummah: return \.iqamahDhuhrJummah
+        case .asr: return \.iqamahAsr
+        case .maghrib: return \.iqamahMaghrib
+        case .isha: return \.iqamahIsha
+        }
+    }
+
+    var labelKey: String {
+        switch self {
+        case .fajr: return "settings.notification.fajr"
+        case .dhuhrJummah: return "settings.notification.dhuhr_jummah"
+        case .asr: return "settings.notification.asr"
+        case .maghrib: return "settings.notification.maghrib"
+        case .isha: return "settings.notification.isha"
+        }
+    }
+}
+
+private struct NotificationPrayerToggleSection<Content: View>: View {
+    let title: String
+    @Binding var isExpanded: Bool
+    @Binding var isOn: Bool
+    let timeTheme: HomeDesign.TimeTheme
+    let content: () -> Content
+
+    init(
+        title: String,
+        isExpanded: Binding<Bool>,
+        isOn: Binding<Bool>,
+        timeTheme: HomeDesign.TimeTheme,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self._isExpanded = isExpanded
+        self._isOn = isOn
+        self.timeTheme = timeTheme
+        self.content = content
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                Button {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
+                        isExpanded.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(timeTheme.textColor)
+                            .frame(width: 18, height: 18)
+                            .rotationEffect(.degrees(isExpanded ? 90 : 0))
+
+                        Text(title)
+                            .appFont(size: 17, weight: .regular)
+                            .foregroundStyle(timeTheme.textColor)
+                            .multilineTextAlignment(.leading)
+
+                        Spacer(minLength: 8)
+                    }
+                    .contentShape(Rectangle())
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.hapticPlain)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Toggle("", isOn: $isOn)
+                    .labelsHidden()
+                    .tint(timeTheme.textColor)
+                    .fixedSize()
+                    .padding(.trailing, 2)
+            }
+            .padding(.vertical, 12)
+
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 0) {
+                    content()
+                }
+                .padding(.leading, 26)
+                .transition(.opacity)
+            }
+        }
+        .animation(.spring(response: 0.32, dampingFraction: 0.9), value: isExpanded)
     }
 }
 

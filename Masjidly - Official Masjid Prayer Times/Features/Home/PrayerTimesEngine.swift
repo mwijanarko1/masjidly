@@ -25,6 +25,52 @@ enum PrayerTimesEngine {
         String(format: "%04d-%02d-%02d", year, month, day)
     }
 
+    static func splitIqamahTimes(_ raw: String?) -> [String] {
+        let trimmed = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        let whitespaceBetweenTimes = try? NSRegularExpression(pattern: #"(\d{1,2}:\d{2})\s+(?=\d{1,2}:\d{2})"#)
+        let range = NSRange(trimmed.startIndex..., in: trimmed)
+        let normalized = whitespaceBetweenTimes?.stringByReplacingMatches(in: trimmed, range: range, withTemplate: "$1,") ?? trimmed
+        return normalized
+            .components(separatedBy: CharacterSet(charactersIn: ",/&|\n"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    static func splitJummahIqamahTimes(_ raw: String?) -> [String] {
+        splitIqamahTimes(raw)
+    }
+
+    static func getAsrIqamahSlots(_ asrIqamah: String, adhanTime: String) -> [String] {
+        if asrIqamah.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "entry time" { return [adhanTime] }
+        let slots = splitIqamahTimes(asrIqamah).map { resolveRelativeIqamah($0, adhanTime: adhanTime) }
+        return slots.isEmpty ? [resolveRelativeIqamah(asrIqamah, adhanTime: adhanTime)] : slots
+    }
+
+    static func selectAsrIqamahTime(_ asrIqamah: String, adhanTime: String, preference: AsrIqamahPreference = .first) -> String {
+        let slots = getAsrIqamahSlots(asrIqamah, adhanTime: adhanTime)
+        switch preference {
+        case .first:
+            return slots.first ?? ""
+        case .second:
+            return slots.dropFirst().first ?? slots.first ?? ""
+        }
+    }
+
+    static func selectAsrAdhanTime(_ prayerTime: PrayerTime, preference: AsrIqamahPreference = .first) -> String {
+        if preference == .second, let asrMithl2 = prayerTime.asrMithl2, !asrMithl2.isEmpty {
+            return asrMithl2
+        }
+        return prayerTime.asr
+    }
+
+    static func selectAsrAdhanTime(_ prayerTime: RamadanPrayerDay, preference: AsrIqamahPreference = .first) -> String {
+        if preference == .second, let asrMithl2 = prayerTime.asrMithl2, !asrMithl2.isEmpty {
+            return asrMithl2
+        }
+        return prayerTime.asr
+    }
+
     static func normalizeMosqueSlug(_ slug: String) -> String {
         slug.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
@@ -175,7 +221,7 @@ enum PrayerTimesEngine {
             return resolveRelativeIqamah(iqamahTimes.dhuhr, adhanTime: adhanTime)
         case "asr":
             if iqamahTimes.asr.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "entry time" { return adhanTime }
-            return resolveRelativeIqamah(iqamahTimes.asr, adhanTime: adhanTime)
+            return selectAsrIqamahTime(iqamahTimes.asr, adhanTime: adhanTime)
         case "maghrib":
             let raw = iqamahTimes.maghrib == "sunset" ? adhanTime : iqamahTimes.maghrib
             return resolveRelativeIqamah(raw, adhanTime: adhanTime)
@@ -535,7 +581,8 @@ enum PrayerTimesEngine {
         on date: Date,
         monthly: MonthPrayerData?,
         ramadan: RamadanPrayerData?,
-        ukDst: [UkDstYear]
+        ukDst: [UkDstYear],
+        asrTimingPreference: AsrIqamahPreference = .first
     ) throws -> DailyPrayerTimes {
         let (y, m, d) = getDateInSheffield(date)
         let dateStr = isoDateString(year: y, month: m, day: d)
@@ -550,7 +597,7 @@ enum PrayerTimesEngine {
                 fajr: row.fajr,
                 sunrise: row.shurooq,
                 dhuhr: row.dhuhr,
-                asr: row.asr,
+                asr: selectAsrAdhanTime(row, preference: asrTimingPreference),
                 maghrib: row.maghrib,
                 isha: row.isha
             )
@@ -567,7 +614,7 @@ enum PrayerTimesEngine {
             fajr: adhan.fajr,
             sunrise: adhan.shurooq,
             dhuhr: adhan.dhuhr,
-            asr: adhan.asr,
+            asr: selectAsrAdhanTime(adhan, preference: asrTimingPreference),
             maghrib: adhan.maghrib,
             isha: adhan.isha
         )
@@ -625,7 +672,8 @@ enum PrayerTimesEngine {
         prayerTimes: DailyPrayerTimes,
         iqamahTimes: DailyIqamahTimes,
         mosqueSlug: String,
-        now: Date = Date()
+        now: Date = Date(),
+        asrIqamahPreference: AsrIqamahPreference = .first
     ) -> HeroCountdownPresentation? {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = sheffieldTimeZone
@@ -640,16 +688,7 @@ enum PrayerTimesEngine {
             return cal.date(bySettingHour: p[0], minute: p[1], second: 0, of: dayStart)
         }
 
-        func wallClockNextDay(_ time: String) -> Date? {
-            let p = time.split(separator: ":").compactMap { Int($0) }
-            guard p.count == 2, let morrow = cal.date(byAdding: .day, value: 1, to: dayStart) else { return nil }
-            return cal.date(bySettingHour: p[0], minute: p[1], second: 0, of: morrow)
-        }
-
-        let jummahRaw = iqamahTimes.jummah
-            .components(separatedBy: ",")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        let jummahRaw = splitJummahIqamahTimes(iqamahTimes.jummah)
         let jummahTimes: [String] = jummahRaw.isEmpty ? [iqamahTimes.dhuhr] : jummahRaw
         let jummahAdhan = nextHeroDisplayIqamahRaw(
             prayerId: "dhuhr",
@@ -689,7 +728,7 @@ enum PrayerTimesEngine {
                 id: "asr",
                 name: "Asr",
                 adhan: prayerTimes.asr,
-                iqamahs: [getIqamahTime(prayer: "asr", adhanTime: prayerTimes.asr, iqamahTimes: iqamahTimes)],
+                iqamahs: [selectAsrIqamahTime(iqamahTimes.asr, adhanTime: prayerTimes.asr, preference: asrIqamahPreference)],
                 adhanDate: wallClockToday(prayerTimes.asr)
             ),
             ResolvedHeroPrayer(
@@ -748,26 +787,11 @@ enum PrayerTimesEngine {
             }
         }
 
-        let isNextFajrTomorrow = !foundTodayEvent
-
-        let next: ResolvedHeroPrayer = {
-            if isNextFajrTomorrow {
-                let fajr = prayersList[0]
-                return ResolvedHeroPrayer(
-                    id: "fajr",
-                    name: "Fajr",
-                    adhan: fajr.adhan,
-                    iqamahs: fajr.iqamahs,
-                    adhanDate: wallClockNextDay(fajr.adhan)
-                )
-            }
-            return prayersList[nextPrayerIndex]
-        }()
-
-        guard let targetDate = isNextFajrTomorrow ? next.adhanDate : nextEventDate else {
+        guard foundTodayEvent, let targetDate = nextEventDate else {
             return nil
         }
 
+        let next = prayersList[nextPrayerIndex]
         let progressStartDate: Date = {
             if nextEventIsIqamah {
                 return next.adhanDate ?? dayStart
@@ -775,15 +799,11 @@ enum PrayerTimesEngine {
             if nextPrayerIndex > 0, let prev = prayersList[nextPrayerIndex - 1].adhanDate {
                 return prev
             }
-            if isNextFajrTomorrow {
-                return prayersList.last?.adhanDate ?? dayStart
-            }
             return dayStart
         }()
 
         let labelKind: HeroCountdownLabelKind = {
             if nextEventIsIqamah { return .iqamahIn }
-            if isNextFajrTomorrow { return .nextPrayer }
             if nextPrayerIndex == 0 { return .adhanIn }
             return .nextPrayer
         }()
@@ -804,7 +824,8 @@ enum PrayerTimesEngine {
         now: Date,
         wallClock: (String) -> Date?
     ) -> String {
-        guard prayerId == "dhuhr", isFriday, rawIqamahs.count > 1 else {
+        let supportsMultipleSlots = (prayerId == "dhuhr" && isFriday) || prayerId == "asr"
+        guard supportsMultipleSlots, rawIqamahs.count > 1 else {
             return rawIqamahs.first ?? ""
         }
         guard let adhanDate = wallClock(adhan) else {
@@ -842,8 +863,10 @@ enum PrayerTimesEngine {
         prayerTimes: DailyPrayerTimes,
         iqamahTimes: DailyIqamahTimes,
         mosqueSlug: String,
-        now: Date = Date()
-    ) -> NextPrayerCountdownResult {
+        now: Date = Date(),
+        asrIqamahPreference: AsrIqamahPreference = .first,
+        includeTomorrowFajr: Bool = true
+    ) -> NextPrayerCountdownResult? {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = sheffieldTimeZone
         let dayStart = cal.startOfDay(for: now)
@@ -859,10 +882,7 @@ enum PrayerTimesEngine {
 
         let slug = mosqueSlug
 
-        let jummahRaw = iqamahTimes.jummah
-            .components(separatedBy: ",")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        let jummahRaw = splitJummahIqamahTimes(iqamahTimes.jummah)
         let jummahTimes = jummahRaw.isEmpty ? [iqamahTimes.dhuhr] : jummahRaw
         let jummahAdhan = nextHeroDisplayIqamahRaw(
             prayerId: "dhuhr",
@@ -876,7 +896,11 @@ enum PrayerTimesEngine {
         let prayers: [(name: String, adhan: String, iqamah: String)] = [
             ("Fajr", prayerTimes.fajr, getIqamahTime(prayer: "fajr", adhanTime: prayerTimes.fajr, iqamahTimes: iqamahTimes)),
             (isFriday ? "Jummah" : "Dhuhr", isFriday ? jummahAdhan : prayerTimes.dhuhr, isFriday ? "" : getIqamahTime(prayer: "dhuhr", adhanTime: prayerTimes.dhuhr, iqamahTimes: iqamahTimes)),
-            ("Asr", prayerTimes.asr, getIqamahTime(prayer: "asr", adhanTime: prayerTimes.asr, iqamahTimes: iqamahTimes)),
+            (
+                "Asr",
+                prayerTimes.asr,
+                selectAsrIqamahTime(iqamahTimes.asr, adhanTime: prayerTimes.asr, preference: asrIqamahPreference)
+            ),
             ("Maghrib", prayerTimes.maghrib, getIqamahTime(prayer: "maghrib", adhanTime: prayerTimes.maghrib, iqamahTimes: iqamahTimes)),
             ("Isha", prayerTimes.isha, resolveIshaIqamahForDisplay(slug: slug, date: checkDate, ishaAdhan: prayerTimes.isha, iqamahTimes: iqamahTimes, maghribAdhan: prayerTimes.maghrib)),
         ]
@@ -893,6 +917,10 @@ enum PrayerTimesEngine {
             }
         }
 
+        guard includeTomorrowFajr else {
+            return nil
+        }
+
         if let fajrT = wallClockToday(prayers[0].adhan),
            let tomorrow = cal.date(byAdding: .day, value: 1, to: dayStart),
            let nextFajr = cal.date(bySettingHour: cal.component(.hour, from: fajrT), minute: cal.component(.minute, from: fajrT), second: 0, of: tomorrow) {
@@ -900,8 +928,55 @@ enum PrayerTimesEngine {
             return NextPrayerCountdownResult(nextName: "Fajr", nextTime: prayers[0].adhan, totalSeconds: max(0, diff), isIqamah: false, isJummah: false)
         }
 
-        return NextPrayerCountdownResult(nextName: "Fajr", nextTime: prayers[0].adhan, totalSeconds: 0, isIqamah: false, isJummah: false)
+        return nil
     }
+
+    // MARK: - Midnight / Last Third of the Night
+
+    /// Parse "HH:mm" to total minutes since midnight.
+    static func timeToMinutes(_ time: String) -> Int? {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        return parts[0] * 60 + parts[1]
+    }
+
+    /// Format total minutes since midnight to "HH:mm".
+    static func minutesToTime(_ minutes: Int) -> String {
+        let clamped = ((minutes % 1440) + 1440) % 1440
+        return String(format: "%02d:%02d", clamped / 60, clamped % 60)
+    }
+
+    /// Compute Midnight and Last Third of the night.
+    /// Night period: from today's Maghrib to **next day's Fajr**.
+    /// Midnight = midpoint of the night; Last Third starts at 2/3 through.
+    /// Both are returned as "HH:mm" in 24-hour format.
+    /// If `nextDayFajr` is nil or unparseable, both values are nil.
+    static func computeMidnightAndLastThird(maghrib: String, nextDayFajr: String?) -> (midnight: String?, lastThird: String?) {
+        guard let nextFajr = nextDayFajr,
+              isParseableTime(maghrib),
+              isParseableTime(nextFajr),
+              let maghribMin = timeToMinutes(maghrib),
+              let fajrMin = timeToMinutes(nextFajr) else {
+            return (nil, nil)
+        }
+
+        // Night duration (handles times crossing midnight)
+        let nightDuration: Int
+        if fajrMin >= maghribMin {
+            nightDuration = fajrMin - maghribMin
+        } else {
+            nightDuration = (24 * 60 - maghribMin) + fajrMin
+        }
+
+        guard nightDuration > 0 else { return (nil, nil) }
+
+        let midnight = minutesToTime(maghribMin + nightDuration / 2)
+        let lastThird = minutesToTime(maghribMin + (nightDuration * 2) / 3)
+
+        return (midnight, lastThird)
+    }
+
+    // MARK: - Time parsing helpers
 
     private static func isParseableTime(_ t: String) -> Bool {
         if t.isEmpty || t == "-" || t == "—" || t == "--:--" { return false }
@@ -930,8 +1005,7 @@ enum PrayerTimesEngine {
         if uses24Hour {
             f.setLocalizedDateFormatFromTemplate("HHmm")
         } else {
-            f.timeStyle = .short
-            f.dateStyle = .none
+            f.dateFormat = "h:mma"
         }
         return f.string(from: date)
     }

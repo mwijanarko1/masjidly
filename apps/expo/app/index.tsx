@@ -4,12 +4,14 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   ActivityIndicator,
+  Linking,
+  Animated,
 } from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Calendar, Settings } from "lucide-react-native";
+import { Calendar, ChevronLeft, ChevronRight, Settings } from "lucide-react-native";
 import { AtmosphericSkyBackground } from "@/components/ui/AtmosphericSkyBackground";
 import { SPACING, FONT_SIZES } from "@/constants";
 import { useHomePrayerData } from "@/lib/hooks/useHomePrayerData";
@@ -36,13 +38,15 @@ import {
   formatPrayerClockForDisplay,
   formatPrayerTimeHeroParts,
   getDisplayIqamah,
+  selectAsrIqamahTime,
   heroCountdownPresentation,
   heroRemainingSeconds,
   heroProgress01,
   formatHeroCountdownClock,
+  splitJummahIqamahTimes,
 } from "@/lib/prayer/prayerTimesEngine";
 import { t, type TranslationKey } from "@/lib/i18n/translations";
-import type { DailyPrayerTimes, HeroCountdownLabelKind } from "@/types/prayer";
+import type { DailyPrayerTimes, DailyIqamahTimes, HeroCountdownLabelKind, NextPrayerCountdownResult, AsrIqamahPreference } from "@/types/prayer";
 import { resolvedLocale, useAppLanguage, getFontScale } from "@/lib/i18n/language";
 import {
   themeForPrayer,
@@ -50,11 +54,30 @@ import {
   getTextColor,
   getUsesLightForeground,
   resolveTheme,
+  type TimeTheme,
 } from "@/lib/design/themes";
 import { currentMasjidlyFullVersion } from "@/lib/updates/whatsNew";
 
 const BASE_PRAYERS: PrayerName[] = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
 const FRIDAY_PRAYERS: PrayerName[] = ["Fajr", "Sunrise", "Jummah", "Asr", "Maghrib", "Isha"];
+const SUPPORT_EMAIL = "mikhailbuilds@gmail.com";
+
+function openMissingPrayerTimesEmail(input: {
+  mosqueName: string;
+  monthLabel: string;
+  languageCode: AppLanguage;
+}) {
+  const subject = t("home.missing_times.email_subject", input.languageCode)
+    .replace("%s", input.mosqueName)
+    .replace("%s", input.monthLabel);
+  const body = t("home.missing_times.email_body", input.languageCode)
+    .replace("%s", input.mosqueName)
+    .replace("%s", input.monthLabel);
+  const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  Linking.openURL(mailto).catch(() => {
+    // Fail silently if no mail client is configured.
+  });
+}
 
 function isFridayInSheffield(date: Date): boolean {
   const cal = new Intl.DateTimeFormat("en-GB", {
@@ -64,32 +87,46 @@ function isFridayInSheffield(date: Date): boolean {
   return cal.format(date).toLowerCase().startsWith("f");
 }
 
+function isSameSheffieldDay(a: Date, b: Date): boolean {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(a) === formatter.format(b);
+}
+
 function getPrimaryJummahTime(
   prayerTimes: ReturnType<typeof useHomePrayerData>["displayedPrayerTimes"],
   iqamahTimes: ReturnType<typeof useHomePrayerData>["iqamahTimes"]
 ): string {
-  const raw = iqamahTimes?.jummah ?? "";
-  const first = raw
-    .split(",")
-    .map((s) => s.trim())
-    .find((s) => s.length > 0);
-  return first ?? prayerTimes?.dhuhr ?? "";
+  const times = splitJummahIqamahTimes(iqamahTimes?.jummah ?? "");
+  return times[0] ?? prayerTimes?.dhuhr ?? "";
+}
+
+function getSecondJummahTime(
+  iqamahTimes: ReturnType<typeof useHomePrayerData>["iqamahTimes"]
+): string | null {
+  const times = splitJummahIqamahTimes(iqamahTimes?.jummah ?? "");
+  return times.length >= 2 ? times[1] : null;
 }
 
 function getIqamahForSelectedPrayer(
   selected: PrayerName,
   prayerTimes: ReturnType<typeof useHomePrayerData>["displayedPrayerTimes"],
   iqamahTimes: ReturnType<typeof useHomePrayerData>["iqamahTimes"],
-  mosqueSlug: string
+  mosqueSlug: string,
+  asrIqamahPreference: "first" | "second",
+  displayedDate: Date
 ): string | null {
   if (!prayerTimes || !iqamahTimes) return null;
 
-  const now = new Date();
+  const now = displayedDate;
 
   switch (selected) {
     case "Fajr":
     case "Dhuhr":
-    case "Asr":
     case "Maghrib":
     case "Isha": {
       if (selected === "Dhuhr" && isFridayInSheffield(now)) return null;
@@ -102,6 +139,8 @@ function getIqamahForSelectedPrayer(
         prayerTimes.maghrib
       );
     }
+    case "Asr":
+      return selectAsrIqamahTime(iqamahTimes.asr, prayerTimes.asr, asrIqamahPreference);
     case "Sunrise":
     case "Jummah":
       return null;
@@ -180,6 +219,128 @@ function translatePrayerName(name: PrayerName, lang: AppLanguage): string {
   return t(keyMap[name], lang);
 }
 
+/**
+ * Self-contained hero orb that isolates the 1s countdown tick state from the parent HomeScreen.
+ * Only this sub-component re-renders each second, preventing full-page re-renders.
+ */
+const HeroOrbSection = React.memo(function HeroOrbSection({
+  nextCountdown,
+  displayedPrayerTimes,
+  iqamahTimes,
+  mosqueSlug,
+  asrIqamahPreference,
+  languageCode,
+  theme,
+  hideQiblaCompass,
+  animatedRotation,
+  textColor,
+}: {
+  nextCountdown: NextPrayerCountdownResult | null;
+  displayedPrayerTimes: DailyPrayerTimes | null;
+  iqamahTimes: DailyIqamahTimes | null;
+  mosqueSlug: string;
+  asrIqamahPreference: AsrIqamahPreference;
+  languageCode: AppLanguage;
+  theme: TimeTheme;
+  hideQiblaCompass: boolean;
+  animatedRotation?: Animated.Value;
+  textColor: string;
+}) {
+  const [visible, setVisible] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [tick, setTick] = useState(0);
+
+  const showCountdown = visible || locked;
+
+  useEffect(() => {
+    if (!showCountdown) return;
+    const id = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [showCountdown]);
+
+  const orbCountdown = useMemo(() => {
+    void tick;
+    if (!nextCountdown || !displayedPrayerTimes || !iqamahTimes || !mosqueSlug) {
+      return { hasCountdown: false, label: "", time: "", progress: 0 };
+    }
+    const tickNow = new Date();
+    const pres = heroCountdownPresentation(
+      displayedPrayerTimes,
+      iqamahTimes,
+      mosqueSlug,
+      tickNow,
+      asrIqamahPreference
+    );
+    if (!pres) return { hasCountdown: false, label: "", time: "", progress: 0 };
+    const secs = heroRemainingSeconds(pres, tickNow);
+    return {
+      hasCountdown: true,
+      label: t(heroCountdownLabelKey(pres.labelKind), languageCode),
+      time: formatHeroCountdownClock(secs),
+      progress: heroProgress01(pres, tickNow),
+    };
+  }, [
+    tick,
+    displayedPrayerTimes,
+    iqamahTimes,
+    mosqueSlug,
+    languageCode,
+    asrIqamahPreference,
+    nextCountdown,
+  ]);
+
+  const countdownEnabled = orbCountdown.hasCountdown;
+
+  const handlePress = () => {
+    if (!countdownEnabled) return;
+    if (locked) {
+      setLocked(false);
+      setVisible(false);
+      return;
+    }
+    setVisible((v) => !v);
+  };
+
+  const handleLongPress = () => {
+    if (!countdownEnabled) return;
+    setLocked(true);
+    setVisible(true);
+  };
+
+  const a11yLabel = showCountdown
+    ? `${orbCountdown.label}, ${orbCountdown.time}`
+    : t("onboarding.qibla.title", languageCode);
+
+  return (
+    <Pressable
+      onPress={handlePress}
+      onLongPress={handleLongPress}
+      delayLongPress={450}
+      disabled={!countdownEnabled}
+      accessibilityRole={countdownEnabled ? "button" : "image"}
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={
+        countdownEnabled
+          ? t("home.countdown.a11y.hint", languageCode)
+          : undefined
+      }
+      testID="HeroPrayerOrb"
+    >
+      <QiblaPrayerIcon
+        theme={theme}
+        animatedRotation={
+          !hideQiblaCompass ? animatedRotation : undefined
+        }
+        showCountdown={showCountdown && countdownEnabled}
+        countdownLabel={orbCountdown.label}
+        countdownTime={orbCountdown.time}
+        countdownProgress={orbCountdown.progress}
+      />
+    </Pressable>
+  );
+});
+
+
 export default function HomeScreen() {
   const router = useRouter();
   const { showWhatsNew } = useLocalSearchParams<{ showWhatsNew?: string }>();
@@ -191,6 +352,10 @@ export default function HomeScreen() {
     nextCountdown,
     refresh,
     selectedMosque,
+    displayedDate,
+    goToPreviousDay,
+    goToNextDay,
+    goToToday,
   } = useHomePrayerData();
   const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
   const hideQiblaCompass = useSettingsStore((s) => s.hideQiblaCompass);
@@ -199,6 +364,7 @@ export default function HomeScreen() {
   const setLastSeenBuildVersion = useSettingsStore((s) => s.setLastSeenBuildVersion);
   const themeMode = useSettingsStore((s) => s.themeMode);
   const fixedTheme = useSettingsStore((s) => s.fixedTheme);
+  const asrIqamahPreference = useSettingsStore((s) => s.asrIqamahPreference);
   const languageCode = useAppLanguage();
   const locale = resolvedLocale(languageCode);
   const fontScale = getFontScale(languageCode);
@@ -207,14 +373,12 @@ export default function HomeScreen() {
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerName>("Fajr");
   const [showingWhatsNew, setShowingWhatsNew] = useState(false);
   const [notificationIssue, setNotificationIssue] = useState<NotificationPermissionIssue>(null);
-  const [heroCountdownVisible, setHeroCountdownVisible] = useState(false);
-  const [heroCountdownLocked, setHeroCountdownLocked] = useState(false);
-  const [heroTick, setHeroTick] = useState(0);
+
 
   const onboarding = useOnboardingStore();
   const currentStep = onboarding.currentStep;
   const tutorialStarted = useRef(false);
-  const prayers = isFridayInSheffield(new Date()) ? FRIDAY_PRAYERS : BASE_PRAYERS;
+  const prayers = isFridayInSheffield(displayedDate) ? FRIDAY_PRAYERS : BASE_PRAYERS;
   useEffect(() => {
     if (!tutorialStarted.current && mosques.length > 0) {
       tutorialStarted.current = true;
@@ -252,7 +416,7 @@ export default function HomeScreen() {
     if (!hasCompletedOnboarding) return;
     if (loadState === "loading" || loadState === "idle") return;
     if (checkDone) return;
-    // Don’t show recovery prompt while the What’s New modal is visible.
+    // Don't show recovery prompt while the What's New modal is visible.
     if (showingWhatsNew) return;
 
     setCheckDone(true);
@@ -271,6 +435,7 @@ export default function HomeScreen() {
         mosque: selectedMosque,
         settings: settings.notifications,
         locale: languageCode,
+        asrIqamahPreference: settings.asrIqamahPreference,
       });
     }
     setNotificationIssue(null);
@@ -285,32 +450,27 @@ export default function HomeScreen() {
   useEffect(() => {
     if (nextCountdown?.nextName) {
       setSelectedPrayer(resolveInitialPrayer(nextCountdown.nextName));
+    } else if (displayedPrayerTimes && isSameSheffieldDay(displayedDate, new Date())) {
+      setSelectedPrayer("Isha");
     }
-  }, [nextCountdown?.nextName]);
+  }, [displayedDate, displayedPrayerTimes, nextCountdown?.nextName]);
 
-  const now = useMemo(() => new Date(), []);
-  const gregorian = gregorianDateString(now, locale);
-  const hijri = hijriDateString(now, locale);
-
-  const mosqueSlug = selectedMosque?.slug ?? "";
-
-  const heroCountdownEnabled = Boolean(
-    displayedPrayerTimes && iqamahTimes && mosqueSlug
+  const gregorian = gregorianDateString(displayedDate, locale);
+  const hijri = hijriDateString(displayedDate, locale);
+  const currentMonthLabel = useMemo(
+    () => new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(displayedDate),
+    [locale, displayedDate]
   );
 
-  const showHeroCountdown = heroCountdownVisible || heroCountdownLocked;
-
-  useEffect(() => {
-    if (!showHeroCountdown) return;
-    const id = setInterval(() => setHeroTick((n) => n + 1), 1000);
-    return () => clearInterval(id);
-  }, [showHeroCountdown]);
+  const mosqueSlug = selectedMosque?.slug ?? "";
 
   const iqamah = getIqamahForSelectedPrayer(
     selectedPrayer,
     displayedPrayerTimes,
     iqamahTimes,
-    mosqueSlug
+    mosqueSlug,
+    asrIqamahPreference,
+    displayedDate
   );
 
   const adhanTime = useMemo(() => {
@@ -321,7 +481,7 @@ export default function HomeScreen() {
       case "Sunrise":
         return displayedPrayerTimes.sunrise;
       case "Dhuhr":
-        return isFridayInSheffield(new Date()) ? getPrimaryJummahTime(displayedPrayerTimes, iqamahTimes) : displayedPrayerTimes.dhuhr;
+        return isFridayInSheffield(displayedDate) ? getPrimaryJummahTime(displayedPrayerTimes, iqamahTimes) : displayedPrayerTimes.dhuhr;
       case "Jummah":
         return getPrimaryJummahTime(displayedPrayerTimes, iqamahTimes);
       case "Asr":
@@ -331,7 +491,13 @@ export default function HomeScreen() {
       case "Isha":
         return displayedPrayerTimes.isha;
     }
-  }, [displayedPrayerTimes, iqamahTimes, selectedPrayer]);
+  }, [displayedDate, displayedPrayerTimes, iqamahTimes, selectedPrayer]);
+
+  useEffect(() => {
+    if (!prayers.includes(selectedPrayer)) {
+      setSelectedPrayer("Dhuhr");
+    }
+  }, [prayers, selectedPrayer]);
 
   const dynamicTheme = themeForPrayer(selectedPrayer);
   const theme = resolveTheme(dynamicTheme, themeMode, fixedTheme);
@@ -345,57 +511,26 @@ export default function HomeScreen() {
     deferAuthorization: !hasCompletedOnboarding || hideQiblaCompass,
   });
 
-  const heroOrbCountdown = useMemo(() => {
-    void heroTick;
-    if (!displayedPrayerTimes || !iqamahTimes || !mosqueSlug) {
-      return { label: "", time: "", progress: 0 };
-    }
-    const tickNow = new Date();
-    const pres = heroCountdownPresentation(
-      displayedPrayerTimes,
-      iqamahTimes,
-      mosqueSlug,
-      tickNow
-    );
-    if (!pres) return { label: "", time: "", progress: 0 };
-    const secs = heroRemainingSeconds(pres, tickNow);
-    return {
-      label: t(heroCountdownLabelKey(pres.labelKind), languageCode),
-      time: formatHeroCountdownClock(secs),
-      progress: heroProgress01(pres, tickNow),
-    };
-  }, [
-    heroTick,
-    displayedPrayerTimes,
-    iqamahTimes,
-    mosqueSlug,
-    languageCode,
-  ]);
-
-  const onHeroOrbPress = () => {
-    if (!heroCountdownEnabled) return;
-    if (heroCountdownLocked) {
-      setHeroCountdownLocked(false);
-      setHeroCountdownVisible(false);
-      return;
-    }
-    setHeroCountdownVisible((v) => !v);
-  };
-
-  const onHeroOrbLongPress = () => {
-    if (!heroCountdownEnabled) return;
-    setHeroCountdownLocked(true);
-    setHeroCountdownVisible(true);
-  };
-
-  const heroOrbA11yLabel = showHeroCountdown
-    ? `${heroOrbCountdown.label}, ${heroOrbCountdown.time}`
-    : t("onboarding.qibla.title", languageCode);
-
   const heroParts = useMemo(() => {
     if (!adhanTime) return { clock: "--:--", meridiem: null as string | null };
     return formatPrayerTimeHeroParts(adhanTime, uses24HourTime, locale);
   }, [adhanTime, uses24HourTime, locale]);
+
+  const selectedPrayerDisplayName = translatePrayerName(selectedPrayer, languageCode);
+
+  const selectedPrayerSubtitle = selectedPrayer === "Jummah"
+    ? (() => {
+        const secondJummah = getSecondJummahTime(iqamahTimes);
+        return secondJummah
+          ? `${translatePrayerName("Jummah", languageCode)} 2: ${formatTime(secondJummah, uses24HourTime, locale)}`
+          : null;
+      })()
+    : iqamah
+      ? t("home.iqamah_format", languageCode).replace(
+          "%s",
+          formatTime(iqamah, uses24HourTime, locale)
+        )
+      : null;
 
   if (loadState === "loading" || loadState === "idle") {
     return (
@@ -406,8 +541,31 @@ export default function HomeScreen() {
   }
 
   if (loadState === "empty") {
+    if (selectedMosque) {
+      return (
+        <View style={[styles.loadingContainer, { backgroundColor: sky.baseColors[0], paddingHorizontal: 32 }]}> 
+          <Text style={[styles.missingTimesTitle, { color: textColor }]}>{t("home.missing_times.title", languageCode)}</Text>
+          <Text style={[styles.missingTimesMonth, { color: textColor + "B8" }]}>{currentMonthLabel}</Text>
+          <Pressable
+            style={[styles.retryButton, { marginTop: SPACING.md }]}
+            onPress={() => openMissingPrayerTimesEmail({
+              mosqueName: selectedMosque.name,
+              monthLabel: currentMonthLabel,
+              languageCode,
+            })}
+            accessibilityRole="button"
+          >
+            <Text style={styles.retryButtonText}>{t("home.missing_times.email_button", languageCode)}</Text>
+          </Pressable>
+          <Pressable style={styles.secondaryRetryButton} onPress={refresh} accessibilityRole="button">
+            <Text style={[styles.secondaryRetryButtonText, { color: textColor + "CC" }]}>{t("action.retry", languageCode)}</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: sky.baseColors[0] }]}>
+      <View style={[styles.loadingContainer, { backgroundColor: sky.baseColors[0] }]}>        
         <Text style={styles.emptyText}>{t("home.empty.no_mosque_data", languageCode)}</Text>
         <Pressable style={styles.retryButton} onPress={refresh} accessibilityRole="button">
           <Text style={styles.retryButtonText}>{t("action.retry", languageCode)}</Text>
@@ -444,25 +602,50 @@ export default function HomeScreen() {
               </Pressable>
             </TutorialHighlight>
 
-            <View style={styles.dateContainer}>
-              <Text
-                style={[
-                  styles.gregorianDate,
-                  { color: textColor + "99", letterSpacing: 1.0, fontSize: 13 * fontScale },
-                ]}
+            <View style={styles.dateNavigator}>
+              <Pressable
+                style={styles.dateArrowButton}
+                onPress={goToPreviousDay}
+                accessibilityRole="button"
+                accessibilityLabel="Previous day"
               >
-                {gregorian}
-              </Text>
-              {hijri ? (
+                <ChevronLeft size={18} color={textColor + "80"} strokeWidth={2} />
+              </Pressable>
+
+              <Pressable
+                style={styles.dateContainer}
+                onPress={goToToday}
+                accessibilityRole="button"
+                accessibilityLabel="Go to today"
+              >
                 <Text
                   style={[
-                    styles.hijriDate,
-                    { color: textColor + "66", letterSpacing: 0.8, fontSize: 10 * fontScale },
+                    styles.gregorianDate,
+                    { color: textColor + "99", letterSpacing: 1.0, fontSize: 13 * fontScale },
                   ]}
                 >
-                  {hijri}
+                  {gregorian}
                 </Text>
-              ) : null}
+                {hijri ? (
+                  <Text
+                    style={[
+                      styles.hijriDate,
+                      { color: textColor + "66", letterSpacing: 0.8, fontSize: 10 * fontScale },
+                    ]}
+                  >
+                    {hijri}
+                  </Text>
+                ) : null}
+              </Pressable>
+
+              <Pressable
+                style={styles.dateArrowButton}
+                onPress={goToNextDay}
+                accessibilityRole="button"
+                accessibilityLabel="Next day"
+              >
+                <ChevronRight size={18} color={textColor + "80"} strokeWidth={2} />
+              </Pressable>
             </View>
 
             <TutorialHighlight
@@ -494,31 +677,18 @@ export default function HomeScreen() {
                 size={88}
                 color={textColor}
               >
-                <Pressable
-                  onPress={onHeroOrbPress}
-                  onLongPress={onHeroOrbLongPress}
-                  delayLongPress={450}
-                  disabled={!heroCountdownEnabled}
-                  accessibilityRole={heroCountdownEnabled ? "button" : "image"}
-                  accessibilityLabel={heroOrbA11yLabel}
-                  accessibilityHint={
-                    heroCountdownEnabled
-                      ? t("home.countdown.a11y.hint", languageCode)
-                      : undefined
-                  }
-                  testID="HeroPrayerOrb"
-                >
-                  <QiblaPrayerIcon
-                    theme={theme}
-                    animatedRotation={
-                      !hideQiblaCompass ? animatedRotation : undefined
-                    }
-                    showCountdown={showHeroCountdown}
-                    countdownLabel={heroOrbCountdown.label}
-                    countdownTime={heroOrbCountdown.time}
-                    countdownProgress={heroOrbCountdown.progress}
-                  />
-                </Pressable>
+                <HeroOrbSection
+                  nextCountdown={nextCountdown}
+                  displayedPrayerTimes={displayedPrayerTimes}
+                  iqamahTimes={iqamahTimes}
+                  mosqueSlug={mosqueSlug}
+                  asrIqamahPreference={asrIqamahPreference}
+                  languageCode={languageCode}
+                  theme={theme}
+                  hideQiblaCompass={hideQiblaCompass}
+                  animatedRotation={animatedRotation}
+                  textColor={textColor}
+                />
               </TutorialHighlight>
             </View>
 
@@ -545,18 +715,15 @@ export default function HomeScreen() {
                 ) : null}
               </View>
 
-              {/* Iqamah Subtitle */}
-              {iqamah ? (
+              {/* Iqamah / secondary Jummah subtitle */}
+              {selectedPrayerSubtitle ? (
                 <Text
                   style={[
                     styles.iqamahText,
                     { color: textColor + "C7", fontSize: 26 * fontScale },
                   ]}
                 >
-                  {t("home.iqamah_format", languageCode).replace(
-                    "%s",
-                    formatTime(iqamah, uses24HourTime, locale)
-                  )}
+                  {selectedPrayerSubtitle}
                 </Text>
               ) : null}
             </View>
@@ -566,7 +733,7 @@ export default function HomeScreen() {
             {/* Bottom: Prayer Name + Letter Picker */}
             <View style={{ alignItems: "center", paddingBottom: 80, gap: 24 }}>
               <Text style={[styles.prayerName, { color: textColor, fontSize: 36 * fontScale }]}>
-                {translatePrayerName(selectedPrayer, languageCode)}
+                {selectedPrayerDisplayName}
               </Text>
 
               <PrayerLetterPicker
@@ -661,6 +828,28 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontFamily: "Comfortaa_600SemiBold",
   },
+  secondaryRetryButton: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  secondaryRetryButtonText: {
+    fontSize: FONT_SIZES.sm,
+    fontFamily: "Comfortaa_600SemiBold",
+  },
+  missingTimesTitle: {
+    fontSize: 24,
+    lineHeight: 32,
+    textAlign: "center",
+    fontFamily: "Comfortaa_600SemiBold",
+  },
+  missingTimesMonth: {
+    marginTop: SPACING.xs,
+    fontSize: FONT_SIZES.md,
+    lineHeight: 24,
+    textAlign: "center",
+    fontFamily: "Comfortaa_400Regular",
+  },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -675,10 +864,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  dateContainer: {
+  dateNavigator: {
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SPACING.sm,
+    justifyContent: "center",
+    paddingHorizontal: SPACING.xs,
+  },
+  dateArrowButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dateContainer: {
+    flexShrink: 1,
+    alignItems: "center",
+    paddingHorizontal: SPACING.xs,
+    minWidth: 0,
   },
   gregorianDate: {
     fontSize: 13,

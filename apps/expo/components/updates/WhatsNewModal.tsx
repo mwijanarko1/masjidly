@@ -1,5 +1,13 @@
 import React from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { LinearGradient } from "expo-linear-gradient";
 import { AlignRight, ChevronDown, Clock, Globe2, Palette } from "lucide-react-native";
 import type { AppLanguage } from "@/store/settings";

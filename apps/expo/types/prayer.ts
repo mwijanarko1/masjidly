@@ -39,27 +39,43 @@ export const MosqueSchema = z
 
 export type Mosque = z.infer<typeof MosqueSchema>;
 
-export const PrayerTimeSchema = z.object({
-  date: z.number(),
-  fajr: z.string(),
-  shurooq: z.string(),
-  dhuhr: z.string(),
-  asr: z.string(),
-  maghrib: z.string(),
-  isha: z.string(),
-});
+export const PrayerTimeSchema = z
+  .object({
+    date: z.number(),
+    fajr: z.string(),
+    shurooq: z.string(),
+    dhuhr: z.string(),
+    asr: z.string(),
+    asr_mithl2: z.string().optional(),
+    maghrib: z.string(),
+    isha: z.string(),
+  })
+  .transform((data) => ({
+    date: data.date,
+    fajr: data.fajr,
+    shurooq: data.shurooq,
+    dhuhr: data.dhuhr,
+    asr: data.asr,
+    asrMithl2: data.asr_mithl2,
+    maghrib: data.maghrib,
+    isha: data.isha,
+  }));
 
 export type PrayerTime = z.infer<typeof PrayerTimeSchema>;
+
+const IqamahValueSchema = z.union([z.string(), z.array(z.string())]).transform((value) =>
+  Array.isArray(value) ? value.join(", ") : value
+);
 
 export const IqamahTimeRangeSchema = z
   .object({
     date_range: z.string(),
-    fajr: z.string(),
-    dhuhr: z.string(),
-    asr: z.string(),
-    maghrib: z.string().nullable().optional(),
-    isha: z.string(),
-    jummah: z.string().nullable().optional(),
+    fajr: IqamahValueSchema,
+    dhuhr: IqamahValueSchema,
+    asr: IqamahValueSchema,
+    maghrib: IqamahValueSchema.nullable().optional(),
+    isha: IqamahValueSchema,
+    jummah: IqamahValueSchema.nullable().optional(),
   })
   .transform((data) => ({
     dateRange: data.date_range,
@@ -132,6 +148,9 @@ export const RamadanPrayerDataSchema = z
   }));
 
 export type RamadanPrayerData = z.infer<typeof RamadanPrayerDataSchema>;
+
+export type AsrIqamahPreference = "first" | "second";
+export type AsrTimingPreference = AsrIqamahPreference;
 
 export interface DailyPrayerTimes {
   date: string;

@@ -17,8 +17,8 @@ struct WhatsNewModalView: View {
         WhatsNewModalCopy(locale: locale)
     }
 
-    private var hasMultipleItems: Bool {
-        items.count > 1
+    private var shouldScrollItems: Bool {
+        items.count > 3
     }
 
     var body: some View {
@@ -38,7 +38,7 @@ struct WhatsNewModalView: View {
                         .background(timeTheme.textColor.opacity(0.1))
                         .clipShape(Capsule())
 
-                    if hasMultipleItems {
+                    if shouldScrollItems {
                         // Scroll Indication
                         HStack(spacing: 4) {
                             Text(copy.swipeHint)
@@ -52,7 +52,7 @@ struct WhatsNewModalView: View {
                 }
                 .padding(.top, 8)
 
-                if hasMultipleItems {
+                if shouldScrollItems {
                     ScrollView {
                         itemsList
                             .padding(.vertical, 4)
@@ -66,7 +66,6 @@ struct WhatsNewModalView: View {
 
                 // Continue button — uses the blue-gradient capsule from onboarding
                 Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     if let onDismiss {
                         onDismiss()
                     } else {
@@ -76,7 +75,7 @@ struct WhatsNewModalView: View {
                     Text(copy.continueLabel)
                         .onboardingPrimaryCapsule()
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hapticPlain)
                 .padding(.bottom, 8)
             }
             .padding(24)
@@ -122,22 +121,22 @@ private struct WhatsNewModalCopy {
         case "ar":
             title = "تحديث مسجدلي!"
             versionPrefix = "الإصدار"
-            swipeHint = "اسحب لقراءة التحديثات"
+            swipeHint = "مرر للمزيد"
             continueLabel = "متابعة"
         case "ur":
             title = "مسجدلی اپ ڈیٹ!"
             versionPrefix = "ورژن"
-            swipeHint = "اپ ڈیٹس دیکھنے کے لیے سوائپ کریں"
+            swipeHint = "مزید کے لیے اسکرول کریں"
             continueLabel = "جاری رکھیں"
         case "id":
             title = "Pembaruan Masjidly!"
             versionPrefix = "Versi"
-            swipeHint = "Geser untuk melihat pembaruan"
+            swipeHint = "Gulir untuk lainnya"
             continueLabel = "Lanjut"
         default:
             title = "Masjidly Update!"
             versionPrefix = "Version"
-            swipeHint = "Swipe to scroll updates"
+            swipeHint = "Scroll for more"
             continueLabel = "Continue"
         }
     }

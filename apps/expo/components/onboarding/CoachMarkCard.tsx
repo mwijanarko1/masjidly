@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   Animated,
   type ViewStyle,
   type TextStyle,
 } from "react-native";
+import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { SPACING, FONT_SIZES } from "@/constants";
 import type { TimeTheme } from "@/lib/design/themes";
 import { ACCENT } from "@/lib/design/themes";

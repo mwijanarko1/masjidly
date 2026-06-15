@@ -8,6 +8,7 @@ enum MasjidlySupportMail {
     enum Category {
         case feedback
         case prayerTimes
+        case requestMasjid
 
         func subject(locale: Locale) -> String {
             switch self {
@@ -15,6 +16,8 @@ enum MasjidlySupportMail {
                 LS("support.mail.feedback.subject", locale: locale)
             case .prayerTimes:
                 LS("support.mail.prayer_times.subject", locale: locale)
+            case .requestMasjid:
+                LS("support.mail.request_masjid.subject", locale: locale)
             }
         }
 
@@ -24,6 +27,8 @@ enum MasjidlySupportMail {
                 LS("support.mail.feedback.body", locale: locale)
             case .prayerTimes:
                 LS("support.mail.prayer_times.body", locale: locale)
+            case .requestMasjid:
+                LS("support.mail.request_masjid.body", locale: locale)
             }
         }
     }
@@ -63,6 +68,35 @@ enum MasjidlySupportMail {
         components.path = recipient
         components.queryItems = [
             URLQueryItem(name: "subject", value: category.subject(locale: locale)),
+            URLQueryItem(name: "body", value: body),
+        ]
+        return components.url
+    }
+
+    static func missingPrayerTimesURL(locale: Locale, context: Context, monthDisplay: String) -> URL? {
+        let mosqueName = context.mosqueName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedMosqueName = (mosqueName?.isEmpty == false) ? mosqueName! : LS("settings.email.mosque.not_selected", locale: locale)
+        let subjectFormat = LS("support.mail.missing_prayer_times.subject", locale: locale)
+        let bodyFormat = LS("support.mail.missing_prayer_times.body", locale: locale)
+        let footer = LS("support.mail.footer", locale: locale)
+        let subject = String(format: subjectFormat, locale: locale, arguments: [resolvedMosqueName, monthDisplay])
+        let body = String(format: bodyFormat, locale: locale, arguments: [resolvedMosqueName, monthDisplay])
+            + "\n\n"
+            + String(
+                format: footer,
+                locale: locale,
+                arguments: [
+                    context.appMarketingVersion,
+                    context.appBuild,
+                    context.systemVersion,
+                ]
+            )
+
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = recipient
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: subject),
             URLQueryItem(name: "body", value: body),
         ]
         return components.url

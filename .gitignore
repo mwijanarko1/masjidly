@@ -7,3 +7,9 @@
 
 # Binary artifacts
 *.apk
+
+# Xcode build artifacts
+build/
+
+# Project notes
+context.md

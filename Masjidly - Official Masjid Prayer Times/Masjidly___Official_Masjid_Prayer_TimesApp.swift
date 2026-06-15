@@ -85,6 +85,7 @@ struct Masjidly___Official_Masjid_Prayer_TimesApp: App {
     init() {
         UNUserNotificationCenter.current().delegate = MasjidlyNotificationDelegate.shared
         PrayerNotificationContent.registerCategories()
+        WatchPrayerSnapshotTransferService.shared.activate()
 
         let fontName = "Gill Sans"
         let largeFont = UIFont(name: fontName, size: 34) ?? UIFont.systemFont(ofSize: 34, weight: .bold)

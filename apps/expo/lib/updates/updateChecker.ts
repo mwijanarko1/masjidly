@@ -1,4 +1,3 @@
-import { Platform } from "react-native";
 import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 
@@ -14,7 +13,7 @@ export interface MasjidlyRelease {
     sha256: string;
     minVersionCode: number;
   };
-  ios: {
+  ios?: {
     version: string;
     build: number;
     appStoreUrl: string;
@@ -90,33 +89,10 @@ function currentVersionCode(): number | null {
   return null;
 }
 
-function isVersionNewer(candidate: string, current: string): boolean {
-  const candidateParts = numericVersionParts(candidate);
-  const currentParts = numericVersionParts(current);
-  const count = Math.max(candidateParts.length, currentParts.length);
-
-  for (let index = 0; index < count; index += 1) {
-    const candidateValue = candidateParts[index] ?? 0;
-    const currentValue = currentParts[index] ?? 0;
-    if (candidateValue > currentValue) return true;
-    if (candidateValue < currentValue) return false;
-  }
-
-  return false;
-}
-
-function numericVersionParts(version: string): number[] {
-  return version.split(".").map((part) => {
-    const numericPrefix = part.match(/^\d+/)?.[0];
-    return numericPrefix ? Number(numericPrefix) : 0;
-  });
-}
-
 /**
- * Checks whether an update is available for the current platform.
+ * Checks whether an update is available for Android.
  *
- * - On **Android**: compares `versionCode` against the manifest's `versionCode`.
- * - On **iOS**: compares version against the manifest's semantic `version`.
+ * Compares `versionCode` against the manifest's `versionCode`.
  *
  * Returns an `UpdateInfo` object. Even if the fetch fails, you get
  * `{ updateAvailable: false, release: null, error: "..." }`.
@@ -132,59 +108,26 @@ export async function checkForUpdate(): Promise<UpdateInfo> {
     };
   }
 
-  if (Platform.OS === "android") {
-    const current = currentVersionCode();
-    if (current == null) {
-      return {
-        updateAvailable: false,
-        release,
-        error: "Could not determine current Android versionCode.",
-      };
-    }
+  const current = currentVersionCode();
+  if (current == null) {
     return {
-      updateAvailable: release.android.versionCode > current,
+      updateAvailable: false,
       release,
-      error: null,
+      error: "Could not determine current Android versionCode.",
     };
   }
-
-  if (Platform.OS === "ios") {
-    const current = Constants.nativeApplicationVersion ?? Constants.expoConfig?.version;
-    if (!current) {
-      return {
-        updateAvailable: false,
-        release,
-        error: "Could not determine current iOS version.",
-      };
-    }
-    return {
-      updateAvailable: isVersionNewer(release.ios.version, current),
-      release,
-      error: null,
-    };
-  }
-
   return {
-    updateAvailable: false,
+    updateAvailable: release.android.versionCode > current,
     release,
-    error: `Unsupported platform: ${Platform.OS}`,
+    error: null,
   };
 }
 
 /**
- * Opens the appropriate download/update URL for the platform.
- *
- * - **Android**: returns the APK download URL from the manifest.
- * - **iOS**: returns the App Store page URL from the manifest.
+ * Returns the APK download URL from the manifest.
  */
 export function getUpdateUrl(release: MasjidlyRelease): string | null {
-  if (Platform.OS === "android") {
-    return release.android.url;
-  }
-  if (Platform.OS === "ios") {
-    return release.ios.appStoreUrl;
-  }
-  return null;
+  return release.android.url;
 }
 
 /**

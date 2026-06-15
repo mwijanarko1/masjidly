@@ -90,6 +90,11 @@ describe("Onboarding notification setup", () => {
           iqamahEnabled: false,
           preAdhanReminderMinutes: 10,
           preIqamahReminderMinutes: null,
+          fajr: true,
+          dhuhrJummah: true,
+          asr: true,
+          maghrib: true,
+          isha: true,
         },
         isCompletingNotifications: false,
       });
@@ -132,6 +137,11 @@ describe("Onboarding notification setup", () => {
           iqamahEnabled: false,
           preAdhanReminderMinutes: null,
           preIqamahReminderMinutes: null,
+          fajr: false,
+          dhuhrJummah: false,
+          asr: false,
+          maghrib: false,
+          isha: false,
         },
       });
     });

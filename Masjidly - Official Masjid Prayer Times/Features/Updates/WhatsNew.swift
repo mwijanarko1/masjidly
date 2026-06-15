@@ -23,34 +23,54 @@ struct WhatsNew {
         case "ar":
             return [
                 WhatsNewItem(
-                    title: "إصلاح: إقامة جدول المواعيد",
-                    description: "تم إصلاح خطأ حيث كان جدول المواعيد يعرض أوقات إقامة العشاء بشكل غير صحيح لبعض المساجد. الآن الشاشة الرئيسية وجدول المواعيد والودجت تستخدم نفس المنطق.",
-                    icon: "rectangle.grid.2x2"
-                )
+                    title: "إصلاحات الأخطاء",
+                    description: "إصلاحات وتحسينات عامة لتجربة أكثر سلاسة.",
+                    icon: "ladybug"
+                ),
+                WhatsNewItem(
+                    title: "أوقات منتصف الليل والثلث الأخير",
+                    description: "تمت إضافة أوقات منتصف الليل والثلث الأخير من الليل لكل جدول صلاة.",
+                    icon: "moon.stars"
+                ),
             ]
         case "ur":
             return [
                 WhatsNewItem(
-                    title: "بگ فکس: ٹائم ٹیبل اقامت",
-                    description: "ایک بگ درست کیا گیا جہاں ٹائم ٹیبل بعض مساجد کے لیے عشاء کی غلط اقامت دکھا رہا تھا۔ اب ہوم، ٹائم ٹیبل اور وجٹس ایک ہی اقامت کا منطق استعمال کرتے ہیں۔",
-                    icon: "rectangle.grid.2x2"
-                )
+                    title: "بگ فکسز",
+                    description: "مختلف بگ فکسز اور بہتریوں کے ساتھ ہموار تجربہ۔",
+                    icon: "ladybug"
+                ),
+                WhatsNewItem(
+                    title: "آدھی رات اور آخری تہائی رات کے اوقات",
+                    description: "ہر نماز کے شیڈول کے لیے آدھی رات اور آخری تہائی رات کے اوقات شامل کیے گئے ہیں۔",
+                    icon: "moon.stars"
+                ),
             ]
         case "id":
             return [
                 WhatsNewItem(
-                    title: "Perbaikan: Iqamah Jadwal",
-                    description: "Memperbaiki bug di jadwal yang menampilkan iqamah Isya yang salah untuk beberapa masjid. Layar utama, jadwal, dan widget kini menggunakan logika iqamah yang sama.",
-                    icon: "rectangle.grid.2x2"
-                )
+                    title: "Perbaikan Bug",
+                    description: "Berbagai perbaikan bug dan peningkatan untuk pengalaman yang lebih lancar.",
+                    icon: "ladybug"
+                ),
+                WhatsNewItem(
+                    title: "Waktu Tengah Malam & Sepertiga Malam",
+                    description: "Waktu tengah malam dan sepertiga malam terakhir telah ditambahkan untuk setiap jadwal sholat.",
+                    icon: "moon.stars"
+                ),
             ]
         default:
             return [
                 WhatsNewItem(
-                    title: "Bug Fix: Timetable Iqamah",
-                    description: "Fixed a bug where the timetable showed incorrect Isha iqamah times for some mosques. Home, timetable, and widgets now use the same iqamah logic.",
-                    icon: "rectangle.grid.2x2"
-                )
+                    title: "Bug Fixes",
+                    description: "Various bug fixes and improvements for a smoother experience.",
+                    icon: "ladybug"
+                ),
+                WhatsNewItem(
+                    title: "Midnight & Last Third Times",
+                    description: "Midnight and last third of the night times have been added for each prayer schedule.",
+                    icon: "moon.stars"
+                ),
             ]
         }
     }

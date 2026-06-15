@@ -3,11 +3,10 @@ import {
   Modal,
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Platform,
 } from "react-native";
+import { HapticTouchableOpacity as TouchableOpacity } from "@/components/ui/HapticPressable";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -59,9 +58,7 @@ export default function UpdatePromptModal({
   const [downloading, setDownloading] = useState(false);
   const language = useAppLanguage();
 
-  const visible = externalVisible ?? internalVisible;
-  const isAndroid = Platform.OS === "android";
-
+  const visible = Boolean(externalVisible || internalVisible);
   const check = useCallback(async () => {
     setChecking(true);
     const info = await checkForUpdate();
@@ -177,21 +174,13 @@ export default function UpdatePromptModal({
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={[styles.buttonText, styles.primaryButtonText]}>
-                  {isAndroid
-                    ? language === "ar"
-                      ? "تحميل"
-                      : language === "ur"
-                        ? "ڈاؤن لوڈ کریں"
-                        : language === "id"
-                          ? "Unduh"
-                          : "Download"
-                    : language === "ar"
-                      ? "فتح المتجر"
-                      : language === "ur"
-                        ? "اسٹور کھولیں"
-                        : language === "id"
-                          ? "Buka App Store"
-                          : "Open App Store"}
+                  {language === "ar"
+                  ? "تحميل"
+                  : language === "ur"
+                    ? "ڈاؤن لوڈ کریں"
+                    : language === "id"
+                      ? "Unduh"
+                      : "Download"}
                 </Text>
               )}
             </TouchableOpacity>

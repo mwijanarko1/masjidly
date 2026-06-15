@@ -38,30 +38,138 @@ export function currentMasjidlyFullVersion(): string {
   return `${expoVersion()} (${expoBuild()})`;
 }
 
-const iqamahParityItems: Record<AppLanguage, WhatsNewItem> = {
+const countryPickerItems: Record<AppLanguage, WhatsNewItem> = {
   en: {
-    title: "Bug Fix: Timetable Iqamah",
+    title: "Choose Country, City & Mosque",
     description:
-      "Fixed a bug where the timetable showed incorrect Isha iqamah times for some mosques. Home, timetable, and widgets now use the same iqamah logic.",
+      "We’re expanding internationally. Choose your country, city, and mosque.",
+    icon: "globe",
+  },
+  ar: {
+    title: "اختر البلد والمدينة والمسجد",
+    description:
+      "نتوسع عالميًا. اختر بلدك ثم مدينتك ومسجدك.",
+    icon: "globe",
+  },
+  ur: {
+    title: "ملک، شہر اور مسجد چنیں",
+    description:
+      "ہم دنیا بھر میں پھیل رہے ہیں۔ اپنا ملک، شہر اور مسجد چنیں.",
+    icon: "globe",
+  },
+  id: {
+    title: "Pilih Negara, Kota & Masjid",
+    description:
+      "Kami berkembang secara internasional. Pilih negara, kota, dan masjid Anda.",
+    icon: "globe",
+  },
+};
+
+const languageOnboardingItems: Record<AppLanguage, WhatsNewItem> = {
+  en: {
+    title: "Choose Your Language",
+    description:
+      "Pick your language when you set up the app.",
+    icon: "rtl",
+  },
+  ar: {
+    title: "اختر لغتك",
+    description:
+      "اختر لغتك عند إعداد التطبيق.",
+    icon: "rtl",
+  },
+  ur: {
+    title: "اپنی زبان چنیں",
+    description:
+      "ایپ سیٹ کرتے وقت اپنی زبان چنیں۔",
+    icon: "rtl",
+  },
+  id: {
+    title: "Pilih Bahasa Anda",
+    description:
+      "Pilih bahasa saat menyiapkan aplikasi.",
+    icon: "rtl",
+  },
+};
+
+const asrPreferenceItems: Record<AppLanguage, WhatsNewItem> = {
+  en: {
+    title: "Asr Adhan Choice",
+    description:
+      "If your mosque has two Asr adhans, choose First Asr or Second Asr in Settings.",
+    icon: "theme",
+  },
+  ar: {
+    title: "اختيار أذان العصر",
+    description:
+      "إذا كان لمسجدك أذانان للعصر، اختر العصر الأول أو الثاني من الإعدادات.",
+    icon: "theme",
+  },
+  ur: {
+    title: "عصر اذان کا انتخاب",
+    description:
+      "اگر مسجد میں عصر کی دو اذانیں ہیں، ترتیبات میں پہلی یا دوسری عصر چنیں۔",
+    icon: "theme",
+  },
+  id: {
+    title: "Pilihan Adhan Asar",
+    description:
+      "Jika masjid punya dua adhan Asar, pilih Asar Pertama atau Kedua di Pengaturan.",
+    icon: "theme",
+  },
+};
+
+const multiJummahItems: Record<AppLanguage, WhatsNewItem> = {
+  en: {
+    title: "More Jummah Times",
+    description:
+      "Jummah 1 and Jummah 2 now show clearly when available.",
     icon: "countdown",
   },
   ar: {
-    title: "إصلاح: إقامة جدول المواعيد",
+    title: "أوقات جمعة أكثر",
     description:
-      "تم إصلاح خطأ حيث كان جدول المواعيد يعرض أوقات إقامة العشاء بشكل غير صحيح لبعض المساجد. الآن الشاشة الرئيسية وجدول المواعيد والودجت تستخدم نفس المنطق.",
+      "تظهر جمعة 1 وجمعة 2 بوضوح عند توفرهما.",
     icon: "countdown",
   },
   ur: {
-    title: "بگ فکس: ٹائم ٹیبل اقامت",
+    title: "مزید جمعہ اوقات",
     description:
-      "ایک بگ درست کیا گیا جہاں ٹائم ٹیبل بعض مساجد کے لیے عشاء کی غلط اقامت دکھا رہا تھا۔ اب ہوم، ٹائم ٹیبل اور وجٹس ایک ہی اقامت کا منطق استعمال کرتے ہیں۔",
+      "جمعہ 1 اور جمعہ 2 دستیاب ہوں تو صاف دکھتے ہیں۔",
     icon: "countdown",
   },
   id: {
-    title: "Perbaikan: Iqamah Jadwal",
+    title: "Lebih Banyak Waktu Jumat",
     description:
-      "Memperbaiki bug di jadwal yang menampilkan iqamah Isya yang salah untuk beberapa masjid. Layar utama, jadwal, dan widget kini menggunakan logika iqamah yang sama.",
+      "Jumat 1 dan Jumat 2 kini tampil jelas jika tersedia.",
     icon: "countdown",
+  },
+};
+
+const closestMosqueItems: Record<AppLanguage, WhatsNewItem> = {
+  en: {
+    title: "Nearest Mosque",
+    description:
+      "Find the closest mosque to you in Settings.",
+    icon: "globe",
+  },
+  ar: {
+    title: "أقرب مسجد",
+    description:
+      "اعثر على أقرب مسجد إليك من الإعدادات.",
+    icon: "globe",
+  },
+  ur: {
+    title: "قریب ترین مسجد",
+    description:
+      "ترتیبات میں اپنے قریب ترین مسجد دیکھیں۔",
+    icon: "globe",
+  },
+  id: {
+    title: "Masjid Terdekat",
+    description:
+      "Temukan masjid terdekat di Pengaturan.",
+    icon: "globe",
   },
 };
 
@@ -69,30 +177,54 @@ const copies: Record<AppLanguage, WhatsNewCopy> = {
   en: {
     title: "Masjidly Update!",
     versionLabel: "Version %s",
-    swipeHint: "Swipe to scroll updates",
+    swipeHint: "Scroll for more",
     continueLabel: "Continue",
-    items: [iqamahParityItems.en],
+    items: [
+      countryPickerItems.en,
+      languageOnboardingItems.en,
+      asrPreferenceItems.en,
+      multiJummahItems.en,
+      closestMosqueItems.en,
+    ],
   },
   ar: {
     title: "تحديث مسجدلي!",
     versionLabel: "الإصدار %s",
-    swipeHint: "اسحب لقراءة التحديثات",
+    swipeHint: "مرر للمزيد",
     continueLabel: "متابعة",
-    items: [iqamahParityItems.ar],
+    items: [
+      countryPickerItems.ar,
+      languageOnboardingItems.ar,
+      asrPreferenceItems.ar,
+      multiJummahItems.ar,
+      closestMosqueItems.ar,
+    ],
   },
   ur: {
     title: "مسجدلی اپ ڈیٹ!",
     versionLabel: "ورژن %s",
-    swipeHint: "اپ ڈیٹس دیکھنے کے لیے سوائپ کریں",
+    swipeHint: "مزید کے لیے اسکرول کریں",
     continueLabel: "جاری رکھیں",
-    items: [iqamahParityItems.ur],
+    items: [
+      countryPickerItems.ur,
+      languageOnboardingItems.ur,
+      asrPreferenceItems.ur,
+      multiJummahItems.ur,
+      closestMosqueItems.ur,
+    ],
   },
   id: {
     title: "Pembaruan Masjidly!",
     versionLabel: "Versi %s",
-    swipeHint: "Geser untuk melihat pembaruan",
+    swipeHint: "Gulir untuk lainnya",
     continueLabel: "Lanjut",
-    items: [iqamahParityItems.id],
+    items: [
+      countryPickerItems.id,
+      languageOnboardingItems.id,
+      asrPreferenceItems.id,
+      multiJummahItems.id,
+      closestMosqueItems.id,
+    ],
   },
 };
 

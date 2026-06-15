@@ -33,7 +33,7 @@ function asLocationsTuple(
  * Atmospheric sky stack aligned with iOS `HomeView.backgroundLayer`: densified vertical (or diagonal)
  * base gradient, soft horizon glow, subtle top wash.
  */
-export function AtmosphericSkyBackground({
+export const AtmosphericSkyBackground = React.memo(function AtmosphericSkyBackground({
   sky,
   variant = "home",
   diagonalBase = false,
@@ -85,4 +85,4 @@ export function AtmosphericSkyBackground({
       ) : null}
     </>
   );
-}
+});

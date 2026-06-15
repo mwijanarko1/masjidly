@@ -4,6 +4,13 @@ enum HomeDesign {
     struct SkyTheme {
         let baseColors: [Color]
         let glowColor: Color?
+        let glowBaseAlpha: CGFloat
+
+        init(baseColors: [Color], glowColor: Color?, glowBaseAlpha: CGFloat = 1.0) {
+            self.baseColors = baseColors
+            self.glowColor = glowColor
+            self.glowBaseAlpha = glowBaseAlpha
+        }
     }
 
     enum ThemeMode: String, CaseIterable, Identifiable {
@@ -20,18 +27,18 @@ enum HomeDesign {
         
         var sky: SkyTheme {
             switch self {
-            case .fajr: 
+            case .fajr:
                 return SkyTheme(baseColors: [Color(hex: "020326"), Color(hex: "06114F"), Color(hex: "0B1E6D"), Color(hex: "3B2A5A")], glowColor: Color(hex: "F08A4B"))
             case .sunrise:
                 return SkyTheme(baseColors: [Color(hex: "6B7280"), Color(hex: "C084FC"), Color(hex: "FB923C"), Color(hex: "F59E0B")], glowColor: Color(hex: "FEF08A"))
             case .dhuhr:
-                return SkyTheme(baseColors: [Color(hex: "E0F2FE"), Color(hex: "7DD3FC"), Color(hex: "38BDF8")], glowColor: Color(hex: "38BDF8").opacity(0.2))
+                return SkyTheme(baseColors: [Color(hex: "E0F2FE"), Color(hex: "7DD3FC"), Color(hex: "38BDF8")], glowColor: Color(hex: "38BDF8"), glowBaseAlpha: 0.2)
             case .asr:
                 return SkyTheme(baseColors: [Color(hex: "93C5FD"), Color(hex: "FDE68A"), Color(hex: "FDBA74")], glowColor: Color(hex: "D6B38A"))
             case .maghrib:
                 return SkyTheme(baseColors: [Color(hex: "6D3FA9"), Color(hex: "A855F7"), Color(hex: "F472B6"), Color(hex: "FB7185")], glowColor: Color(hex: "F59E0B"))
             case .isha:
-                return SkyTheme(baseColors: [Color(hex: "000000"), Color(hex: "020617"), Color(hex: "0F172A")], glowColor: Color(hex: "0F172A").opacity(0.4))
+                return SkyTheme(baseColors: [Color(hex: "000000"), Color(hex: "020617"), Color(hex: "0F172A")], glowColor: Color(hex: "0F172A"), glowBaseAlpha: 0.4)
             case .tahajjud:
                 return SkyTheme(baseColors: [Color(hex: "000000"), Color(hex: "01030A"), Color(hex: "020617")], glowColor: nil)
             }
