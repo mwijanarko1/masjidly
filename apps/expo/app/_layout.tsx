@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
 import { useEffect, useState } from "react";
-import { DeviceEventEmitter } from "react-native";
+import { DeviceEventEmitter, StyleSheet, View } from "react-native";
 import { useFonts } from "expo-font";
 import {
   Comfortaa_300Light,
@@ -207,26 +207,35 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <MasjidlyConvexProvider>
           <UpdatePromptModal
             autoCheck
             visible={showTestUpdatePrompt}
             onClose={() => setShowTestUpdatePrompt(false)}
           />
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="timetable"
-              options={{ presentation: "modal", headerShown: false }}
-            />
-            <Stack.Screen
-              name="settings"
-              options={{ presentation: "modal", headerShown: false }}
-            />
-          </Stack>
+          <View style={styles.stackBackground}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: styles.stackBackground }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen
+                name="timetable"
+                options={{ animation: "none" }}
+              />
+              <Stack.Screen
+                name="settings"
+                options={{ animation: "none" }}
+              />
+            </Stack>
+          </View>
         </MasjidlyConvexProvider>
       </SafeAreaProvider>
     </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  stackBackground: {
+    flex: 1,
+    backgroundColor: "#071B33",
+  },
+});

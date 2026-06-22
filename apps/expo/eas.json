@@ -10,12 +10,10 @@
     },
     "production": {
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       },
       "ios": {
-        "autoIncrement": {
-          "version": true
-        }
+        "autoIncrement": true
       },
       "env": {
         "NODE_ENV": "production"

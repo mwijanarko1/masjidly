@@ -31,9 +31,55 @@ extension UNUserNotificationCenter: PrayerNotificationCenter {
     }
 }
 
+private actor PrayerNotificationRunLock {
+    private var locked = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func run<T>(_ operation: () async throws -> T) async rethrows -> T {
+        await acquire()
+        defer { release() }
+        return try await operation()
+    }
+
+    private func acquire() async {
+        if !locked {
+            locked = true
+            return
+        }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+
+    private func release() {
+        if waiters.isEmpty {
+            locked = false
+        } else {
+            waiters.removeFirst().resume()
+        }
+    }
+}
+
+private actor PrayerNotificationRunGate {
+    private var generation = 0
+
+    func next() -> Int {
+        generation += 1
+        return generation
+    }
+
+    func invalidate() {
+        generation += 1
+    }
+
+    func isCurrent(_ value: Int) -> Bool {
+        generation == value
+    }
+}
+
 final class PrayerNotificationScheduler: PrayerNotificationScheduling {
     private let repository: any PrayerRepository
     private let center: any PrayerNotificationCenter
+    private let runLock = PrayerNotificationRunLock()
+    private let runGate = PrayerNotificationRunGate()
     /// iOS keeps at most 64 pending local notifications; stop submitting beyond that in deterministic loop order.
     private var prayerNotificationAddBudget: Int = 0
 
@@ -57,6 +103,13 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
     }
 
     func cancelAllPrayerNotifications() async {
+        await runLock.run {
+            await runGate.invalidate()
+            await cancelAllPrayerNotificationsForCurrentRun()
+        }
+    }
+
+    private func cancelAllPrayerNotificationsForCurrentRun() async {
         let pending = await center.pendingPrayerNotificationRequests()
         let ids = pending.map(\.identifier).filter { $0.hasPrefix("masjidly.prayer.") }
         center.removePendingPrayerNotificationRequests(withIdentifiers: ids)
@@ -69,10 +122,29 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         locale: Locale,
         asrIqamahPreference: AsrIqamahPreference
     ) async throws {
-        await cancelAllPrayerNotifications()
+        try await runLock.run {
+            try await rescheduleUpcomingPrayerNotificationsForCurrentRun(
+                mosque: mosque,
+                days: days,
+                settings: settings,
+                locale: locale,
+                asrIqamahPreference: asrIqamahPreference
+            )
+        }
+    }
+
+    private func rescheduleUpcomingPrayerNotificationsForCurrentRun(
+        mosque: Mosque,
+        days: Int,
+        settings: NotificationSettings,
+        locale: Locale,
+        asrIqamahPreference: AsrIqamahPreference
+    ) async throws {
+        let generation = await runGate.next()
+        await cancelAllPrayerNotificationsForCurrentRun()
         guard settings.masterEnabled else { return }
         let granted = try await requestAuthorizationIfNeeded()
-        guard granted else { return }
+        guard granted, await runGate.isCurrent(generation) else { return }
 
         prayerNotificationAddBudget = 64
 
@@ -114,7 +186,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: displayed.fajr,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
             let fajrIq = PrayerTimesEngine.getIqamahTime(prayer: "fajr", adhanTime: displayed.fajr, iqamahTimes: iq)
             try await scheduleIqamahIfEnabled(
@@ -127,7 +200,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: fajrIq,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
 
             let dhuhrTime = displayed.dhuhr
@@ -141,7 +215,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: dhuhrTime,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
             let iqLabel = isFriday ? iq.jummah : PrayerTimesEngine.getIqamahTime(prayer: "dhuhr", adhanTime: dhuhrTime, iqamahTimes: iq)
             try await scheduleIqamahIfEnabled(
@@ -154,7 +229,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: iqLabel,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
 
             try await scheduleAdhanIfEnabled(
@@ -167,7 +243,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: displayed.asr,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
             let asrIq = PrayerTimesEngine.selectAsrIqamahTime(iq.asr, adhanTime: displayed.asr, preference: asrIqamahPreference)
             try await scheduleIqamahIfEnabled(
@@ -180,7 +257,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: asrIq,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
 
             try await scheduleAdhanIfEnabled(
@@ -193,7 +271,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: displayed.maghrib,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
             let maghribIq = PrayerTimesEngine.getIqamahTime(prayer: "maghrib", adhanTime: displayed.maghrib, iqamahTimes: iq)
             try await scheduleIqamahIfEnabled(
@@ -206,7 +285,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: maghribIq,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
 
             try await scheduleAdhanIfEnabled(
@@ -219,7 +299,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: displayed.isha,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
             let ishaIq = PrayerTimesEngine.resolveIshaIqamahForDisplay(
                 slug: slug,
@@ -238,7 +319,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 time: ishaIq,
                 isFriday: isFriday,
                 civilDay: dayDate,
-                locale: locale
+                locale: locale,
+                generation: generation
             )
         }
     }
@@ -279,7 +361,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         time: String,
         isFriday: Bool,
         civilDay: Date,
-        locale: Locale
+        locale: Locale,
+        generation: Int
     ) async throws {
         guard isAdhanForPrayerEnabled(prayerKey: prayerKey, settings: settings) else { return }
         if settings.adhanEnabled {
@@ -293,7 +376,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 hhmm: time,
                 categoryIdentifier: PrayerNotificationContent.CategoryID.adhan,
                 sound: PrayerNotificationContent.sound(for: settings, channel: .adhan),
-                userInfo: info
+                userInfo: info,
+                generation: generation
             )
         }
         guard let minutes = settings.preAdhanReminderMinutes, minutes > 0 else { return }
@@ -308,7 +392,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             isFriday: isFriday,
             civilDay: civilDay,
             hhmm: time,
-            locale: locale
+            locale: locale,
+            generation: generation
         )
     }
 
@@ -322,7 +407,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         time: String,
         isFriday: Bool,
         civilDay: Date,
-        locale: Locale
+        locale: Locale,
+        generation: Int
     ) async throws {
         guard isIqamahForPrayerEnabled(prayerKey: prayerKey, settings: settings) else { return }
         if settings.iqamahEnabled {
@@ -336,7 +422,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
                 hhmm: time,
                 categoryIdentifier: PrayerNotificationContent.CategoryID.iqamah,
                 sound: PrayerNotificationContent.sound(for: settings, channel: .iqamah),
-                userInfo: info
+                userInfo: info,
+                generation: generation
             )
         }
         guard let minutes = settings.preIqamahReminderMinutes, minutes > 0 else { return }
@@ -351,7 +438,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             isFriday: isFriday,
             civilDay: civilDay,
             hhmm: time,
-            locale: locale
+            locale: locale,
+            generation: generation
         )
     }
 
@@ -371,7 +459,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         isFriday: Bool,
         civilDay: Date,
         hhmm: String,
-        locale: Locale
+        locale: Locale,
+        generation: Int
     ) async throws {
         guard let targetDate = triggerDate(civilDay: civilDay, hhmm: hhmm) else { return }
         var calMinus = Calendar(identifier: .gregorian)
@@ -416,9 +505,12 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: c, repeats: false)
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-        guard prayerNotificationAddBudget > 0 else { return }
+        guard prayerNotificationAddBudget > 0, await runGate.isCurrent(generation) else { return }
         prayerNotificationAddBudget -= 1
         try await center.addPrayerNotificationRequest(request)
+        if !(await runGate.isCurrent(generation)) {
+            center.removePendingPrayerNotificationRequests(withIdentifiers: [id])
+        }
     }
 
     private func scheduleIfNeeded(
@@ -429,7 +521,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         hhmm: String,
         categoryIdentifier: String,
         sound: UNNotificationSound,
-        userInfo: [AnyHashable: Any]
+        userInfo: [AnyHashable: Any],
+        generation: Int
     ) async throws {
         guard let fire = triggerDate(civilDay: civilDay, hhmm: hhmm), fire > Date() else { return }
         var cal = Calendar(identifier: .gregorian)
@@ -443,9 +536,12 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         content.userInfo = userInfo
         let trigger = UNCalendarNotificationTrigger(dateMatching: c, repeats: false)
         let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-        guard prayerNotificationAddBudget > 0 else { return }
+        guard prayerNotificationAddBudget > 0, await runGate.isCurrent(generation) else { return }
         prayerNotificationAddBudget -= 1
         try await center.addPrayerNotificationRequest(request)
+        if !(await runGate.isCurrent(generation)) {
+            center.removePendingPrayerNotificationRequests(withIdentifiers: [id])
+        }
     }
 
     private static func adhanUserInfo(prayerKey: String, mosqueSlug: String, iso: String) -> [AnyHashable: Any] {

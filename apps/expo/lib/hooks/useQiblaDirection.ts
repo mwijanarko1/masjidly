@@ -5,10 +5,10 @@ import type { Mosque } from "@/types/prayer";
 
 const KAABA_LATITUDE = 21.4225;
 const KAABA_LONGITUDE = 39.8262;
-const HEADING_FILTER_DEGREES = 1; // Matches iOS CLLocationManager.headingFilter = 1
+const HEADING_FILTER_DEGREES = 1;
 const ROTATION_DEADBAND_DEGREES = 0.5;
-const MIN_VISUAL_UPDATE_INTERVAL_MS = 100; // Prevent Expo heading callbacks from flooding JS/UI
-const ANIMATION_DURATION_MS = 200; // Matches iOS .easeOut(duration: 0.2)
+// Matches iOS QiblaPrayerIcon `.animation(.easeOut(duration: 0.2), value:)`.
+const ANIMATION_DURATION_MS = 200;
 
 function normalizeDegrees(degrees: number): number {
   const remainder = degrees % 360;
@@ -69,24 +69,11 @@ export function useQiblaDirection({
   const headingDegrees = useRef<number | null>(null);
   const displayedRotation = useRef<number | null>(null);
   const lastProcessedHeading = useRef<number | null>(null);
-  const lastVisualUpdateTime = useRef(0);
   const fallbackMosqueRef = useRef(fallbackMosque);
   const enabledRef = useRef(enabled);
 
   fallbackMosqueRef.current = fallbackMosque;
   enabledRef.current = enabled;
-
-  const animateTo = useRef((targetDegrees: number) => {
-    // Cancel any in-flight animation so heading updates do not queue/fight each other.
-    animatedRotation.stopAnimation(() => {
-      Animated.timing(animatedRotation, {
-        toValue: targetDegrees,
-        duration: ANIMATION_DURATION_MS,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }).start();
-    });
-  }).current;
 
   const updateDisplayedRotation = useRef(() => {
     if (!enabledRef.current) return;
@@ -103,20 +90,26 @@ export function useQiblaDirection({
     const targetRotation = indicatorRotationDegrees(bearing, headingDegrees.current);
     const continuous = continuousRotationDegrees(displayedRotation.current, targetRotation);
 
-    const now = Date.now();
     const isFirstRotation = displayedRotation.current === null;
     const rotationChangedEnough =
       displayedRotation.current !== null &&
       Math.abs(continuous - displayedRotation.current) >= ROTATION_DEADBAND_DEGREES;
-    const updateIntervalElapsed =
-      now - lastVisualUpdateTime.current >= MIN_VISUAL_UPDATE_INTERVAL_MS;
 
-    if (isFirstRotation || (rotationChangedEnough && updateIntervalElapsed)) {
+    if (isFirstRotation || rotationChangedEnough) {
       displayedRotation.current = continuous;
-      lastVisualUpdateTime.current = now;
 
-      // Fire animation — updates only the Animated.View, zero React re-renders
-      animateTo(continuous);
+      if (isFirstRotation) {
+        animatedRotation.setValue(continuous);
+      } else {
+        // iOS eases each heading step; do not stopAnimation() — that caused jank.
+        Animated.timing(animatedRotation, {
+          toValue: continuous,
+          duration: ANIMATION_DURATION_MS,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+          isInteraction: false,
+        }).start();
+      }
     }
   }).current;
 
@@ -176,7 +169,10 @@ export function useQiblaDirection({
       // Watch compass heading independently of location authorization, matching native iOS.
       try {
         headingSub = await Location.watchHeadingAsync((heading) => {
+          // Expo accuracy 0 means "poor calibration", not "no heading". Android
+          // production builds can report 0 forever, so keep the sample.
           const h = heading.trueHeading >= 0 ? heading.trueHeading : heading.magHeading;
+          if (!Number.isFinite(h)) return;
           const last = lastProcessedHeading.current;
 
           // Match iOS headingFilter = 1: ignore sub-degree sensor noise.

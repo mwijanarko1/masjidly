@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import type { SkyTheme } from "@/lib/design/themes";
 import {
@@ -33,11 +33,7 @@ function asLocationsTuple(
  * Atmospheric sky stack aligned with iOS `HomeView.backgroundLayer`: densified vertical (or diagonal)
  * base gradient, soft horizon glow, subtle top wash.
  */
-export const AtmosphericSkyBackground = React.memo(function AtmosphericSkyBackground({
-  sky,
-  variant = "home",
-  diagonalBase = false,
-}: Props) {
+function SkyLayers({ sky, variant, diagonalBase }: Required<Props>) {
   const base = densifyGradientStops(sky.baseColors, 2);
   const glowBaseAlpha = sky.glowBaseAlpha ?? 1;
   const horizon =
@@ -83,6 +79,54 @@ export const AtmosphericSkyBackground = React.memo(function AtmosphericSkyBackgr
           pointerEvents="none"
         />
       ) : null}
+    </>
+  );
+}
+
+export const AtmosphericSkyBackground = React.memo(function AtmosphericSkyBackground({
+  sky,
+  variant = "home",
+  diagonalBase = false,
+}: Props) {
+  const [currentSky, setCurrentSky] = useState(sky);
+  const [previousSky, setPreviousSky] = useState<SkyTheme | null>(null);
+  const fade = useRef(new Animated.Value(1)).current;
+  const animation = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    if (sky === currentSky) return;
+    animation.current?.stop();
+    setPreviousSky(currentSky);
+    setCurrentSky(sky);
+    fade.setValue(0);
+    animation.current = Animated.timing(fade, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    });
+    animation.current.start(({ finished }) => {
+      if (finished) setPreviousSky(null);
+    });
+  }, [sky, currentSky, fade]);
+
+  return (
+    <>
+      {previousSky ? (
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            { opacity: fade.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) },
+          ]}
+        >
+          <SkyLayers sky={previousSky} variant={variant} diagonalBase={diagonalBase} />
+        </Animated.View>
+      ) : null}
+
+      <Animated.View
+        style={[StyleSheet.absoluteFill, { opacity: previousSky ? fade : 1 }]}
+      >
+        <SkyLayers sky={currentSky} variant={variant} diagonalBase={diagonalBase} />
+      </Animated.View>
     </>
   );
 });

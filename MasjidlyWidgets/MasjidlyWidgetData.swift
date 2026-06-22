@@ -361,6 +361,12 @@ enum MasjidlyWidgetResolver {
             return snapshot.days.first(where: { $0.date == tomorrowString })
         }()
 
+        // If all today events have passed and tomorrow's data is missing,
+        // show stale instead of incorrectly falling back to today's Fajr.
+        if isNextFajrTomorrow, morrowDay == nil {
+            return .stale()
+        }
+
         let next: ResolvedPrayer = {
             if isNextFajrTomorrow, let morrow = morrowDay {
                 return ResolvedPrayer(

@@ -1,10 +1,8 @@
-import React, { useRef, useEffect, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  Dimensions,
 } from "react-native";
 import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { useAppLanguage, getFontScale } from "@/lib/i18n/language";
@@ -42,10 +40,6 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = React.memo(
   theme,
   highlightAllPrayers,
 }) => {
-  const scrollRef = useRef<ScrollView>(null);
-  const [screenW, setScreenW] = useState(
-    Dimensions.get("window").width
-  );
   const textColor = getTextColor(theme);
   const langCode = useAppLanguage();
   const fontScale = getFontScale(langCode);
@@ -62,80 +56,56 @@ export const PrayerLetterPicker: React.FC<PrayerLetterPickerProps> = React.memo(
     return clean.charAt(0) || prayer[0];
   };
 
-  useEffect(() => {
-    const sub = Dimensions.addEventListener("change", ({ window }) => {
-      setScreenW(window.width);
-    });
-    return () => sub?.remove();
-  }, []);
-
-  useEffect(() => {
-    const index = prayers.indexOf(selectedPrayer);
-    if (index >= 0 && scrollRef.current) {
-      const itemWidth = 28 + 14;
-      const offset = itemWidth * index - screenW / 2 + itemWidth / 2;
-      scrollRef.current.scrollTo({ x: Math.max(0, offset), animated: true });
-    }
-  }, [selectedPrayer, prayers, screenW]);
-
   return (
-    <ScrollView
-      ref={scrollRef}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
-      <View style={[styles.centeringFrame, { minWidth: screenW - 40 }]}>
-        <TutorialHighlight
-          isHighlighted={highlightAllPrayers === true}
-          width={228}
-          height={52}
-          color={textColor}
-        >
-          <View style={styles.row}>
-            {prayers.map((prayer) => {
-              const isSelected = prayer === selectedPrayer;
-              return (
-                <Pressable
-                  key={prayer}
-                  onPress={() => onSelectPrayer(prayer)}
-                  style={styles.button}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  accessibilityLabel={prayer}
+    <View style={styles.container}>
+      <TutorialHighlight
+        isHighlighted={highlightAllPrayers === true}
+        width={228}
+        height={52}
+        color={textColor}
+      >
+        <View style={styles.row}>
+          {prayers.map((prayer) => {
+            const isSelected = prayer === selectedPrayer;
+            return (
+              <Pressable
+                key={prayer}
+                onPress={() => onSelectPrayer(prayer)}
+                style={styles.button}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={prayer}
+              >
+                <Text
+                  style={[
+                    styles.letter,
+                    {
+                      color: textColor + (isSelected ? "FF" : "61"),
+                      fontFamily: isSelected
+                        ? "Comfortaa_600SemiBold"
+                        : "Comfortaa_400Regular",
+                      fontSize: 20 * fontScale,
+                    },
+                  ]}
                 >
-                  <Text
-                    style={[
-                      styles.letter,
-                      {
-                        color: textColor + (isSelected ? "FF" : "61"),
-                        fontFamily: isSelected
-                          ? "Comfortaa_600SemiBold"
-                          : "Comfortaa_400Regular",
-                        fontSize: 20 * fontScale,
-                      },
-                    ]}
-                  >
-                    {getPrayerLetter(prayer)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </TutorialHighlight>
-      </View>
-    </ScrollView>
+                  {getPrayerLetter(prayer)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </TutorialHighlight>
+    </View>
   );
 });
 
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-  },
-  centeringFrame: {
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 20,
   },
   row: {
     flexDirection: "row",

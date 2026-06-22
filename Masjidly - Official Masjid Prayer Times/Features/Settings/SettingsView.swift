@@ -966,14 +966,13 @@ struct SettingsView: View {
 
     private var adhanNotificationsBinding: Binding<Bool> {
         Binding(
-            get: {
-                let n = settings.notifications
-                return n.adhanEnabled && allAdhanPrayerTogglesEnabled(in: n)
-            },
+            get: { settings.notifications.adhanEnabled },
             set: { newValue in
                 var n = settings.notifications
                 n.adhanEnabled = newValue
-                setAllAdhanPrayerToggles(newValue, in: &n)
+                if newValue {
+                    setAllAdhanPrayerToggles(true, in: &n)
+                }
                 updateMasterNotificationsFlag(in: &n)
                 settings.notifications = n
                 Task { await model.onNotificationsChanged() }
@@ -983,14 +982,13 @@ struct SettingsView: View {
 
     private var iqamahNotificationsBinding: Binding<Bool> {
         Binding(
-            get: {
-                let n = settings.notifications
-                return n.iqamahEnabled && allIqamahPrayerTogglesEnabled(in: n)
-            },
+            get: { settings.notifications.iqamahEnabled },
             set: { newValue in
                 var n = settings.notifications
                 n.iqamahEnabled = newValue
-                setAllIqamahPrayerToggles(newValue, in: &n)
+                if newValue {
+                    setAllIqamahPrayerToggles(true, in: &n)
+                }
                 updateMasterNotificationsFlag(in: &n)
                 settings.notifications = n
                 Task { await model.onNotificationsChanged() }
@@ -1004,7 +1002,6 @@ struct SettingsView: View {
             set: { newValue in
                 var n = settings.notifications
                 n[keyPath: prayer.keyPath] = newValue
-                n.adhanEnabled = anyAdhanPrayerToggleEnabled(in: n)
                 updateMasterNotificationsFlag(in: &n)
                 settings.notifications = n
                 Task { await model.onNotificationsChanged() }
@@ -1018,7 +1015,6 @@ struct SettingsView: View {
             set: { newValue in
                 var n = settings.notifications
                 n[keyPath: prayer.keyPath] = newValue
-                n.iqamahEnabled = anyIqamahPrayerToggleEnabled(in: n)
                 updateMasterNotificationsFlag(in: &n)
                 settings.notifications = n
                 Task { await model.onNotificationsChanged() }
@@ -1033,26 +1029,10 @@ struct SettingsView: View {
                                       notifications.preIqamahReminderMinutes != nil
     }
 
-    private func allAdhanPrayerTogglesEnabled(in n: NotificationSettings) -> Bool {
-        AdhanPrayerToggleKey.allCases.allSatisfy { n[keyPath: $0.keyPath] }
-    }
-
-    private func anyAdhanPrayerToggleEnabled(in n: NotificationSettings) -> Bool {
-        AdhanPrayerToggleKey.allCases.contains { n[keyPath: $0.keyPath] }
-    }
-
     private func setAllAdhanPrayerToggles(_ enabled: Bool, in n: inout NotificationSettings) {
         for prayer in AdhanPrayerToggleKey.allCases {
             n[keyPath: prayer.keyPath] = enabled
         }
-    }
-
-    private func allIqamahPrayerTogglesEnabled(in n: NotificationSettings) -> Bool {
-        IqamahPrayerToggleKey.allCases.allSatisfy { n[keyPath: $0.keyPath] }
-    }
-
-    private func anyIqamahPrayerToggleEnabled(in n: NotificationSettings) -> Bool {
-        IqamahPrayerToggleKey.allCases.contains { n[keyPath: $0.keyPath] }
     }
 
     private func setAllIqamahPrayerToggles(_ enabled: Bool, in n: inout NotificationSettings) {

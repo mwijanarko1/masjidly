@@ -356,6 +356,8 @@ export default function HomeScreen() {
     goToPreviousDay,
     goToNextDay,
     goToToday,
+    goToLastAvailablePrayerDate,
+    hasAvailablePrayerTimesFallback,
   } = useHomePrayerData();
   const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
   const hideQiblaCompass = useSettingsStore((s) => s.hideQiblaCompass);
@@ -546,6 +548,15 @@ export default function HomeScreen() {
         <View style={[styles.loadingContainer, { backgroundColor: sky.baseColors[0], paddingHorizontal: 32 }]}> 
           <Text style={[styles.missingTimesTitle, { color: textColor }]}>{t("home.missing_times.title", languageCode)}</Text>
           <Text style={[styles.missingTimesMonth, { color: textColor + "B8" }]}>{currentMonthLabel}</Text>
+          {hasAvailablePrayerTimesFallback ? (
+            <Pressable
+              style={[styles.retryButton, { marginTop: SPACING.md }]}
+              onPress={goToLastAvailablePrayerDate}
+              accessibilityRole="button"
+            >
+              <Text style={styles.retryButtonText}>{t("home.go_to_available_times", languageCode)}</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             style={[styles.retryButton, { marginTop: SPACING.md }]}
             onPress={() => openMissingPrayerTimesEmail({

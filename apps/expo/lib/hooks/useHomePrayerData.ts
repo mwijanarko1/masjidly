@@ -37,6 +37,8 @@ export interface HomePrayerData {
   goToPreviousDay: () => void;
   goToNextDay: () => void;
   goToToday: () => void;
+  goToLastAvailablePrayerDate: () => void;
+  hasAvailablePrayerTimesFallback: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -77,6 +79,7 @@ export function useHomePrayerData(): HomePrayerData {
   const [ukDst, setUkDst] = useState<UkDstYear[]>([]);
   const [displayedDate, setDisplayedDate] = useState(() => new Date());
   const [loadedMonth, setLoadedMonth] = useState<{ month: number; year: number } | null>(null);
+  const [lastAvailablePrayerDate, setLastAvailablePrayerDate] = useState<Date | null>(null);
 
   const applyPrayerPayload = useCallback((input: {
     mosque: Mosque;
@@ -115,6 +118,7 @@ export function useHomePrayerData(): HomePrayerData {
       );
       setDisplayedPrayerTimes(displayed);
       setIqamahTimes(iqamah);
+      setLastAvailablePrayerDate(now);
       setNextCountdown(
         isSameSheffieldDay(now, new Date())
           ? getNextPrayerAndCountdown(displayed, iqamah, mosque.slug, new Date(), asrIqamahPreference, false)
@@ -333,6 +337,12 @@ export function useHomePrayerData(): HomePrayerData {
     applyDisplayedDate(new Date());
   }, [applyDisplayedDate]);
 
+  const goToLastAvailablePrayerDate = useCallback(() => {
+    if (lastAvailablePrayerDate) {
+      applyDisplayedDate(lastAvailablePrayerDate);
+    }
+  }, [applyDisplayedDate, lastAvailablePrayerDate]);
+
   return {
     loadState,
     mosques,
@@ -347,6 +357,8 @@ export function useHomePrayerData(): HomePrayerData {
     goToPreviousDay,
     goToNextDay,
     goToToday,
+    goToLastAvailablePrayerDate,
+    hasAvailablePrayerTimesFallback: lastAvailablePrayerDate !== null,
     refresh,
   };
 }

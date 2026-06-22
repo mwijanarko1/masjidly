@@ -71,9 +71,10 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = React.memo(({
 
   const rotateInterpolation = useMemo(() => {
     if (!animatedRotation) return null;
+    // 1:1 degree mapping — stable for unbounded continuous rotation values.
     return animatedRotation.interpolate({
-      inputRange: [0, 360],
-      outputRange: ["0deg", "360deg"],
+      inputRange: [0, 1],
+      outputRange: ["0deg", "1deg"],
       extrapolate: "extend",
     });
   }, [animatedRotation]);
@@ -87,30 +88,6 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = React.memo(({
 
   const outerOpacity = showCountdown ? "6A" : "3D";
   const outerBorderW = showCountdown ? 1.15 : 1;
-
-  const symbolicOpacity = React.useRef(new Animated.Value(showCountdown ? 0 : 1)).current;
-  const countdownOpacity = React.useRef(new Animated.Value(showCountdown ? 1 : 0)).current;
-  const countdownSlide = React.useRef(new Animated.Value(showCountdown ? 0 : 3 * scale)).current;
-
-  React.useEffect(() => {
-    Animated.parallel([
-      Animated.timing(symbolicOpacity, {
-        toValue: showCountdown ? 0 : 1,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.timing(countdownOpacity, {
-        toValue: showCountdown ? 1 : 0,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.timing(countdownSlide, {
-        toValue: showCountdown ? 0 : 3 * scale,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [showCountdown, symbolicOpacity, countdownOpacity, countdownSlide, scale]);
 
   const pointerDeg = rotationDegrees ?? 0;
   const hasQiblaPointer = animatedRotation != null || rotationDegrees != null;
@@ -168,67 +145,66 @@ export const QiblaPrayerIcon: React.FC<QiblaPrayerIconProps> = React.memo(({
         }}
       />
 
-      <Animated.View
-        style={{
-          transform: [
-            { translateX: offset.x * scale },
-            { translateY: offset.y * scale },
-          ],
-          opacity: symbolicOpacity,
-        }}
-      >
-        <PrayerSunPhaseIcon theme={theme} size={100 * scale} />
-      </Animated.View>
-
-      <Animated.View
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: 0,
-          bottom: 0,
-          justifyContent: "center",
-          alignItems: "center",
-          opacity: countdownOpacity,
-          transform: [{ translateY: countdownSlide }],
-        }}
-        pointerEvents="none"
-      >
-        <View style={{ alignItems: "center", width: 78 * scale, paddingHorizontal: 4 }}>
-          <Text
-            style={{
-              width: "100%",
-              fontSize: 9 * scale,
-              fontWeight: "600",
-              letterSpacing: 1.4,
-              color: color + "85",
-              textTransform: "uppercase",
-              textAlign: "center",
-            }}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-          >
-            {countdownLabel}
-          </Text>
-          <Text
-            style={{
-              width: "100%",
-              marginTop: 2 * scale,
-              fontSize: 20 * scale,
-              fontWeight: "500",
-              fontVariant: ["tabular-nums"],
-              color: color + "EB",
-              textAlign: "center",
-            }}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.55}
-          >
-            {countdownTime}
-          </Text>
+      {showCountdown ? (
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          pointerEvents="none"
+        >
+          <View style={{ alignItems: "center", width: 78 * scale, paddingHorizontal: 4 }}>
+            <Text
+              style={{
+                width: "100%",
+                fontSize: 9 * scale,
+                fontWeight: "600",
+                letterSpacing: 1.4,
+                color: color + "85",
+                textTransform: "uppercase",
+                textAlign: "center",
+              }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              {countdownLabel}
+            </Text>
+            <Text
+              style={{
+                width: "100%",
+                marginTop: 2 * scale,
+                fontSize: 20 * scale,
+                fontWeight: "500",
+                fontVariant: ["tabular-nums"],
+                color: color + "EB",
+                textAlign: "center",
+              }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.55}
+            >
+              {countdownTime}
+            </Text>
+          </View>
         </View>
-      </Animated.View>
+      ) : (
+        <View
+          style={{
+            transform: [
+              { translateX: offset.x * scale },
+              { translateY: offset.y * scale },
+            ],
+          }}
+        >
+          <PrayerSunPhaseIcon theme={theme} size={100 * scale} />
+        </View>
+      )}
 
       {showPointer ? (
         <Animated.View

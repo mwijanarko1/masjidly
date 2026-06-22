@@ -7,16 +7,7 @@ import UserNotifications
 @MainActor
 struct PrayerNotificationSchedulerTests {
     @Test func authorizationUsesExistingGrantedNotificationStates() async throws {
-        let mosque = Mosque(
-            id: "mosque-a",
-            name: "Mosque A",
-            address: "",
-            lat: 0,
-            lng: 0,
-            slug: "mosque-a",
-            website: nil,
-            isHidden: false
-        )
+        let mosque = makeSchedulerMosque()
         let repository = SchedulerPrayerRepository(mosque: mosque)
         let center = RecordingPrayerNotificationCenter()
         center.authorizationStatus = .provisional
@@ -29,16 +20,7 @@ struct PrayerNotificationSchedulerTests {
     }
 
     @Test func authorizationDoesNotRePromptAfterDenial() async throws {
-        let mosque = Mosque(
-            id: "mosque-a",
-            name: "Mosque A",
-            address: "",
-            lat: 0,
-            lng: 0,
-            slug: "mosque-a",
-            website: nil,
-            isHidden: false
-        )
+        let mosque = makeSchedulerMosque()
         let repository = SchedulerPrayerRepository(mosque: mosque)
         let center = RecordingPrayerNotificationCenter()
         center.authorizationStatus = .denied
@@ -51,16 +33,7 @@ struct PrayerNotificationSchedulerTests {
     }
 
     @Test func schedulesAdhanIqamahAndReminderRequests() async throws {
-        let mosque = Mosque(
-            id: "mosque-a",
-            name: "Mosque A",
-            address: "",
-            lat: 0,
-            lng: 0,
-            slug: "mosque-a",
-            website: nil,
-            isHidden: false
-        )
+        let mosque = makeSchedulerMosque()
         let repository = SchedulerPrayerRepository(mosque: mosque)
         let center = RecordingPrayerNotificationCenter()
         let scheduler = PrayerNotificationScheduler(repository: repository, center: center)
@@ -76,7 +49,8 @@ struct PrayerNotificationSchedulerTests {
             mosque: mosque,
             days: 2,
             settings: settings,
-            locale: Locale(identifier: "en_GB")
+            locale: Locale(identifier: "en_GB"),
+            asrIqamahPreference: .first
         )
 
         let identifiers = center.addedRequests.map(\.identifier)
@@ -87,17 +61,90 @@ struct PrayerNotificationSchedulerTests {
         #expect(center.removedIdentifiers == ["masjidly.prayer.old.fajr.adhan"])
     }
 
-    @Test func pendingPrayerRequestsIncludeOnlyMasjidlyPrefixSortedByFireDate() async throws {
-        let mosque = Mosque(
-            id: "mosque-a",
-            name: "Mosque A",
-            address: "",
-            lat: 0,
-            lng: 0,
-            slug: "mosque-a",
-            website: nil,
-            isHidden: false
+    @Test func preIqamahReminderOnlySchedulesRemindersWithoutAdhanOrExactIqamah() async throws {
+        let mosque = makeSchedulerMosque()
+        let repository = SchedulerPrayerRepository(mosque: mosque)
+        let center = RecordingPrayerNotificationCenter()
+        let scheduler = PrayerNotificationScheduler(repository: repository, center: center)
+        let settings = NotificationSettings(
+            masterEnabled: true,
+            adhanEnabled: false,
+            iqamahEnabled: false,
+            preAdhanReminderMinutes: nil,
+            preIqamahReminderMinutes: 10
         )
+
+        try await scheduler.rescheduleUpcomingPrayerNotifications(
+            mosque: mosque,
+            days: 1,
+            settings: settings,
+            locale: Locale(identifier: "en_GB"),
+            asrIqamahPreference: .first
+        )
+
+        let identifiers = center.addedRequests.map(\.identifier)
+        #expect(identifiers.contains { $0.hasSuffix(".iqamah_reminder") })
+        #expect(!identifiers.contains { $0.hasSuffix(".adhan") })
+        #expect(!identifiers.contains { $0.hasSuffix(".adhan_reminder") })
+        #expect(!identifiers.contains { $0.hasSuffix(".iqamah") })
+    }
+
+    @Test func iqamahExactOnWithoutReminderSchedulesExactIqamahOnly() async throws {
+        let mosque = makeSchedulerMosque()
+        let repository = SchedulerPrayerRepository(mosque: mosque)
+        let center = RecordingPrayerNotificationCenter()
+        let scheduler = PrayerNotificationScheduler(repository: repository, center: center)
+        let settings = NotificationSettings(
+            masterEnabled: true,
+            adhanEnabled: false,
+            iqamahEnabled: true,
+            preAdhanReminderMinutes: nil,
+            preIqamahReminderMinutes: nil
+        )
+
+        try await scheduler.rescheduleUpcomingPrayerNotifications(
+            mosque: mosque,
+            days: 1,
+            settings: settings,
+            locale: Locale(identifier: "en_GB"),
+            asrIqamahPreference: .first
+        )
+
+        let identifiers = center.addedRequests.map(\.identifier)
+        #expect(identifiers.contains { $0.hasSuffix(".iqamah") })
+        #expect(!identifiers.contains { $0.hasSuffix(".iqamah_reminder") })
+        #expect(!identifiers.contains { $0.hasSuffix(".adhan") })
+        #expect(!identifiers.contains { $0.hasSuffix(".adhan_reminder") })
+    }
+
+    @Test func adhanChannelOffSchedulesOnlyIqamah() async throws {
+        let mosque = makeSchedulerMosque()
+        let repository = SchedulerPrayerRepository(mosque: mosque)
+        let center = RecordingPrayerNotificationCenter()
+        let scheduler = PrayerNotificationScheduler(repository: repository, center: center)
+        let settings = NotificationSettings(
+            masterEnabled: true,
+            adhanEnabled: false,
+            iqamahEnabled: true,
+            preAdhanReminderMinutes: nil,
+            preIqamahReminderMinutes: nil
+        )
+
+        try await scheduler.rescheduleUpcomingPrayerNotifications(
+            mosque: mosque,
+            days: 1,
+            settings: settings,
+            locale: Locale(identifier: "en_GB"),
+            asrIqamahPreference: .first
+        )
+
+        let identifiers = center.addedRequests.map(\.identifier)
+        #expect(!identifiers.contains { $0.hasSuffix(".adhan") })
+        #expect(identifiers.contains { $0.hasSuffix(".iqamah") })
+    }
+
+    @Test func pendingPrayerRequestsIncludeOnlyMasjidlyPrefixSortedByFireDate() async throws {
+        let mosque = makeSchedulerMosque()
         let repository = SchedulerPrayerRepository(mosque: mosque)
         let center = RecordingPrayerNotificationCenter()
         let scheduler = PrayerNotificationScheduler(repository: repository, center: center)
@@ -113,7 +160,8 @@ struct PrayerNotificationSchedulerTests {
             mosque: mosque,
             days: 1,
             settings: settings,
-            locale: Locale(identifier: "en_GB")
+            locale: Locale(identifier: "en_GB"),
+            asrIqamahPreference: .first
         )
 
         let pending = await center.pendingPrayerNotificationRequests()
@@ -123,6 +171,25 @@ struct PrayerNotificationSchedulerTests {
         let dated = prayer.compactMap { SchedulerTestTriggerDates.nextFireDate(for: $0.trigger) }
         #expect(dated == dated.sorted())
     }
+}
+
+
+private func makeSchedulerMosque() -> Mosque {
+    Mosque(
+        id: "mosque-a",
+        name: "Mosque A",
+        address: "",
+        lat: 0,
+        lng: 0,
+        slug: "mosque-a",
+        citySlug: nil,
+        cityName: nil,
+        countryCode: nil,
+        countryName: nil,
+        timezone: nil,
+        website: nil,
+        isHidden: false
+    )
 }
 
 private enum SchedulerTestTriggerDates {

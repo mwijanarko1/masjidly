@@ -222,9 +222,11 @@ struct HomeView: View {
                     homePrayerPage(for: d)
                 } else if shouldShowMissingCurrentMonthTimes {
                     missingCurrentMonthTimesView(metrics: metrics)
-                } else {
+                } else if model.loadState == .loading || model.loadState == .idle {
                     ProgressView()
                         .tint(currentTheme.textColor)
+                } else {
+                    loadErrorRecoveryView(metrics: metrics)
                 }
 
                 VStack {
@@ -252,6 +254,34 @@ struct HomeView: View {
 
     private var shouldShowMissingCurrentMonthTimes: Bool {
         model.selectedMosque != nil && (model.loadState == .loaded || model.loadState == .empty)
+    }
+
+    private func loadErrorRecoveryView(metrics: HomeViewportMetrics) -> some View {
+        VStack(spacing: 18) {
+            Button {
+                HapticFeedback.buttonTap()
+                Task {
+                    if model.selectedMosque != nil {
+                        await model.manualRefresh()
+                    } else {
+                        await model.load()
+                    }
+                }
+            } label: {
+                Text(homeLS("action.retry", locale: locale))
+                    .appFont(size: 16, weight: .semibold)
+                    .foregroundStyle(currentTheme.usesLightForeground ? Color.black : Color.white)
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 13)
+                    .background(Capsule().fill(currentTheme.textColor.opacity(0.92)))
+            }
+            .buttonStyle(.hapticPlain)
+            .accessibilityIdentifier("Home.LoadError.RetryButton")
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, metrics.topChromeInset + 56)
+        .frame(maxWidth: 420)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     private func missingCurrentMonthTimesView(metrics: HomeViewportMetrics) -> some View {

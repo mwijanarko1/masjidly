@@ -105,6 +105,16 @@ function safe(value: string): string {
 
 const memoryStore = new Map<string, string>();
 
+function peekValue<T>(key: string, parse: (value: unknown) => T | null): T | null {
+  const raw = memoryStore.get(key);
+  if (!raw) return null;
+  try {
+    return parse(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
 type StorageLike = {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -132,8 +142,11 @@ function getStorage(): StorageLike {
 
 async function loadValue<T>(key: string, parse: (value: unknown) => T | null): Promise<T | null> {
   try {
+    const cached = peekValue(key, parse);
+    if (cached !== null) return cached;
     const raw = await getStorage().getItem(key);
     if (!raw) return null;
+    memoryStore.set(key, raw);
     return parse(JSON.parse(raw));
   } catch {
     return null;
@@ -142,7 +155,9 @@ async function loadValue<T>(key: string, parse: (value: unknown) => T | null): P
 
 async function saveValue<T>(key: string, value: T): Promise<void> {
   try {
-    await getStorage().setItem(key, JSON.stringify(value));
+    const raw = JSON.stringify(value);
+    memoryStore.set(key, raw);
+    await getStorage().setItem(key, raw);
   } catch {
     // Cache writes are best-effort only.
   }
@@ -153,9 +168,8 @@ async function removeValue(key: string): Promise<void> {
     const storage = getStorage();
     if (storage.removeItem) {
       await storage.removeItem(key);
-    } else {
-      memoryStore.delete(key);
     }
+    memoryStore.delete(key);
   } catch {
     // Cache removals are best-effort only.
   }
@@ -199,12 +213,15 @@ function parseUkDst(value: unknown): UkDstCalendar | null {
 }
 
 export const prayerTimesCache = {
+  peekMosques: () => peekValue(cacheKey.mosques, parseMosques),
   loadMosques: () => loadValue(cacheKey.mosques, parseMosques),
   saveMosques: (mosques: Mosque[]) => saveValue(cacheKey.mosques, mosques),
 
   loadUkDst: () => loadValue(cacheKey.ukDst, parseUkDst),
   saveUkDst: (dst: UkDstCalendar) => saveValue(cacheKey.ukDst, dst),
 
+  peekMonthly: (slug: string, month: MonthName, year: number) =>
+    peekValue(cacheKey.monthly(slug, month, year), parseMonth),
   loadMonthly: (slug: string, month: MonthName, year: number) =>
     loadValue(cacheKey.monthly(slug, month, year), parseMonth),
   saveMonthly: (slug: string, month: MonthName, year: number, data: MonthPrayerData) =>

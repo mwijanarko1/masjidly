@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import { formatPrayerClockForDisplay, getIqamahTimesForDate, getDisplayIqamah, f
 import { t } from "@/lib/i18n/translations";
 import { resolvedLocale, useAppLanguage, getFontScale } from "@/lib/i18n/language";
 import type { MonthPrayerData, DailyIqamahTimes } from "@/types/prayer";
+import type { MonthName } from "@/lib/prayer/monthName";
 import {
   themeForPrayer,
   getSkyTheme,
@@ -33,6 +34,11 @@ import {
 } from "@/lib/design/themes";
 
 const SUPPORT_EMAIL = "mikhailbuilds@gmail.com";
+const DATE_CELL_WIDTH = 48;
+const DATE_CELL_GAP = 8;
+const DATE_STRIP_HORIZONTAL_PADDING = 24;
+const DATE_STRIP_HEIGHT = 102;
+const MONTH_NAMES = ["january","february","march","april","may","june","july","august","september","october","november","december"] as const;
 
 function formatTime(time: string, uses24h: boolean, locale: string): string {
   if (!time || time === "-" || time === "\u2014") return "-";
@@ -129,12 +135,18 @@ export default function TimetableScreen() {
   const usesLightForeground = getUsesLightForeground(theme);
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [monthData, setMonthData] = useState<MonthPrayerData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
+  const monthName = MONTH_NAMES[month - 1] as MonthName;
+  const initialMonthData = useMemo(
+    () => activeMosqueSlug ? prayerTimesCache.peekMonthly(activeMosqueSlug, monthName, year) : null,
+    [activeMosqueSlug, monthName, year]
+  );
+  const [monthData, setMonthData] = useState<MonthPrayerData | null>(initialMonthData);
+  const [loading, setLoading] = useState(Boolean(activeMosqueSlug && !initialMonthData));
+  const [error, setError] = useState(false);
+  const dateStripRef = useRef<ScrollView>(null);
+  const [dateStripWidth, setDateStripWidth] = useState(0);
 
   const [selectedDay, setSelectedDay] = useState(() => {
     const today = new Date();
@@ -143,10 +155,10 @@ export default function TimetableScreen() {
 
   const fetchMonth = useCallback(async () => {
     if (!activeMosqueSlug) return;
-    setLoading(true); setError(false);
-    const monthNames = ["january","february","march","april","may","june","july","august","september","october","november","december"] as const;
-    const monthName = monthNames[month - 1];
+    setError(false);
+    setLoading(!prayerTimesCache.peekMonthly(activeMosqueSlug, monthName, year));
     const cached = await prayerTimesCache.loadMonthly(activeMosqueSlug, monthName, year);
+    setLoading(!cached);
     if (cached) {
       setMonthData(cached);
       setLoading(false);
@@ -168,7 +180,11 @@ export default function TimetableScreen() {
     } finally {
       setLoading(false);
     }
-  }, [activeMosqueSlug, month, year]);
+  }, [activeMosqueSlug, monthName, year]);
+
+  useEffect(() => {
+    setMonthData(initialMonthData);
+  }, [initialMonthData]);
 
   useEffect(() => { fetchMonth(); }, [fetchMonth]);
   useEffect(() => {
@@ -230,6 +246,24 @@ export default function TimetableScreen() {
     return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(d);
   };
 
+  const centerSelectedDayInStrip = useCallback(() => {
+    if (!monthData?.prayerTimes.length || dateStripWidth <= 0) return;
+    const index = monthData.prayerTimes.findIndex((pt) => pt.date === selectedDay);
+    if (index < 0) return;
+    const itemCenterX =
+      DATE_STRIP_HORIZONTAL_PADDING +
+      index * (DATE_CELL_WIDTH + DATE_CELL_GAP) +
+      DATE_CELL_WIDTH / 2;
+    const x = Math.max(0, itemCenterX - dateStripWidth / 2);
+    dateStripRef.current?.scrollTo({ x, animated: true });
+  }, [monthData, selectedDay, dateStripWidth]);
+
+  useEffect(() => {
+    if (!hasMonthTimes || loading) return;
+    const frame = requestAnimationFrame(centerSelectedDayInStrip);
+    return () => cancelAnimationFrame(frame);
+  }, [centerSelectedDayInStrip, hasMonthTimes, loading, year, month, selectedDay]);
+
   if (!activeMosqueSlug) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: sky.baseColors[0] }]}>
@@ -289,7 +323,15 @@ export default function TimetableScreen() {
 
         {/* Date Strip */}
         {hasMonthTimes && monthData ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}>
+          <ScrollView
+            ref={dateStripRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.dateStrip}
+            onLayout={(event) => setDateStripWidth(event.nativeEvent.layout.width)}
+            onContentSizeChange={centerSelectedDayInStrip}
+            contentContainerStyle={{ paddingHorizontal: DATE_STRIP_HORIZONTAL_PADDING, paddingBottom: 32 }}
+          >
             {monthData.prayerTimes.map((pt) => {
               const sel = pt.date === selectedDay;
               const td = isToday(today, year, month, pt.date);
@@ -315,8 +357,9 @@ export default function TimetableScreen() {
               );
             })}
           </ScrollView>
-        ) : null}
-
+        ) : (
+          <View style={styles.dateStrip} />
+        )}
 
         {loading ? (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -368,13 +411,22 @@ export default function TimetableScreen() {
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: SPACING.xl }}>
             {/* Column Header */}
             <View style={[styles.tableHeader, { paddingHorizontal: 24, paddingBottom: 4 }]}>
-              <Text style={[styles.headerCell, styles.nameCell, { color: textColor + "80", fontSize: 13 * fontScale }]}>
+              <Text
+                style={[styles.headerCell, styles.nameCell, { color: textColor + "80", fontSize: 13 * fontScale }]}
+                numberOfLines={2}
+              >
                 {t("timetable.header.prayer", languageCode)}
               </Text>
-              <Text style={[styles.headerCell, styles.timeCell, { color: textColor + "80", fontSize: 13 * fontScale }]}>
+              <Text
+                style={[styles.headerCell, styles.timeCell, { color: textColor + "80", fontSize: 13 * fontScale }]}
+                numberOfLines={2}
+              >
                 {t("timetable.header.adhan", languageCode)}
               </Text>
-              <Text style={[styles.headerCell, styles.timeCell, { color: textColor + "80", fontSize: 13 * fontScale }]}>
+              <Text
+                style={[styles.headerCell, styles.timeCell, { color: textColor + "80", fontSize: 13 * fontScale }]}
+                numberOfLines={2}
+              >
                 {t("timetable.header.iqamah", languageCode)}
               </Text>
             </View>
@@ -552,11 +604,12 @@ const styles = StyleSheet.create({
   closeButton: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
   monthSwitcher: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   monthLabel: { fontSize: 18, fontFamily: "Comfortaa_500Medium" },
-  dayCell: { width: 48, height: 70, borderRadius: 14, justifyContent: "center", alignItems: "center", marginRight: 8 },
+  dateStrip: { height: DATE_STRIP_HEIGHT, flexGrow: 0 },
+  dayCell: { width: DATE_CELL_WIDTH, height: 70, borderRadius: 14, justifyContent: "center", alignItems: "center", marginRight: DATE_CELL_GAP },
   dayWeekday: { fontSize: 10, fontFamily: "Comfortaa_600SemiBold", marginBottom: 4 },
   dayNumber: { fontSize: 20 },
-  tableHeader: { flexDirection: "row", alignItems: "center", marginTop: 8 },
+  tableHeader: { flexDirection: "row", alignItems: "flex-start", marginTop: 8 },
   headerCell: { fontSize: 13, fontFamily: "Comfortaa_500Medium" },
-  nameCell: { flex: 1 },
+  nameCell: { flex: 1, flexShrink: 1, minWidth: 0 },
   timeCell: { width: 105, maxWidth: 105, textAlign: "right" },
 });

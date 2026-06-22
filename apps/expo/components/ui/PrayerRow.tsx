@@ -58,7 +58,7 @@ export const PrayerRow: React.FC<PrayerRowProps> = React.memo(({
             fontSize: ROW_FONT_SIZE * fontScale,
           },
         ]}
-        numberOfLines={1}
+        numberOfLines={3}
       >
         {name}
       </Text>
@@ -100,7 +100,7 @@ export const PrayerRow: React.FC<PrayerRowProps> = React.memo(({
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 16,
@@ -110,6 +110,8 @@ const styles = StyleSheet.create({
   },
   nameCell: {
     flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
   timeCell: {
     width: 105,

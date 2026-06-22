@@ -8,11 +8,13 @@ import {
   Linking,
   Platform,
   Alert,
+  AppState,
   DeviceEventEmitter,
   LayoutAnimation,
   Switch,
   UIManager,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
@@ -70,6 +72,38 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+type UserCoordinates = Pick<Location.LocationObjectCoords, "latitude" | "longitude">;
+
+const LAST_COORDINATES_KEY = "masjidly:last-user-coordinates";
+const LAST_KNOWN_LOCATION_MAX_AGE_MS = 15 * 60 * 1000;
+const CURRENT_LOCATION_TIMEOUT_MS = 8000;
+let cachedLocationPermissionStatus: Location.PermissionStatus | null = null;
+let cachedUserCoordinates: UserCoordinates | null = null;
+
+async function loadCachedUserCoordinates(): Promise<UserCoordinates | null> {
+  if (cachedUserCoordinates) return cachedUserCoordinates;
+  try {
+    const raw = await AsyncStorage.getItem(LAST_COORDINATES_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<UserCoordinates>;
+    if (typeof value.latitude !== "number" || typeof value.longitude !== "number") return null;
+    cachedUserCoordinates = { latitude: value.latitude, longitude: value.longitude };
+    return cachedUserCoordinates;
+  } catch {
+    return null;
+  }
+}
+
+async function saveCachedUserCoordinates(coords: UserCoordinates | null): Promise<void> {
+  cachedUserCoordinates = coords;
+  try {
+    if (coords) await AsyncStorage.setItem(LAST_COORDINATES_KEY, JSON.stringify(coords));
+    else await AsyncStorage.removeItem(LAST_COORDINATES_KEY);
+  } catch {
+    // Best-effort cache only.
+  }
+}
+
 function notificationField(prefix: "adhan" | "iqamah", prayer: NotificationPrayerKey) {
   return `${prefix}${prayer.charAt(0).toUpperCase()}${prayer.slice(1)}`;
 }
@@ -82,6 +116,13 @@ function notificationPrayerLabelKey(prayer: NotificationPrayerKey): TranslationK
     case "maghrib": return "settings.notification.maghrib";
     case "isha": return "settings.notification.isha";
   }
+}
+
+async function getCurrentPositionWithTimeout(): Promise<Location.LocationObject | null> {
+  return Promise.race([
+    Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), CURRENT_LOCATION_TIMEOUT_MS)),
+  ]);
 }
 
 async function rescheduleNotifications(
@@ -179,11 +220,13 @@ export default function SettingsScreen() {
   }, [currentStep?.type]);
   // ── End Onboarding ──
 
-  const [mosques, setMosques] = useState<Mosque[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [locationPermissionStatus, setLocationPermissionStatus] = useState<Location.PermissionStatus | null>(null);
-  const [userCoordinates, setUserCoordinates] = useState<Location.LocationObjectCoords | null>(null);
+  const cachedMosques = useMemo(() => visibleMosques(prayerTimesCache.peekMosques() ?? []), []);
+  const [mosques, setMosques] = useState<Mosque[]>(cachedMosques);
+  const [loading, setLoading] = useState(cachedMosques.length === 0);
+  const [locationPermissionStatus, setLocationPermissionStatus] = useState<Location.PermissionStatus | null>(cachedLocationPermissionStatus);
+  const [userCoordinates, setUserCoordinates] = useState<UserCoordinates | null>(cachedUserCoordinates);
   const [supportsMultipleAsr, setSupportsMultipleAsr] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [adhanPrayerSettingsExpanded, setAdhanPrayerSettingsExpanded] = useState(false);
   const [iqamahPrayerSettingsExpanded, setIqamahPrayerSettingsExpanded] = useState(false);
   const langCode = useAppLanguage();
@@ -257,40 +300,63 @@ export default function SettingsScreen() {
     };
   }, [mosques, settings.selectedMosqueId, settings.selectedMosqueSlug]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadUserCoordinates() {
+  const refreshUserCoordinates = useCallback(async () => {
+    if (!cachedUserCoordinates) setLocationLoading(true);
+    try {
       if (settings.hideQiblaCompass) {
         setUserCoordinates(null);
         return;
       }
 
-      try {
-        const permission = await Location.getForegroundPermissionsAsync();
-        if (cancelled) return;
-        setLocationPermissionStatus(permission.status);
-        if (permission.status !== Location.PermissionStatus.GRANTED) {
-          setUserCoordinates(null);
-          return;
-        }
-
-        const position = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        if (!cancelled) {
-          setUserCoordinates(position.coords);
-        }
-      } catch {
-        // Location can fail in simulators or when services are unavailable; leave closest mosque unset.
+      const permission = await Location.getForegroundPermissionsAsync();
+      cachedLocationPermissionStatus = permission.status;
+      setLocationPermissionStatus(permission.status);
+      if (permission.status !== Location.PermissionStatus.GRANTED) {
+        await saveCachedUserCoordinates(null);
+        setUserCoordinates(null);
+        return;
       }
-    }
 
-    loadUserCoordinates();
-    return () => {
-      cancelled = true;
-    };
+      const lastKnown = await Location.getLastKnownPositionAsync({
+        maxAge: LAST_KNOWN_LOCATION_MAX_AGE_MS,
+      });
+      if (lastKnown) {
+        const coords = { latitude: lastKnown.coords.latitude, longitude: lastKnown.coords.longitude };
+        await saveCachedUserCoordinates(coords);
+        setUserCoordinates(coords);
+      }
+
+      const position = await getCurrentPositionWithTimeout();
+      if (position) {
+        const coords = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        await saveCachedUserCoordinates(coords);
+        setUserCoordinates(coords);
+      }
+    } catch {
+      // Location can fail in simulators or when services are unavailable; leave closest mosque unset.
+    } finally {
+      setLocationLoading(false);
+    }
   }, [settings.hideQiblaCompass]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadCachedUserCoordinates().then((coords) => {
+      if (!cancelled && coords) setUserCoordinates(coords);
+    }).finally(() => {
+      if (!cancelled) refreshUserCoordinates();
+    });
+    return () => { cancelled = true; };
+  }, [refreshUserCoordinates]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        refreshUserCoordinates();
+      }
+    });
+    return () => subscription.remove();
+  }, [refreshUserCoordinates]);
 
   const countries = useMemo(() => countryOptions(mosques), [mosques]);
 
@@ -393,11 +459,13 @@ export default function SettingsScreen() {
           current.preAdhanReminderMinutes !== null ||
           current.preIqamahReminderMinutes !== null,
         adhanEnabled: v,
-        adhanFajr: v,
-        adhanDhuhrJummah: v,
-        adhanAsr: v,
-        adhanMaghrib: v,
-        adhanIsha: v,
+        ...(v ? {
+          adhanFajr: true,
+          adhanDhuhrJummah: true,
+          adhanAsr: true,
+          adhanMaghrib: true,
+          adhanIsha: true,
+        } : {}),
       },
     });
     rescheduleNotifications(useSettingsStore.getState());
@@ -414,31 +482,47 @@ export default function SettingsScreen() {
           current.preAdhanReminderMinutes !== null ||
           current.preIqamahReminderMinutes !== null,
         iqamahEnabled: v,
-        iqamahFajr: v,
-        iqamahDhuhrJummah: v,
-        iqamahAsr: v,
-        iqamahMaghrib: v,
-        iqamahIsha: v,
+        ...(v ? {
+          iqamahFajr: true,
+          iqamahDhuhrJummah: true,
+          iqamahAsr: true,
+          iqamahMaghrib: true,
+          iqamahIsha: true,
+        } : {}),
       },
     });
     rescheduleNotifications(useSettingsStore.getState());
   };
 
   const handleAdhanReminder = (v: number | null) => {
-    settings.setPreAdhanReminderMinutes(v);
-    const state = useSettingsStore.getState();
-    if (v !== null && !state.notifications.masterEnabled) {
-      settings.setNotificationMaster(true);
-    }
+    const current = useSettingsStore.getState().notifications;
+    useSettingsStore.setState({
+      notifications: {
+        ...current,
+        preAdhanReminderMinutes: v,
+        masterEnabled:
+          current.adhanEnabled ||
+          current.iqamahEnabled ||
+          v !== null ||
+          current.preIqamahReminderMinutes !== null,
+      },
+    });
     rescheduleNotifications(useSettingsStore.getState());
   };
 
   const handleIqamahReminder = (v: number | null) => {
-    settings.setPreIqamahReminderMinutes(v);
-    const state = useSettingsStore.getState();
-    if (v !== null && !state.notifications.masterEnabled) {
-      settings.setNotificationMaster(true);
-    }
+    const current = useSettingsStore.getState().notifications;
+    useSettingsStore.setState({
+      notifications: {
+        ...current,
+        preIqamahReminderMinutes: v,
+        masterEnabled:
+          current.adhanEnabled ||
+          current.iqamahEnabled ||
+          current.preAdhanReminderMinutes !== null ||
+          v !== null,
+      },
+    });
     rescheduleNotifications(useSettingsStore.getState());
   };
 
@@ -448,15 +532,11 @@ export default function SettingsScreen() {
       ...current,
       [notificationField("adhan", prayer)]: enabled,
     };
-    const anyAdhanEnabled = NOTIFICATION_PRAYER_KEYS.some((key) =>
-      Boolean((next as unknown as Record<string, boolean>)[notificationField("adhan", key)])
-    );
     useSettingsStore.setState({
       notifications: {
         ...next,
-        adhanEnabled: anyAdhanEnabled,
         masterEnabled:
-          anyAdhanEnabled ||
+          next.adhanEnabled ||
           next.iqamahEnabled ||
           next.preAdhanReminderMinutes !== null ||
           next.preIqamahReminderMinutes !== null,
@@ -471,16 +551,12 @@ export default function SettingsScreen() {
       ...current,
       [notificationField("iqamah", prayer)]: enabled,
     };
-    const anyIqamahEnabled = NOTIFICATION_PRAYER_KEYS.some((key) =>
-      Boolean((next as unknown as Record<string, boolean>)[notificationField("iqamah", key)])
-    );
     useSettingsStore.setState({
       notifications: {
         ...next,
-        iqamahEnabled: anyIqamahEnabled,
         masterEnabled:
           next.adhanEnabled ||
-          anyIqamahEnabled ||
+          next.iqamahEnabled ||
           next.preAdhanReminderMinutes !== null ||
           next.preIqamahReminderMinutes !== null,
       },
@@ -488,14 +564,8 @@ export default function SettingsScreen() {
     rescheduleNotifications(useSettingsStore.getState());
   }, []);
 
-  const allAdhanPrayerTogglesEnabled = NOTIFICATION_PRAYER_KEYS.every((prayer) =>
-    Boolean((settings.notifications as unknown as Record<string, boolean>)[notificationField("adhan", prayer)])
-  );
-  const allIqamahPrayerTogglesEnabled = NOTIFICATION_PRAYER_KEYS.every((prayer) =>
-    Boolean((settings.notifications as unknown as Record<string, boolean>)[notificationField("iqamah", prayer)])
-  );
-  const adhanNotificationsEnabled = settings.notifications.adhanEnabled && allAdhanPrayerTogglesEnabled;
-  const iqamahNotificationsEnabled = settings.notifications.iqamahEnabled && allIqamahPrayerTogglesEnabled;
+  const adhanNotificationsEnabled = settings.notifications.adhanEnabled;
+  const iqamahNotificationsEnabled = settings.notifications.iqamahEnabled;
 
   const REMINDER_OPTIONS: { labelKey: TranslationKey; value: number | null }[] = [
     { labelKey: "settings.reminder.none", value: null },
@@ -555,8 +625,11 @@ export default function SettingsScreen() {
   }, []);
 
   const qiblaIsHidden = settings.hideQiblaCompass;
-  const shouldShowLocationRecovery =
-    qiblaIsHidden || locationPermissionStatus === Location.PermissionStatus.DENIED;
+  const isLocationAccessBlocked =
+    locationPermissionStatus !== null &&
+    locationPermissionStatus !== Location.PermissionStatus.GRANTED &&
+    locationPermissionStatus !== Location.PermissionStatus.UNDETERMINED;
+  const shouldShowLocationRecovery = qiblaIsHidden || isLocationAccessBlocked;
 
   const handleLocationRecovery = useCallback(() => {
     if (locationPermissionStatus === Location.PermissionStatus.UNDETERMINED) {
@@ -681,6 +754,13 @@ export default function SettingsScreen() {
   }, [mosques, settings.hideQiblaCompass, userCoordinates]);
 
   const closestMosqueName = closestMosque?.name ?? null;
+  // ponytail: loading state shown while location fetch in progress
+  const showClosestLoading = !settings.hideQiblaCompass &&
+    mosques.length > 0 &&
+    locationLoading &&
+    closestMosque === null;
+  const showClosestResult = closestMosque !== null;
+  const showClosest = showClosestLoading || showClosestResult;
 
   const reminderDisplayLabel = (minutes: number | null) => {
     const opt = REMINDER_OPTIONS.find((o) => o.value === minutes);
@@ -787,28 +867,32 @@ export default function SettingsScreen() {
                 sheetTitle={t("settings.section.mosque.title", langCode)}
                 testID="settings-mosque-picker"
               />
-              {closestMosque ? (
+              {showClosest ? (
                 <>
                   <RowDivider />
                   <View style={styles.closestMosqueContainer}>
                     <Text style={[styles.closestMosqueText, { color: textColor + "CC" }]}> 
-                      {t("settings.closest_mosque.format", langCode).replace("%s", closestMosqueName ?? closestMosque.name)}
+                      {showClosestLoading
+                        ? t("settings.closest_mosque.loading", langCode)
+                        : t("settings.closest_mosque.format", langCode).replace("%s", closestMosqueName ?? closestMosque!.name)}
                     </Text>
-                    <Pressable
-                      onPress={() => handleMosqueSelect(closestMosque)}
-                      style={({ pressed }) => [
-                        styles.closestMosqueButton,
-                        { backgroundColor: textColor + "26", borderColor: textColor + "33" },
-                        pressed && { opacity: 0.75 },
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={t("settings.closest_mosque.select", langCode)}
-                      testID="settings-select-closest-mosque"
-                    >
-                      <Text style={[styles.closestMosqueButtonText, { color: textColor }]}> 
-                        {t("settings.closest_mosque.select", langCode)}
-                      </Text>
-                    </Pressable>
+                    {closestMosque && (
+                      <Pressable
+                        onPress={() => handleMosqueSelect(closestMosque!)}
+                        style={({ pressed }) => [
+                          styles.closestMosqueButton,
+                          { backgroundColor: textColor + "26", borderColor: textColor + "33" },
+                          pressed && { opacity: 0.75 },
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel={t("settings.closest_mosque.select", langCode)}
+                        testID="settings-select-closest-mosque"
+                      >
+                        <Text style={[styles.closestMosqueButtonText, { color: textColor }]}> 
+                          {t("settings.closest_mosque.select", langCode)}
+                        </Text>
+                      </Pressable>
+                    )}
                   </View>
                 </>
               ) : null}

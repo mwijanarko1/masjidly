@@ -3,7 +3,7 @@
     "name": "Masjidly",
     "slug": "masjidly",
     "scheme": "masjidly",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.mikhailspeaks.masjidly",
-      "versionCode": 5,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -30,6 +30,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withAndroidPrayerWidget",
       "expo-audio",
       [
         "expo-location",

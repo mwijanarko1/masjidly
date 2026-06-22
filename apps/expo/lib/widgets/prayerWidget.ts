@@ -1,3 +1,23 @@
+/**
+ * Expo-side prayer widget snapshot module.
+ *
+ * Pushes a 7-day prayer snapshot to a native Android widget via
+ * `NativeModules.MasjidlyPrayerWidget`. The snapshot is **size-agnostic**
+ * (same data for all widget sizes) — the native widget view decides how
+ * many days/rows to render per its layout.
+ *
+ * ## Native module contract
+ * The native side (`MasjidlyPrayerWidget`) must expose:
+ *   `saveSnapshot(json: string): Promise<boolean>`
+ *
+ * ## Supported sizes (Android)
+ * Android registers one resizable home-screen widget. The snapshot below
+ * covers all sizes identically; native RemoteViews decide what fits.
+ *
+ * ## iOS
+ * Not used here — iOS uses WidgetKit directly via `MasjidlyWidgets`.
+ */
+
 import { NativeModules, Platform } from "react-native";
 import type {
   DailyIqamahTimes,
@@ -22,7 +42,6 @@ import type { AsrIqamahPreference } from "@/types/prayer";
 
 interface AndroidPrayerWidgetModule {
   saveSnapshot: (json: string) => Promise<boolean>;
-  refreshWidgets: () => Promise<boolean>;
 }
 
 const nativePrayerWidget = NativeModules.MasjidlyPrayerWidget as

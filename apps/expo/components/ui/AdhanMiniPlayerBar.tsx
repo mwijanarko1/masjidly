@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { X, Play, Pause } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AdhanPlayer, togglePlayPause, stopAdhan } from "@/lib/audio/AdhanSoundPlayer";
+import { t } from "@/lib/i18n/translations";
+import { useAppLanguage } from "@/lib/i18n/language";
 
 interface Props {
   textColor: string;
@@ -18,6 +20,7 @@ function formatTime(seconds: number): string {
 
 export const AdhanMiniPlayerBar: React.FC<Props> = React.memo(({ textColor }) => {
   const [, forceUpdate] = useState(0);
+  const languageCode = useAppLanguage();
 
   useEffect(() => {
     const unsub = AdhanPlayer.subscribe(() => forceUpdate((n) => n + 1));
@@ -62,7 +65,7 @@ export const AdhanMiniPlayerBar: React.FC<Props> = React.memo(({ textColor }) =>
               style={[styles.title, { color: textColor }]}
               numberOfLines={1}
             >
-              Adhan
+              {t("notification.channel.adhan", languageCode)}
             </Text>
             <Text
               style={[styles.timeLabel, { color: textColor + "D1" }]}
