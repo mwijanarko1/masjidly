@@ -23,17 +23,28 @@ import androidx.compose.ui.semantics.semantics
 
 /** Mirrors iOS `UIImpactFeedbackGenerator(style: .light)`. */
 fun View.performMasjidlyButtonTapHaptic() {
+  isHapticFeedbackEnabled = true
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-    if (performHapticFeedback(HapticFeedbackConstants.CONFIRM)) return
+    if (performMasjidlyHaptic(HapticFeedbackConstants.CONFIRM)) return
   }
-  if (performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)) return
+  if (performMasjidlyHaptic(HapticFeedbackConstants.CLOCK_TICK)) return
   @Suppress("DEPRECATION")
-  performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+  performMasjidlyHaptic(HapticFeedbackConstants.KEYBOARD_TAP)
 }
 
 /** Mirrors iOS `UIImpactFeedbackGenerator(style: .medium)` for long-press actions. */
 fun View.performMasjidlyLongPressHaptic() {
-  performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+  isHapticFeedbackEnabled = true
+  performMasjidlyHaptic(HapticFeedbackConstants.LONG_PRESS)
+}
+
+private fun View.performMasjidlyHaptic(type: Int): Boolean {
+  @Suppress("DEPRECATION")
+  return performHapticFeedback(
+    type,
+    HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING or
+      HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING,
+  )
 }
 
 @Composable

@@ -325,9 +325,9 @@ fun OnboardingCoachMarkView(
 /** Compose-safe equivalent of iOS negative padding — expands beyond measured bounds. */
 private fun Modifier.expandOutward(amount: Dp): Modifier = layout { measurable, constraints ->
     val extra = amount.roundToPx()
-    val width = constraints.maxWidth + extra * 2
-    val height = constraints.maxHeight + extra * 2
-    val placeable = measurable.measure(Constraints.fixed(width, height))
+    val width = constraints.maxWidth
+    val height = constraints.maxHeight
+    val placeable = measurable.measure(Constraints.fixed(width + extra * 2, height + extra * 2))
     layout(width, height) {
         placeable.place(-extra, -extra)
     }

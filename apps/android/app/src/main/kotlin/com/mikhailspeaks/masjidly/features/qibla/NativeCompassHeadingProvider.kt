@@ -15,7 +15,7 @@ import kotlin.math.abs
 /**
  * Native Android compass pipeline for portrait Qibla.
  *
- * Uses [Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR] (magnetic-north fusion, no gyro drift),
+ * Uses [Sensor.TYPE_ROTATION_VECTOR] first for iOS-like responsive fused heading,
  * processes on a background thread, low-pass filters heading, and throttles main-thread callbacks.
  */
 internal class NativeCompassHeadingProvider(
@@ -29,7 +29,6 @@ internal class NativeCompassHeadingProvider(
     private var sensorHandler: Handler? = null
 
     private val rotationMatrix = FloatArray(9)
-    private val remappedMatrix = FloatArray(9)
     private val orientation = FloatArray(3)
     private val gravity = FloatArray(3)
     private val geomagnetic = FloatArray(3)
@@ -97,13 +96,13 @@ internal class NativeCompassHeadingProvider(
         val magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
         when {
-            geoVector != null -> {
-                activeSensorType = Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR
-                register(geoVector, handler)
-            }
             rotationVector != null -> {
                 activeSensorType = Sensor.TYPE_ROTATION_VECTOR
                 register(rotationVector, handler)
+            }
+            geoVector != null -> {
+                activeSensorType = Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR
+                register(geoVector, handler)
             }
             accelerometer != null && magnetometer != null -> {
                 activeSensorType = Sensor.TYPE_ACCELEROMETER
@@ -146,18 +145,7 @@ internal class NativeCompassHeadingProvider(
 
     private fun headingFromRotationVector(event: SensorEvent): Double? {
         SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-        val matrix = if (SensorManager.remapCoordinateSystem(
-                rotationMatrix,
-                SensorManager.AXIS_X,
-                SensorManager.AXIS_Z,
-                remappedMatrix,
-            )
-        ) {
-            remappedMatrix
-        } else {
-            rotationMatrix
-        }
-        SensorManager.getOrientation(matrix, orientation)
+        SensorManager.getOrientation(rotationMatrix, orientation)
         val magneticAzimuth = normalizeDegrees(Math.toDegrees(orientation[0].toDouble()))
         return trueHeadingDegrees(magneticAzimuth)
     }
@@ -166,18 +154,7 @@ internal class NativeCompassHeadingProvider(
         if (!hasGravity || !hasGeomagnetic) return null
         if (!SensorManager.getRotationMatrix(rotationMatrix, null, gravity, geomagnetic)) return null
 
-        val matrix = if (SensorManager.remapCoordinateSystem(
-                rotationMatrix,
-                SensorManager.AXIS_X,
-                SensorManager.AXIS_Z,
-                remappedMatrix,
-            )
-        ) {
-            remappedMatrix
-        } else {
-            rotationMatrix
-        }
-        SensorManager.getOrientation(matrix, orientation)
+        SensorManager.getOrientation(rotationMatrix, orientation)
         val magneticAzimuth = normalizeDegrees(Math.toDegrees(orientation[0].toDouble()))
         return trueHeadingDegrees(magneticAzimuth)
     }
@@ -221,8 +198,8 @@ internal class NativeCompassHeadingProvider(
     }
 
     companion object {
-        private const val LOW_PASS_ALPHA = 0.16
-        private const val EMIT_INTERVAL_MS = 48L
-        private const val EMIT_DEADBAND_DEGREES = 0.75
+        private const val LOW_PASS_ALPHA = 0.35
+        private const val EMIT_INTERVAL_MS = 16L
+        private const val EMIT_DEADBAND_DEGREES = 0.25
     }
 }

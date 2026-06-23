@@ -824,7 +824,7 @@ private suspend fun LazyListState.animateScrollToItemCentered(index: Int, fallba
     val viewportSize = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
     val itemSize = layoutInfo.visibleItemsInfo.find { it.index == index }?.size ?: fallbackItemSizePx
     val centerOffset = ((viewportSize - itemSize) / 2).coerceAtLeast(0)
-    animateScrollToItem(index, scrollOffset = centerOffset)
+    animateScrollToItem(index, scrollOffset = -centerOffset)
 }
 
 private fun resolveInitialMonthYear(monthData: MonthPrayerData?, displayedDate: Instant): Pair<Int, Int> {

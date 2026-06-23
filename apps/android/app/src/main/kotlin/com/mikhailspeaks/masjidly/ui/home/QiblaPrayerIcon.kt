@@ -124,10 +124,16 @@ fun QiblaPrayerIcon(
                 style = Stroke(width = 0.8f * strokeScale),
             )
 
-            if (rotationDegrees != null) {
+        }
+
+        if (rotationDegrees != null) {
+            Canvas(modifier = Modifier.size(size + (24.dp * scale))) {
+                val strokeScale = scale * density
+                val cx = this.size.width / 2f
+                val cy = this.size.height / 2f
                 rotate(rotationDegrees) {
                     val triSize = 12f * strokeScale
-                    // iOS places the pointer just outside the 112pt ring (`padding(.top, -10)`).
+                    // Keep the iOS outside-the-ring pointer visible; the main 120dp canvas clips overflow.
                     val tipY = cy - (FRAME_REF / 2f + 10f) * scale * density
                     val path = Path().apply {
                         moveTo(cx, tipY)
