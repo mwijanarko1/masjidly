@@ -2,19 +2,13 @@ package com.mikhailspeaks.masjidly.widget
 
 import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
-import androidx.glance.LocalSize
-import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionStartActivity
-import androidx.glance.appwidget.cornerRadius
-import androidx.glance.background
 import androidx.glance.layout.Alignment
-import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
@@ -30,23 +24,20 @@ import androidx.glance.unit.ColorProvider
 import com.mikhailspeaks.masjidly.MainActivity
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.PrayerTimesEngine
-import com.mikhailspeaks.masjidly.widget.WidgetThemeResolver.toGlanceColorProvider
+import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun PrayerWidgetContent(state: WidgetPrayerState, language: AppLanguage) {
+fun PrayerWidgetContent(
+    state: WidgetPrayerState,
+    language: AppLanguage,
+    family: MasjidlyWidgetFamily,
+) {
     val context = LocalContext.current
     val theme = WidgetThemeResolver.resolvedTheme(context, state.prayerId)
-    val size = LocalSize.current
-    val isLarge = size.height >= 200.dp
-    val isSmall = size.width < 180.dp
-    val textColor = theme.textColor.toGlanceColorProvider()
-    val muted = ColorProvider(theme.textColor.copy(alpha = 0.75f).toArgb())
-    val faint = ColorProvider(theme.textColor.copy(alpha = 0.35f).toArgb())
-    val iqamahMuted = ColorProvider(theme.textColor.copy(alpha = 0.6f).toArgb())
-    val background = theme.top.toGlanceColorProvider()
+    val palette = WidgetPalette.from(theme)
     val locale = language.resolvedLocale()
     val openApp = actionStartActivity(
         Intent(context, MainActivity::class.java).apply {
@@ -54,36 +45,37 @@ fun PrayerWidgetContent(state: WidgetPrayerState, language: AppLanguage) {
         },
     )
 
-    Box(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .cornerRadius(22.dp)
-            .background(background)
-            .clickable(openApp)
-            .padding(if (isLarge) 20.dp else if (isSmall) 16.dp else 20.dp),
-        contentAlignment = Alignment.TopStart,
-    ) {
+    WidgetSkyBackground(theme = theme, family = family, onClick = openApp) {
         when (state.kind) {
-            WidgetStateKind.MISSING, WidgetStateKind.STALE -> UnavailableWidget(
-                language = language,
-                textColor = textColor,
-                muted = muted,
-            )
-            WidgetStateKind.CONTENT -> when {
-                isSmall -> SmallWidget(state, textColor, muted, faint, language)
-                isLarge -> LargeWidget(state, textColor, muted, faint, iqamahMuted, locale, language)
-                else -> MediumWidget(state, textColor, muted, faint, iqamahMuted, locale, language)
+            WidgetStateKind.MISSING, WidgetStateKind.STALE -> UnavailableWidget(language, palette)
+            WidgetStateKind.CONTENT -> when (family) {
+                MasjidlyWidgetFamily.SMALL -> SmallWidget(state, palette, language)
+                MasjidlyWidgetFamily.MEDIUM -> MediumWidget(state, palette, locale, language)
+                MasjidlyWidgetFamily.LARGE -> LargeWidget(state, palette, locale, language)
             }
         }
     }
 }
 
-@Composable
-private fun UnavailableWidget(
-    language: AppLanguage,
-    textColor: ColorProvider,
-    muted: ColorProvider,
+private data class WidgetPalette(
+    val primary: ColorProvider,
+    val secondary: ColorProvider,
+    val faint: ColorProvider,
 ) {
+    companion object {
+        fun from(theme: TimeTheme): WidgetPalette {
+            val text = theme.textColor
+            return WidgetPalette(
+                primary = ColorProvider(text),
+                secondary = ColorProvider(text.copy(alpha = 0.85f)),
+                faint = ColorProvider(text.copy(alpha = 0.55f)),
+            )
+        }
+    }
+}
+
+@Composable
+private fun UnavailableWidget(language: AppLanguage, palette: WidgetPalette) {
     Column(
         modifier = GlanceModifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
@@ -91,215 +83,279 @@ private fun UnavailableWidget(
     ) {
         Text(
             text = WidgetStrings.unavailable(language),
-            style = TextStyle(color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Medium),
+            style = TextStyle(color = palette.primary, fontSize = 12.sp, fontWeight = FontWeight.Medium),
+            maxLines = 2,
         )
-        Spacer(modifier = GlanceModifier.height(6.dp))
+        Spacer(modifier = GlanceModifier.height(4.dp))
         Text(
             text = WidgetStrings.openApp(language),
-            style = TextStyle(color = muted, fontSize = 12.sp),
+            style = TextStyle(color = palette.faint, fontSize = 10.sp),
+            maxLines = 1,
         )
     }
 }
 
+/** 2×2 — mirrors home hero: prayer name + large time + iqamah. */
 @Composable
 private fun SmallWidget(
     state: WidgetPrayerState,
-    textColor: ColorProvider,
-    muted: ColorProvider,
-    faint: ColorProvider,
+    palette: WidgetPalette,
     language: AppLanguage,
 ) {
-    Column(modifier = GlanceModifier.fillMaxWidth()) {
+    Column(
+        modifier = GlanceModifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(
             text = state.prayerName,
-            style = TextStyle(color = muted, fontSize = 15.sp, fontWeight = FontWeight.Medium),
+            style = TextStyle(color = palette.secondary, fontSize = 13.sp, fontWeight = FontWeight.Medium),
             maxLines = 1,
         )
-        Spacer(modifier = GlanceModifier.height(8.dp))
+        Spacer(modifier = GlanceModifier.height(2.dp))
         Text(
             text = state.adhanTime,
-            style = TextStyle(color = textColor, fontSize = 36.sp, fontWeight = FontWeight.Normal),
+            style = TextStyle(color = palette.primary, fontSize = 26.sp, fontWeight = FontWeight.Normal),
             maxLines = 1,
         )
-        if (state.iqamahTime.isNotBlank()) {
-            Spacer(modifier = GlanceModifier.height(6.dp))
+        if (state.iqamahTime.isNotBlank() && state.iqamahTime != state.adhanTime) {
             Text(
-                text = WidgetStrings.iqamahFormat(language, state.iqamahTime),
-                style = TextStyle(color = faint, fontSize = 14.sp),
+                text = iqamahLabel(language, state.iqamahTime),
+                style = TextStyle(color = palette.faint, fontSize = 11.sp),
                 maxLines = 1,
             )
         }
     }
 }
 
+/** 4×2 — header, hero row, home-style prayer strip. */
 @Composable
 private fun MediumWidget(
     state: WidgetPrayerState,
-    textColor: ColorProvider,
-    muted: ColorProvider,
-    faint: ColorProvider,
-    iqamahMuted: ColorProvider,
+    palette: WidgetPalette,
     locale: Locale,
     language: AppLanguage,
 ) {
-    val dateLabel = mediumDateLabel(state.displayDateEpochMillis, locale)
-    Column(modifier = GlanceModifier.fillMaxWidth()) {
-        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = state.mosqueDisplayName,
-                modifier = GlanceModifier.defaultWeight(),
-                style = TextStyle(color = muted, fontSize = 13.sp, fontWeight = FontWeight.Medium),
-                maxLines = 1,
-            )
-            Spacer(modifier = GlanceModifier.width(4.dp))
-            Text(
-                text = dateLabel.uppercase(locale),
-                style = TextStyle(color = faint, fontSize = 12.sp, fontWeight = FontWeight.Medium),
-                maxLines = 1,
-            )
-        }
-        Spacer(modifier = GlanceModifier.height(10.dp))
-        PrayerTableHeader(language, faint)
-        Spacer(modifier = GlanceModifier.height(6.dp))
-        state.rows.take(6).forEach { row ->
-            PrayerTableRow(row, textColor, faint, iqamahMuted)
-            Spacer(modifier = GlanceModifier.height(6.dp))
-        }
-    }
-}
-
-@Composable
-private fun LargeWidget(
-    state: WidgetPrayerState,
-    textColor: ColorProvider,
-    muted: ColorProvider,
-    faint: ColorProvider,
-    iqamahMuted: ColorProvider,
-    locale: Locale,
-    language: AppLanguage,
-) {
-    val dateLabel = largeDateLabel(state.displayDateEpochMillis, locale)
-    Column(modifier = GlanceModifier.fillMaxWidth()) {
-        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            Text(
-                text = state.mosqueDisplayName,
-                modifier = GlanceModifier.defaultWeight(),
-                style = TextStyle(color = muted, fontSize = 16.sp, fontWeight = FontWeight.Medium),
-                maxLines = 2,
-            )
-            Spacer(modifier = GlanceModifier.width(6.dp))
-            Text(
-                text = dateLabel.uppercase(locale),
-                style = TextStyle(color = faint, fontSize = 13.sp, fontWeight = FontWeight.Medium),
-                maxLines = 1,
-            )
-        }
-        Spacer(modifier = GlanceModifier.height(12.dp))
-        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+    val rows = state.rows.take(5)
+    Column(modifier = GlanceModifier.fillMaxSize()) {
+        WidgetHeader(state.mosqueDisplayName, shortDateLabel(state.displayDateEpochMillis, locale), palette, 11.sp, 10.sp)
+        Spacer(modifier = GlanceModifier.defaultWeight())
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom,
+        ) {
             Column(modifier = GlanceModifier.defaultWeight()) {
                 Text(
                     text = state.prayerName,
-                    style = TextStyle(color = muted, fontSize = 18.sp, fontWeight = FontWeight.Medium),
+                    style = TextStyle(color = palette.secondary, fontSize = 14.sp, fontWeight = FontWeight.Medium),
                     maxLines = 1,
                 )
-                Text(
-                    text = state.adhanTime,
-                    style = TextStyle(color = textColor, fontSize = 48.sp, fontWeight = FontWeight.Normal),
-                    maxLines = 1,
-                )
-            }
-            if (state.iqamahTime.isNotBlank()) {
-                Column(horizontalAlignment = Alignment.End) {
+                if (state.iqamahTime.isNotBlank() && state.iqamahTime != state.adhanTime) {
                     Text(
-                        text = WidgetStrings.iqamah(language).uppercase(locale),
-                        style = TextStyle(color = faint, fontSize = 11.sp, fontWeight = FontWeight.Bold),
-                        maxLines = 1,
-                    )
-                    Text(
-                        text = state.iqamahTime,
-                        style = TextStyle(color = muted, fontSize = 22.sp),
+                        text = iqamahLabel(language, state.iqamahTime),
+                        style = TextStyle(color = palette.faint, fontSize = 10.sp),
                         maxLines = 1,
                     )
                 }
             }
+            Text(
+                text = state.adhanTime,
+                style = TextStyle(color = palette.primary, fontSize = 28.sp, fontWeight = FontWeight.Normal),
+                maxLines = 1,
+            )
         }
-        Spacer(modifier = GlanceModifier.height(12.dp))
-        PrayerTableHeader(language, faint)
         Spacer(modifier = GlanceModifier.height(8.dp))
-        state.rows.forEach { row ->
-            PrayerTableRow(row, textColor, faint, iqamahMuted, large = true)
-            Spacer(modifier = GlanceModifier.height(if (row == state.rows.last()) 0.dp else 14.dp))
+        PrayerStrip(rows, palette)
+    }
+}
+
+/** 4×4 — compact hero + full timetable that fits without clipping. */
+@Composable
+private fun LargeWidget(
+    state: WidgetPrayerState,
+    palette: WidgetPalette,
+    locale: Locale,
+    language: AppLanguage,
+) {
+    Column(modifier = GlanceModifier.fillMaxSize()) {
+        WidgetHeader(state.mosqueDisplayName, shortDateLabel(state.displayDateEpochMillis, locale), palette, 11.sp, 10.sp)
+        Spacer(modifier = GlanceModifier.height(6.dp))
+        Column(
+            modifier = GlanceModifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = state.prayerName,
+                style = TextStyle(color = palette.secondary, fontSize = 15.sp, fontWeight = FontWeight.Medium),
+                maxLines = 1,
+            )
+            Text(
+                text = state.adhanTime,
+                style = TextStyle(color = palette.primary, fontSize = 34.sp, fontWeight = FontWeight.Normal),
+                maxLines = 1,
+            )
+            if (state.iqamahTime.isNotBlank() && state.iqamahTime != state.adhanTime) {
+                Text(
+                    text = iqamahLabel(language, state.iqamahTime),
+                    style = TextStyle(color = palette.faint, fontSize = 11.sp),
+                    maxLines = 1,
+                )
+            }
+        }
+        Spacer(modifier = GlanceModifier.height(8.dp))
+        TimetableSection(state.rows.take(5), palette, language)
+    }
+}
+
+@Composable
+private fun WidgetHeader(
+    title: String,
+    subtitle: String,
+    palette: WidgetPalette,
+    titleSize: TextUnit,
+    subtitleSize: TextUnit,
+) {
+    Row(
+        modifier = GlanceModifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = GlanceModifier.defaultWeight(),
+            style = TextStyle(color = palette.faint, fontSize = titleSize, fontWeight = FontWeight.Medium),
+            maxLines = 1,
+        )
+        Spacer(modifier = GlanceModifier.width(4.dp))
+        Text(
+            text = subtitle,
+            style = TextStyle(color = palette.faint, fontSize = subtitleSize),
+            maxLines = 1,
+        )
+    }
+}
+
+/** Home-style F D A M I strip with adhan times below. */
+@Composable
+private fun PrayerStrip(rows: List<WidgetPrayerRow>, palette: WidgetPalette) {
+    Row(modifier = GlanceModifier.fillMaxWidth()) {
+        rows.forEach { row ->
+            Column(
+                modifier = GlanceModifier.defaultWeight(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = prayerInitial(row.name),
+                    style = TextStyle(
+                        color = if (row.isNext) palette.primary else palette.faint,
+                        fontSize = if (row.isNext) 13.sp else 11.sp,
+                        fontWeight = if (row.isNext) FontWeight.Bold else FontWeight.Normal,
+                    ),
+                    maxLines = 1,
+                )
+                Text(
+                    text = row.adhan,
+                    style = TextStyle(
+                        color = if (row.isNext) palette.primary else palette.faint,
+                        fontSize = 10.sp,
+                        fontWeight = if (row.isNext) FontWeight.Medium else FontWeight.Normal,
+                    ),
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun PrayerTableHeader(language: AppLanguage, faint: ColorProvider) {
-    Row(modifier = GlanceModifier.fillMaxWidth()) {
-        Text(
-            text = WidgetStrings.prayer(language).uppercase(),
-            modifier = GlanceModifier.defaultWeight(),
-            style = TextStyle(color = faint, fontSize = 11.sp, fontWeight = FontWeight.Bold),
-            maxLines = 1,
-        )
-        Text(
-            text = WidgetStrings.adhan(language).uppercase(),
-            modifier = GlanceModifier.defaultWeight(),
-            style = TextStyle(color = faint, fontSize = 11.sp, fontWeight = FontWeight.Bold),
-            maxLines = 1,
-        )
-        Text(
-            text = WidgetStrings.iqamah(language).uppercase(),
-            modifier = GlanceModifier.defaultWeight(),
-            style = TextStyle(color = faint, fontSize = 11.sp, fontWeight = FontWeight.Bold),
-            maxLines = 1,
-        )
+private fun TimetableSection(
+    rows: List<WidgetPrayerRow>,
+    palette: WidgetPalette,
+    language: AppLanguage,
+) {
+    Column(modifier = GlanceModifier.fillMaxWidth()) {
+        Row(modifier = GlanceModifier.fillMaxWidth()) {
+            Text(
+                text = WidgetStrings.prayer(language),
+                modifier = GlanceModifier.defaultWeight(),
+                style = TextStyle(color = palette.faint, fontSize = 10.sp, fontWeight = FontWeight.Medium),
+                maxLines = 1,
+            )
+            Text(
+                text = WidgetStrings.adhan(language),
+                modifier = GlanceModifier.defaultWeight(),
+                style = TextStyle(color = palette.faint, fontSize = 10.sp, fontWeight = FontWeight.Medium),
+                maxLines = 1,
+            )
+            Text(
+                text = WidgetStrings.iqamah(language),
+                modifier = GlanceModifier.defaultWeight(),
+                style = TextStyle(color = palette.faint, fontSize = 10.sp, fontWeight = FontWeight.Medium),
+                maxLines = 1,
+            )
+        }
+        rows.forEach { row ->
+            TimetableRow(row, palette)
+        }
     }
 }
 
 @Composable
-private fun PrayerTableRow(
-    row: WidgetPrayerRow,
-    textColor: ColorProvider,
-    faint: ColorProvider,
-    iqamahMuted: ColorProvider,
-    large: Boolean = false,
-) {
-    val nameColor = if (row.isPassed) faint else textColor
-    val timeWeight = if (row.isNext) FontWeight.Bold else if (row.isPassed) FontWeight.Normal else FontWeight.Medium
-    val fontSize = if (large) 24.sp else 20.sp
-    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+private fun TimetableRow(row: WidgetPrayerRow, palette: WidgetPalette) {
+    val color = when {
+        row.isNext -> palette.primary
+        row.isPassed -> palette.faint
+        else -> palette.secondary
+    }
+    val weight = if (row.isNext) FontWeight.Bold else FontWeight.Normal
+    val iqamah = row.iqamahs.firstOrNull().orEmpty().ifBlank { "—" }
+
+    Row(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
             text = row.name,
             modifier = GlanceModifier.defaultWeight(),
-            style = TextStyle(color = nameColor, fontSize = fontSize, fontWeight = timeWeight),
+            style = TextStyle(color = color, fontSize = 13.sp, fontWeight = weight),
             maxLines = 1,
         )
         Text(
             text = row.adhan,
             modifier = GlanceModifier.defaultWeight(),
-            style = TextStyle(color = nameColor, fontSize = fontSize, fontWeight = timeWeight),
+            style = TextStyle(color = color, fontSize = 13.sp, fontWeight = weight),
             maxLines = 1,
         )
         Text(
-            text = row.iqamahs.joinToString(", "),
+            text = iqamah,
             modifier = GlanceModifier.defaultWeight(),
-            style = TextStyle(color = if (row.isPassed) faint else iqamahMuted, fontSize = fontSize),
+            style = TextStyle(color = color, fontSize = 13.sp, fontWeight = weight),
             maxLines = 1,
         )
     }
 }
 
-private fun mediumDateLabel(epochMillis: Long, locale: Locale): String {
-    val instant = Instant.ofEpochMilli(epochMillis)
-    return DateTimeFormatter.ofPattern("EEEE · d MMM", locale)
-        .withZone(PrayerTimesEngine.sheffieldTimeZone)
-        .format(instant)
+private fun iqamahLabel(language: AppLanguage, time: String): String = when (language) {
+    AppLanguage.ARABIC -> "الإقامة: $time"
+    AppLanguage.URDU -> "اقامت: $time"
+    AppLanguage.INDONESIAN -> "Iqamah: $time"
+    AppLanguage.ENGLISH -> "Iqamah: $time"
 }
 
-private fun largeDateLabel(epochMillis: Long, locale: Locale): String {
+private fun prayerInitial(name: String): String {
+    val trimmed = name.trim()
+    if (trimmed.isEmpty()) return "?"
+    return when {
+        trimmed.startsWith("Jummah", ignoreCase = true) || trimmed.startsWith("Jumat", ignoreCase = true) -> "J"
+        trimmed.length == 1 -> trimmed
+        else -> trimmed.first().uppercaseChar().toString()
+    }
+}
+
+private fun shortDateLabel(epochMillis: Long, locale: Locale): String {
     val instant = Instant.ofEpochMilli(epochMillis)
-    return DateTimeFormatter.ofPattern("MMMM, EEEE d", locale)
+    return DateTimeFormatter.ofPattern("EEE d MMM", locale)
         .withZone(PrayerTimesEngine.sheffieldTimeZone)
         .format(instant)
 }

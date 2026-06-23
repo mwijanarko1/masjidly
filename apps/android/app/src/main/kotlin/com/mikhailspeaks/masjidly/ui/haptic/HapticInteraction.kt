@@ -115,7 +115,12 @@ fun Modifier.hapticClickable(
               }
               tryAwaitRelease()
             },
-            onTap = { onClick() },
+            onTap = {
+              if (!hapticOnPress) {
+                view.performMasjidlyButtonTapHaptic()
+              }
+              onClick()
+            },
           )
         }
       } else {

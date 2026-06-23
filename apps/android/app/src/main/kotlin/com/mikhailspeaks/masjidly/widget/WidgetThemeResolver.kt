@@ -2,7 +2,6 @@ package com.mikhailspeaks.masjidly.widget
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.glance.unit.ColorProvider
 import com.mikhailspeaks.masjidly.data.SettingsStore
 import com.mikhailspeaks.masjidly.ui.home.ThemeMode
@@ -17,5 +16,5 @@ object WidgetThemeResolver {
         return TimeTheme.fromWire(prayerId)
     }
 
-    fun Color.toGlanceColorProvider(): ColorProvider = ColorProvider(toArgb())
+    fun Color.toGlanceColorProvider(): ColorProvider = ColorProvider(this)
 }

@@ -469,7 +469,7 @@ private fun DateStrip(
                     .background(
                         if (isSelected) theme.textColor.copy(alpha = 0.12f) else Color.Transparent,
                     )
-                    .hapticClickable { onSelect(day.date) }
+                    .hapticClickable(hapticOnPress = false) { onSelect(day.date) }
                     .semantics { contentDescription = dayLabel },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,

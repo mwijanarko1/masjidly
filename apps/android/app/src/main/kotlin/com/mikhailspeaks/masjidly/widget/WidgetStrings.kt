@@ -44,4 +44,18 @@ object WidgetStrings {
         AppLanguage.INDONESIAN -> "Buka aplikasi untuk memperbarui"
         AppLanguage.ENGLISH -> "Open app to update"
     }
+
+    fun next(language: AppLanguage): String = when (language) {
+        AppLanguage.ARABIC -> "التالي"
+        AppLanguage.URDU -> "اگلی"
+        AppLanguage.INDONESIAN -> "Berikutnya"
+        AppLanguage.ENGLISH -> "Next"
+    }
+
+    fun today(language: AppLanguage): String = when (language) {
+        AppLanguage.ARABIC -> "اليوم"
+        AppLanguage.URDU -> "آج"
+        AppLanguage.INDONESIAN -> "Hari ini"
+        AppLanguage.ENGLISH -> "Today"
+    }
 }

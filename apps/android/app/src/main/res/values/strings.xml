@@ -3,4 +3,10 @@
     <string name="app_name">Masjidly</string>
     <string name="masjidly_prayer_widget_name">Masjidly</string>
     <string name="masjidly_prayer_widget_description">Shows the next prayer and adhan time for your selected masjid.</string>
+    <string name="masjidly_prayer_widget_small_name">Masjidly Small</string>
+    <string name="masjidly_prayer_widget_medium_name">Masjidly Medium</string>
+    <string name="masjidly_prayer_widget_large_name">Masjidly Large</string>
+    <string name="masjidly_prayer_widget_small_description">Shows the next prayer time.</string>
+    <string name="masjidly_prayer_widget_medium_description">Shows today’s prayer timetable.</string>
+    <string name="masjidly_prayer_widget_large_description">Shows the next prayer and full timetable.</string>
 </resources>

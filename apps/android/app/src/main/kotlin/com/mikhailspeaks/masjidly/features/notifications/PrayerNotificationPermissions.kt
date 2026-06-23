@@ -3,6 +3,9 @@ package com.mikhailspeaks.masjidly.features.notifications
 import android.Manifest
 import android.app.AlarmManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
@@ -20,5 +23,13 @@ object PrayerNotificationPermissions {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
         val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return false
         return alarmManager.canScheduleExactAlarms()
+    }
+
+    fun openExactAlarmSettings(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+            data = Uri.parse("package:${context.packageName}")
+        }
+        context.startActivity(intent)
     }
 }

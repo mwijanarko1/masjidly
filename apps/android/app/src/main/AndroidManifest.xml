@@ -31,6 +31,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".features.notifications.PrayerNotificationActionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".features.notifications.PrayerNotificationBootReceiver"
             android:exported="false">
             <intent-filter>
@@ -39,15 +43,39 @@
         </receiver>
 
         <receiver
-            android:name=".widget.MasjidlyPrayerWidgetReceiver"
+            android:name=".widget.MasjidlyPrayerSmallWidgetReceiver"
             android:exported="true"
-            android:label="@string/masjidly_prayer_widget_name">
+            android:label="@string/masjidly_prayer_widget_small_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/masjidly_prayer_widget_info" />
+                android:resource="@xml/masjidly_prayer_widget_small_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyPrayerMediumWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_prayer_widget_medium_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_prayer_widget_medium_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyPrayerLargeWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_prayer_widget_large_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_prayer_widget_large_info" />
         </receiver>
     </application>
 

@@ -30,10 +30,12 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -67,6 +69,7 @@ import com.mikhailspeaks.masjidly.domain.DailyPrayerTimes
 import com.mikhailspeaks.masjidly.domain.LocaleStrings
 import com.mikhailspeaks.masjidly.domain.PrayerLocalization
 import com.mikhailspeaks.masjidly.domain.PrayerTimesEngine
+import com.mikhailspeaks.masjidly.features.settings.AppReviewPromptCoordinator
 import com.mikhailspeaks.masjidly.features.settings.MasjidlySupportMail
 import com.mikhailspeaks.masjidly.features.onboarding.HomeOnboardingOverlay
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
@@ -109,6 +112,8 @@ fun HomeScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var hasLocationPermission by remember { mutableStateOf(context.hasLocationPermission()) }
+    var showReviewPrompt by remember { mutableStateOf(false) }
+    var showReviewFeedbackPrompt by remember { mutableStateOf(false) }
     val requestOnboardingLocation = rememberOnboardingLocationRequester {
         settingsStore.hideQiblaCompass = false
         hasLocationPermission = true
@@ -119,6 +124,13 @@ fun HomeScreen(
     }
 
     val onboardingStep = onboardingState.currentStep
+    LaunchedEffect(settingsStore.hasCompletedOnboarding, onboardingStep, state.loadState, settingsRevision) {
+        AppReviewPromptCoordinator.recordLaunchIfNeeded(settingsStore)
+        if (AppReviewPromptCoordinator.shouldShowEnjoymentPrompt(settingsStore, onboardingStep != null)) {
+            showReviewPrompt = true
+        }
+    }
+
     val highlightPrayerShortcuts = onboardingStep is OnboardingStep.PrayerShortcut
     val highlightQibla = false
     val highlightTimetable = onboardingStep == OnboardingStep.OpenTimetable
@@ -263,6 +275,66 @@ fun HomeScreen(
                 onRequestLocation = requestOnboardingLocation,
                 )
             }
+        }
+    }
+
+    if (showReviewPrompt) {
+        val copy = ReviewPromptCopy.forLanguage(language)
+        AlertDialog(
+            onDismissRequest = { showReviewPrompt = false },
+            title = { Text(copy.enjoymentTitle, style = rememberAppTextStyle(18f, FontWeight.SemiBold)) },
+            text = { Text(copy.enjoymentMessage, style = rememberAppTextStyle(15f)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showReviewPrompt = false
+                    AppReviewPromptCoordinator.completePositive(context, settingsStore)
+                }) { Text(copy.loveIt) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showReviewPrompt = false
+                    AppReviewPromptCoordinator.completeNegative(settingsStore)
+                    showReviewFeedbackPrompt = true
+                }) { Text(copy.notReally) }
+            },
+        )
+    }
+
+    if (showReviewFeedbackPrompt) {
+        val copy = ReviewPromptCopy.forLanguage(language)
+        AlertDialog(
+            onDismissRequest = { showReviewFeedbackPrompt = false },
+            title = { Text(copy.feedbackTitle, style = rememberAppTextStyle(18f, FontWeight.SemiBold)) },
+            text = { Text(copy.feedbackMessage, style = rememberAppTextStyle(15f)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showReviewFeedbackPrompt = false
+                    MasjidlySupportMail.open(context, MasjidlySupportMail.Category.FEEDBACK, state.selectedMosque?.name)
+                }) { Text(copy.feedbackSend) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReviewFeedbackPrompt = false }) { Text(copy.feedbackLater) }
+            },
+        )
+    }
+}
+
+private data class ReviewPromptCopy(
+    val enjoymentTitle: String,
+    val enjoymentMessage: String,
+    val loveIt: String,
+    val notReally: String,
+    val feedbackTitle: String,
+    val feedbackMessage: String,
+    val feedbackSend: String,
+    val feedbackLater: String,
+) {
+    companion object {
+        fun forLanguage(language: AppLanguage): ReviewPromptCopy = when (language) {
+            AppLanguage.ARABIC -> ReviewPromptCopy("هل تستمتع بمسجدلي؟", "إذا كان مسجدلي يساعدك، يسعدنا تقييمك.", "أحبه", "ليس كثيراً", "كيف يمكننا التحسين؟", "أخبرنا بما يمكن تحسينه.", "إرسال ملاحظات", "لاحقاً")
+            AppLanguage.URDU -> ReviewPromptCopy("کیا آپ مسجدلی سے لطف اندوز ہو رہے ہیں؟", "اگر مسجدلی مددگار ہے تو ہمیں آپ کی ریٹنگ خوش کرے گی۔", "پسند ہے", "زیادہ نہیں", "ہم کیسے بہتر بنا سکتے ہیں؟", "ہمیں بتائیں کیا بہتر ہو سکتا ہے۔", "فیڈبیک بھیجیں", "بعد میں")
+            AppLanguage.INDONESIAN -> ReviewPromptCopy("Menikmati Masjidly?", "Jika Masjidly membantu, kami senang menerima rating Anda.", "Suka", "Belum", "Bagaimana kami bisa lebih baik?", "Beri tahu kami apa yang bisa ditingkatkan.", "Kirim masukan", "Nanti")
+            AppLanguage.ENGLISH -> ReviewPromptCopy("Enjoying Masjidly?", "If Masjidly is helping, we’d really appreciate a rating.", "Love it", "Not really", "How can we improve?", "Tell us what could be better.", "Send feedback", "Later")
         }
     }
 }

@@ -85,6 +85,7 @@ import com.mikhailspeaks.masjidly.features.home.HomeViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingStep
+import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermissions
 import com.mikhailspeaks.masjidly.features.onboarding.SettingsOnboardingOverlay
 import com.mikhailspeaks.masjidly.ui.home.ThemeMode
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
@@ -544,7 +545,7 @@ fun SettingsScreen(
                             onTestUpdatePrompt()
                         }
                         InsetActionButton(LocaleStrings.t("settings.development.test_review_prompt", language), theme) {
-                            showDevToast(context, "Review prompt not wired yet on native Android.")
+                            AppReviewPromptCoordinator.resetForTesting(settingsStore)
                             onBack()
                         }
                     }
@@ -561,6 +562,17 @@ fun SettingsScreen(
                 language = settingsStore.appLanguage,
                 onboarding = onboardingViewModel,
             )
+        }
+    }
+}
+
+private data class ExactAlarmCopy(val message: String, val button: String) {
+    companion object {
+        fun forLanguage(language: AppLanguage): ExactAlarmCopy = when (language) {
+            AppLanguage.ARABIC -> ExactAlarmCopy("يحتاج أندرويد إذن المنبّهات الدقيقة لتصل تنبيهات الصلاة في وقتها.", "السماح بالمنبّهات الدقيقة")
+            AppLanguage.URDU -> ExactAlarmCopy("نماز کی اطلاعات وقت پر بھیجنے کے لیے Android کو exact alarms کی اجازت چاہیے۔", "Exact alarms کی اجازت دیں")
+            AppLanguage.INDONESIAN -> ExactAlarmCopy("Android memerlukan izin alarm tepat agar notifikasi salat tiba tepat waktu.", "Izinkan alarm tepat")
+            AppLanguage.ENGLISH -> ExactAlarmCopy("Android needs exact alarm access for prayer notifications to arrive on time.", "Allow exact alarms")
         }
     }
 }
@@ -616,6 +628,19 @@ private fun NotificationSettingsSection(
     }
 
     if (notifications.masterEnabled) {
+        if (!PrayerNotificationPermissions.canScheduleExactAlarms(context)) {
+            val copy = ExactAlarmCopy.forLanguage(language)
+            SettingsDivider(theme)
+            Text(
+                text = copy.message,
+                style = rememberAppTextStyle(15f),
+                color = theme.textColor.copy(alpha = 0.8f),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            LocationRecoveryButton(copy.button, theme) {
+                PrayerNotificationPermissions.openExactAlarmSettings(context)
+            }
+        }
         SettingsDivider(theme)
         NotificationGroupRow(
             title = LocaleStrings.t("onboarding.notifications.prayers_adhan", language),

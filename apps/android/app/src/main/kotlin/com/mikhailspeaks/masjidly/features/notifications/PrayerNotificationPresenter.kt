@@ -37,7 +37,8 @@ object PrayerNotificationPresenter {
             extras.forEach { (key, value) -> putString(key, value) }
         }
 
-        val notification = NotificationCompat.Builder(context, PrayerNotificationContent.CHANNEL_ID)
+        val sourceIntent = PrayerNotificationReceiver.buildIntent(context, id, title, body, categoryId, extras)
+        val builder = NotificationCompat.Builder(context, PrayerNotificationContent.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
@@ -47,7 +48,34 @@ object PrayerNotificationPresenter {
             .setContentIntent(contentPendingIntent)
             .setCategory(categoryId)
             .setExtras(extrasBundle)
-            .build()
+            .addAction(R.drawable.ic_notification, "View times", contentPendingIntent)
+
+        if (categoryId == PrayerNotificationContent.CategoryId.ADHAN) {
+            builder.addAction(
+                R.drawable.ic_notification,
+                "Snooze 10 min",
+                PrayerNotificationActionReceiver.pendingIntent(
+                    context,
+                    id,
+                    PrayerNotificationActionReceiver.ACTION_SNOOZE,
+                    sourceIntent,
+                ),
+            )
+        } else {
+            builder.addAction(R.drawable.ic_notification, "Open timetable", contentPendingIntent)
+        }
+        builder.addAction(
+            R.drawable.ic_notification,
+            "Dismiss",
+            PrayerNotificationActionReceiver.pendingIntent(
+                context,
+                id,
+                PrayerNotificationActionReceiver.ACTION_DISMISS,
+                sourceIntent,
+            ),
+        )
+
+        val notification = builder.build()
 
         NotificationManagerCompat.from(context).notify(id.hashCode(), notification)
     }

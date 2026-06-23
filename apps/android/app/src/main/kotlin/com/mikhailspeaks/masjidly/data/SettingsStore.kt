@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.time.Instant
 
 /**
  * Persisted user preferences — mirrors iOS `SettingsStore.swift`.
@@ -103,6 +104,35 @@ class SettingsStore(context: Context) {
             bump()
         }
 
+    /** First launch timestamp for the soft review prompt — mirrors iOS `firstAppOpenTrackedAt`. */
+    var firstAppOpenTrackedAt: Instant?
+        get() = prefs.getLong(KEY_FIRST_APP_OPEN_TRACKED_AT, 0L).takeIf { it > 0L }?.let(Instant::ofEpochMilli)
+        set(value) {
+            if (value == null) {
+                prefs.edit().remove(KEY_FIRST_APP_OPEN_TRACKED_AT).apply()
+            } else {
+                prefs.edit().putLong(KEY_FIRST_APP_OPEN_TRACKED_AT, value.toEpochMilli()).apply()
+            }
+            bump()
+        }
+
+    /** After either review-prompt answer, don't show it again. */
+    var hasCompletedEnjoymentReviewFlow: Boolean
+        get() = prefs.getBoolean(KEY_HAS_COMPLETED_ENJOYMENT_REVIEW_FLOW, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_HAS_COMPLETED_ENJOYMENT_REVIEW_FLOW, value).apply()
+            bump()
+        }
+
+    fun ensureFirstAppOpenTrackedAtRecordedIfNeeded() {
+        if (firstAppOpenTrackedAt == null) firstAppOpenTrackedAt = Instant.now()
+    }
+
+    fun resetEnjoymentReviewPromptForTesting() {
+        hasCompletedEnjoymentReviewFlow = false
+        firstAppOpenTrackedAt = Instant.now().minusSeconds(2 * 86_400L)
+    }
+
     /** Last build version string shown in the What's New modal — mirrors iOS `lastSeenBuildVersion`. */
     var lastSeenBuildVersion: String?
         get() = prefs.getString(KEY_LAST_SEEN_BUILD_VERSION, null)
@@ -144,6 +174,8 @@ class SettingsStore(context: Context) {
         private const val KEY_THEME_MODE = "themeMode"
         private const val KEY_FIXED_THEME = "fixedTheme"
         private const val KEY_HIDE_QIBLA = "hideQiblaCompass"
+        private const val KEY_FIRST_APP_OPEN_TRACKED_AT = "firstAppOpenTrackedAt1970"
+        private const val KEY_HAS_COMPLETED_ENJOYMENT_REVIEW_FLOW = "hasCompletedEnjoymentReviewFlow"
         private const val KEY_LAST_SEEN_BUILD_VERSION = "lastSeenBuildVersion"
         private const val KEY_NOTIFICATIONS_JSON = "notificationsJSON"
     }

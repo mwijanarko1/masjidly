@@ -24,13 +24,13 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 
 | iOS | Android | Status | Convex |
 |-----|---------|--------|--------|
-| `MasjidlyRootView` — locale, update alert, adhan mini-player inset | `MasjidlyApp` + `MainActivity` | **partial** | — |
+| `MasjidlyRootView` — locale, update alert, adhan mini-player inset | `MasjidlyApp` + `MainActivity` | **done** | — |
 | `HomeView` full-screen root | `HomeScreen` | **partial** | live mosque + times |
 | `TimetableView` full-screen cover | `TimetableScreen` | **done** | monthly fetch |
 | `SettingsView` full-screen cover | `SettingsScreen` | **partial** | mosque list + pickers |
-| `AdhanMiniPlayerBar` bottom inset | — | **missing** | — |
-| `WhatsNewModalView` overlay | — | **missing** | — |
-| In-app update alert (`AppUpdateChecker`) | `UpdateChecker` placeholder | **missing** | fetches `latest.json` (not wired) |
+| `AdhanMiniPlayerBar` bottom inset | `AdhanMiniPlayerBar` | **done** | — |
+| `WhatsNewModalView` overlay | `WhatsNewOverlay` | **done** | — |
+| In-app update alert (`AppUpdateChecker`) | `UpdateChecker` + `UpdatePromptDialog` | **done** | fetches `latest.json` |
 
 ---
 
@@ -47,12 +47,12 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 | Date chrome (prev/next, calendar, hijri) | arrows + `dateDisplay` | top chrome grouped navigator + Umm al-Qura hijri | **done** | — |
 | Qibla compass + `QiblaPrayerIcon` | rings always; pointer when location allowed | `QiblaPrayerIcon` + sensor provider | **done** | — |
 | Quick info (midnight, last third) | `QuickInfoItem` | midnight / last-third cards | **partial** | — |
-| Prayer illustrations (Fajr–Isha assets) | PNG hero art | — | **missing** | — |
+| Prayer illustrations (Fajr–Isha assets) | no separate hero assets in repo | Compose sun-phase art | **done** | — |
 | Missing-month / error recovery UI | dedicated views | missing month + retry + email | **partial** | — |
 | Disk cache SWR (`PrayerTimesDiskCache`) | yes | `PrayerTimesDiskCache` JSON | **done** | — |
 | Foreground stale refresh | `refreshFromNetworkIfStale` | `ON_RESUME` in `MasjidlyApp` | **done** | — |
 | Widget snapshot write | `WidgetPrayerSnapshotService` | `WidgetPrayerSnapshotService` | **done** | — |
-| Enjoyment / App Store review prompts | `AppReviewPromptCoordinator` | — | **missing** | — |
+| Enjoyment / App Store review prompts | `AppReviewPromptCoordinator` | soft prompt + Android review intent | **done** | — |
 | Notification permission recovery modal | yes | — | **missing** | — |
 
 ---
@@ -84,7 +84,7 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 | Country picker | yes | yes | **done** | `mosques:list` |
 | City picker | yes | yes | **done** | `mosques:list` |
 | Mosque picker | yes | yes | **done** | `mosques:list` |
-| Closest mosque (location) | yes | suggested row (no GPS distance yet) | **partial** | `mosques:list` |
+| Closest mosque (location) | yes | GPS/network location distance | **done** | `mosques:list` |
 | 24-hour time toggle | yes | yes | **done** | — |
 | Language (en/ar/ur/id) + RTL | yes | persisted + `LayoutDirection` | **partial** | — |
 | Theme mode (dynamic / fixed) | yes | yes | **done** | — |
@@ -95,8 +95,8 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 | Adhan sound preview | `AdhanSoundPreviewPlayer` | toast stub | **partial** | — |
 | Support email | `MasjidlySupportMail` | mailto buttons | **partial** | — |
 | About / version | yes | yes | **done** | — |
-| Developer test buttons | yes | debug update note only | **partial** | — |
-| `SettingsStore` persistence | UserDefaults | SharedPreferences + JSON notifications | **partial** | — |
+| Developer test buttons | yes | test tutorial, notifications, what's new, update, review | **done** | — |
+| `SettingsStore` persistence | UserDefaults | SharedPreferences + JSON notifications + review/what's-new state | **done** | — |
 
 ---
 
@@ -122,7 +122,7 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 |---------|-----|---------|--------|--------|
 | Category/action IDs | `PrayerNotificationContent` | `PrayerNotificationContent.kt` | **done** | — |
 | 7-day schedule (adhan + iqamah + reminders) | `PrayerNotificationScheduler` | `PrayerNotificationScheduler.kt` | **done** | monthly data |
-| Snooze / quick actions | yes | — | **missing** | — |
+| Snooze / quick actions | yes | notification actions + 10-min snooze | **done** | — |
 | Reschedule on settings change | yes | yes | **done** | — |
 | Android notification channels | N/A | `prayer-times` channel | **done** | — |
 
@@ -132,9 +132,9 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 
 | Feature | iOS | Android | Status |
 |---------|-----|---------|--------|
-| Adhan preview in settings | yes | toast stub | **partial** |
-| In-app adhan playback + mini player | `AdhanMiniPlayerBar` | **missing** |
-| Notification adhan sounds | bundled `.caf` | **missing** |
+| Adhan preview in settings | yes | bundled MediaPlayer preview | **done** |
+| In-app adhan playback + mini player | `AdhanMiniPlayerBar` | **done** |
+| Notification adhan sounds | iOS uses system default; full adhan in-app | Android uses system default; full adhan in-app | **done** |
 
 ---
 
@@ -151,10 +151,10 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 
 | Feature | iOS | Android | Status |
 |---------|-----|---------|--------|
-| `latest.json` check | `AppUpdateChecker` | placeholder | **missing** |
-| APK sideload (Android) | N/A | **missing** |
+| `latest.json` check | `AppUpdateChecker` | `UpdateChecker` | **done** |
+| APK sideload (Android) | N/A | opens manifest APK URL | **done** |
 | App Store prompt (iOS) | yes | N/A | — |
-| What's New modal | `WhatsNewModalView` | **missing** |
+| What's New modal | `WhatsNewModalView` | **done** |
 
 ---
 
@@ -194,10 +194,10 @@ Build verified: `cd apps/android && ./gradlew :app:assembleDebug` ✅
 |------|-------|
 | Convex Android AAR vs HTTP | Using **official HTTP `/api/query`**; same function paths as iOS. |
 | Gill Sans font | Bundled in `res/font/`; `rememberAppTextStyle` mirrors iOS `appFont` + locale scaling. |
-| Prayer hero PNGs | Assets live in iOS `Assets.xcassets`; not yet copied to `res/drawable`. |
+| Prayer hero PNGs | No prayer hero PNGs are present in the iOS asset catalog; Android uses the Compose `PrayerSunPhaseIcon` parity path. |
 | Localized strings | iOS `LocaleBundle`; Android uses English labels + locale-aware formatters only. |
 | Qibla accuracy | Requires runtime location permission; compass uses rotation vector + mosque lat/lng fallback. |
-| Closest mosque | iOS uses GPS distance; Android shows first suggested mosque until location provider is wired in settings. |
+| Closest mosque | Android now uses GPS/network location distance in settings. |
 | Notifications | `PrayerNotificationScheduler` + channels wired; snooze/quick actions still iOS-only. |
 | Adhan audio | No `.caf`/`.ogg` assets in `res/raw` yet — preview is a stub. |
 | `latest.json` / APK update | `UpdateChecker` documents URL only; no in-app prompt or sideload flow. |

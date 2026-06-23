@@ -30,7 +30,7 @@ class WidgetPrayerSnapshotService(
         runCatching {
             val snapshot = buildSnapshot(mosque, days)
             store.writeSnapshot(snapshot)
-            MasjidlyPrayerWidget().updateAll(context)
+            updateAllMasjidlyWidgets(context)
         }
     }
 
@@ -63,7 +63,7 @@ class WidgetPrayerSnapshotService(
             }
         }
 
-        MasjidlyPrayerWidget().updateAll(context)
+        updateAllMasjidlyWidgets(context)
     }
 
     private suspend fun buildSnapshot(mosque: Mosque, days: Int): WidgetPrayerSnapshot {
@@ -171,9 +171,15 @@ class WidgetPrayerSnapshotService(
     )
 }
 
-private suspend fun MasjidlyPrayerWidget.updateAll(context: Context) {
+private suspend fun updateAllMasjidlyWidgets(context: Context) {
     val manager = GlanceAppWidgetManager(context)
-    manager.getGlanceIds(MasjidlyPrayerWidget::class.java).forEach { glanceId ->
-        update(context, glanceId)
+    listOf(
+        MasjidlyPrayerSmallWidget::class.java to MasjidlyPrayerSmallWidget(),
+        MasjidlyPrayerMediumWidget::class.java to MasjidlyPrayerMediumWidget(),
+        MasjidlyPrayerLargeWidget::class.java to MasjidlyPrayerLargeWidget(),
+    ).forEach { (receiverClass, widget) ->
+        manager.getGlanceIds(receiverClass).forEach { glanceId ->
+            widget.update(context, glanceId)
+        }
     }
 }
