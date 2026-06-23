@@ -2,8 +2,8 @@
 
 [![iOS](https://img.shields.io/badge/platform-iOS-000000?logo=apple)](https://developer.apple.com/ios/)
 [![Android](https://img.shields.io/badge/platform-Android-3DDC84?logo=android)](https://developer.android.com/)
-[![Expo](https://img.shields.io/badge/built%20with-Expo-000020?logo=expo)](https://expo.dev/)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-5.9+-FA7343?logo=swift)](https://developer.apple.com/xcode/swiftui/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-Compose-7F52FF?logo=kotlin)](https://developer.android.com/jetpack/compose)
 
 A beautifully designed, time-adaptive prayer times app that displays **official mosque timetables** with an immersive, atmospheric interface. The visual language shifts throughout the day - from deep pre-dawn blues to vivid sunset purples - reflecting the spiritual rhythm of each prayer.
 
@@ -17,7 +17,7 @@ A beautifully designed, time-adaptive prayer times app that displays **official 
 - **Monthly Timetable** - Complete month view with prayer times, iqamah ranges, and Ramadan overrides
 - **Local Notifications** - Customizable prayer reminders with adhan sound, snooze, and quick actions
 - **Qibla Direction** - Compass-based Qibla indicator using device heading and location
-- **Home Screen Widgets** - iOS widgets showing today's prayer times at a glance
+- **Home Screen Widgets** - iOS and Android widgets showing today's prayer times at a glance
 - **Multi-Language Support** - English, Arabic, and Urdu with RTL layout support
 - **Mosque Selection** - Choose from a curated list of local mosques with persistent selection
 
@@ -48,13 +48,6 @@ This is a **multi-platform codebase** with a shared Convex backend:
 │   ├── PARITY.md                               # iOS ↔ Android parity tracker
 │   └── README.md                               # Gradle build instructions
 │
-├── apps/expo/                                  # Legacy Expo React Native app (Android)
-│   ├── app/                                    # Expo Router screens
-│   ├── components/                             # Reusable UI components
-│   ├── lib/                                    # Domain, data, i18n, notifications
-│   ├── store/                                  # Zustand settings store
-│   └── __tests__/                              # Jest test suite
-│
 ├── docs/
 │   ├── DESIGN.md                               # Visual design tokens & guidelines
 │   ├── CODEBASE_MAP.md                         # Architecture & navigation guide
@@ -70,8 +63,7 @@ This is a **multi-platform codebase** with a shared Convex backend:
 ### Prerequisites
 
 - **iOS**: Xcode 16+, iOS 17+ target
-- **Android (native)**: Android Studio, JDK 17+, Android SDK 35
-- **Android (Expo)**: Node.js 20+, Bun or npm, Expo CLI
+- **Android**: Android Studio, JDK 17+, Android SDK 35
 - **Backend**: Convex account (external deployment)
 
 ### Native iOS
@@ -96,22 +88,9 @@ cp local.properties.example local.properties
 ./gradlew :app:assembleDebug
 ```
 
-Debug APK: `app/build/outputs/apk/debug/app-debug.apk` (package `com.mikhailspeaks.masjidly.native`).
+Debug APK: `app/build/outputs/apk/debug/app-debug.apk` (package `com.mikhailspeaks.masjidly`).
 
-### Expo Android (legacy)
-
-```bash
-cd apps/expo
-
-# Install dependencies
-bun install
-
-# Start the development server
-bun start
-
-# Run on Android emulator or device
-bun android
-```
+Release build and publishing: see [`docs/build-android-release.md`](docs/build-android-release.md) and [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -151,16 +130,6 @@ See [`docs/DESIGN.md`](docs/DESIGN.md) for the full design specification.
 | Feature | ViewModel + Compose screens | `features/home/HomeViewModel.kt`, `HomeScreen.kt` |
 | UI | Material 3 + design tokens | `ui/theme/`, `ui/home/HomeDesign.kt` |
 
-### Expo Android (React Native, legacy)
-
-| Layer | Pattern | Key Files |
-|-------|---------|-----------|
-| Entry | Expo Router | `app/_layout.tsx` |
-| Domain | Pure functions + Zod | `lib/prayer/prayerTimesEngine.ts`, `types/prayer.ts` |
-| Data | Convex client -> Repository | `lib/convex/client.tsx`, `lib/prayer/prayerRepository.ts` |
-| State | Zustand + persist | `store/settings.ts` |
-| UI | React Native + tokens | `app/index.tsx`, `app/timetable.tsx`, `app/settings.tsx` |
-
 ---
 
 ## Testing
@@ -171,13 +140,11 @@ See [`docs/DESIGN.md`](docs/DESIGN.md) for the full design specification.
 # Cmd+U
 ```
 
-### Expo
+### Android
 ```bash
-cd apps/expo
-bun test
+cd apps/android
+./gradlew test
 ```
-
-The Expo test suite includes 131+ Jest tests covering the prayer engine, data decoding, settings persistence, localization, notifications, and screen components.
 
 ---
 

@@ -13,7 +13,6 @@ android {
         applicationId = "com.mikhailspeaks.masjidly"
         minSdk = 26
         targetSdk = 35
-        // Keep in sync with apps/expo/app.json → expo.version / expo.android.versionCode
         versionCode = 7
         versionName = "1.2.2"
 
@@ -25,8 +24,6 @@ android {
 
     buildTypes {
         debug {
-            // Install alongside the Expo Android app during migration.
-            applicationIdSuffix = ".native"
             versionNameSuffix = "-debug"
         }
         release {

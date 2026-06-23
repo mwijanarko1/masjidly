@@ -1,6 +1,6 @@
 # Native Android (Kotlin + Jetpack Compose)
 
-Parallel native Android app. iOS SwiftUI is the source of truth; Expo (`apps/expo`) stays untouched until feature parity.
+Native Android app. iOS SwiftUI is the source of truth for behavior and design.
 
 ## Build
 
@@ -13,7 +13,13 @@ cd apps/android
 
 APK output: `app/build/outputs/apk/debug/app-debug.apk`
 
-Debug installs as `com.mikhailspeaks.masjidly.native` so it can sit alongside the Expo Android app.
+Release APK:
+
+```bash
+./gradlew :app:assembleRelease
+```
+
+See `docs/build-android-release.md` and root `AGENTS.md` for release publishing.
 
 ## Structure (mirrors iOS)
 

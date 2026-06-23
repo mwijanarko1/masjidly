@@ -1,6 +1,6 @@
 # Glossary — Masjidly
 
-Shared domain vocabulary for the Masjidly prayer-times app. Terms are used consistently across native iOS, Expo Android, documentation, and tests.
+Shared domain vocabulary for the Masjidly prayer-times app. Terms are used consistently across native iOS, native Android, documentation, and tests.
 
 ---
 

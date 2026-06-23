@@ -32,7 +32,7 @@ local.properties
 **/.idea/
 *.iml
 
-# Node / Expo (see apps/expo/.gitignore for app-specific rules)
+# Node (if used for tooling)
 node_modules/
 
 # Local env & secrets

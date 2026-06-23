@@ -2,9 +2,7 @@
 
 ## Overview
 
-Masjidly is a **multi-platform app** (iOS native SwiftUI + native Android Kotlin/Compose + legacy Expo Android) with a shared Convex backend. This document defines the exact procedures for building, publishing, and maintaining the in-app update infrastructure.
-
-> **Android note:** Production APK releases still ship from `apps/expo/` until native `apps/android/` reaches full parity. Debug builds of the Kotlin app use `com.mikhailspeaks.masjidly.native` so they can install alongside Expo.
+Masjidly is a **multi-platform app** (iOS native SwiftUI + native Android Kotlin/Compose) with a shared Convex backend. This document defines the exact procedures for building, publishing, and maintaining the in-app update infrastructure.
 
 ---
 
@@ -12,7 +10,7 @@ Masjidly is a **multi-platform app** (iOS native SwiftUI + native Android Kotlin
 
 | Repo | URL | Purpose |
 |------|-----|---------|
-| `masjidly` | `github.com/mwijanarko1/masjidly` | App source code (iOS + Expo) |
+| `masjidly` | `github.com/mwijanarko1/masjidly` | App source code (iOS + Android) |
 | `Sheffield-Masjids` | `github.com/mwijanarko1/Sheffield-Masjids` | Website hosting APK + `latest.json` |
 
 ---
@@ -64,18 +62,18 @@ Schema:
 
 ## 2. Releasing a New Android APK
 
-Every new build **must** increment `versionCode` in `apps/expo/app.json`.
+Every new build **must** increment `versionCode` in `apps/android/app/build.gradle.kts`.
 
 ```bash
 # 1. Bump versionCode
-#    Edit apps/expo/app.json → increment "versionCode" by 1
+#    Edit apps/android/app/build.gradle.kts → increment versionCode by 1
 
 # 2. Build the APK
-cd apps/expo/android && ./gradlew assembleRelease
+cd apps/android && ./gradlew :app:assembleRelease
 
 # 3. Copy with versioned name
-cd apps/expo
-cp android/app/build/outputs/apk/release/app-release.apk Masjidly-<version>.apk
+cd apps/android
+cp app/build/outputs/apk/release/app-release.apk Masjidly-<version>.apk
 
 # 4. Compute SHA256
 shasum -a 256 Masjidly-<version>.apk
@@ -105,7 +103,7 @@ git push origin main
 
 # 10. Commit version bump in app repo
 cd <path-to-masjidly>
-git add apps/expo/app.json
+git add apps/android/app/build.gradle.kts
 git commit -m "chore: bump Android versionCode to <code>"
 git push origin main
 ```
@@ -114,12 +112,11 @@ git push origin main
 
 ```bash
 # From the masjidly repo:
-# Bump versionCode from 7 to 8 in app.json
+# Bump versionCode from 7 to 8 in build.gradle.kts
 
-cd apps/expo/android && ./gradlew assembleRelease
+cd apps/android && ./gradlew :app:assembleRelease
 
-cd ..
-cp android/app/build/outputs/apk/release/app-release.apk Masjidly-1.1.1.apk
+cp app/build/outputs/apk/release/app-release.apk Masjidly-1.1.1.apk
 SHA=$(shasum -a 256 Masjidly-1.1.1.apk | awk '{print $1}')
 echo $SHA
 
@@ -135,7 +132,7 @@ git commit -m "chore(release): publish Masjidly v1.1.1 (versionCode 8)"
 git push origin main
 
 cd /path/to/masjidly
-git add apps/expo/app.json
+git add apps/android/app/build.gradle.kts
 git commit -m "chore: bump Android versionCode to 8"
 git push origin main
 ```
@@ -162,15 +159,14 @@ git push origin main
 - Shows system `.alert()` if update available
 - "Open App Store" button calls `AppUpdateChecker.openAppStore()`
 
-### Expo (`UpdatePromptModal.tsx` + `updateChecker.ts`)
-- `checkForUpdate()` fetches `latest.json`, compares `versionCode` (Android) / `version` (iOS)
-- Returns `UpdateInfo` with `updateAvailable`, `release`, `error`
-- `UpdatePromptModal` shows a native modal with title + body + Download/Later buttons
-- Auto-checks on launch (2s delay) via `<UpdatePromptModal autoCheck />` in `_layout.tsx`
+### Android (`UpdateChecker.kt`)
+- `checkForUpdate()` fetches `latest.json`, compares `versionCode`
+- Shows update prompt with download link when a newer APK is available
+- Auto-checks on launch from `MasjidlyApp`
 
 ### Test buttons (development builds only)
 - **iOS:** Settings → Development section → "Test Update Prompt"
-- **Expo:** Settings → Development section → "Test Update Prompt"
+- **Android:** Settings → Development section → "Test Update Prompt"
 
 Both trigger a live check against `latest.json` (or show a test release if fetch fails).
 
@@ -179,7 +175,7 @@ Both trigger a live check against `latest.json` (or show a test release if fetch
 ## 5. Version Bumping Rules
 
 - **Android versionCode**: increment by 1 for every build. Used for update comparison.
-- **Android version** (app.json): bump for meaningful feature releases.
+- **Android versionName** (`build.gradle.kts`): bump for meaningful feature releases.
 - **iOS version** (MARKETING_VERSION): bump for App Store releases.
 - **iOS build** (CURRENT_PROJECT_VERSION): increment per build, not used for update checks.
 
@@ -189,16 +185,12 @@ Both trigger a live check against `latest.json` (or show a test release if fetch
 
 ### App repo (`mwijanarko1/masjidly`)
 ```
-apps/android/app/build.gradle.kts           # Native Android versionName + versionCode (keep in sync with Expo)
+apps/android/app/build.gradle.kts           # Android versionName + versionCode
 apps/android/README.md                      # Native Android build instructions
 apps/android/PARITY.md                      # iOS ↔ Kotlin parity tracker
-apps/expo/app.json                          # Legacy Android version + versionCode (current release APK)
-apps/expo/lib/updates/updateChecker.ts      # Update check logic (Expo)
-apps/expo/components/updates/UpdatePromptModal.tsx  # Update modal UI (Expo)
-apps/expo/app/_layout.tsx                   # Auto-check integration (Expo)
 Masjidly - Official Masjid Prayer Times/App/MasjidlyRootView.swift  # Update check + alert (iOS)
 Masjidly - Official Masjid Prayer Times/Features/Updates/AppUpdateChecker.swift  # Update check logic (iOS)
-apps/android/.../features/updates/UpdateChecker.kt  # Update check logic (native Android)
+apps/android/.../features/updates/UpdateChecker.kt  # Update check logic (Android)
 ```
 
 ### Website repo (`mwijanarko1/Sheffield-Masjids`)

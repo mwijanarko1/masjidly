@@ -1,8 +1,7 @@
 # Android ↔ iOS Feature Parity Tracker
 
 **Source of truth:** native iOS SwiftUI (`Masjidly - Official Masjid Prayer Times/`)  
-**Backend:** Convex (same queries as iOS `ConvexPrayerRepository.swift` / Expo `prayerRepository.ts`)  
-**Expo:** temporary; untouched during native migration  
+**Backend:** Convex (same queries as iOS `ConvexPrayerRepository.swift`)
 
 Status key: **done** · **partial** · **missing**
 
