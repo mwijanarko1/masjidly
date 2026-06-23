@@ -1,14 +1,16 @@
 ---
-last_mapped: 2026-05-13T00:00:00Z
+last_mapped: 2026-06-23T00:00:00Z
 ---
 
-# Codebase Map — Masjidly (Native SwiftUI + Expo Android companion)
+# Codebase Map — Masjidly (Native SwiftUI + Native Android Kotlin + Expo legacy)
 
 ## System Overview
 
 Masjidly is a **native iOS app** (SwiftUI, `@Observable`) that displays official mosque prayer times with a light weather-inspired UI. It fetches prayer/iqamah data from a **Convex** backend, computes next-prayer state locally via `PrayerTimesEngine`, schedules local notifications, persists user preferences in `SettingsStore`, includes a **Qibla compass**, and offers a **multi-step onboarding tutorial**.
 
-An **Expo RN companion app** lives under `apps/expo/` (separate codebase, shared Convex backend). The Expo app targets **Android only** and replicates the same domain behavior, data sources, settings, localization, timetable, Qibla, audio adhan playback, and local prayer notification flows as the native iOS app.
+A **native Android app** lives under `apps/android/` (Kotlin + Jetpack Compose). It mirrors the iOS architecture and feature set; see `apps/android/PARITY.md` for the parity tracker. Debug builds use package `com.mikhailspeaks.masjidly.native` to coexist with the legacy Expo app.
+
+An **Expo RN companion app** lives under `apps/expo/` (legacy Android release path, shared Convex backend). The Expo app targets **Android only** and replicates the same domain behavior, data sources, settings, localization, timetable, Qibla, audio adhan playback, and local prayer notification flows as the native iOS app.
 
 ---
 
@@ -74,7 +76,20 @@ Masjidly - Official Masjid Prayer Times/              # Native iOS target
 ├── Resources/                                         # Adhan audio files (Adhan-1.caf, Adhan-2.caf)
 └── Localizable.xcstrings                              # String catalog for i18n
 
-apps/expo/                                             # Expo RN Android companion app (separate codebase)
+apps/android/                                          # Native Android app (Kotlin + Jetpack Compose)
+├── app/src/main/kotlin/com/mikhailspeaks/masjidly/
+│   ├── MasjidlyApp.kt                                 # Application entry
+│   ├── MainActivity.kt                                # Single-activity Compose host
+│   ├── domain/                                        # Models, PrayerTimesEngine, localization
+│   ├── data/                                          # Convex HTTP client, SettingsStore, disk cache
+│   ├── features/                                      # home, timetable, settings, onboarding, notifications, qibla, updates, audio
+│   ├── ui/                                            # theme tokens, navigation, home design components
+│   └── widget/                                        # Glance home-screen widget
+├── app/src/main/res/                                  # launcher icons, fonts, adhan audio, widget XML
+├── PARITY.md                                          # iOS ↔ Kotlin feature parity tracker
+└── README.md                                          # Gradle build instructions
+
+apps/expo/                                             # Expo RN Android companion app (legacy release path)
 ├── app/                                               # Expo Router screens
 │   ├── _layout.tsx                                    # Root layout — ErrorBoundary, SafeAreaProvider, MasjidlyConvexProvider
 │   ├── index.tsx                                      # Home screen — hero illustration, adhan time, prayer carousel, Qibla
@@ -175,6 +190,14 @@ MasjidlyWidgetSupport/                                 # Shared support for widg
 3. `MasjidlyRootView` wraps `HomeView` with forced `en` locale + `LTR` layout
 4. `OnboardingFlowController` checks `settings.hasCompletedOnboarding`; if `false` and mosques are loaded, presents the tutorial sequence
 5. `AdhanMiniPlayerBar` is shown in the bottom safe area inset when audio playback is active
+
+### App Boot (Native Android)
+1. `MasjidlyApp` initializes `SettingsStore` and notification channels
+2. `MainActivity` hosts `MasjidlyNavHost` (Compose Navigation)
+3. `HomeViewModel` loads mosque list via `ConvexPrayerRepository`, resolves selected mosque, fetches month/Ramadan/DST data
+4. `PrayerTimesEngine` computes next prayer; `HomeScreen` renders hero, carousel, and Qibla
+5. `OnboardingFlowViewModel` presents tutorial when `hasCompletedOnboarding` is false
+6. `PrayerNotificationScheduler` schedules alarms; `UpdateChecker` fetches `latest.json` on launch
 
 ### App Boot (Expo Android)
 1. Root `_layout.tsx` mounts `MasjidlyConvexProvider` around the router stack

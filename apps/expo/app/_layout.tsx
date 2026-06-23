@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
 import { useEffect, useState } from "react";
 import { DeviceEventEmitter, StyleSheet, View } from "react-native";
@@ -12,7 +13,9 @@ import {
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MasjidlyConvexProvider } from "@/lib/convex/client";
 import UpdatePromptModal from "@/components/updates/UpdatePromptModal";
+import AppOverlays from "@/components/navigation/AppOverlays";
 import { useRouter } from "expo-router";
+import { useAppOverlayStore } from "@/store/appOverlay";
 import { playAdhan } from "@/lib/audio/AdhanSoundPlayer";
 import { useAppLanguage } from "@/lib/i18n/language";
 import { t } from "@/lib/i18n/translations";
@@ -152,13 +155,16 @@ function useNotificationResponseListener() {
 
             // ── Open Timetable ──
             if (actionIdentifier === ACTION.openTimetable || actionIdentifier === "__default__" && kind === "reminder") {
-              router.replace("/timetable");
+              const mosqueSlug = typeof data.mosqueSlug === "string" ? data.mosqueSlug : undefined;
+              useAppOverlayStore.getState().openTimetable({ mosqueSlug });
+              router.replace("/");
               return;
             }
 
             // ── View Mosque ──
             if (actionIdentifier === ACTION.viewMosque) {
-              router.replace("/settings");
+              useAppOverlayStore.getState().openSettings();
+              router.replace("/");
               return;
             }
 
@@ -209,23 +215,24 @@ export default function RootLayout() {
     <ErrorBoundary>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <MasjidlyConvexProvider>
+          <StatusBar style="light" backgroundColor="#071B33" />
           <UpdatePromptModal
             autoCheck
             visible={showTestUpdatePrompt}
             onClose={() => setShowTestUpdatePrompt(false)}
           />
           <View style={styles.stackBackground}>
-            <Stack screenOptions={{ headerShown: false, contentStyle: styles.stackBackground }}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: styles.stackBackground,
+              }}
+            >
               <Stack.Screen name="index" />
-              <Stack.Screen
-                name="timetable"
-                options={{ animation: "none" }}
-              />
-              <Stack.Screen
-                name="settings"
-                options={{ animation: "none" }}
-              />
+              <Stack.Screen name="settings" options={{ href: null, animation: "none" }} />
+              <Stack.Screen name="timetable" options={{ href: null, animation: "none" }} />
             </Stack>
+            <AppOverlays />
           </View>
         </MasjidlyConvexProvider>
       </SafeAreaProvider>

@@ -2,7 +2,9 @@
 
 ## Overview
 
-Masjidly is a **dual-platform app** (iOS native SwiftUI + Android Expo) with a shared Convex backend. This document defines the exact procedures for building, publishing, and maintaining the in-app update infrastructure.
+Masjidly is a **multi-platform app** (iOS native SwiftUI + native Android Kotlin/Compose + legacy Expo Android) with a shared Convex backend. This document defines the exact procedures for building, publishing, and maintaining the in-app update infrastructure.
+
+> **Android note:** Production APK releases still ship from `apps/expo/` until native `apps/android/` reaches full parity. Debug builds of the Kotlin app use `com.mikhailspeaks.masjidly.native` so they can install alongside Expo.
 
 ---
 
@@ -187,12 +189,16 @@ Both trigger a live check against `latest.json` (or show a test release if fetch
 
 ### App repo (`mwijanarko1/masjidly`)
 ```
-apps/expo/app.json                         # Android version + versionCode
+apps/android/app/build.gradle.kts           # Native Android versionName + versionCode (keep in sync with Expo)
+apps/android/README.md                      # Native Android build instructions
+apps/android/PARITY.md                      # iOS ↔ Kotlin parity tracker
+apps/expo/app.json                          # Legacy Android version + versionCode (current release APK)
 apps/expo/lib/updates/updateChecker.ts      # Update check logic (Expo)
 apps/expo/components/updates/UpdatePromptModal.tsx  # Update modal UI (Expo)
 apps/expo/app/_layout.tsx                   # Auto-check integration (Expo)
 Masjidly - Official Masjid Prayer Times/App/MasjidlyRootView.swift  # Update check + alert (iOS)
 Masjidly - Official Masjid Prayer Times/Features/Updates/AppUpdateChecker.swift  # Update check logic (iOS)
+apps/android/.../features/updates/UpdateChecker.kt  # Update check logic (native Android)
 ```
 
 ### Website repo (`mwijanarko1/Sheffield-Masjids`)

@@ -17,6 +17,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useAppOverlayStore } from "@/store/appOverlay";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronRight, X } from "lucide-react-native";
@@ -45,7 +46,7 @@ import {
 } from "@/lib/notifications/expoNotificationApi";
 import { resolveSelectedMosque } from "@/lib/prayer/mosqueDefaults";
 import { getDateInSheffield } from "@/lib/prayer/prayerTimesEngine";
-import { MONTH_NAMES, monthNameFromNumber, type MonthName } from "@/lib/prayer/monthName";
+import { monthNameFromNumber, type MonthName } from "@/lib/prayer/monthName";
 import type { MonthPrayerData, Mosque } from "@/types/prayer";
 import {
   themeForPrayer,
@@ -173,9 +174,15 @@ function monthHasSecondAsrAdhan(monthly: MonthPrayerData | null): boolean {
   return monthly?.prayerTimes.some((row) => Boolean(row.asrMithl2)) ?? false;
 }
 
-export default function SettingsScreen() {
+export type SettingsScreenProps = {
+  onClose?: () => void;
+  theme?: string;
+};
+
+export function SettingsScreen({ onClose, theme: themeProp }: SettingsScreenProps = {}) {
   const router = useRouter();
   const { theme: themeParam } = useLocalSearchParams<{ theme?: string }>();
+  const themeSource = themeProp ?? themeParam;
   const settings = useSettingsStore(
     useShallow((s) => ({
       selectedMosqueId: s.selectedMosqueId,
@@ -203,7 +210,7 @@ export default function SettingsScreen() {
       setAppLanguage: s.setAppLanguage,
     }))
   );
-  const dynamicTheme = themeForPrayer(themeParam ?? "Fajr");
+  const dynamicTheme = themeForPrayer(themeSource ?? "Fajr");
   const theme = resolveTheme(dynamicTheme, settings.themeMode, settings.fixedTheme);
   const sky = getSkyTheme(theme);
   const textColor = getTextColor(theme);
@@ -250,9 +257,10 @@ export default function SettingsScreen() {
         if (!cancelled) setLoading(false);
       }
     }
-    loadMosques();
+    const task = requestIdleCallback(loadMosques);
     return () => {
       cancelled = true;
+      cancelIdleCallback(task);
     };
   }, []);
 
@@ -277,26 +285,15 @@ export default function SettingsScreen() {
           return;
         }
 
-        // The setting should be available for mosques that support a second Asr
-        // adhan anywhere in the yearly timetable, not only in the current month.
-        for (const candidateMonth of MONTH_NAMES) {
-          if (candidateMonth === monthName) continue;
-          const monthly = await loadMonthlyPrayerTimesWithCache(selected.slug, candidateMonth, year);
-          if (cancelled) return;
-          if (monthHasSecondAsrAdhan(monthly)) {
-            setSupportsMultipleAsr(true);
-            return;
-          }
-        }
-
         if (!cancelled) setSupportsMultipleAsr(false);
       } catch {
         if (!cancelled) setSupportsMultipleAsr(false);
       }
     }
-    loadAsrSupport();
+    const task = requestIdleCallback(loadAsrSupport);
     return () => {
       cancelled = true;
+      cancelIdleCallback(task);
     };
   }, [mosques, settings.selectedMosqueId, settings.selectedMosqueSlug]);
 
@@ -341,12 +338,17 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    loadCachedUserCoordinates().then((coords) => {
-      if (!cancelled && coords) setUserCoordinates(coords);
-    }).finally(() => {
-      if (!cancelled) refreshUserCoordinates();
+    const task = requestIdleCallback(() => {
+      loadCachedUserCoordinates().then((coords) => {
+        if (!cancelled && coords) setUserCoordinates(coords);
+      }).finally(() => {
+        if (!cancelled) refreshUserCoordinates();
+      });
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      cancelIdleCallback(task);
+    };
   }, [refreshUserCoordinates]);
 
   useEffect(() => {
@@ -806,7 +808,8 @@ export default function SettingsScreen() {
                   if (currentStep?.type === "closeSettings") {
                     onboarding.handleSettingsClosed();
                   }
-                  router.back();
+                  if (onClose) onClose();
+                  else router.back();
                 }}
                 style={[styles.closeButton, { backgroundColor: "rgba(255,255,255,0.18)" }]}
                 accessibilityRole="button"
@@ -1553,3 +1556,16 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
+
+export default function SettingsRoute() {
+  const router = useRouter();
+  const { theme } = useLocalSearchParams<{ theme?: string }>();
+  const openSettings = useAppOverlayStore((s) => s.openSettings);
+
+  useEffect(() => {
+    openSettings({ theme });
+    router.replace("/");
+  }, [openSettings, router, theme]);
+
+  return null;
+}

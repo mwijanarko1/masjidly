@@ -2,10 +2,20 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
 import HomeScreen from "@/app/index.tsx";
 
-const mockPush = jest.fn();
+const mockOpenSettings = jest.fn();
+const mockOpenTimetable = jest.fn();
 
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useLocalSearchParams: () => ({}),
+}));
+
+jest.mock("@/store/appOverlay", () => ({
+  useAppOverlayStore: jest.fn((selector: any) =>
+    selector({
+      openSettings: mockOpenSettings,
+      openTimetable: mockOpenTimetable,
+    })
+  ),
 }));
 
 jest.mock("react-native-safe-area-context", () => ({
@@ -214,8 +224,8 @@ describe("HomeScreen", () => {
 
     render(<HomeScreen />);
     fireEvent.press(screen.getByLabelText("Timetable screen"));
-    expect(mockPush).toHaveBeenCalledWith({ pathname: "/timetable", params: { theme: "Fajr", mosqueName: "" } });
+    expect(mockOpenTimetable).toHaveBeenCalledWith({ theme: "Fajr", mosqueName: "", mosqueSlug: "" });
     fireEvent.press(screen.getByLabelText("Settings screen"));
-    expect(mockPush).toHaveBeenCalledWith({ pathname: "/settings", params: { theme: "Fajr" } });
+    expect(mockOpenSettings).toHaveBeenCalledWith({ theme: "Fajr" });
   });
 });

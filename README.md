@@ -25,7 +25,7 @@ A beautifully designed, time-adaptive prayer times app that displays **official 
 
 ## Project Structure
 
-This is a **dual-platform codebase** with a shared Convex backend:
+This is a **multi-platform codebase** with a shared Convex backend:
 
 ```
 ├── Masjidly - Official Masjid Prayer Times/   # Native iOS app (SwiftUI)
@@ -43,7 +43,12 @@ This is a **dual-platform codebase** with a shared Convex backend:
 │   │   └── Persistence/                        # UserDefaults settings store
 │   └── Assets.xcassets/                        # App icons & prayer illustrations
 │
-├── apps/expo/                                  # Expo React Native app (Android)
+├── apps/android/                               # Native Android app (Kotlin + Jetpack Compose)
+│   ├── app/src/main/kotlin/.../                # Features, domain, data, widgets
+│   ├── PARITY.md                               # iOS ↔ Android parity tracker
+│   └── README.md                               # Gradle build instructions
+│
+├── apps/expo/                                  # Legacy Expo React Native app (Android)
 │   ├── app/                                    # Expo Router screens
 │   ├── components/                             # Reusable UI components
 │   ├── lib/                                    # Domain, data, i18n, notifications
@@ -65,7 +70,8 @@ This is a **dual-platform codebase** with a shared Convex backend:
 ### Prerequisites
 
 - **iOS**: Xcode 16+, iOS 17+ target
-- **Android**: Node.js 20+, Bun or npm, Expo CLI
+- **Android (native)**: Android Studio, JDK 17+, Android SDK 35
+- **Android (Expo)**: Node.js 20+, Bun or npm, Expo CLI
 - **Backend**: Convex account (external deployment)
 
 ### Native iOS
@@ -78,7 +84,21 @@ open "Masjidly - Official Masjid Prayer Times.xcodeproj"
 # Cmd+R in Xcode
 ```
 
-### Expo Android
+### Native Android (Kotlin)
+
+```bash
+cd apps/android
+
+# Point Gradle at your SDK (or set ANDROID_HOME)
+cp local.properties.example local.properties
+# edit local.properties → sdk.dir=...
+
+./gradlew :app:assembleDebug
+```
+
+Debug APK: `app/build/outputs/apk/debug/app-debug.apk` (package `com.mikhailspeaks.masjidly.native`).
+
+### Expo Android (legacy)
 
 ```bash
 cd apps/expo
@@ -121,7 +141,17 @@ See [`docs/DESIGN.md`](docs/DESIGN.md) for the full design specification.
 | Feature | `@Observable` view models | `Features/*/HomeViewModel.swift`, `SettingsViewModel.swift` |
 | UI | SwiftUI + design tokens | `Features/Home/*.swift`, `HomeDesign.swift` |
 
-### Expo Android (React Native)
+### Native Android (Kotlin + Compose)
+
+| Layer | Pattern | Key Files |
+|-------|---------|-----------|
+| Entry | `Application` + `MainActivity` | `MasjidlyApp.kt`, `MainActivity.kt` |
+| Domain | Data classes + engine | `domain/PrayerModels.kt`, `PrayerTimesEngine.kt` |
+| Data | HTTP Convex client + disk cache | `data/convex/ConvexPrayerRepository.kt`, `data/cache/` |
+| Feature | ViewModel + Compose screens | `features/home/HomeViewModel.kt`, `HomeScreen.kt` |
+| UI | Material 3 + design tokens | `ui/theme/`, `ui/home/HomeDesign.kt` |
+
+### Expo Android (React Native, legacy)
 
 | Layer | Pattern | Key Files |
 |-------|---------|-----------|

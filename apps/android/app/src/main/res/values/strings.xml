@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Masjidly</string>
+    <string name="masjidly_prayer_widget_name">Masjidly</string>
+    <string name="masjidly_prayer_widget_description">Shows the next prayer and adhan time for your selected masjid.</string>
+</resources>

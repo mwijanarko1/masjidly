@@ -1,5 +1,5 @@
-import * as Haptics from "expo-haptics";
 import {
+  Platform,
   Pressable as RNPressable,
   TouchableOpacity as RNTouchableOpacity,
   type GestureResponderEvent,
@@ -8,17 +8,20 @@ import {
 } from "react-native";
 
 function triggerSelectionHaptic() {
-  void Haptics.selectionAsync().catch(() => {
-    // Haptics are best-effort; ignore unsupported devices/platform failures.
-  });
+  if (Platform.OS === "android") return;
+  void import("expo-haptics")
+    .then((Haptics) => Haptics.selectionAsync())
+    .catch(() => {
+      // Haptics are best-effort; ignore unsupported devices/platform failures.
+    });
 }
 
 function handleHapticInteraction(
   event: GestureResponderEvent,
   handler?: (event: GestureResponderEvent) => void,
 ) {
-  triggerSelectionHaptic();
   handler?.(event);
+  triggerSelectionHaptic();
 }
 
 export function HapticPressable({ onPress, onLongPress, ...props }: PressableProps) {

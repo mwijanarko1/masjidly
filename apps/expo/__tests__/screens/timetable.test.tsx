@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
-import TimetableScreen from "@/app/timetable.tsx";
+import { TimetableScreen } from "@/app/timetable.tsx";
 
 const mockBack = jest.fn();
 let mockMosqueSlugParam: string | undefined = "test-mosque";

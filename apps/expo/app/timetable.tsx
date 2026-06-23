@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useAppOverlayStore } from "@/store/appOverlay";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { AtmosphericSkyBackground } from "@/components/ui/AtmosphericSkyBackground";
@@ -100,13 +101,32 @@ function isToday(date: Date, year: number, month: number, day: number): boolean 
   return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day;
 }
 
-export default function TimetableScreen() {
+export type TimetableScreenProps = {
+  onClose?: () => void;
+  theme?: string;
+  mosqueName?: string;
+  mosqueSlug?: string;
+};
+
+export function TimetableScreen({
+  onClose,
+  theme: themeProp,
+  mosqueName: mosqueNameProp,
+  mosqueSlug: mosqueSlugProp,
+}: TimetableScreenProps = {}) {
   const router = useRouter();
-  const { mosqueSlug, mosqueName: mosqueNameParam, theme: themeParam } = useLocalSearchParams<{
+  const {
+    mosqueSlug: mosqueSlugParam,
+    mosqueName: mosqueNameParam,
+    theme: themeParam,
+  } = useLocalSearchParams<{
     mosqueSlug?: string;
     mosqueName?: string;
     theme?: string;
   }>();
+  const mosqueSlug = mosqueSlugProp ?? mosqueSlugParam;
+  const mosqueNameParamResolved = mosqueNameProp ?? mosqueNameParam;
+  const themeSource = themeProp ?? themeParam;
   const selectedMosqueSlug = useSettingsStore((s) => s.selectedMosqueSlug);
   const uses24HourTime = useSettingsStore((s) => s.uses24HourTime);
   const themeMode = useSettingsStore((s) => s.themeMode);
@@ -128,7 +148,7 @@ export default function TimetableScreen() {
   }, [currentStep?.type]);
   // ── End Onboarding ──
 
-  const dynamicTheme = themeForPrayer(themeParam ?? "Fajr");
+  const dynamicTheme = themeForPrayer(themeSource ?? "Fajr");
   const theme = resolveTheme(dynamicTheme, themeMode, fixedTheme);
   const sky = getSkyTheme(theme);
   const textColor = getTextColor(theme);
@@ -186,7 +206,10 @@ export default function TimetableScreen() {
     setMonthData(initialMonthData);
   }, [initialMonthData]);
 
-  useEffect(() => { fetchMonth(); }, [fetchMonth]);
+  useEffect(() => {
+    const task = requestIdleCallback(fetchMonth);
+    return () => cancelIdleCallback(task);
+  }, [fetchMonth]);
   useEffect(() => {
     const today = new Date();
     setSelectedDay(isToday(today, year, month, today.getDate()) ? today.getDate() : 1);
@@ -278,7 +301,7 @@ export default function TimetableScreen() {
     <View style={styles.root}>
       <AtmosphericSkyBackground sky={sky} variant="home" diagonalBase />
 
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
         {/* Header Bar */}
         <View style={[styles.header, { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24 }]}>
           <View style={{ flex: 1 }}>
@@ -286,7 +309,7 @@ export default function TimetableScreen() {
               {formattedSelectedDate}
             </Text>
             <Text style={[styles.headerMosque, { color: textColor + "B3", fontSize: 15 * fontScale }]} numberOfLines={1}>
-              {mosqueNameParam || activeMosqueSlug}
+              {mosqueNameParamResolved || activeMosqueSlug}
             </Text>
           </View>
           <TutorialHighlight
@@ -299,7 +322,8 @@ export default function TimetableScreen() {
                 if (currentStep?.type === "closeTimetable") {
                   onboarding.handleTimetableClosed();
                 }
-                router.back();
+                if (onClose) onClose();
+                else router.back();
               }}
               style={[styles.closeButton, { backgroundColor: "rgba(255,255,255,0.18)" }]}
               accessibilityRole="button"
@@ -383,7 +407,7 @@ export default function TimetableScreen() {
             </Text>
             <Pressable
               onPress={() => openMissingPrayerTimesEmail({
-                mosqueName: mosqueNameParam || activeMosqueSlug,
+                mosqueName: mosqueNameParamResolved || activeMosqueSlug,
                 monthLabel: monthSwitcherTitle,
                 languageCode,
               })}
@@ -408,7 +432,7 @@ export default function TimetableScreen() {
             </Pressable>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: SPACING.xl }}>
+          <ScrollView style={styles.prayerList} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: SPACING.xl }}> 
             {/* Column Header */}
             <View style={[styles.tableHeader, { paddingHorizontal: 24, paddingBottom: 4 }]}>
               <Text
@@ -605,6 +629,7 @@ const styles = StyleSheet.create({
   monthSwitcher: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   monthLabel: { fontSize: 18, fontFamily: "Comfortaa_500Medium" },
   dateStrip: { height: DATE_STRIP_HEIGHT, flexGrow: 0 },
+  prayerList: { flex: 1 },
   dayCell: { width: DATE_CELL_WIDTH, height: 70, borderRadius: 14, justifyContent: "center", alignItems: "center", marginRight: DATE_CELL_GAP },
   dayWeekday: { fontSize: 10, fontFamily: "Comfortaa_600SemiBold", marginBottom: 4 },
   dayNumber: { fontSize: 20 },
@@ -613,3 +638,20 @@ const styles = StyleSheet.create({
   nameCell: { flex: 1, flexShrink: 1, minWidth: 0 },
   timeCell: { width: 105, maxWidth: 105, textAlign: "right" },
 });
+
+export default function TimetableRoute() {
+  const router = useRouter();
+  const { theme, mosqueName, mosqueSlug } = useLocalSearchParams<{
+    theme?: string;
+    mosqueName?: string;
+    mosqueSlug?: string;
+  }>();
+  const openTimetable = useAppOverlayStore((s) => s.openTimetable);
+
+  useEffect(() => {
+    openTimetable({ theme, mosqueName, mosqueSlug });
+    router.replace("/");
+  }, [mosqueName, mosqueSlug, openTimetable, router, theme]);
+
+  return null;
+}

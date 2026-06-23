@@ -7,9 +7,41 @@
 
 # Binary artifacts
 *.apk
+*.aab
+*.ipa
 
-# Xcode build artifacts
+# Build artifacts (iOS, Android, Gradle)
 build/
+**/build/
+.gradle/
+**/.gradle/
+.kotlin/
+**/.kotlin/
+
+# Android local SDK path (machine-specific)
+local.properties
+**/local.properties
+
+# Android signing
+*.jks
+*.keystore
+*.keystore.properties
+
+# IDE
+.idea/
+**/.idea/
+*.iml
+
+# Node / Expo (see apps/expo/.gitignore for app-specific rules)
+node_modules/
+
+# Local env & secrets
+.env
+.env.*
+!.env.example
+
+# Dev scratch (screenshots, throwaway captures)
+scratch/
 
 # Project notes
 context.md

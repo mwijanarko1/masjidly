@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
-import SettingsScreen from "@/app/settings.tsx";
+import { SettingsScreen } from "@/app/settings.tsx";
 
 const mockBack = jest.fn();
 

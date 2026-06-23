@@ -9,7 +9,8 @@ import {
   Animated,
 } from "react-native";
 import { HapticPressable as Pressable } from "@/components/ui/HapticPressable";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
+import { useAppOverlayStore } from "@/store/appOverlay";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Calendar, ChevronLeft, ChevronRight, Settings } from "lucide-react-native";
 import { AtmosphericSkyBackground } from "@/components/ui/AtmosphericSkyBackground";
@@ -342,7 +343,8 @@ const HeroOrbSection = React.memo(function HeroOrbSection({
 
 
 export default function HomeScreen() {
-  const router = useRouter();
+  const openSettings = useAppOverlayStore((s) => s.openSettings);
+  const openTimetable = useAppOverlayStore((s) => s.openTimetable);
   const { showWhatsNew } = useLocalSearchParams<{ showWhatsNew?: string }>();
   const {
     loadState,
@@ -604,7 +606,11 @@ export default function HomeScreen() {
                   if (currentStep?.type === "openTimetable") {
                     onboarding.handleTimetableOpened();
                   }
-                  router.push({ pathname: "/timetable", params: { theme: selectedPrayer, mosqueName: selectedMosque?.name ?? "" } });
+                  openTimetable({
+                    theme: selectedPrayer,
+                    mosqueName: selectedMosque?.name ?? "",
+                    mosqueSlug,
+                  });
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={t("accessibility.timetable", languageCode)}
@@ -670,7 +676,7 @@ export default function HomeScreen() {
                   if (currentStep?.type === "openSettings") {
                     onboarding.handleSettingsOpened();
                   }
-                  router.push({ pathname: "/settings", params: { theme: selectedPrayer } });
+                  openSettings({ theme: selectedPrayer });
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={t("accessibility.settings", languageCode)}
@@ -787,9 +793,13 @@ export default function HomeScreen() {
         onDismiss={dismissWhatsNew}
         onAction={(action) => {
           if (action === "settings") {
-            router.push({ pathname: "/settings", params: { theme: selectedPrayer } });
+            openSettings({ theme: selectedPrayer });
           } else if (action === "timetable") {
-            router.push({ pathname: "/timetable", params: { theme: selectedPrayer, mosqueName: selectedMosque?.name ?? "" } });
+            openTimetable({
+              theme: selectedPrayer,
+              mosqueName: selectedMosque?.name ?? "",
+              mosqueSlug,
+            });
           }
         }}
       />
