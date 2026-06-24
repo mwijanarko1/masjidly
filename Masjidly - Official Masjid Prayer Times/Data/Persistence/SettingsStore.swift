@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import WidgetKit
 
 enum AsrIqamahPreference: String, CaseIterable, Identifiable, Codable, Sendable {
     case first
@@ -25,6 +26,7 @@ final class SettingsStore: SettingsPersisting {
         case appFontName
         case themeMode
         case fixedTheme
+        case prayerGradientStylesJSON
         case asrIqamahPreference
         case hideQiblaCompass
         case firstAppOpenTrackedAt1970
@@ -92,6 +94,40 @@ final class SettingsStore: SettingsPersisting {
         }
     }
 
+    private var prayerGradientStyles: [String: String] {
+        didSet {
+            if let data = try? JSONEncoder().encode(prayerGradientStyles) {
+                defaults.set(data, forKey: Key.prayerGradientStylesJSON.rawValue)
+            } else {
+                defaults.removeObject(forKey: Key.prayerGradientStylesJSON.rawValue)
+            }
+            syncWidgetThemeSettings()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+
+    func skyGradientSet(for theme: HomeDesign.TimeTheme) -> HomeDesign.SkyGradientSet {
+        guard HomeDesign.TimeTheme.configurableGradientThemes.contains(theme) else {
+            return theme.defaultGradientSet()
+        }
+        let raw = prayerGradientStyles[theme.rawValue] ?? theme.defaultGradientSet().rawValue
+        return HomeDesign.SkyGradientSet(rawValue: raw) ?? theme.defaultGradientSet()
+    }
+
+    func setSkyGradientSet(_ set: HomeDesign.SkyGradientSet, for theme: HomeDesign.TimeTheme) {
+        guard HomeDesign.TimeTheme.configurableGradientThemes.contains(theme) else { return }
+        var styles = prayerGradientStyles
+        styles[theme.rawValue] = set.rawValue
+        prayerGradientStyles = styles
+    }
+
+    func resolvedAppearance(for theme: HomeDesign.TimeTheme) -> HomeDesign.ResolvedTheme {
+        HomeDesign.ResolvedTheme(
+            timeTheme: theme,
+            gradientSet: skyGradientSet(for: theme)
+        )
+    }
+
     var asrIqamahPreference: AsrIqamahPreference {
         didSet { defaults.set(asrIqamahPreference.rawValue, forKey: Key.asrIqamahPreference.rawValue) }
     }
@@ -154,6 +190,12 @@ final class SettingsStore: SettingsPersisting {
         appFontName = defaults.string(forKey: Key.appFontName.rawValue) ?? "Gill Sans"
         themeMode = HomeDesign.ThemeMode(rawValue: defaults.string(forKey: Key.themeMode.rawValue) ?? "") ?? .dynamic
         fixedTheme = HomeDesign.TimeTheme(rawValue: defaults.string(forKey: Key.fixedTheme.rawValue) ?? "") ?? .fajr
+        if let data = defaults.data(forKey: Key.prayerGradientStylesJSON.rawValue),
+           let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+            prayerGradientStyles = decoded
+        } else {
+            prayerGradientStyles = [:]
+        }
         asrIqamahPreference = AsrIqamahPreference(rawValue: defaults.string(forKey: Key.asrIqamahPreference.rawValue) ?? "") ?? .first
         if defaults.object(forKey: Key.hideQiblaCompass.rawValue) == nil {
             hideQiblaCompass = false
@@ -178,6 +220,11 @@ final class SettingsStore: SettingsPersisting {
         guard let appGroupDefaults = UserDefaults(suiteName: WidgetPrayerSharedConfig.appGroupIdentifier) else { return }
         appGroupDefaults.set(themeMode.rawValue, forKey: WidgetPrayerSharedConfig.themeModeKey)
         appGroupDefaults.set(fixedTheme.rawValue, forKey: WidgetPrayerSharedConfig.fixedThemeKey)
+        if let data = try? JSONEncoder().encode(prayerGradientStyles) {
+            appGroupDefaults.set(data, forKey: WidgetPrayerSharedConfig.prayerGradientStylesKey)
+        } else {
+            appGroupDefaults.removeObject(forKey: WidgetPrayerSharedConfig.prayerGradientStylesKey)
+        }
     }
 
     func ensureFirstAppOpenTrackedAtRecordedIfNeeded() {

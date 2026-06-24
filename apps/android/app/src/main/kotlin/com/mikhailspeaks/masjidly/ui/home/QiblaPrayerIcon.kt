@@ -39,7 +39,7 @@ private const val FRAME_REF = 120f
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun QiblaPrayerIcon(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     rotationDegrees: Float?,
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
@@ -184,10 +184,10 @@ fun QiblaPrayerIcon(
     }
 }
 
-private fun sunPhaseContentOffsetY(theme: TimeTheme, scale: Float): Float {
+private fun sunPhaseContentOffsetY(theme: ResolvedTheme, scale: Float): Float {
     val baseY = -6f
     val down5 = FRAME_REF * 0.05f
-    return when (theme) {
+    return when (theme.timeTheme) {
         TimeTheme.FAJR, TimeTheme.DHUHR, TimeTheme.ASR, TimeTheme.ISHA ->
             (baseY + down5) * scale
         TimeTheme.SUNRISE, TimeTheme.MAGHRIB, TimeTheme.TAHAJJUD ->

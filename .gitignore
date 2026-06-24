@@ -43,5 +43,11 @@ node_modules/
 # Dev scratch (screenshots, throwaway captures)
 scratch/
 
+# Cursor IDE (local screenshots, plans, agent artifacts)
+.cursor/
+
+# Project-local Gradle user home (when GRADLE_USER_HOME is set in-repo)
+**/.gradle-home/
+
 # Project notes
 context.md

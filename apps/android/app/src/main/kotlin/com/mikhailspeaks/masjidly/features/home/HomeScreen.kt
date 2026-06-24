@@ -79,6 +79,7 @@ import com.mikhailspeaks.masjidly.features.onboarding.rememberOnboardingLocation
 import com.mikhailspeaks.masjidly.features.qibla.rememberQiblaRotation
 import com.mikhailspeaks.masjidly.ui.home.HomeDateFormatting
 import com.mikhailspeaks.masjidly.ui.home.QiblaPrayerIcon
+import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import com.mikhailspeaks.masjidly.ui.home.heroCountdownLabel
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
@@ -341,7 +342,7 @@ private data class ReviewPromptCopy(
 
 @Composable
 private fun HomeTopChrome(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     displayedDate: Instant,
     locale: Locale,
@@ -507,7 +508,7 @@ private fun HomePrayerContent(
     asrPreference: com.mikhailspeaks.masjidly.domain.AsrIqamahPreference,
     locale: Locale,
     language: AppLanguage,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     hideQibla: Boolean,
     locationPermissionGranted: Boolean,
     onSelectPrayer: (Int) -> Unit,
@@ -752,7 +753,7 @@ private fun PrayerCarouselCard(
     adhan: String,
     iqamah: String?,
     selected: Boolean,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onClick: () -> Unit,
 ) {
     val bg = if (selected) theme.textColor.copy(alpha = 0.22f) else theme.textColor.copy(alpha = 0.12f)
@@ -779,7 +780,7 @@ private fun PrayerCarouselCard(
 
 @Composable
 private fun MissingMonthState(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     displayedDate: Instant,
     locale: Locale,
@@ -851,7 +852,7 @@ private fun MissingMonthState(
 }
 
 @Composable
-private fun HomeErrorState(theme: TimeTheme, language: AppLanguage, onRetry: () -> Unit) {
+private fun HomeErrorState(theme: ResolvedTheme, language: AppLanguage, onRetry: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -246,6 +246,30 @@ struct SettingsStoreTests {
         #expect(SettingsStore(defaults: defaults).hasCompletedOnboarding == true)
     }
 
+    @Test func assignedSkyMatchesProductRules() {
+        #expect(HomeDesign.TimeTheme.fajr.sky(set: .set2).baseColors.first == Color(hex: "6274E7"))
+        #expect(HomeDesign.TimeTheme.fajr.sky(set: .classic).baseColors.first == Color(hex: "020326"))
+        #expect(HomeDesign.TimeTheme.sunrise.sky(set: .set2).usesMeshComposition == false)
+        #expect(HomeDesign.TimeTheme.maghrib.sky(set: .set2).usesMeshComposition == false)
+        #expect(HomeDesign.TimeTheme.maghrib.sky(set: .classic).usesMeshComposition == false)
+    }
+
+    @Test @MainActor func prayerGradientSetPersistsPerPrayer() {
+        let defaults = UserDefaults(suiteName: "SettingsStoreTests.prayerGradientSetPersistsPerPrayer")!
+        defaults.removePersistentDomain(forName: "SettingsStoreTests.prayerGradientSetPersistsPerPrayer")
+
+        let s = SettingsStore(defaults: defaults)
+        #expect(s.skyGradientSet(for: .fajr) == .set2)
+
+        s.setSkyGradientSet(.classic, for: .fajr)
+        s.setSkyGradientSet(.set2, for: .maghrib)
+
+        let reloaded = SettingsStore(defaults: defaults)
+        #expect(reloaded.skyGradientSet(for: .fajr) == .classic)
+        #expect(reloaded.skyGradientSet(for: .maghrib) == .set2)
+        #expect(reloaded.resolvedAppearance(for: .fajr).textColor == .white)
+    }
+
     @Test func notificationSettingsDecodesLegacyJSONWithChannelDefaults() throws {
         let json = """
         {"masterEnabled":true,"fajr":true,"dhuhrJummah":false,"asr":true,"maghrib":true,"isha":false}

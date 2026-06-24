@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import com.mikhailspeaks.masjidly.ui.home.MasjidlyColors
+import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
 
@@ -34,8 +35,21 @@ object OnboardingTutorialChrome {
         modifier: Modifier = Modifier,
         content: @Composable () -> Unit,
     ) {
+        Card(
+            appearance = ResolvedTheme(timeTheme, timeTheme.defaultGradientSet()),
+            modifier = modifier,
+            content = content,
+        )
+    }
+
+    @Composable
+    fun Card(
+        appearance: ResolvedTheme,
+        modifier: Modifier = Modifier,
+        content: @Composable () -> Unit,
+    ) {
         val shape = RoundedCornerShape(cornerRadius)
-        val borderBrush = if (timeTheme.usesLightForeground) {
+        val borderBrush = if (appearance.usesLightForeground) {
             Brush.linearGradient(
                 colors = listOf(
                     Color.White.copy(alpha = 0.18f),
@@ -50,7 +64,7 @@ object OnboardingTutorialChrome {
                 ),
             )
         }
-        val fillBrush = if (timeTheme.usesLightForeground) {
+        val fillBrush = if (appearance.usesLightForeground) {
             Brush.linearGradient(
                 colors = listOf(
                     Color.White.copy(alpha = 0.08f),
@@ -65,7 +79,7 @@ object OnboardingTutorialChrome {
                 ),
             )
         }
-        val shadowColor = if (timeTheme.usesLightForeground) {
+        val shadowColor = if (appearance.usesLightForeground) {
             Color.Black.copy(alpha = 0.24f)
         } else {
             Color.Black.copy(alpha = 0.04f)
@@ -74,7 +88,7 @@ object OnboardingTutorialChrome {
         Box(
             modifier = modifier
                 .shadow(
-                    elevation = if (timeTheme.usesLightForeground) 12.dp else 8.dp,
+                    elevation = if (appearance.usesLightForeground) 12.dp else 8.dp,
                     shape = shape,
                     spotColor = shadowColor,
                     ambientColor = shadowColor,

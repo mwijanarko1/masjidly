@@ -19,7 +19,7 @@ import kotlin.math.sin
 /** Mirrors iOS `PrayerSunPhaseIcon` — theme-specific sun/moon line art (100×88 ref canvas). */
 @Composable
 fun PrayerSunPhaseIcon(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     modifier: Modifier = Modifier,
 ) {
     val color = theme.textColor
@@ -29,7 +29,7 @@ fun PrayerSunPhaseIcon(
         val thin = Stroke(width = 1.8f * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
         val medium = Stroke(width = 2.2f * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
         val cx = size.width * 0.5f
-        when (theme) {
+        when (theme.timeTheme) {
             TimeTheme.FAJR -> drawFajr(cx, color, thin)
             TimeTheme.SUNRISE -> drawSunrise(cx, color, thin, medium)
             TimeTheme.DHUHR -> drawDhuhr(cx, color, thin, medium)

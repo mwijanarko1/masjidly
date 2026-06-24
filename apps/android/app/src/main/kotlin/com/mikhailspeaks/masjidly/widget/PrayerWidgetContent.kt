@@ -24,7 +24,7 @@ import androidx.glance.unit.ColorProvider
 import com.mikhailspeaks.masjidly.MainActivity
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.PrayerTimesEngine
-import com.mikhailspeaks.masjidly.ui.home.TimeTheme
+import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -36,8 +36,8 @@ fun PrayerWidgetContent(
     family: MasjidlyWidgetFamily,
 ) {
     val context = LocalContext.current
-    val theme = WidgetThemeResolver.resolvedTheme(context, state.prayerId)
-    val palette = WidgetPalette.from(theme)
+    val appearance = WidgetThemeResolver.resolvedAppearance(context, state.prayerId)
+    val palette = WidgetPalette.from(appearance)
     val locale = language.resolvedLocale()
     val openApp = actionStartActivity(
         Intent(context, MainActivity::class.java).apply {
@@ -45,7 +45,7 @@ fun PrayerWidgetContent(
         },
     )
 
-    WidgetSkyBackground(theme = theme, family = family, onClick = openApp) {
+    WidgetSkyBackground(appearance = appearance, family = family, onClick = openApp) {
         when (state.kind) {
             WidgetStateKind.MISSING, WidgetStateKind.STALE -> UnavailableWidget(language, palette)
             WidgetStateKind.CONTENT -> when (family) {
@@ -63,8 +63,8 @@ private data class WidgetPalette(
     val faint: ColorProvider,
 ) {
     companion object {
-        fun from(theme: TimeTheme): WidgetPalette {
-            val text = theme.textColor
+        fun from(appearance: ResolvedTheme): WidgetPalette {
+            val text = appearance.textColor
             return WidgetPalette(
                 primary = ColorProvider(text),
                 secondary = ColorProvider(text.copy(alpha = 0.85f)),

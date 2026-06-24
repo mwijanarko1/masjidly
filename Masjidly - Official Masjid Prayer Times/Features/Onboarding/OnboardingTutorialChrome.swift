@@ -4,8 +4,8 @@ import SwiftUI
 enum OnboardingTutorialChrome {
     static let cornerRadius: CGFloat = 24 // Matches DESIGN.md lg radius
 
-    private static func cardShadow(timeTheme: HomeDesign.TimeTheme) -> Shadow {
-        if timeTheme.usesLightForeground {
+    private static func cardShadow(usesLightForeground: Bool) -> Shadow {
+        if usesLightForeground {
             // Night themes: Deep but airy shadow to lift from navy/black voids
             return Shadow(color: .black.opacity(0.24), radius: 30, x: 0, y: 12)
         } else {
@@ -16,11 +16,19 @@ enum OnboardingTutorialChrome {
 
     /// Frosted card behind arbitrary content (caller sets padding / typography).
     static func card<Content: View>(timeTheme: HomeDesign.TimeTheme, @ViewBuilder content: () -> Content) -> some View {
+        card(usesLightForeground: timeTheme.usesLightForeground, content: content)
+    }
+
+    static func card<Content: View>(appearance: HomeDesign.ResolvedTheme, @ViewBuilder content: () -> Content) -> some View {
+        card(usesLightForeground: appearance.usesLightForeground, content: content)
+    }
+
+    private static func card<Content: View>(usesLightForeground: Bool, @ViewBuilder content: () -> Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        
+
         // Subtle glass border matching DESIGN.md glass-border (#F0F0F0) or light ink
         let border: LinearGradient = {
-            if timeTheme.usesLightForeground {
+            if usesLightForeground {
                 return LinearGradient(
                     colors: [Color.white.opacity(0.18), Color.white.opacity(0.06)],
                     startPoint: .topLeading,
@@ -38,7 +46,7 @@ enum OnboardingTutorialChrome {
             .background {
                 ZStack {
                     shape.fill(.ultraThinMaterial)
-                    if timeTheme.usesLightForeground {
+                    if usesLightForeground {
                         // Dark themes: Darker tint to make white text pop
                         shape.fill(
                             LinearGradient(
@@ -69,7 +77,7 @@ enum OnboardingTutorialChrome {
             .overlay {
                 shape.strokeBorder(border, lineWidth: 1)
             }
-            .customShadow(cardShadow(timeTheme: timeTheme))
+            .customShadow(cardShadow(usesLightForeground: usesLightForeground))
     }
 }
 

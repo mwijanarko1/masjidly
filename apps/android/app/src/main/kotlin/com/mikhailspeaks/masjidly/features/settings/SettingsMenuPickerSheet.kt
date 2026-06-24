@@ -38,7 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.LocaleStrings
-import com.mikhailspeaks.masjidly.ui.home.TimeTheme
+import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
 import kotlinx.coroutines.launch
 
@@ -55,7 +55,7 @@ fun SettingsMenuPickerRow(
     label: String,
     displayValue: String,
     sheetTitle: String = label,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     multilineValue: Boolean = false,
@@ -109,7 +109,7 @@ fun SettingsPickerBottomSheet(
     title: String,
     options: List<SettingsPickerOption>,
     selectedKey: String,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit,
@@ -227,7 +227,7 @@ private data class SettingsSheetColors(
 )
 
 @Composable
-private fun rememberSettingsSheetColors(theme: TimeTheme): SettingsSheetColors {
+private fun rememberSettingsSheetColors(theme: ResolvedTheme): SettingsSheetColors {
     return if (theme.usesLightForeground) {
         SettingsSheetColors(
             background = Color(0xFF1C1C1E),

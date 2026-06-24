@@ -37,6 +37,10 @@ struct TimetableView: View {
     /// Derived from the observable store so language changes re-localize immediately.
     private var locale: Locale { settings.resolvedLocale }
 
+    private var appearance: HomeDesign.ResolvedTheme {
+        settings.resolvedAppearance(for: timeTheme)
+    }
+
     @State private var selectedDate: Int = 1
 
     init(
@@ -82,12 +86,8 @@ struct TimetableView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: timeTheme.gradient,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            AtmosphericSkyBackground(sky: appearance.sky)
+                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 headerBar
@@ -107,7 +107,7 @@ struct TimetableView: View {
                 if isLoadingMonth {
                     Spacer()
                     ProgressView()
-                        .tint(timeTheme.textColor)
+                        .tint(appearance.textColor)
                     Spacer()
                 } else if noDataForCurrentMonth {
                     missingMonthMessage
@@ -122,7 +122,7 @@ struct TimetableView: View {
                 }
             }
         }
-        .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
+        .preferredColorScheme(appearance.usesLightForeground ? .dark : .light)
         .onAppear {
             noDataForCurrentMonth = currentMonthData.prayerTimes.isEmpty
             let today = currentDayOfSystem
@@ -166,7 +166,7 @@ struct TimetableView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .appFont(size: 16, weight: .medium)
-                    .foregroundStyle(timeTheme.textColor)
+                    .foregroundStyle(appearance.textColor)
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.hapticPlain)
@@ -176,7 +176,7 @@ struct TimetableView: View {
 
             Text(monthSwitcherTitle)
                 .appFont(size: 18, weight: .medium)
-                .foregroundStyle(timeTheme.textColor)
+                .foregroundStyle(appearance.textColor)
 
             Spacer()
             
@@ -185,7 +185,7 @@ struct TimetableView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .appFont(size: 16, weight: .medium)
-                    .foregroundStyle(timeTheme.textColor)
+                    .foregroundStyle(appearance.textColor)
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.hapticPlain)
@@ -240,12 +240,12 @@ struct TimetableView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(formattedSelectedDate(day: selectedDate))
                     .appFont(size: 24, weight: .light)
-                    .foregroundStyle(timeTheme.textColor)
+                    .foregroundStyle(appearance.textColor)
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
                 Text(mosqueName)
                     .appFont(size: 15, weight: .regular)
-                    .foregroundStyle(timeTheme.textColor.opacity(0.7))
+                    .foregroundStyle(appearance.textColor.opacity(0.7))
             }
             Spacer()
             Button {
@@ -254,9 +254,9 @@ struct TimetableView: View {
             } label: {
                 Image(systemName: "xmark")
                     .appFont(size: 16, weight: .bold)
-                    .foregroundColor(timeTheme.textColor)
+                    .foregroundColor(appearance.textColor)
                     .padding(8)
-                    .background(Circle().fill(timeTheme.textColor.opacity(0.1)))
+                    .background(Circle().fill(appearance.textColor.opacity(0.1)))
             }
             .buttonStyle(.hapticPlain)
             .onboardingHighlight(onboarding.currentStep == .closeTimetable, timeTheme: timeTheme)
@@ -276,17 +276,17 @@ struct TimetableView: View {
                         VStack(spacing: 4) {
                             Text(shortWeekday(for: time.date).uppercased())
                                 .appFont(size: 10, weight: .semibold)
-                                .foregroundStyle(isSelected ? timeTheme.textColor : timeTheme.textColor.opacity(0.4))
+                                .foregroundStyle(isSelected ? appearance.textColor : appearance.textColor.opacity(0.4))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
 
                             Text(localizedDayNumber(time.date))
                                 .appFont(size: 20, weight: isSelected ? .medium : .regular)
-                                .foregroundStyle(isSelected ? timeTheme.textColor : timeTheme.textColor.opacity(0.5))
+                                .foregroundStyle(isSelected ? appearance.textColor : appearance.textColor.opacity(0.5))
                             
                             if isToday {
                                 Circle()
-                                    .fill(timeTheme.textColor)
+                                    .fill(appearance.textColor)
                                     .frame(width: 4, height: 4)
                             } else {
                                 Circle()
@@ -297,7 +297,7 @@ struct TimetableView: View {
                         .frame(width: 48, height: 70)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(isSelected ? timeTheme.textColor.opacity(0.12) : Color.clear)
+                                .fill(isSelected ? appearance.textColor.opacity(0.12) : Color.clear)
                         )
                         .onTapGesture {
                             HapticFeedback.buttonTap()
@@ -332,7 +332,7 @@ struct TimetableView: View {
         VStack(spacing: 16) {
             Text(ttLS("timetable.missing_month", locale: locale))
                 .appFont(size: 16, weight: .regular)
-                .foregroundStyle(timeTheme.textColor.opacity(0.7))
+                .foregroundStyle(appearance.textColor.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
 
@@ -341,16 +341,16 @@ struct TimetableView: View {
             } label: {
                 Text(ttLS("home.request_times_button", locale: locale))
                     .appFont(size: 15, weight: .semibold)
-                    .foregroundColor(timeTheme.textColor)
+                    .foregroundColor(appearance.textColor)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(timeTheme.textColor.opacity(0.14))
+                            .fill(appearance.textColor.opacity(0.14))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(timeTheme.textColor.opacity(0.22), lineWidth: 1)
+                            .strokeBorder(appearance.textColor.opacity(0.22), lineWidth: 1)
                     )
             }
             .buttonStyle(.hapticPlain)
@@ -461,7 +461,7 @@ struct TimetableView: View {
                     .frame(width: TimetableTimeColumns.width, alignment: .trailing)
             }
             .appFont(size: 13, weight: .medium)
-            .foregroundStyle(timeTheme.textColor.opacity(0.5))
+            .foregroundStyle(appearance.textColor.opacity(0.5))
             .padding(.horizontal, 24)
             .padding(.bottom, 4)
 
@@ -544,7 +544,7 @@ struct TimetableView: View {
         return HStack(alignment: .top, spacing: 12) {
             Text(name)
                 .appFont(size: TimetableTimeColumns.rowFontSize, weight: weight)
-                .foregroundStyle(timeTheme.textColor.opacity(opacity))
+                .foregroundStyle(appearance.textColor.opacity(opacity))
                 .multilineTextAlignment(.leading)
                 .lineLimit(5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -555,7 +555,7 @@ struct TimetableView: View {
             Text(adhanDisplay)
                 .appFont(size: TimetableTimeColumns.rowFontSize, weight: weight)
                 .monospacedDigit()
-                .foregroundStyle(timeTheme.textColor.opacity(opacity * 0.75))
+                .foregroundStyle(appearance.textColor.opacity(opacity * 0.75))
                 .lineLimit(1)
                 .minimumScaleFactor(isNext ? 1.0 : 0.78)
                 .multilineTextAlignment(.trailing)
@@ -564,7 +564,7 @@ struct TimetableView: View {
             Text(iqamahDisplay)
                 .appFont(size: TimetableTimeColumns.rowFontSize, weight: iqamahWeight)
                 .monospacedDigit()
-                .foregroundStyle(timeTheme.textColor.opacity(opacity))
+                .foregroundStyle(appearance.textColor.opacity(opacity))
                 .lineLimit(1)
                 .minimumScaleFactor(isNext ? 1.0 : 0.78)
                 .multilineTextAlignment(.trailing)
@@ -574,7 +574,7 @@ struct TimetableView: View {
         .padding(.horizontal, 24)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(isNext ? timeTheme.textColor.opacity(0.08) : Color.clear)
+                .fill(isNext ? appearance.textColor.opacity(0.08) : Color.clear)
         )
     }
 

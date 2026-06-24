@@ -71,6 +71,7 @@ import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingStep
 import com.mikhailspeaks.masjidly.features.onboarding.TimetableOnboardingOverlay
 import com.mikhailspeaks.masjidly.features.settings.MasjidlySupportMail
+import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import java.text.NumberFormat
 import java.time.Instant
@@ -289,7 +290,7 @@ fun TimetableScreen(
 
 @Composable
 private fun TimetableHeader(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     selectedDate: Int,
     currentMonth: Int,
     currentYear: Int,
@@ -352,7 +353,7 @@ private fun TimetableHeader(
 
 @Composable
 private fun MonthSwitcher(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     title: String,
     enabled: Boolean,
     language: AppLanguage,
@@ -404,7 +405,7 @@ private fun MonthSwitcher(
 
 @Composable
 private fun MonthSwitcherButton(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     enabled: Boolean,
     contentDescription: String,
     onClick: () -> Unit,
@@ -424,7 +425,7 @@ private fun MonthSwitcherButton(
 
 @Composable
 private fun DateStrip(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     days: List<PrayerTime>,
     selectedDate: Int,
     locale: Locale,
@@ -514,7 +515,7 @@ private fun PrayerRows(
     time: PrayerTime,
     monthData: MonthPrayerData,
     mosqueSlug: String,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     locale: Locale,
     language: AppLanguage,
     uses24Hour: Boolean,
@@ -778,7 +779,7 @@ private fun resolveIqamah(
 
 @Composable
 private fun MissingMonthMessage(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     onEmail: () -> Unit,
 ) {

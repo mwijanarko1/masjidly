@@ -25,6 +25,7 @@ struct SettingsView: View {
     @State private var closestMosqueLocationProvider = SettingsClosestMosqueLocationProvider()
     @State private var adhanPrayerSettingsExpanded = false
     @State private var iqamahPrayerSettingsExpanded = false
+    @State private var prayerGradientSettingsExpanded = false
     init(model: SettingsViewModel, timeTheme: HomeDesign.TimeTheme, onDismiss: (() -> Void)? = nil) {
         self.model = model
         self.dynamicTimeTheme = timeTheme
@@ -33,6 +34,10 @@ struct SettingsView: View {
 
     private var timeTheme: HomeDesign.TimeTheme {
         settings.resolvedTheme(dynamicTheme: dynamicTimeTheme)
+    }
+
+    private var currentAppearance: HomeDesign.ResolvedTheme {
+        settings.resolvedAppearance(for: timeTheme)
     }
 
     private var shouldShowLocationRecovery: Bool {
@@ -67,7 +72,7 @@ struct SettingsView: View {
                         SettingsToggleRow(
                             title: localized("settings.time.24h.title"),
                             isOn: Bindable(settings).uses24HourTime,
-                            timeTheme: timeTheme
+                            appearance: currentAppearance
                         )
                         .padding(.vertical, 12)
 
@@ -93,6 +98,9 @@ struct SettingsView: View {
                             fixedThemePickerRow
                                 .padding(.vertical, 12)
                         }
+                        settingsRowDivider
+                        prayerGradientSettingsSection
+                            .padding(.vertical, 12)
                     }
                 }
 
@@ -101,7 +109,7 @@ struct SettingsView: View {
                     SettingsToggleRow(
                         title: localized("settings.qibla.enabled.title"),
                         isOn: qiblaEnabledBinding,
-                        timeTheme: timeTheme
+                        appearance: currentAppearance
                     )
                     .padding(.vertical, 12)
                 }
@@ -118,7 +126,7 @@ struct SettingsView: View {
                         SettingsToggleRow(
                             title: localized("settings.notifications.master.title"),
                             isOn: masterNotificationsBinding,
-                            timeTheme: timeTheme
+                            appearance: currentAppearance
                         )
                         .padding(.vertical, 12)
 
@@ -128,14 +136,14 @@ struct SettingsView: View {
                                 title: localized("notification.channel.adhan"),
                                 isExpanded: $adhanPrayerSettingsExpanded,
                                 isOn: adhanNotificationsBinding,
-                                timeTheme: timeTheme
+                                appearance: currentAppearance
                             ) {
                                 ForEach(Array(AdhanPrayerToggleKey.allCases.enumerated()), id: \.element.rawValue) { index, prayer in
                                     if index > 0 { settingsRowDivider }
                                     NotificationToggleRow(
                                         title: localized(prayer.labelKey),
                                         isOn: adhanPrayerBinding(prayer),
-                                        timeTheme: timeTheme
+                                        appearance: currentAppearance
                                     )
                                     .padding(.vertical, 12)
                                 }
@@ -145,14 +153,14 @@ struct SettingsView: View {
                                 title: localized("notification.channel.iqamah"),
                                 isExpanded: $iqamahPrayerSettingsExpanded,
                                 isOn: iqamahNotificationsBinding,
-                                timeTheme: timeTheme
+                                appearance: currentAppearance
                             ) {
                                 ForEach(Array(IqamahPrayerToggleKey.allCases.enumerated()), id: \.element.rawValue) { index, prayer in
                                     if index > 0 { settingsRowDivider }
                                     NotificationToggleRow(
                                         title: localized(prayer.labelKey),
                                         isOn: iqamahPrayerBinding(prayer),
-                                        timeTheme: timeTheme
+                                        appearance: currentAppearance
                                     )
                                     .padding(.vertical, 12)
                                 }
@@ -198,7 +206,7 @@ struct SettingsView: View {
                             developmentChrome {
                                 Text(localized("settings.development.test_tutorial"))
                                     .appFont(size: 17, weight: .medium)
-                                    .foregroundColor(timeTheme.textColor)
+                                    .foregroundColor(currentAppearance.textColor)
                                     .multilineTextAlignment(.leading)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
@@ -213,11 +221,11 @@ struct SettingsView: View {
                                     HStack(alignment: .center, spacing: 12) {
                                         Text(testNotificationTitle(testType))
                                             .appFont(size: 17, weight: .medium)
-                                            .foregroundColor(timeTheme.textColor)
+                                            .foregroundColor(currentAppearance.textColor)
                                         Spacer(minLength: 8)
                                         Text(testDescription(testType))
                                             .appFont(size: 13, weight: .regular)
-                                            .foregroundColor(timeTheme.textColor.opacity(0.55))
+                                            .foregroundColor(currentAppearance.textColor.opacity(0.55))
                                             .multilineTextAlignment(.trailing)
                                     }
                                 }
@@ -233,7 +241,7 @@ struct SettingsView: View {
                             developmentChrome {
                                 Text("Test What's New")
                                     .appFont(size: 17, weight: .medium)
-                                    .foregroundColor(timeTheme.textColor)
+                                    .foregroundColor(currentAppearance.textColor)
                                     .multilineTextAlignment(.leading)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
@@ -248,7 +256,7 @@ struct SettingsView: View {
                             developmentChrome {
                                 Text("Test Update Prompt")
                                     .appFont(size: 17, weight: .medium)
-                                    .foregroundColor(timeTheme.textColor)
+                                    .foregroundColor(currentAppearance.textColor)
                                     .multilineTextAlignment(.leading)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
@@ -263,7 +271,7 @@ struct SettingsView: View {
                             developmentChrome {
                                 Text(localized("settings.development.test_review_prompt"))
                                     .appFont(size: 17, weight: .medium)
-                                    .foregroundColor(timeTheme.textColor)
+                                    .foregroundColor(currentAppearance.textColor)
                                     .multilineTextAlignment(.leading)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
@@ -278,7 +286,7 @@ struct SettingsView: View {
         }
         .scrollContentBackground(.hidden)
         .background(settingsBackground)
-        .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
+        .preferredColorScheme(currentAppearance.usesLightForeground ? .dark : .light)
         .accessibilityIdentifier("tabSettings")
         .task {
             await model.load()
@@ -312,6 +320,7 @@ struct SettingsView: View {
                         title: localized("onboarding.explore_settings.title"),
                         message: localized("onboarding.explore_settings.message"),
                         timeTheme: timeTheme,
+                        appearance: currentAppearance,
                         variant: .floatingBottom,
                         primaryButtonTitle: localized("onboarding.continue"),
                         onPrimaryButton: { onboarding.acknowledgeSettingsExplore() },
@@ -322,6 +331,7 @@ struct SettingsView: View {
                         title: localized("onboarding.close_settings.title"),
                         message: localized("onboarding.close_settings.message"),
                         timeTheme: timeTheme,
+                        appearance: currentAppearance,
                         variant: .belowTopChrome
                     )
                     .allowsHitTesting(false)
@@ -338,7 +348,7 @@ struct SettingsView: View {
         HStack(alignment: .center, spacing: 16) {
             Text(localized("settings.navigation.title"))
                 .appFont(size: 34, weight: .bold)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .multilineTextAlignment(.leading)
             Spacer(minLength: 8)
             Button {
@@ -348,12 +358,12 @@ struct SettingsView: View {
             } label: {
                 Image(systemName: "xmark")
                     .appFont(size: 16, weight: .bold)
-                    .foregroundColor(timeTheme.textColor)
+                    .foregroundColor(currentAppearance.textColor)
                     .padding(8)
-                    .background(Circle().fill(timeTheme.textColor.opacity(0.1)))
+                    .background(Circle().fill(currentAppearance.textColor.opacity(0.1)))
             }
             .buttonStyle(.plain)
-            .onboardingHighlight(onboarding.currentStep == .closeSettings, timeTheme: timeTheme)
+            .onboardingHighlight(onboarding.currentStep == .closeSettings, appearance: currentAppearance)
             .accessibilityIdentifier("Onboarding.SettingsClose")
         }
         .padding(.bottom, 4)
@@ -369,14 +379,14 @@ struct SettingsView: View {
 
     private var settingsRowDivider: some View {
         Rectangle()
-            .fill(timeTheme.textColor.opacity(0.18))
+            .fill(currentAppearance.textColor.opacity(0.18))
             .frame(height: 0.5)
     }
 
     private func sectionCaption(_ title: String) -> some View {
         Text(title)
             .appFont(size: 13, weight: .semibold)
-            .foregroundColor(timeTheme.textColor.opacity(0.52))
+            .foregroundColor(currentAppearance.textColor.opacity(0.52))
             .textCase(.uppercase)
             .tracking(0.4)
             .multilineTextAlignment(.leading)
@@ -389,7 +399,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(localized("settings.location.recovery.message"))
                 .appFont(size: 15, weight: .regular)
-                .foregroundColor(timeTheme.textColor.opacity(0.8))
+                .foregroundColor(currentAppearance.textColor.opacity(0.8))
                 .fixedSize(horizontal: false, vertical: true)
 
             Button {
@@ -403,12 +413,12 @@ struct SettingsView: View {
             } label: {
                 Text(locationButtonLabel)
                     .appFont(size: 16, weight: .semibold)
-                    .foregroundColor(.white)
+                    .foregroundColor(currentAppearance.settingsActionButtonForeground)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(timeTheme.textColor.opacity(0.25))
+                            .fill(currentAppearance.settingsActionButtonBackground)
                     )
             }
             .buttonStyle(.hapticPlain)
@@ -446,11 +456,11 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(timeTheme.textColor.opacity(0.14))
+                    .fill(currentAppearance.textColor.opacity(0.14))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(timeTheme.textColor.opacity(0.22), lineWidth: 1)
+                    .strokeBorder(currentAppearance.textColor.opacity(0.22), lineWidth: 1)
             )
     }
 
@@ -459,7 +469,7 @@ struct SettingsView: View {
             insetListRowChrome {
                 Text(title)
                     .appFont(size: 17, weight: .medium)
-                    .foregroundColor(timeTheme.textColor)
+                    .foregroundColor(currentAppearance.textColor)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -563,7 +573,7 @@ struct SettingsView: View {
         VStack(spacing: 10) {
             Text(closestMosqueText(for: mosque.name))
                 .appFont(size: 14, weight: .regular)
-                .foregroundColor(timeTheme.textColor.opacity(0.8))
+                .foregroundColor(currentAppearance.textColor.opacity(0.8))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .center)
 
@@ -572,16 +582,16 @@ struct SettingsView: View {
             } label: {
                 Text(localized("Use closest mosque"))
                     .appFont(size: 15, weight: .semibold)
-                    .foregroundColor(timeTheme.textColor)
+                    .foregroundColor(currentAppearance.textColor)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(timeTheme.textColor.opacity(0.14))
+                            .fill(currentAppearance.textColor.opacity(0.14))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(timeTheme.textColor.opacity(0.22), lineWidth: 1)
+                            .strokeBorder(currentAppearance.textColor.opacity(0.22), lineWidth: 1)
                     )
             }
             .buttonStyle(.hapticPlain)
@@ -594,7 +604,7 @@ struct SettingsView: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(localized("settings.country.picker"))
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(1)
                 .layoutPriority(1)
@@ -610,7 +620,7 @@ struct SettingsView: View {
                 }
             }
             .pickerStyle(.menu)
-            .tint(timeTheme.textColor)
+            .tint(currentAppearance.textColor)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(minHeight: 44)
@@ -620,7 +630,7 @@ struct SettingsView: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(localized("settings.city.picker"))
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(1)
                 .layoutPriority(1)
@@ -636,7 +646,7 @@ struct SettingsView: View {
                 }
             }
             .pickerStyle(.menu)
-            .tint(timeTheme.textColor)
+            .tint(currentAppearance.textColor)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(minHeight: 44)
@@ -646,7 +656,7 @@ struct SettingsView: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(localized("settings.language.app"))
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(1)
                 .layoutPriority(1)
@@ -662,7 +672,7 @@ struct SettingsView: View {
                 }
             }
             .pickerStyle(.menu)
-            .tint(timeTheme.textColor)
+            .tint(currentAppearance.textColor)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(minHeight: 44)
@@ -672,7 +682,7 @@ struct SettingsView: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(localized("settings.theme.mode"))
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(1)
                 .layoutPriority(1)
@@ -688,7 +698,7 @@ struct SettingsView: View {
                 }
             }
             .pickerStyle(.menu)
-            .tint(timeTheme.textColor)
+            .tint(currentAppearance.textColor)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(minHeight: 44)
@@ -698,7 +708,7 @@ struct SettingsView: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text("Asr adhan time")
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(1)
                 .layoutPriority(1)
@@ -711,7 +721,7 @@ struct SettingsView: View {
                 Text("Second Asr (Mithl 2)").appFont(size: 17).tag(AsrIqamahPreference.second)
             }
             .pickerStyle(.menu)
-            .tint(timeTheme.textColor)
+            .tint(currentAppearance.textColor)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(minHeight: 44)
@@ -731,7 +741,7 @@ struct SettingsView: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(localized("settings.theme.fixed_theme"))
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(1)
                 .layoutPriority(1)
@@ -747,10 +757,88 @@ struct SettingsView: View {
                 }
             }
             .pickerStyle(.menu)
-            .tint(timeTheme.textColor)
+            .tint(currentAppearance.textColor)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(minHeight: 44)
+    }
+
+    private var prayerGradientSettingsSection: some View {
+        CollapsibleSettingsSection(
+            title: localized("settings.theme.gradient.section_title"),
+            isExpanded: $prayerGradientSettingsExpanded,
+            appearance: currentAppearance
+        ) {
+            VStack(spacing: 8) {
+                ForEach(HomeDesign.TimeTheme.configurableGradientThemes) { theme in
+                    prayerGradientPickerRow(for: theme)
+                }
+            }
+        }
+    }
+
+    private func prayerGradientPickerRow(for theme: HomeDesign.TimeTheme) -> some View {
+        let appearance = settings.resolvedAppearance(for: theme)
+
+        return HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(gradientPickerTitle(for: theme))
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(appearance.textColor)
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
+                .layoutPriority(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 12)
+
+            Picker("", selection: skyGradientSetBinding(for: theme)) {
+                ForEach(HomeDesign.SkyGradientSet.allCases) { set in
+                    Text(skyGradientSetLabel(set))
+                        .appFont(size: 17)
+                        .tag(set)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(appearance.textColor)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        gradient: appearance.gradient,
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(appearance.textColor.opacity(0.16), lineWidth: 0.5)
+        }
+        .frame(minHeight: 44)
+    }
+
+    private func skyGradientSetBinding(for theme: HomeDesign.TimeTheme) -> Binding<HomeDesign.SkyGradientSet> {
+        Binding(
+            get: { settings.skyGradientSet(for: theme) },
+            set: { settings.setSkyGradientSet($0, for: theme) }
+        )
+    }
+
+    private func gradientPickerTitle(for theme: HomeDesign.TimeTheme) -> String {
+        let format = localized("settings.theme.gradient.prayer_format")
+        return String(format: format, locale: locale, arguments: [themeLabel(theme)])
+    }
+
+    private func skyGradientSetLabel(_ set: HomeDesign.SkyGradientSet) -> String {
+        switch set {
+        case .classic: localized("settings.theme.gradient.classic")
+        case .set2: localized("settings.theme.gradient.set2")
+        }
     }
 
     private func themeModeLabel(_ mode: HomeDesign.ThemeMode) -> String {
@@ -773,10 +861,6 @@ struct SettingsView: View {
         return localized(key)
     }
 
-    private func gradientLabel(_ theme: HomeDesign.TimeTheme) -> String {
-        themeLabel(theme)
-    }
-
     private var selectedMosqueDisplayName: String {
         if let id = settings.selectedMosqueId,
            let selected = mosquesInSelectedCity.first(where: { $0.id == id }) {
@@ -789,7 +873,7 @@ struct SettingsView: View {
         HStack(alignment: .top, spacing: 12) {
             Text(localized("settings.mosque.picker"))
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .multilineTextAlignment(.leading)
                 .lineLimit(1)
                 .layoutPriority(1)
@@ -817,7 +901,7 @@ struct SettingsView: View {
                 HStack(alignment: .top, spacing: 6) {
                     Text(selectedMosqueDisplayName)
                         .appFont(size: 17, weight: .regular)
-                        .foregroundColor(timeTheme.textColor)
+                        .foregroundColor(currentAppearance.textColor)
                         .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.trailing)
@@ -825,13 +909,13 @@ struct SettingsView: View {
 
                     Image(systemName: "chevron.down")
                         .appFont(size: 13, weight: .semibold)
-                        .foregroundColor(timeTheme.textColor.opacity(0.7))
+                        .foregroundColor(currentAppearance.textColor.opacity(0.7))
                         .padding(.top, 2)
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .contentShape(Rectangle())
             }
-            .tint(timeTheme.textColor)
+            .tint(currentAppearance.textColor)
             .layoutPriority(1)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
@@ -842,7 +926,7 @@ struct SettingsView: View {
         HStack(alignment: .center, spacing: 16) {
             Text(localized("settings.reminder.before_adhan"))
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Picker("", selection: adhanReminderMinutesBinding) {
@@ -853,7 +937,7 @@ struct SettingsView: View {
                 reminderOptionText(30).tag(30 as Int?)
             }
             .pickerStyle(.menu)
-            .tint(timeTheme.textColor)
+            .tint(currentAppearance.textColor)
             .fixedSize()
         }
         .frame(minHeight: 44)
@@ -863,7 +947,7 @@ struct SettingsView: View {
         HStack(alignment: .center, spacing: 16) {
             Text(localized("settings.reminder.before_iqamah"))
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Picker("", selection: iqamahReminderMinutesBinding) {
@@ -874,7 +958,7 @@ struct SettingsView: View {
                 reminderOptionText(30).tag(30 as Int?)
             }
             .pickerStyle(.menu)
-            .tint(timeTheme.textColor)
+            .tint(currentAppearance.textColor)
             .fixedSize()
         }
         .frame(minHeight: 44)
@@ -938,13 +1022,9 @@ struct SettingsView: View {
 
     private var settingsBackground: some View {
         ZStack(alignment: .topTrailing) {
-            LinearGradient(
-                gradient: timeTheme.gradient,
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            AtmosphericSkyBackground(sky: currentAppearance.sky)
             Circle()
-                .fill(timeTheme.iconColor.opacity(0.12))
+                .fill(currentAppearance.iconColor.opacity(0.12))
                 .frame(width: 420, height: 420)
                 .blur(radius: 80)
                 .offset(x: 150, y: -100)
@@ -1125,16 +1205,16 @@ extension SettingsClosestMosqueLocationProvider: CLLocationManagerDelegate {
 private struct SettingsToggleRow: View {
     let title: String
     @Binding var isOn: Bool
-    let timeTheme: HomeDesign.TimeTheme
+    let appearance: HomeDesign.ResolvedTheme
 
     var body: some View {
         Toggle(isOn: $isOn) {
             Text(title)
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(appearance.textColor)
                 .multilineTextAlignment(.leading)
         }
-        .tint(timeTheme.textColor)
+        .tint(appearance.textColor)
         .frame(minHeight: 44)
     }
 }
@@ -1197,24 +1277,81 @@ private enum IqamahPrayerToggleKey: String, CaseIterable {
     }
 }
 
+private struct CollapsibleSettingsSection<Content: View>: View {
+    let title: String
+    @Binding var isExpanded: Bool
+    let appearance: HomeDesign.ResolvedTheme
+    let content: () -> Content
+
+    init(
+        title: String,
+        isExpanded: Binding<Bool>,
+        appearance: HomeDesign.ResolvedTheme,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self._isExpanded = isExpanded
+        self.appearance = appearance
+        self.content = content
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.9)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(appearance.textColor)
+                        .frame(width: 18, height: 18)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+
+                    Text(title)
+                        .appFont(size: 17, weight: .regular)
+                        .foregroundStyle(appearance.textColor)
+                        .multilineTextAlignment(.leading)
+
+                    Spacer(minLength: 8)
+                }
+                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.hapticPlain)
+            .padding(.vertical, 12)
+
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 0) {
+                    content()
+                }
+                .padding(.leading, 26)
+                .transition(.opacity)
+            }
+        }
+        .animation(.spring(response: 0.32, dampingFraction: 0.9), value: isExpanded)
+    }
+}
+
 private struct NotificationPrayerToggleSection<Content: View>: View {
     let title: String
     @Binding var isExpanded: Bool
     @Binding var isOn: Bool
-    let timeTheme: HomeDesign.TimeTheme
+    let appearance: HomeDesign.ResolvedTheme
     let content: () -> Content
 
     init(
         title: String,
         isExpanded: Binding<Bool>,
         isOn: Binding<Bool>,
-        timeTheme: HomeDesign.TimeTheme,
+        appearance: HomeDesign.ResolvedTheme,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
         self._isExpanded = isExpanded
         self._isOn = isOn
-        self.timeTheme = timeTheme
+        self.appearance = appearance
         self.content = content
     }
 
@@ -1229,13 +1366,13 @@ private struct NotificationPrayerToggleSection<Content: View>: View {
                     HStack(spacing: 8) {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(timeTheme.textColor)
+                            .foregroundStyle(appearance.textColor)
                             .frame(width: 18, height: 18)
                             .rotationEffect(.degrees(isExpanded ? 90 : 0))
 
                         Text(title)
                             .appFont(size: 17, weight: .regular)
-                            .foregroundStyle(timeTheme.textColor)
+                            .foregroundStyle(appearance.textColor)
                             .multilineTextAlignment(.leading)
 
                         Spacer(minLength: 8)
@@ -1248,7 +1385,7 @@ private struct NotificationPrayerToggleSection<Content: View>: View {
 
                 Toggle("", isOn: $isOn)
                     .labelsHidden()
-                    .tint(timeTheme.textColor)
+                    .tint(appearance.textColor)
                     .fixedSize()
                     .padding(.trailing, 2)
             }
@@ -1269,16 +1406,16 @@ private struct NotificationPrayerToggleSection<Content: View>: View {
 private struct NotificationToggleRow: View {
     let title: String
     @Binding var isOn: Bool
-    let timeTheme: HomeDesign.TimeTheme
+    let appearance: HomeDesign.ResolvedTheme
 
     var body: some View {
         Toggle(isOn: $isOn) {
             Text(title)
                 .appFont(size: 17, weight: .regular)
-                .foregroundColor(timeTheme.textColor)
+                .foregroundColor(appearance.textColor)
                 .multilineTextAlignment(.leading)
         }
-        .tint(timeTheme.textColor)
+        .tint(appearance.textColor)
         .frame(minHeight: 44)
     }
 }

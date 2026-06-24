@@ -35,10 +35,10 @@ struct MasjidlyRootView: View {
                 PrayerNotificationContent.registerCategories(locale: settings.resolvedLocale)
                 Task { await homeViewModel.resyncNotificationsIfNeeded() }
             }
-            .onChange(of: settings.themeMode) { _, _ in
+            .onChange(of: settings.fixedTheme) { _, _ in
                 WidgetCenter.shared.reloadAllTimelines()
             }
-            .onChange(of: settings.fixedTheme) { _, _ in
+            .onChange(of: settings.themeMode) { _, _ in
                 WidgetCenter.shared.reloadAllTimelines()
             }
             .onReceive(NotificationCenter.default.publisher(for: .masjidlyShowUpdatePrompt)) { _ in

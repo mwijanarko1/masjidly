@@ -1,15 +1,87 @@
 import SwiftUI
 
 enum HomeDesign {
+    /// Per-prayer sky style. User-facing labels: **Original** (`.classic`), **Modern** (`.set2`).
+    enum SkyGradientSet: String, CaseIterable, Identifiable, Codable, Sendable {
+        case classic
+        case set2
+
+        var id: String { rawValue }
+    }
+
+    struct SkyRadialOverlay: Sendable {
+        let center: UnitPoint
+        let color: Color
+        let opacity: Double
+        let endRadiusFraction: CGFloat
+    }
+
+    /// Soft color pools that overlap to form a mesh-style sky (pastel themes).
+    struct SkyColorBlob: Sendable {
+        let center: UnitPoint
+        let color: Color
+        let opacity: Double
+        let radiusFraction: CGFloat
+    }
+
     struct SkyTheme {
         let baseColors: [Color]
+        let gradientStops: [Gradient.Stop]?
         let glowColor: Color?
         let glowBaseAlpha: CGFloat
+        let radialOverlays: [SkyRadialOverlay]
+        let meshBlobs: [SkyColorBlob]
+        let meshBaseColor: Color?
 
-        init(baseColors: [Color], glowColor: Color?, glowBaseAlpha: CGFloat = 1.0) {
+        init(
+            baseColors: [Color],
+            glowColor: Color?,
+            glowBaseAlpha: CGFloat = 1.0,
+            gradientStops: [Gradient.Stop]? = nil,
+            radialOverlays: [SkyRadialOverlay] = [],
+            meshBlobs: [SkyColorBlob] = [],
+            meshBaseColor: Color? = nil
+        ) {
             self.baseColors = baseColors
+            self.gradientStops = gradientStops
             self.glowColor = glowColor
             self.glowBaseAlpha = glowBaseAlpha
+            self.radialOverlays = radialOverlays
+            self.meshBlobs = meshBlobs
+            self.meshBaseColor = meshBaseColor
+        }
+
+        var usesMeshComposition: Bool { !meshBlobs.isEmpty }
+
+        var resolvedGradient: Gradient {
+            if let gradientStops {
+                return Gradient(stops: gradientStops)
+            }
+            return Gradient(colors: baseColors)
+        }
+
+        var resolvedMeshBaseColor: Color {
+            meshBaseColor ?? gradientStops?.first?.color ?? baseColors.first ?? .white
+        }
+    }
+
+    struct ResolvedTheme {
+        let timeTheme: TimeTheme
+        let gradientSet: SkyGradientSet
+
+        var sky: SkyTheme { timeTheme.sky(set: gradientSet) }
+        var textColor: Color { timeTheme.textColor(set: gradientSet) }
+        var iconColor: Color { textColor }
+        var usesLightForeground: Bool { timeTheme.usesLightForeground(set: gradientSet) }
+        var gradient: Gradient { sky.resolvedGradient }
+
+        /// Filled settings action rows (location recovery, etc.) — readable on both classic and pastel skies.
+        var settingsActionButtonForeground: Color {
+            usesLightForeground ? .white : textColor
+        }
+
+        var settingsActionButtonBackground: Color {
+            usesLightForeground ? Color.white.opacity(0.22) : textColor.opacity(0.12)
         }
     }
 
@@ -24,13 +96,78 @@ enum HomeDesign {
         case fajr, sunrise, dhuhr, asr, maghrib, isha, tahajjud
 
         var id: String { rawValue }
-        
+
         var sky: SkyTheme {
+            sky(set: .set2)
+        }
+
+        func sky(set: SkyGradientSet) -> SkyTheme {
+            switch set {
+            case .classic:
+                return classicSetSky
+            case .set2:
+                return set2Sky
+            }
+        }
+
+        func defaultGradientSet() -> SkyGradientSet {
+            switch self {
+            case .fajr, .sunrise, .maghrib:
+                return .set2
+            default:
+                return .classic
+            }
+        }
+
+        private var set2Sky: SkyTheme {
             switch self {
             case .fajr:
-                return SkyTheme(baseColors: [Color(hex: "020326"), Color(hex: "06114F"), Color(hex: "0B1E6D"), Color(hex: "3B2A5A")], glowColor: Color(hex: "F08A4B"))
+                return SkyTheme(baseColors: [Color(hex: "6274E7"), Color(hex: "8752A3")], glowColor: nil)
             case .sunrise:
-                return SkyTheme(baseColors: [Color(hex: "6B7280"), Color(hex: "C084FC"), Color(hex: "FB923C"), Color(hex: "F59E0B")], glowColor: Color(hex: "FEF08A"))
+                return set2SunriseSky
+            case .dhuhr:
+                return SkyTheme(baseColors: [Color(hex: "EBF4F5"), Color(hex: "B5C6E0")], glowColor: nil)
+            case .asr:
+                return SkyTheme(baseColors: [Color(hex: "FBD07C"), Color(hex: "F7F779")], glowColor: nil)
+            case .maghrib:
+                return SkyTheme(
+                    baseColors: [
+                        Color(hex: "F2D7D9"),
+                        Color(hex: "E786A7"),
+                    ],
+                    glowColor: nil
+                )
+            case .isha:
+                return SkyTheme(baseColors: [Color(hex: "000328"), Color(hex: "00458E")], glowColor: nil)
+            default:
+                return classicSetSky
+            }
+        }
+
+        private var set2SunriseSky: SkyTheme {
+            SkyTheme(
+                baseColors: [
+                    Color(hex: "9FF1F2"),
+                    Color(hex: "6CD4E4"),
+                    Color(hex: "73E1EA"),
+                    Color(hex: "BDE2BD"),
+                ],
+                glowColor: nil
+            )
+        }
+
+        private var classicSetSky: SkyTheme {
+            switch self {
+            case .fajr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "020326"), Color(hex: "06114F"), Color(hex: "0B1E6D"), Color(hex: "3B2A5A")],
+                    glowColor: Color(hex: "F08A4B")
+                )
+            case .sunrise:
+                return SkyTheme(
+                    baseColors: [Color(hex: "6B7280"), Color(hex: "C084FC"), Color(hex: "FB923C"), Color(hex: "F59E0B")],
+                    glowColor: Color(hex: "FEF08A")
+                )
             case .dhuhr:
                 return SkyTheme(baseColors: [Color(hex: "E0F2FE"), Color(hex: "7DD3FC"), Color(hex: "38BDF8")], glowColor: Color(hex: "38BDF8"), glowBaseAlpha: 0.2)
             case .asr:
@@ -43,28 +180,181 @@ enum HomeDesign {
                 return SkyTheme(baseColors: [Color(hex: "000000"), Color(hex: "01030A"), Color(hex: "020617")], glowColor: nil)
             }
         }
-        
-        var gradient: Gradient {
-            Gradient(colors: sky.baseColors)
-        }
-        
-        var textColor: Color {
-            switch self {
-            case .fajr, .maghrib, .isha, .tahajjud: return .white
-            default: return Color(hex: "111111")
+
+        func textColor(set: SkyGradientSet) -> Color {
+            switch set {
+            case .classic:
+                switch self {
+                case .fajr, .maghrib, .isha, .tahajjud:
+                    return .white
+                default:
+                    return Color(hex: "111111")
+                }
+            case .set2:
+                switch self {
+                case .fajr, .isha, .tahajjud:
+                    return .white
+                default:
+                    return Color(hex: "111111")
+                }
             }
-        }
-        
-        var iconColor: Color {
-            return textColor
         }
 
-        /// Onboarding / glass surfaces: dark skies use light frost + white type; day themes use milky glass + dark type.
+        func usesLightForeground(set: SkyGradientSet) -> Bool {
+            textColor(set: set) == .white
+        }
+
+        var textColor: Color {
+            textColor(set: .set2)
+        }
+
+        var iconColor: Color {
+            textColor
+        }
+
         var usesLightForeground: Bool {
+            usesLightForeground(set: .set2)
+        }
+
+        private var pastelSky: SkyTheme {
             switch self {
-            case .fajr, .maghrib, .isha, .tahajjud: return true
-            default: return false
+            case .fajr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "DFEFF8"), Color(hex: "A2ECF7"), Color(hex: "84B3F4"), Color(hex: "AB8DD6")],
+                    glowColor: nil,
+                    gradientStops: [
+                        .init(color: Color(hex: "DFEFF8"), location: 0),
+                        .init(color: Color(hex: "A2ECF7"), location: 0.26),
+                        .init(color: Color(hex: "84B3F4"), location: 0.63),
+                        .init(color: Color(hex: "AB8DD6"), location: 1),
+                    ],
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.68, y: 0.08), color: Color(hex: "A2ECF7"), opacity: 0.45, endRadiusFraction: 0.38),
+                    ],
+                    meshBlobs: [
+                        SkyColorBlob(center: UnitPoint(x: 0.10, y: 0.06), color: Color(hex: "DFEFF8"), opacity: 0.98, radiusFraction: 0.82),
+                        SkyColorBlob(center: UnitPoint(x: 0.88, y: 0.10), color: Color(hex: "A2ECF7"), opacity: 0.92, radiusFraction: 0.72),
+                        SkyColorBlob(center: UnitPoint(x: 0.42, y: 0.38), color: Color(hex: "84B3F4"), opacity: 0.88, radiusFraction: 0.90),
+                        SkyColorBlob(center: UnitPoint(x: 0.78, y: 0.82), color: Color(hex: "AB8DD6"), opacity: 0.94, radiusFraction: 0.78),
+                        SkyColorBlob(center: UnitPoint(x: 0.16, y: 0.72), color: Color(hex: "96A1EA"), opacity: 0.80, radiusFraction: 0.68),
+                    ],
+                    meshBaseColor: Color(hex: "DFEFF8")
+                )
+            case .sunrise:
+                return SkyTheme(
+                    baseColors: [Color(hex: "F7D7C4"), Color(hex: "F9BFA4"), Color(hex: "F6A6B8"), Color(hex: "A8D8F0")],
+                    glowColor: nil,
+                    gradientStops: [
+                        .init(color: Color(hex: "F7D7C4"), location: 0),
+                        .init(color: Color(hex: "F9BFA4"), location: 0.28),
+                        .init(color: Color(hex: "F6A6B8"), location: 0.62),
+                        .init(color: Color(hex: "A8D8F0"), location: 1),
+                    ],
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.50, y: 0.12), color: Color(hex: "FFE6B4"), opacity: 0.50, endRadiusFraction: 0.32),
+                        SkyRadialOverlay(center: UnitPoint(x: 0.22, y: 0.85), color: Color(hex: "A8D8F0"), opacity: 0.42, endRadiusFraction: 0.40),
+                    ],
+                    meshBlobs: [
+                        SkyColorBlob(center: UnitPoint(x: 0.22, y: 0.10), color: Color(hex: "F7D7C4"), opacity: 0.96, radiusFraction: 0.76),
+                        SkyColorBlob(center: UnitPoint(x: 0.62, y: 0.18), color: Color(hex: "F9BFA4"), opacity: 0.90, radiusFraction: 0.70),
+                        SkyColorBlob(center: UnitPoint(x: 0.48, y: 0.52), color: Color(hex: "F6A6B8"), opacity: 0.88, radiusFraction: 0.85),
+                        SkyColorBlob(center: UnitPoint(x: 0.82, y: 0.78), color: Color(hex: "A8D8F0"), opacity: 0.86, radiusFraction: 0.72),
+                        SkyColorBlob(center: UnitPoint(x: 0.14, y: 0.80), color: Color(hex: "F2C4D0"), opacity: 0.78, radiusFraction: 0.62),
+                    ],
+                    meshBaseColor: Color(hex: "F7D7C4")
+                )
+            case .dhuhr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "D6EFFA"), Color(hex: "DCEFFC"), Color(hex: "7CB5F0"), Color(hex: "62B1E0")],
+                    glowColor: nil,
+                    gradientStops: [
+                        .init(color: Color(hex: "D6EFFA"), location: 0),
+                        .init(color: Color(hex: "DCEFFC"), location: 0.22),
+                        .init(color: Color(hex: "7CB5F0"), location: 0.65),
+                        .init(color: Color(hex: "62B1E0"), location: 1),
+                    ],
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.58, y: 0.05), color: Color(hex: "DCEFFC"), opacity: 0.45, endRadiusFraction: 0.38),
+                    ],
+                    meshBlobs: [
+                        SkyColorBlob(center: UnitPoint(x: 0.14, y: 0.08), color: Color(hex: "D6EFFA"), opacity: 0.98, radiusFraction: 0.80),
+                        SkyColorBlob(center: UnitPoint(x: 0.72, y: 0.12), color: Color(hex: "DCEFFC"), opacity: 0.94, radiusFraction: 0.74),
+                        SkyColorBlob(center: UnitPoint(x: 0.50, y: 0.46), color: Color(hex: "7CB5F0"), opacity: 0.90, radiusFraction: 0.88),
+                        SkyColorBlob(center: UnitPoint(x: 0.36, y: 0.84), color: Color(hex: "62B1E0"), opacity: 0.92, radiusFraction: 0.76),
+                        SkyColorBlob(center: UnitPoint(x: 0.88, y: 0.70), color: Color(hex: "6AB9F8"), opacity: 0.78, radiusFraction: 0.64),
+                    ],
+                    meshBaseColor: Color(hex: "D6EFFA")
+                )
+            case .asr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "9FF1F2"), Color(hex: "6CD4E4"), Color(hex: "73E1EA"), Color(hex: "BDE2BD")],
+                    glowColor: nil,
+                    gradientStops: [
+                        .init(color: Color(hex: "9FF1F2"), location: 0),
+                        .init(color: Color(hex: "6CD4E4"), location: 0.32),
+                        .init(color: Color(hex: "73E1EA"), location: 0.62),
+                        .init(color: Color(hex: "BDE2BD"), location: 1),
+                    ],
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.18, y: 0.06), color: Color(hex: "9FF1F2"), opacity: 0.50, endRadiusFraction: 0.36),
+                        SkyRadialOverlay(center: UnitPoint(x: 0.45, y: 0.88), color: Color(hex: "BDE2BD"), opacity: 0.45, endRadiusFraction: 0.42),
+                    ],
+                    meshBlobs: [
+                        SkyColorBlob(center: UnitPoint(x: 0.20, y: 0.10), color: Color(hex: "9FF1F2"), opacity: 0.96, radiusFraction: 0.78),
+                        SkyColorBlob(center: UnitPoint(x: 0.78, y: 0.14), color: Color(hex: "6CD4E4"), opacity: 0.92, radiusFraction: 0.72),
+                        SkyColorBlob(center: UnitPoint(x: 0.52, y: 0.44), color: Color(hex: "73E1EA"), opacity: 0.90, radiusFraction: 0.86),
+                        SkyColorBlob(center: UnitPoint(x: 0.30, y: 0.82), color: Color(hex: "BDE2BD"), opacity: 0.88, radiusFraction: 0.74),
+                        SkyColorBlob(center: UnitPoint(x: 0.82, y: 0.76), color: Color(hex: "88E8E8"), opacity: 0.76, radiusFraction: 0.66),
+                    ],
+                    meshBaseColor: Color(hex: "9FF1F2")
+                )
+            case .maghrib:
+                return SkyTheme(
+                    baseColors: [Color(hex: "F2D7D9"), Color(hex: "E786A7")],
+                    glowColor: nil,
+                    gradientStops: [
+                        .init(color: Color(hex: "F2D7D9"), location: 0),
+                        .init(color: Color(hex: "E786A7"), location: 1),
+                    ],
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.18, y: 0.04), color: Color(hex: "F2D7D9"), opacity: 0.48, endRadiusFraction: 0.38),
+                    ],
+                    meshBlobs: [
+                        SkyColorBlob(center: UnitPoint(x: 0.16, y: 0.08), color: Color(hex: "F2D7D9"), opacity: 0.96, radiusFraction: 0.78),
+                        SkyColorBlob(center: UnitPoint(x: 0.76, y: 0.82), color: Color(hex: "E786A7"), opacity: 0.92, radiusFraction: 0.76),
+                        SkyColorBlob(center: UnitPoint(x: 0.20, y: 0.78), color: Color(hex: "F0C4D8"), opacity: 0.80, radiusFraction: 0.66),
+                    ],
+                    meshBaseColor: Color(hex: "F2D7D9")
+                )
+            case .isha:
+                return SkyTheme(
+                    baseColors: [Color(hex: "1D1939"), Color(hex: "1B122F"), Color(hex: "221A2E"), Color(hex: "050409")],
+                    glowColor: nil,
+                    gradientStops: [
+                        .init(color: Color(hex: "1D1939"), location: 0),
+                        .init(color: Color(hex: "1B122F"), location: 0.34),
+                        .init(color: Color(hex: "221A2E"), location: 0.68),
+                        .init(color: Color(hex: "050409"), location: 1),
+                    ],
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.55, y: 0.35), color: Color(hex: "221A2E"), opacity: 0.55, endRadiusFraction: 0.45),
+                    ],
+                    meshBlobs: [
+                        SkyColorBlob(center: UnitPoint(x: 0.50, y: 0.12), color: Color(hex: "1D1939"), opacity: 0.98, radiusFraction: 0.80),
+                        SkyColorBlob(center: UnitPoint(x: 0.18, y: 0.38), color: Color(hex: "1B122F"), opacity: 0.94, radiusFraction: 0.72),
+                        SkyColorBlob(center: UnitPoint(x: 0.72, y: 0.42), color: Color(hex: "221A2E"), opacity: 0.90, radiusFraction: 0.78),
+                        SkyColorBlob(center: UnitPoint(x: 0.48, y: 0.78), color: Color(hex: "050409"), opacity: 0.96, radiusFraction: 0.84),
+                        SkyColorBlob(center: UnitPoint(x: 0.82, y: 0.68), color: Color(hex: "2A2040"), opacity: 0.82, radiusFraction: 0.62),
+                    ],
+                    meshBaseColor: Color(hex: "1D1939")
+                )
+            case .tahajjud:
+                return classicSetSky
             }
+        }
+
+        var gradient: Gradient {
+            sky.resolvedGradient
         }
     }
 
@@ -113,6 +403,7 @@ enum HomeDesign {
 
 extension HomeDesign.TimeTheme {
     static let selectablePrayerThemes: [Self] = [.fajr, .sunrise, .dhuhr, .asr, .maghrib, .isha]
+    static let configurableGradientThemes: [Self] = [.fajr, .sunrise, .dhuhr, .asr, .maghrib, .isha]
 
     /// Sky / glass theme for the home prayer hero (matches `HomeView` carousel selection).
     static func homeHeroTheme(displayedPrayerTimes: DailyPrayerTimes?, selectedPrayerIndex: Int) -> Self {
@@ -207,5 +498,89 @@ struct AppFontModifier: ViewModifier {
 extension View {
     func appFont(size: CGFloat, weight: Font.Weight = .regular) -> some View {
         modifier(AppFontModifier(size: size, weight: weight))
+    }
+}
+
+struct AtmosphericSkyBackground: View {
+    let sky: HomeDesign.SkyTheme
+    var height: CGFloat = 800
+
+    var body: some View {
+        GeometryReader { geo in
+            let span = max(geo.size.width, geo.size.height)
+            ZStack {
+                if sky.usesMeshComposition {
+                    meshSkyLayer(span: span)
+                } else {
+                    LinearGradient(
+                        gradient: sky.resolvedGradient,
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+
+                ForEach(Array(sky.radialOverlays.enumerated()), id: \.offset) { _, overlay in
+                    RadialGradient(
+                        colors: [overlay.color.opacity(overlay.opacity), overlay.color.opacity(overlay.opacity * 0.25), .clear],
+                        center: overlay.center,
+                        startRadius: 0,
+                        endRadius: span * overlay.endRadiusFraction
+                    )
+                    .blendMode(.screen)
+                }
+
+                if let glow = sky.glowColor {
+                    RadialGradient(
+                        colors: [glow.opacity(0.6 * sky.glowBaseAlpha), glow.opacity(0.3 * sky.glowBaseAlpha), .clear],
+                        center: UnitPoint(x: 0.5, y: 0.82),
+                        startRadius: 0,
+                        endRadius: max(geo.size.height, height) * 0.7
+                    )
+                    .blendMode(.screen)
+                }
+
+                if sky.usesMeshComposition {
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.10), .clear, Color.black.opacity(0.04)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .blendMode(.softLight)
+                } else {
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.05), .clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .blendMode(.plusLighter)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func meshSkyLayer(span: CGFloat) -> some View {
+        sky.resolvedMeshBaseColor
+
+        ForEach(Array(sky.meshBlobs.enumerated()), id: \.offset) { _, blob in
+            EllipticalGradient(
+                stops: [
+                    .init(color: blob.color.opacity(blob.opacity), location: 0),
+                    .init(color: blob.color.opacity(blob.opacity * 0.55), location: 0.45),
+                    .init(color: blob.color.opacity(0), location: 1),
+                ],
+                center: blob.center,
+                startRadiusFraction: 0,
+                endRadiusFraction: blob.radiusFraction * min(1.15, span / 800)
+            )
+        }
+
+        LinearGradient(
+            gradient: sky.resolvedGradient,
+            startPoint: UnitPoint(x: 0.5, y: 0),
+            endPoint: UnitPoint(x: 0.5, y: 1)
+        )
+        .opacity(0.18)
+        .blendMode(.softLight)
     }
 }

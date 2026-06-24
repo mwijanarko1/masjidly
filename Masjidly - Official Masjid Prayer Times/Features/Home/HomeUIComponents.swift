@@ -135,13 +135,14 @@ struct PrayerCarouselItem: View {
 /// graduated ray patterns, and balanced proportions for a premium, elegant feel.
 struct PrayerSunPhaseIcon: View {
     let theme: HomeDesign.TimeTheme
+    var iconColor: Color? = nil
     @Environment(\.locale) private var locale
 
     private static let canvas = CGSize(width: 100, height: 88)
 
     var body: some View {
         Canvas { context, size in
-            let color = theme.iconColor
+            let color = iconColor ?? theme.iconColor
             let thin = StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round)
             let medium = StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)
             let cx = size.width * 0.5
@@ -340,7 +341,7 @@ struct MinimalistPrayerPage: View {
     let prayerTime: String
     /// Iqamah line below adhan (e.g. `Iqamah: 9:00pm`; repeats adhan time when iqamah is at adhan).
     let iqamahTime: String?
-    let theme: HomeDesign.TimeTheme
+    let appearance: HomeDesign.ResolvedTheme
     /// When false (user deferred location in onboarding), Qibla pointer is hidden; rings and sun icon remain.
     var showQiblaCompass: Bool = true
     /// Device-relative rotation toward Qibla; nil until coordinates are known.
@@ -361,6 +362,8 @@ struct MinimalistPrayerPage: View {
     var onShortcutTapped: ((Int) -> Void)? = nil
 
     @Environment(\.locale) private var locale
+
+    private var theme: HomeDesign.TimeTheme { appearance.timeTheme }
 
     @State private var heroCountdownVisible = false
     @State private var heroCountdownLocked = false
@@ -389,8 +392,8 @@ struct MinimalistPrayerPage: View {
                 Text(prayerTime)
                     .appFont(size: 88, weight: .light)
                     .kerning(-1.76) // -0.02em * 88
-                    .foregroundColor(theme.textColor)
-                    .shadow(color: theme.textColor.opacity(0.1), radius: 10, x: 0, y: 5)
+                    .foregroundColor(appearance.textColor)
+                    .shadow(color: appearance.textColor.opacity(0.1), radius: 10, x: 0, y: 5)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
 
@@ -398,7 +401,7 @@ struct MinimalistPrayerPage: View {
                     Text(iq)
                         .appFont(size: 26, weight: .regular)
                         .tracking(usesArabicScript ? 0 : 0.6)
-                        .foregroundColor(theme.textColor.opacity(0.78))
+                        .foregroundColor(appearance.textColor.opacity(0.78))
                         .minimumScaleFactor(0.65)
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
@@ -412,7 +415,7 @@ struct MinimalistPrayerPage: View {
                 Text(prayerName)
                     .appFont(size: 36, weight: .regular)
                     .kerning(-0.36) // -0.01em * 36
-                    .foregroundColor(theme.textColor)
+                    .foregroundColor(appearance.textColor)
 
                 prayerLetterPicker
             }
@@ -440,6 +443,7 @@ struct MinimalistPrayerPage: View {
 
                     QiblaPrayerIcon(
                         theme: theme,
+                        iconColor: appearance.iconColor,
                         rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil,
                         size: 120,
                         showCountdown: showHeroCountdown,
@@ -453,13 +457,13 @@ struct MinimalistPrayerPage: View {
                     .accessibilityIdentifier("HeroPrayerOrb")
                     .accessibilityHint(Text(LocaleBundle.string(forKey: "home.countdown.a11y.hint", locale: locale)))
                 } else {
-                    QiblaPrayerIcon(theme: theme, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
+                    QiblaPrayerIcon(theme: theme, iconColor: appearance.iconColor, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
                         .contentShape(Circle())
                         .accessibilityIdentifier("HeroPrayerOrb")
                 }
             }
         } else {
-            QiblaPrayerIcon(theme: theme, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
+            QiblaPrayerIcon(theme: theme, iconColor: appearance.iconColor, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
                 .contentShape(Circle())
         }
     }
@@ -545,7 +549,7 @@ struct MinimalistPrayerPage: View {
                                 } label: {
                                     Text(letter)
                                         .appFont(size: 20, weight: isSelected ? .semibold : .regular)
-                                        .foregroundColor(theme.textColor.opacity(isSelected ? 1.0 : 0.38))
+                                        .foregroundColor(appearance.textColor.opacity(isSelected ? 1.0 : 0.38))
                                         .frame(minWidth: 28, minHeight: 36)
                                         .contentShape(Rectangle())
                                 }

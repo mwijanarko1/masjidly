@@ -36,6 +36,10 @@ struct HomeView: View {
         settings.resolvedTheme(dynamicTheme: dynamicTheme)
     }
 
+    private var currentAppearance: HomeDesign.ResolvedTheme {
+        settings.resolvedAppearance(for: currentTheme)
+    }
+
     var body: some View {
         homeChromeStack
     }
@@ -224,7 +228,7 @@ struct HomeView: View {
                     missingCurrentMonthTimesView(metrics: metrics)
                 } else if model.loadState == .loading || model.loadState == .idle {
                     ProgressView()
-                        .tint(currentTheme.textColor)
+                        .tint(currentAppearance.textColor)
                 } else {
                     loadErrorRecoveryView(metrics: metrics)
                 }
@@ -270,10 +274,10 @@ struct HomeView: View {
             } label: {
                 Text(homeLS("action.retry", locale: locale))
                     .appFont(size: 16, weight: .semibold)
-                    .foregroundStyle(currentTheme.usesLightForeground ? Color.black : Color.white)
+                    .foregroundStyle(currentAppearance.usesLightForeground ? Color.black : Color.white)
                     .padding(.horizontal, 22)
                     .padding(.vertical, 13)
-                    .background(Capsule().fill(currentTheme.textColor.opacity(0.92)))
+                    .background(Capsule().fill(currentAppearance.textColor.opacity(0.92)))
             }
             .buttonStyle(.hapticPlain)
             .accessibilityIdentifier("Home.LoadError.RetryButton")
@@ -288,16 +292,16 @@ struct HomeView: View {
         VStack(spacing: 18) {
             Image(systemName: "calendar.badge.exclamationmark")
                 .appFont(size: 44, weight: .light)
-                .foregroundStyle(currentTheme.textColor.opacity(0.9))
+                .foregroundStyle(currentAppearance.textColor.opacity(0.9))
 
             Text(homeLS("home.current_month_times_missing", locale: locale))
                 .appFont(size: 22, weight: .semibold)
                 .multilineTextAlignment(.center)
-                .foregroundStyle(currentTheme.textColor)
+                .foregroundStyle(currentAppearance.textColor)
 
             Text(currentMissingMonthTitle)
                 .appFont(size: 15, weight: .regular)
-                .foregroundStyle(currentTheme.textColor.opacity(0.72))
+                .foregroundStyle(currentAppearance.textColor.opacity(0.72))
 
             if model.hasAvailablePrayerTimesFallback {
                 Button {
@@ -305,10 +309,10 @@ struct HomeView: View {
                 } label: {
                     Text(homeLS("home.go_to_available_times_button", locale: locale))
                         .appFont(size: 16, weight: .semibold)
-                        .foregroundStyle(currentTheme.usesLightForeground ? Color.black : Color.white)
+                        .foregroundStyle(currentAppearance.usesLightForeground ? Color.black : Color.white)
                         .padding(.horizontal, 22)
                         .padding(.vertical, 13)
-                        .background(Capsule().fill(currentTheme.textColor.opacity(0.92)))
+                        .background(Capsule().fill(currentAppearance.textColor.opacity(0.92)))
                 }
                 .buttonStyle(.hapticPlain)
                 .accessibilityIdentifier("Home.MissingTimes.AvailableTimesButton")
@@ -319,10 +323,10 @@ struct HomeView: View {
             } label: {
                 Text(homeLS("home.request_times_button", locale: locale))
                     .appFont(size: 15, weight: .semibold)
-                    .foregroundStyle(currentTheme.textColor)
+                    .foregroundStyle(currentAppearance.textColor)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
-                    .background(Capsule().strokeBorder(currentTheme.textColor.opacity(0.55), lineWidth: 1))
+                    .background(Capsule().strokeBorder(currentAppearance.textColor.opacity(0.55), lineWidth: 1))
             }
             .buttonStyle(.hapticPlain)
             .accessibilityIdentifier("Home.MissingTimes.EmailButton")
@@ -392,7 +396,7 @@ struct HomeView: View {
                 prayerName: displayName,
                 prayerTime: prayerTimeDisplay,
                 iqamahTime: iqSubtitle,
-                theme: currentTheme,
+                appearance: currentAppearance,
                 showQiblaCompass: !settings.hideQiblaCompass,
                 qiblaRotationDegrees: qiblaDirectionProvider.displayedRotationDegrees,
                 qiblaOnboardingHighlighted: onboarding.currentStep == .qibla || onboarding.currentStep == .qiblaCountdown,
@@ -433,7 +437,7 @@ struct HomeView: View {
                 ZStack {
                     Color.black.opacity(0.4)
                     
-                    let whatsNewSky = currentTheme.sky
+                    let whatsNewSky = currentAppearance.sky
                     LinearGradient(
                         colors: whatsNewSky.baseColors.map { $0.opacity(0.55) },
                         startPoint: .top,
@@ -546,40 +550,14 @@ struct HomeView: View {
 
     @ViewBuilder
     private func backgroundLayer(metrics: HomeViewportMetrics) -> some View {
-        let theme = currentTheme
-        let sky = theme.sky
-        
-        ZStack {
-            // 1. Base Atmospheric Sky
-            LinearGradient(
-                gradient: Gradient(colors: sky.baseColors),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            
-            // 2. Horizon Glow (Cinematic Lighting)
-            if let glow = sky.glowColor {
-                RadialGradient(
-                    colors: [glow.opacity(0.6 * sky.glowBaseAlpha), glow.opacity(0.3 * sky.glowBaseAlpha), .clear],
-                    center: UnitPoint(x: 0.5, y: 0.82),
-                    startRadius: 0,
-                    endRadius: metrics.height * 0.7
-                )
-                .blendMode(.screen)
-            }
-            
-            // 3. Subtle Light Wash (Top-down soft lighting)
-            LinearGradient(
-                colors: [Color.white.opacity(0.05), .clear],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .blendMode(.plusLighter)
-        }
-        .animation(.easeInOut(duration: 0.8), value: model.selectedPrayerIndex)
-        .animation(.easeInOut(duration: 0.8), value: settings.fixedTheme)
-        .animation(.easeInOut(duration: 0.8), value: settings.themeMode)
-        .ignoresSafeArea()
+        let sky = currentAppearance.sky
+
+        AtmosphericSkyBackground(sky: sky, height: metrics.height)
+            .animation(.easeInOut(duration: 0.8), value: model.selectedPrayerIndex)
+            .animation(.easeInOut(duration: 0.8), value: settings.fixedTheme)
+            .animation(.easeInOut(duration: 0.8), value: settings.themeMode)
+            .animation(.easeInOut(duration: 0.8), value: settings.skyGradientSet(for: currentTheme).rawValue)
+            .ignoresSafeArea()
     }
 
     private var settingsButton: some View {
@@ -589,7 +567,7 @@ struct HomeView: View {
         } label: {
             Image(systemName: "gearshape.fill")
                 .appFont(size: 20, weight: .light)
-                .foregroundColor(currentTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(Color.white.opacity(0.18)))
         }
@@ -605,7 +583,7 @@ struct HomeView: View {
         } label: {
             Image(systemName: "calendar")
                 .appFont(size: 20, weight: .light)
-                .foregroundColor(currentTheme.textColor)
+                .foregroundColor(currentAppearance.textColor)
                 .frame(width: 44, height: 44)
                 .background(Circle().fill(Color.white.opacity(0.18)))
         }
@@ -655,12 +633,12 @@ struct HomeView: View {
                 } label: {
                     Text("Skip tutorial")
                         .appFont(size: 15, weight: .semibold)
-                        .foregroundColor(currentTheme.textColor.opacity(0.7))
+                        .foregroundColor(currentAppearance.textColor.opacity(0.7))
                         .padding(.vertical, 12)
                         .padding(.horizontal, 28)
                         .background(
                             Capsule()
-                                .strokeBorder(currentTheme.textColor.opacity(0.25), lineWidth: 1)
+                                .strokeBorder(currentAppearance.textColor.opacity(0.25), lineWidth: 1)
                         )
                 }
                 .buttonStyle(.hapticPlain)
@@ -757,7 +735,7 @@ struct HomeView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .appFont(size: 13, weight: .semibold)
-                    .foregroundColor(currentTheme.textColor.opacity(0.5))
+                    .foregroundColor(currentAppearance.textColor.opacity(0.5))
                     .frame(width: 32, height: 32)
             }
             .buttonStyle(.hapticPlain)
@@ -766,12 +744,12 @@ struct HomeView: View {
                 Text(dateString(for: model.displayedDate).uppercased())
                     .appFont(size: 13, weight: .semibold)
                     .kerning(1.0)
-                    .foregroundColor(currentTheme.textColor.opacity(0.6))
+                    .foregroundColor(currentAppearance.textColor.opacity(0.6))
                 
                 Text(hijriDateString(for: model.displayedDate).uppercased())
                     .appFont(size: 10, weight: .medium)
                     .kerning(0.8)
-                    .foregroundColor(currentTheme.textColor.opacity(0.4))
+                    .foregroundColor(currentAppearance.textColor.opacity(0.4))
             }
             
             Button {
@@ -779,7 +757,7 @@ struct HomeView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .appFont(size: 13, weight: .semibold)
-                    .foregroundColor(currentTheme.textColor.opacity(0.5))
+                    .foregroundColor(currentAppearance.textColor.opacity(0.5))
                     .frame(width: 32, height: 32)
             }
             .buttonStyle(.hapticPlain)

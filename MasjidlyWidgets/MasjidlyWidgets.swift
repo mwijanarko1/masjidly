@@ -128,6 +128,7 @@ struct MasjidlyPrayerWidgetView: View {
 
     var body: some View {
         let theme = MasjidlyWidgetTheme.resolvedTheme(for: entry.state.prayerId)
+        let gradientSet = MasjidlyWidgetTheme.resolvedGradientSet(for: entry.state.prayerId)
         
         Group {
             if entry.state.kind != .content {
@@ -135,11 +136,11 @@ struct MasjidlyPrayerWidgetView: View {
             } else {
                 switch family {
                 case .systemSmall:
-                    smallView(theme: theme)
+                    smallView(theme: theme, gradientSet: gradientSet)
                 case .systemMedium:
-                    mediumView(theme: theme)
+                    mediumView(theme: theme, gradientSet: gradientSet)
                 case .systemLarge:
-                    largeView(theme: theme)
+                    largeView(theme: theme, gradientSet: gradientSet)
                 case .accessoryInline:
                     Text(accessoryInlineText)
                 case .accessoryCircular:
@@ -147,7 +148,7 @@ struct MasjidlyPrayerWidgetView: View {
                 case .accessoryRectangular:
                     accessoryRectangularView
                 default:
-                    smallView(theme: theme)
+                    smallView(theme: theme, gradientSet: gradientSet)
                 }
             }
         }
@@ -158,7 +159,7 @@ struct MasjidlyPrayerWidgetView: View {
             } else if entry.state.kind != .content {
                 Color(hex: "111111")
             } else {
-                backgroundView(for: theme)
+                backgroundView(for: theme, gradientSet: gradientSet)
             }
         }
     }
@@ -218,23 +219,52 @@ struct MasjidlyPrayerWidgetView: View {
         .padding()
     }
 
-    private func backgroundView(for theme: MasjidlyWidgetTheme.TimeTheme) -> some View {
+    @ViewBuilder
+    private func backgroundView(for theme: MasjidlyWidgetTheme.TimeTheme, gradientSet: MasjidlyWidgetTheme.SkyGradientSet) -> some View {
+        let sky = theme.sky(set: gradientSet)
         GeometryReader { geo in
+            let span = max(geo.size.width, geo.size.height)
             ZStack {
-                // 1. Base Sky
-                LinearGradient(
-                    colors: theme.skyColors,
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                
-                // 2. Stars (for dark themes)
-                if theme == .fajr || theme == .isha || theme == .tahajjud {
+                if sky.usesMeshComposition {
+                    sky.resolvedMeshBaseColor
+                    ForEach(Array(sky.meshBlobs.enumerated()), id: \.offset) { _, blob in
+                        EllipticalGradient(
+                            stops: [
+                                .init(color: blob.color.opacity(blob.opacity), location: 0),
+                                .init(color: blob.color.opacity(blob.opacity * 0.55), location: 0.45),
+                                .init(color: blob.color.opacity(0), location: 1),
+                            ],
+                            center: blob.center,
+                            startRadiusFraction: 0,
+                            endRadiusFraction: blob.radiusFraction
+                        )
+                    }
+                    LinearGradient(gradient: sky.resolvedGradient, startPoint: .top, endPoint: .bottom)
+                        .opacity(0.18)
+                        .blendMode(.softLight)
+                } else {
+                    LinearGradient(
+                        gradient: sky.resolvedGradient,
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+
+                ForEach(Array(sky.radialOverlays.enumerated()), id: \.offset) { _, overlay in
+                    RadialGradient(
+                        colors: [overlay.color.opacity(overlay.opacity), overlay.color.opacity(overlay.opacity * 0.25), .clear],
+                        center: overlay.center,
+                        startRadius: 0,
+                        endRadius: span * overlay.endRadiusFraction
+                    )
+                    .blendMode(.screen)
+                }
+
+                if theme.showsStars(set: gradientSet) {
                     starField(in: geo.size, intensity: theme == .tahajjud ? 0.08 : 0.04)
                 }
-                
-                // 3. Horizon Glow
-                if let glow = theme.glowColor {
+
+                if let glow = sky.glowColor {
                     RadialGradient(
                         colors: [glow.opacity(0.4), glow.opacity(0.15), .clear],
                         center: UnitPoint(x: 0.5, y: 0.85),
@@ -243,12 +273,13 @@ struct MasjidlyPrayerWidgetView: View {
                     )
                     .blendMode(.screen)
                 }
-                
-                // 4. Atmosphere Depth
+
                 LinearGradient(
-                    colors: [Color.black.opacity(0.1), .clear, Color.black.opacity(0.05)],
-                    startPoint: .top,
-                    endPoint: .bottom
+                    colors: sky.usesMeshComposition
+                        ? [Color.white.opacity(0.08), .clear, Color.black.opacity(0.04)]
+                        : [Color.black.opacity(0.1), .clear, Color.black.opacity(0.05)],
+                    startPoint: sky.usesMeshComposition ? .topLeading : .top,
+                    endPoint: sky.usesMeshComposition ? .bottomTrailing : .bottom
                 )
             }
         }
@@ -268,21 +299,21 @@ struct MasjidlyPrayerWidgetView: View {
         }
     }
 
-    private func smallView(theme: MasjidlyWidgetTheme.TimeTheme) -> some View {
+    private func smallView(theme: MasjidlyWidgetTheme.TimeTheme, gradientSet: MasjidlyWidgetTheme.SkyGradientSet) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: entry.state.iconName)
                     .widgetFont(size: 16, weight: .medium, locale: entry.locale)
-                    .foregroundStyle(theme.textColor.opacity(0.8))
+                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.8))
                 Text(entry.state.prayerName)
                     .widgetFont(size: 15, weight: .medium, locale: entry.locale)
-                    .foregroundStyle(theme.textColor.opacity(0.75))
+                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.75))
                     .lineLimit(1)
             }
 
             Text(entry.state.adhanTime)
                 .widgetFont(size: 36, weight: .light, locale: entry.locale)
-                .foregroundStyle(theme.textColor)
+                .foregroundStyle(theme.textColor(set: gradientSet))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
@@ -291,7 +322,7 @@ struct MasjidlyPrayerWidgetView: View {
             if !entry.state.iqamahTime.isEmpty {
                 Text(String(format: widgetLS("widget.iqamah_format", locale: entry.locale), entry.state.iqamahTime))
                     .widgetFont(size: 14, weight: .regular, locale: entry.locale)
-                    .foregroundStyle(theme.textColor.opacity(0.6))
+                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.6))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -306,19 +337,19 @@ struct MasjidlyPrayerWidgetView: View {
         return formatter.string(from: entry.state.displayDate)
     }
 
-    private func mediumView(theme: MasjidlyWidgetTheme.TimeTheme) -> some View {
+    private func mediumView(theme: MasjidlyWidgetTheme.TimeTheme, gradientSet: MasjidlyWidgetTheme.SkyGradientSet) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Text(entry.state.mosqueDisplayName)
                     .widgetFont(size: 13, weight: .semibold, locale: entry.locale)
-                    .foregroundStyle(theme.textColor.opacity(0.7))
+                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.7))
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                 Spacer(minLength: 4)
                 Text(currentDateMediumString.uppercased())
                     .widgetFont(size: 12, weight: .semibold, locale: entry.locale)
                     .kerning(0.8)
-                    .foregroundStyle(theme.textColor.opacity(0.45))
+                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.45))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -329,7 +360,7 @@ struct MasjidlyPrayerWidgetView: View {
                 Text(widgetLS("widget.iqamah", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .trailing)
             }
             .widgetFont(size: 11, weight: .bold, locale: entry.locale)
-            .foregroundStyle(theme.textColor.opacity(0.35))
+            .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.35))
             .textCase(.uppercase)
             
             VStack(spacing: 6) {
@@ -337,7 +368,7 @@ struct MasjidlyPrayerWidgetView: View {
                     HStack {
                         Text(row.name)
                             .widgetFont(size: 20, weight: row.isNext ? .bold : .regular, locale: entry.locale)
-                            .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.35) : theme.textColor)
+                            .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.35) : theme.textColor(set: gradientSet))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
@@ -345,7 +376,7 @@ struct MasjidlyPrayerWidgetView: View {
                         Text(row.adhan)
                             .widgetFont(size: 20, weight: row.isNext ? .bold : .semibold, locale: entry.locale)
                             .monospacedDigit()
-                            .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.35) : theme.textColor)
+                            .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.35) : theme.textColor(set: gradientSet))
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -355,7 +386,7 @@ struct MasjidlyPrayerWidgetView: View {
                             Text(row.iqamahs.joined(separator: ", "))
                                 .widgetFont(size: 20, weight: .regular, locale: entry.locale)
                                 .monospacedDigit()
-                                .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.2) : theme.textColor.opacity(0.6))
+                                .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.2) : theme.textColor(set: gradientSet).opacity(0.6))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)
                         }
@@ -374,19 +405,19 @@ struct MasjidlyPrayerWidgetView: View {
         return formatter.string(from: entry.state.displayDate)
     }
 
-    private func largeView(theme: MasjidlyWidgetTheme.TimeTheme) -> some View {
+    private func largeView(theme: MasjidlyWidgetTheme.TimeTheme, gradientSet: MasjidlyWidgetTheme.SkyGradientSet) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Text(entry.state.mosqueDisplayName)
                     .widgetFont(size: 16, weight: .semibold, locale: entry.locale)
-                    .foregroundStyle(theme.textColor.opacity(0.7))
+                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.7))
                     .lineLimit(2)
                     .minimumScaleFactor(0.5)
                 Spacer(minLength: 6)
                 Text(fullDateString.uppercased())
                     .widgetFont(size: 13, weight: .semibold, locale: entry.locale)
                     .kerning(0.8)
-                    .foregroundStyle(theme.textColor.opacity(0.5))
+                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.5))
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
             }
@@ -396,12 +427,12 @@ struct MasjidlyPrayerWidgetView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(entry.state.prayerName)
                         .widgetFont(size: 18, weight: .medium, locale: entry.locale)
-                        .foregroundStyle(theme.textColor.opacity(0.75))
+                        .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.75))
                         .lineLimit(1)
 
                     Text(entry.state.adhanTime)
                         .widgetFont(size: 48, weight: .light, locale: entry.locale)
-                        .foregroundStyle(theme.textColor)
+                        .foregroundStyle(theme.textColor(set: gradientSet))
                         .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
@@ -413,13 +444,13 @@ struct MasjidlyPrayerWidgetView: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(widgetLS("widget.iqamah", locale: entry.locale))
                             .widgetFont(size: 11, weight: .bold, locale: entry.locale)
-                            .foregroundStyle(theme.textColor.opacity(0.35))
+                            .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.35))
                             .textCase(.uppercase)
 
                         Text(entry.state.iqamahTime)
                             .widgetFont(size: 22, weight: .regular, locale: entry.locale)
                             .monospacedDigit()
-                            .foregroundStyle(theme.textColor.opacity(0.7))
+                            .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.7))
                             .lineLimit(1)
                             .minimumScaleFactor(0.65)
                     }
@@ -433,7 +464,7 @@ struct MasjidlyPrayerWidgetView: View {
                 Text(widgetLS("widget.iqamah", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .trailing)
             }
             .widgetFont(size: 12, weight: .bold, locale: entry.locale)
-            .foregroundStyle(theme.textColor.opacity(0.35))
+            .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.35))
             .textCase(.uppercase)
 
             VStack(spacing: 14) {
@@ -441,7 +472,7 @@ struct MasjidlyPrayerWidgetView: View {
                     HStack {
                         Text(row.name)
                             .widgetFont(size: 24, weight: row.isNext ? .bold : .regular, locale: entry.locale)
-                            .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.35) : theme.textColor)
+                            .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.35) : theme.textColor(set: gradientSet))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
@@ -449,7 +480,7 @@ struct MasjidlyPrayerWidgetView: View {
                         Text(row.adhan)
                             .widgetFont(size: 24, weight: row.isNext ? .bold : .semibold, locale: entry.locale)
                             .monospacedDigit()
-                            .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.35) : theme.textColor)
+                            .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.35) : theme.textColor(set: gradientSet))
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -459,7 +490,7 @@ struct MasjidlyPrayerWidgetView: View {
                             Text(row.iqamahs.joined(separator: ", "))
                                 .widgetFont(size: 24, weight: .regular, locale: entry.locale)
                                 .monospacedDigit()
-                                .foregroundStyle(row.isPassed ? theme.textColor.opacity(0.2) : theme.textColor.opacity(0.6))
+                                .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.2) : theme.textColor(set: gradientSet).opacity(0.6))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)
                         }
@@ -617,22 +648,252 @@ struct MasjidlyPrayerWidgetView: View {
 
 
 enum MasjidlyWidgetTheme {
+    /// User-facing labels: **Original** (`classic`), **Modern** (`set2`).
+    enum SkyGradientSet: String {
+        case classic
+        case set2
+    }
+
+    struct SkyRadialOverlay {
+        let center: UnitPoint
+        let color: Color
+        let opacity: Double
+        let endRadiusFraction: CGFloat
+    }
+
+    struct SkyColorBlob {
+        let center: UnitPoint
+        let color: Color
+        let opacity: Double
+        let radiusFraction: CGFloat
+    }
+
+    struct SkyTheme {
+        let baseColors: [Color]
+        let gradientStops: [Gradient.Stop]?
+        let glowColor: Color?
+        let radialOverlays: [SkyRadialOverlay]
+        let meshBlobs: [SkyColorBlob]
+        let meshBaseColor: Color?
+
+        init(
+            baseColors: [Color],
+            gradientStops: [Gradient.Stop]?,
+            glowColor: Color?,
+            radialOverlays: [SkyRadialOverlay],
+            meshBlobs: [SkyColorBlob] = [],
+            meshBaseColor: Color? = nil
+        ) {
+            self.baseColors = baseColors
+            self.gradientStops = gradientStops
+            self.glowColor = glowColor
+            self.radialOverlays = radialOverlays
+            self.meshBlobs = meshBlobs
+            self.meshBaseColor = meshBaseColor
+        }
+
+        var usesMeshComposition: Bool { !meshBlobs.isEmpty }
+
+        var resolvedGradient: Gradient {
+            if let gradientStops {
+                return Gradient(stops: gradientStops)
+            }
+            return Gradient(colors: baseColors)
+        }
+
+        var resolvedMeshBaseColor: Color {
+            meshBaseColor ?? gradientStops?.first?.color ?? baseColors.first ?? .white
+        }
+    }
+
+    static func pastelMesh(for theme: TimeTheme) -> (blobs: [SkyColorBlob], base: Color) {
+        switch theme {
+        case .fajr:
+            return ([
+                SkyColorBlob(center: UnitPoint(x: 0.10, y: 0.06), color: Color(hex: "DFEFF8"), opacity: 0.98, radiusFraction: 0.82),
+                SkyColorBlob(center: UnitPoint(x: 0.88, y: 0.10), color: Color(hex: "A2ECF7"), opacity: 0.92, radiusFraction: 0.72),
+                SkyColorBlob(center: UnitPoint(x: 0.42, y: 0.38), color: Color(hex: "84B3F4"), opacity: 0.88, radiusFraction: 0.90),
+                SkyColorBlob(center: UnitPoint(x: 0.78, y: 0.82), color: Color(hex: "AB8DD6"), opacity: 0.94, radiusFraction: 0.78),
+                SkyColorBlob(center: UnitPoint(x: 0.16, y: 0.72), color: Color(hex: "96A1EA"), opacity: 0.80, radiusFraction: 0.68),
+            ], Color(hex: "DFEFF8"))
+        case .sunrise:
+            return ([
+                SkyColorBlob(center: UnitPoint(x: 0.22, y: 0.10), color: Color(hex: "F7D7C4"), opacity: 0.96, radiusFraction: 0.76),
+                SkyColorBlob(center: UnitPoint(x: 0.62, y: 0.18), color: Color(hex: "F9BFA4"), opacity: 0.90, radiusFraction: 0.70),
+                SkyColorBlob(center: UnitPoint(x: 0.48, y: 0.52), color: Color(hex: "F6A6B8"), opacity: 0.88, radiusFraction: 0.85),
+                SkyColorBlob(center: UnitPoint(x: 0.82, y: 0.78), color: Color(hex: "A8D8F0"), opacity: 0.86, radiusFraction: 0.72),
+                SkyColorBlob(center: UnitPoint(x: 0.14, y: 0.80), color: Color(hex: "F2C4D0"), opacity: 0.78, radiusFraction: 0.62),
+            ], Color(hex: "F7D7C4"))
+        case .dhuhr:
+            return ([
+                SkyColorBlob(center: UnitPoint(x: 0.14, y: 0.08), color: Color(hex: "D6EFFA"), opacity: 0.98, radiusFraction: 0.80),
+                SkyColorBlob(center: UnitPoint(x: 0.72, y: 0.12), color: Color(hex: "DCEFFC"), opacity: 0.94, radiusFraction: 0.74),
+                SkyColorBlob(center: UnitPoint(x: 0.50, y: 0.46), color: Color(hex: "7CB5F0"), opacity: 0.90, radiusFraction: 0.88),
+                SkyColorBlob(center: UnitPoint(x: 0.36, y: 0.84), color: Color(hex: "62B1E0"), opacity: 0.92, radiusFraction: 0.76),
+                SkyColorBlob(center: UnitPoint(x: 0.88, y: 0.70), color: Color(hex: "6AB9F8"), opacity: 0.78, radiusFraction: 0.64),
+            ], Color(hex: "D6EFFA"))
+        case .asr:
+            return ([
+                SkyColorBlob(center: UnitPoint(x: 0.20, y: 0.10), color: Color(hex: "9FF1F2"), opacity: 0.96, radiusFraction: 0.78),
+                SkyColorBlob(center: UnitPoint(x: 0.78, y: 0.14), color: Color(hex: "6CD4E4"), opacity: 0.92, radiusFraction: 0.72),
+                SkyColorBlob(center: UnitPoint(x: 0.52, y: 0.44), color: Color(hex: "73E1EA"), opacity: 0.90, radiusFraction: 0.86),
+                SkyColorBlob(center: UnitPoint(x: 0.30, y: 0.82), color: Color(hex: "BDE2BD"), opacity: 0.88, radiusFraction: 0.74),
+                SkyColorBlob(center: UnitPoint(x: 0.82, y: 0.76), color: Color(hex: "88E8E8"), opacity: 0.76, radiusFraction: 0.66),
+            ], Color(hex: "9FF1F2"))
+        case .maghrib:
+            return ([
+                SkyColorBlob(center: UnitPoint(x: 0.16, y: 0.08), color: Color(hex: "F2D7D9"), opacity: 0.96, radiusFraction: 0.78),
+                SkyColorBlob(center: UnitPoint(x: 0.76, y: 0.82), color: Color(hex: "E786A7"), opacity: 0.92, radiusFraction: 0.76),
+                SkyColorBlob(center: UnitPoint(x: 0.20, y: 0.78), color: Color(hex: "F0C4D8"), opacity: 0.80, radiusFraction: 0.66),
+            ], Color(hex: "F2D7D9"))
+        case .isha:
+            return ([
+                SkyColorBlob(center: UnitPoint(x: 0.50, y: 0.12), color: Color(hex: "1D1939"), opacity: 0.98, radiusFraction: 0.80),
+                SkyColorBlob(center: UnitPoint(x: 0.18, y: 0.38), color: Color(hex: "1B122F"), opacity: 0.94, radiusFraction: 0.72),
+                SkyColorBlob(center: UnitPoint(x: 0.72, y: 0.42), color: Color(hex: "221A2E"), opacity: 0.90, radiusFraction: 0.78),
+                SkyColorBlob(center: UnitPoint(x: 0.48, y: 0.78), color: Color(hex: "050409"), opacity: 0.96, radiusFraction: 0.84),
+                SkyColorBlob(center: UnitPoint(x: 0.82, y: 0.68), color: Color(hex: "2A2040"), opacity: 0.82, radiusFraction: 0.62),
+            ], Color(hex: "1D1939"))
+        default:
+            return ([], .white)
+        }
+    }
+
     enum TimeTheme: String {
         case fajr, sunrise, dhuhr, asr, maghrib, isha, tahajjud
-        
-        var skyColors: [Color] {
+
+        func defaultGradientSet() -> SkyGradientSet {
             switch self {
-            case .fajr: return [Color(hex: "020326"), Color(hex: "06114F"), Color(hex: "0B1E6D"), Color(hex: "3B2A5A")]
-            case .sunrise: return [Color(hex: "6B7280"), Color(hex: "C084FC"), Color(hex: "FB923C"), Color(hex: "F59E0B")]
-            case .dhuhr: return [Color(hex: "E0F2FE"), Color(hex: "7DD3FC"), Color(hex: "38BDF8")]
-            case .asr: return [Color(hex: "93C5FD"), Color(hex: "FDE68A"), Color(hex: "FDBA74")]
-            case .maghrib: return [Color(hex: "6D3FA9"), Color(hex: "A855F7"), Color(hex: "F472B6"), Color(hex: "FB7185")]
-            case .isha: return [Color(hex: "000000"), Color(hex: "020617"), Color(hex: "0F172A")]
-            case .tahajjud: return [Color(hex: "000000"), Color(hex: "01030A"), Color(hex: "020617")]
+            case .fajr, .sunrise, .maghrib:
+                return .set2
+            default:
+                return .classic
             }
         }
-        
-        var glowColor: Color? {
+
+        func sky(set: SkyGradientSet) -> SkyTheme {
+            switch set {
+            case .classic:
+                return classicSetSky
+            case .set2:
+                return set2Sky
+            }
+        }
+
+        func textColor(set: SkyGradientSet) -> Color {
+            switch set {
+            case .classic:
+                switch self {
+                case .fajr, .maghrib, .isha, .tahajjud:
+                    return .white
+                default:
+                    return Color(hex: "111111")
+                }
+            case .set2:
+                switch self {
+                case .fajr, .isha, .tahajjud:
+                    return .white
+                default:
+                    return Color(hex: "111111")
+                }
+            }
+        }
+
+        func showsStars(set: SkyGradientSet) -> Bool {
+            switch set {
+            case .classic:
+                return self == .fajr || self == .isha || self == .tahajjud
+            case .set2:
+                return self == .fajr || self == .isha || self == .tahajjud
+            }
+        }
+
+        private var set2Sky: SkyTheme {
+            switch self {
+            case .fajr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "6274E7"), Color(hex: "8752A3")],
+                    gradientStops: nil,
+                    glowColor: nil,
+                    radialOverlays: []
+                )
+            case .sunrise:
+                return SkyTheme(
+                    baseColors: [
+                        Color(hex: "9FF1F2"),
+                        Color(hex: "6CD4E4"),
+                        Color(hex: "73E1EA"),
+                        Color(hex: "BDE2BD"),
+                    ],
+                    gradientStops: nil,
+                    glowColor: nil,
+                    radialOverlays: []
+                )
+            case .dhuhr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "EBF4F5"), Color(hex: "B5C6E0")],
+                    gradientStops: nil,
+                    glowColor: nil,
+                    radialOverlays: []
+                )
+            case .asr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "FBD07C"), Color(hex: "F7F779")],
+                    gradientStops: nil,
+                    glowColor: nil,
+                    radialOverlays: []
+                )
+            case .maghrib:
+                return SkyTheme(
+                    baseColors: [
+                        Color(hex: "F2D7D9"),
+                        Color(hex: "E786A7"),
+                    ],
+                    gradientStops: nil,
+                    glowColor: nil,
+                    radialOverlays: []
+                )
+            case .isha:
+                return SkyTheme(
+                    baseColors: [Color(hex: "000328"), Color(hex: "00458E")],
+                    gradientStops: nil,
+                    glowColor: nil,
+                    radialOverlays: []
+                )
+            default:
+                return classicSetSky
+            }
+        }
+
+        private var classicSetSky: SkyTheme {
+            SkyTheme(
+                baseColors: classicSkyColors,
+                gradientStops: nil,
+                glowColor: classicGlowColor,
+                radialOverlays: []
+            )
+        }
+
+        private var classicSkyColors: [Color] {
+            switch self {
+            case .fajr:
+                return [Color(hex: "020326"), Color(hex: "06114F"), Color(hex: "0B1E6D"), Color(hex: "3B2A5A")]
+            case .sunrise:
+                return [Color(hex: "6B7280"), Color(hex: "C084FC"), Color(hex: "FB923C"), Color(hex: "F59E0B")]
+            case .dhuhr:
+                return [Color(hex: "E0F2FE"), Color(hex: "7DD3FC"), Color(hex: "38BDF8")]
+            case .asr:
+                return [Color(hex: "93C5FD"), Color(hex: "FDE68A"), Color(hex: "FDBA74")]
+            case .maghrib:
+                return [Color(hex: "6D3FA9"), Color(hex: "A855F7"), Color(hex: "F472B6"), Color(hex: "FB7185")]
+            case .isha:
+                return [Color(hex: "000000"), Color(hex: "020617"), Color(hex: "0F172A")]
+            case .tahajjud:
+                return [Color(hex: "000000"), Color(hex: "01030A"), Color(hex: "020617")]
+            }
+        }
+
+        private var classicGlowColor: Color? {
             switch self {
             case .fajr: return Color(hex: "F08A4B")
             case .sunrise: return Color(hex: "FEF08A")
@@ -643,15 +904,128 @@ enum MasjidlyWidgetTheme {
             case .tahajjud: return nil
             }
         }
-        
-        var textColor: Color {
+
+        private var classicSky: SkyTheme {
+            classicSetSky
+        }
+
+        private var pastelSky: SkyTheme {
+            let mesh = MasjidlyWidgetTheme.pastelMesh(for: self)
             switch self {
-            case .fajr, .isha, .tahajjud: return .white
-            default: return Color(hex: "111111")
+            case .fajr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "DFEFF8"), Color(hex: "A2ECF7"), Color(hex: "84B3F4"), Color(hex: "AB8DD6")],
+                    gradientStops: [
+                        .init(color: Color(hex: "DFEFF8"), location: 0),
+                        .init(color: Color(hex: "A2ECF7"), location: 0.26),
+                        .init(color: Color(hex: "84B3F4"), location: 0.63),
+                        .init(color: Color(hex: "AB8DD6"), location: 1),
+                    ],
+                    glowColor: nil,
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.68, y: 0.08), color: Color(hex: "A2ECF7"), opacity: 0.45, endRadiusFraction: 0.38),
+                    ],
+                    meshBlobs: mesh.blobs,
+                    meshBaseColor: mesh.base
+                )
+            case .sunrise:
+                return SkyTheme(
+                    baseColors: [Color(hex: "F7D7C4"), Color(hex: "F9BFA4"), Color(hex: "F6A6B8"), Color(hex: "A8D8F0")],
+                    gradientStops: [
+                        .init(color: Color(hex: "F7D7C4"), location: 0),
+                        .init(color: Color(hex: "F9BFA4"), location: 0.28),
+                        .init(color: Color(hex: "F6A6B8"), location: 0.62),
+                        .init(color: Color(hex: "A8D8F0"), location: 1),
+                    ],
+                    glowColor: nil,
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.50, y: 0.12), color: Color(hex: "FFE6B4"), opacity: 0.50, endRadiusFraction: 0.32),
+                        SkyRadialOverlay(center: UnitPoint(x: 0.22, y: 0.85), color: Color(hex: "A8D8F0"), opacity: 0.42, endRadiusFraction: 0.40),
+                    ],
+                    meshBlobs: mesh.blobs,
+                    meshBaseColor: mesh.base
+                )
+            case .dhuhr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "D6EFFA"), Color(hex: "DCEFFC"), Color(hex: "7CB5F0"), Color(hex: "62B1E0")],
+                    gradientStops: [
+                        .init(color: Color(hex: "D6EFFA"), location: 0),
+                        .init(color: Color(hex: "DCEFFC"), location: 0.22),
+                        .init(color: Color(hex: "7CB5F0"), location: 0.65),
+                        .init(color: Color(hex: "62B1E0"), location: 1),
+                    ],
+                    glowColor: nil,
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.58, y: 0.05), color: Color(hex: "DCEFFC"), opacity: 0.45, endRadiusFraction: 0.38),
+                    ],
+                    meshBlobs: mesh.blobs,
+                    meshBaseColor: mesh.base
+                )
+            case .asr:
+                return SkyTheme(
+                    baseColors: [Color(hex: "9FF1F2"), Color(hex: "6CD4E4"), Color(hex: "73E1EA"), Color(hex: "BDE2BD")],
+                    gradientStops: [
+                        .init(color: Color(hex: "9FF1F2"), location: 0),
+                        .init(color: Color(hex: "6CD4E4"), location: 0.32),
+                        .init(color: Color(hex: "73E1EA"), location: 0.62),
+                        .init(color: Color(hex: "BDE2BD"), location: 1),
+                    ],
+                    glowColor: nil,
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.18, y: 0.06), color: Color(hex: "9FF1F2"), opacity: 0.50, endRadiusFraction: 0.36),
+                        SkyRadialOverlay(center: UnitPoint(x: 0.45, y: 0.88), color: Color(hex: "BDE2BD"), opacity: 0.45, endRadiusFraction: 0.42),
+                    ],
+                    meshBlobs: mesh.blobs,
+                    meshBaseColor: mesh.base
+                )
+            case .maghrib:
+                return SkyTheme(
+                    baseColors: [Color(hex: "F2D7D9"), Color(hex: "E786A7")],
+                    gradientStops: [
+                        .init(color: Color(hex: "F2D7D9"), location: 0),
+                        .init(color: Color(hex: "E786A7"), location: 1),
+                    ],
+                    glowColor: nil,
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.18, y: 0.04), color: Color(hex: "F2D7D9"), opacity: 0.48, endRadiusFraction: 0.38),
+                    ],
+                    meshBlobs: mesh.blobs,
+                    meshBaseColor: mesh.base
+                )
+            case .isha:
+                return SkyTheme(
+                    baseColors: [Color(hex: "1D1939"), Color(hex: "1B122F"), Color(hex: "221A2E"), Color(hex: "050409")],
+                    gradientStops: [
+                        .init(color: Color(hex: "1D1939"), location: 0),
+                        .init(color: Color(hex: "1B122F"), location: 0.34),
+                        .init(color: Color(hex: "221A2E"), location: 0.68),
+                        .init(color: Color(hex: "050409"), location: 1),
+                    ],
+                    glowColor: nil,
+                    radialOverlays: [
+                        SkyRadialOverlay(center: UnitPoint(x: 0.55, y: 0.35), color: Color(hex: "221A2E"), opacity: 0.55, endRadiusFraction: 0.45),
+                    ],
+                    meshBlobs: mesh.blobs,
+                    meshBaseColor: mesh.base
+                )
+            case .tahajjud:
+                return classicSetSky
             }
         }
     }
-    
+
+    static func resolvedGradientSet(for prayerId: String) -> SkyGradientSet {
+        let resolvedTheme = resolvedTheme(for: prayerId)
+        guard let defaults = UserDefaults(suiteName: MasjidlyWidgetSharedConfig.appGroupIdentifier),
+              let data = defaults.data(forKey: MasjidlyWidgetSharedConfig.prayerGradientStylesKey),
+              let styles = try? JSONDecoder().decode([String: String].self, from: data),
+              let raw = styles[resolvedTheme.rawValue],
+              let set = SkyGradientSet(rawValue: raw) else {
+            return resolvedTheme.defaultGradientSet()
+        }
+        return set
+    }
+
     static func resolvedTheme(for prayerId: String) -> TimeTheme {
         guard let defaults = UserDefaults(suiteName: MasjidlyWidgetSharedConfig.appGroupIdentifier) else {
             return theme(for: prayerId)

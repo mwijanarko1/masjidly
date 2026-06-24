@@ -10,6 +10,7 @@ private enum QiblaPrayerIconLayout {
 /// When `showCountdown` is true, the center crossfades to countdown text and the ring shows `countdownProgress`; the Qibla pointer still follows `rotationDegrees`.
 struct QiblaPrayerIcon: View {
     let theme: HomeDesign.TimeTheme
+    var iconColor: Color? = nil
     /// When non-nil, triangle rotates with device heading toward Qibla (symbolic mode only).
     var rotationDegrees: Double?
     var size: CGFloat = 120
@@ -24,7 +25,7 @@ struct QiblaPrayerIcon: View {
 
     private var scale: CGFloat { size / QiblaPrayerIconLayout.frameRef }
 
-    private var color: Color { theme.iconColor }
+    private var color: Color { iconColor ?? theme.iconColor }
 
     private var outerRingOpacity: Double { showCountdown ? 0.42 : 0.24 }
 
@@ -54,7 +55,7 @@ struct QiblaPrayerIcon: View {
                 .frame(width: 106 * scale, height: 106 * scale)
 
             ZStack {
-                PrayerSunPhaseIcon(theme: theme)
+                PrayerSunPhaseIcon(theme: theme, iconColor: color)
                     .scaleEffect(scale)
                     .offset(sunPhaseContentOffset)
                     .accessibilityHidden(true)

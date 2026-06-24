@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.LocaleStrings
 import com.mikhailspeaks.masjidly.ui.home.MasjidlyColors
-import com.mikhailspeaks.masjidly.ui.home.TimeTheme
+import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.onboarding.OnboardingTutorialChrome
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
@@ -48,7 +48,7 @@ import kotlin.math.roundToInt
 /** Bottom chrome for in-app adhan playback — mirrors iOS `AdhanMiniPlayerBar`. */
 @Composable
 fun AdhanMiniPlayerBar(
-    timeTheme: TimeTheme,
+    appearance: ResolvedTheme,
     language: AppLanguage,
     modifier: Modifier = Modifier,
 ) {
@@ -61,7 +61,7 @@ fun AdhanMiniPlayerBar(
         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
     ) {
         OnboardingTutorialChrome.Card(
-            timeTheme = timeTheme,
+            appearance = appearance,
             modifier = Modifier
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 12.dp),
@@ -74,7 +74,7 @@ fun AdhanMiniPlayerBar(
             ) {
                 AdhanProgressTrack(
                     fraction = playback.playbackFraction.toFloat(),
-                    textColor = timeTheme.textColor,
+                    textColor = appearance.textColor,
                     language = language,
                 )
 
@@ -90,7 +90,7 @@ fun AdhanMiniPlayerBar(
                         Text(
                             text = LocaleStrings.t("notification.channel.adhan", language),
                             style = rememberAppTextStyle(19f, FontWeight.SemiBold),
-                            color = timeTheme.textColor,
+                            color = appearance.textColor,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -101,7 +101,7 @@ fun AdhanMiniPlayerBar(
                                 language = language,
                             ),
                             style = rememberAppTextStyle(14f, FontWeight.Normal),
-                            color = timeTheme.textColor.copy(alpha = 0.82f),
+                            color = appearance.textColor.copy(alpha = 0.82f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -148,7 +148,7 @@ fun AdhanMiniPlayerBar(
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = null,
-                            tint = timeTheme.textColor.copy(alpha = 0.55f),
+                            tint = appearance.textColor.copy(alpha = 0.55f),
                             modifier = Modifier.size(14.dp),
                         )
                     }

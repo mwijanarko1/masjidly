@@ -43,7 +43,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,9 +87,14 @@ import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingStep
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermissions
 import com.mikhailspeaks.masjidly.features.onboarding.SettingsOnboardingOverlay
+import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
+import com.mikhailspeaks.masjidly.ui.home.SkyGradientSet
 import com.mikhailspeaks.masjidly.ui.home.ThemeMode
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
+import com.mikhailspeaks.masjidly.widget.updateAllMasjidlyWidgets
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import android.content.pm.PackageManager
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -107,6 +112,7 @@ fun SettingsScreen(
     val onboardingState by onboardingViewModel.uiState.collectAsState()
     val settingsRevision by settingsStore.revision.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val mosques = homeState.mosques
 
     @Suppress("UNUSED_VARIABLE")
@@ -401,6 +407,15 @@ fun SettingsScreen(
                             settingsStore.fixedTheme = TimeTheme.fromWire(key)
                         }
                     }
+                    SettingsDivider(theme)
+                    SkyGradientSettingsSection(
+                        language = language,
+                        theme = theme,
+                        settingsStore = settingsStore,
+                        onGradientChanged = {
+                            scope.launch { updateAllMasjidlyWidgets(context) }
+                        },
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -582,7 +597,7 @@ private fun NotificationSettingsSection(
     settingsStore: SettingsStore,
     settingsViewModel: SettingsViewModel,
     language: AppLanguage,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
 ) {
     val context = LocalContext.current
     var notifications by remember(settingsStore.revision.collectAsState().value) {
@@ -704,7 +719,7 @@ private fun NotificationGroupRow(
     expanded: Boolean,
     enabled: Boolean,
     language: AppLanguage,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onExpand: () -> Unit,
     onToggle: (Boolean) -> Unit,
     content: @Composable () -> Unit,
@@ -759,7 +774,7 @@ private fun ReminderPickerRow(
     label: String,
     selected: Int?,
     language: AppLanguage,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onSelect: (Int?) -> Unit,
 ) {
     val options = listOf(
@@ -777,7 +792,7 @@ private fun ReminderPickerRow(
 @Composable
 private fun IosSettingsSwitch(
     checked: Boolean,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val thumbOffset by animateDpAsState(
@@ -806,7 +821,7 @@ private fun IosSettingsSwitch(
 }
 
 @Composable
-private fun SettingsToggleRow(label: String, checked: Boolean, theme: TimeTheme, onCheckedChange: (Boolean) -> Unit) {
+private fun SettingsToggleRow(label: String, checked: Boolean, theme: ResolvedTheme, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -830,7 +845,7 @@ private fun PickerRow(
     options: List<Pair<String, String>>,
     selectedKey: String,
     language: AppLanguage,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onSelect: (String) -> Unit,
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
@@ -864,7 +879,7 @@ private fun MosquePickerRow(
     mosques: List<Mosque>,
     selectedId: String,
     language: AppLanguage,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onSelect: (Mosque) -> Unit,
 ) {
     var sheetOpen by remember { mutableStateOf(false) }
@@ -901,7 +916,7 @@ private fun MosquePickerRow(
 private fun ClosestMosqueRow(
     mosque: Mosque,
     language: AppLanguage,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onSelect: (Mosque) -> Unit,
 ) {
     Column(
@@ -940,7 +955,7 @@ private fun ClosestMosqueRow(
 @Composable
 private fun SettingsPlainSection(
     title: String,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     SettingsSectionTitle(title, theme)
@@ -948,7 +963,7 @@ private fun SettingsPlainSection(
 }
 
 @Composable
-private fun InsetActionButton(label: String, theme: TimeTheme, onClick: () -> Unit) {
+private fun InsetActionButton(label: String, theme: ResolvedTheme, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -970,7 +985,7 @@ private fun InsetActionButton(label: String, theme: TimeTheme, onClick: () -> Un
 private fun DevNotificationButton(
     title: String,
     subtitle: String,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onClick: () -> Unit,
 ) {
     Box(
@@ -1003,7 +1018,7 @@ private fun DevNotificationButton(
 }
 
 @Composable
-private fun LocationRecoveryButton(label: String, theme: TimeTheme, onClick: () -> Unit) {
+private fun LocationRecoveryButton(label: String, theme: ResolvedTheme, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -1031,12 +1046,100 @@ private fun prayerThemeLabel(theme: TimeTheme, language: AppLanguage): String = 
     TimeTheme.TAHAJJUD -> PrayerLocalization.displayName("Tahajjud", language)
 }
 
+@Composable
+private fun SkyGradientSettingsSection(
+    language: AppLanguage,
+    theme: ResolvedTheme,
+    settingsStore: SettingsStore,
+    onGradientChanged: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    CollapsibleSettingsSubsection(
+        title = LocaleStrings.t("settings.theme.gradient.section_title", language),
+        expanded = expanded,
+        theme = theme,
+        language = language,
+        onToggle = { expanded = !expanded },
+    ) {
+        TimeTheme.configurableGradientThemes.forEachIndexed { index, prayerTheme ->
+            if (index > 0) SettingsDivider(theme)
+            val label = LocaleStrings.format(
+                "settings.theme.gradient.prayer_format",
+                language,
+                prayerThemeLabel(prayerTheme, language),
+            )
+            PickerRow(
+                label = label,
+                options = SkyGradientSet.entries.map { set ->
+                    set.wireValue to skyGradientSetLabel(set, language)
+                },
+                selectedKey = settingsStore.skyGradientSet(for = prayerTheme).wireValue,
+                language = language,
+                theme = theme,
+            ) { key ->
+                SkyGradientSet.fromWire(key)?.let { set ->
+                    settingsStore.setSkyGradientSet(set, for = prayerTheme)
+                    onGradientChanged()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CollapsibleSettingsSubsection(
+    title: String,
+    expanded: Boolean,
+    theme: ResolvedTheme,
+    language: AppLanguage,
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+                .heightIn(min = 44.dp)
+                .hapticClickable(onClick = onToggle),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = if (expanded) {
+                    LocaleStrings.t("accessibility.collapse", language)
+                } else {
+                    LocaleStrings.t("accessibility.expand", language)
+                },
+                tint = theme.textColor,
+                modifier = Modifier
+                    .size(18.dp)
+                    .rotate(if (expanded) 90f else 0f),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                title,
+                color = theme.textColor,
+                style = rememberAppTextStyle(17f),
+            )
+        }
+        if (expanded) {
+            Column(modifier = Modifier.padding(start = 26.dp), content = content)
+        }
+    }
+}
+
+private fun skyGradientSetLabel(set: SkyGradientSet, language: AppLanguage): String = when (set) {
+    SkyGradientSet.CLASSIC -> LocaleStrings.t("settings.theme.gradient.classic", language)
+    SkyGradientSet.SET2 -> LocaleStrings.t("settings.theme.gradient.set2", language)
+}
+
 private fun showDevToast(context: android.content.Context, message: String) {
     android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
 }
 
 @Composable
-private fun SettingsSectionTitle(title: String, theme: TimeTheme) {
+private fun SettingsSectionTitle(title: String, theme: ResolvedTheme) {
     Text(
         text = title.uppercase(),
         style = rememberAppTextStyle(13f, FontWeight.SemiBold),
@@ -1047,7 +1150,7 @@ private fun SettingsSectionTitle(title: String, theme: TimeTheme) {
 }
 
 @Composable
-private fun SettingsDivider(theme: TimeTheme) {
+private fun SettingsDivider(theme: ResolvedTheme) {
     Box(
         modifier = Modifier
             .fillMaxWidth()

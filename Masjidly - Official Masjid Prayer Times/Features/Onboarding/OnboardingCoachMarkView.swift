@@ -5,6 +5,8 @@ struct OnboardingCoachMarkView: View {
     let message: String
     /// Matches home / sheet sky so type and glass read as one Masjidly surface (not generic gray Material).
     let timeTheme: HomeDesign.TimeTheme
+    /// When set (e.g. settings sheet with pastel/classic gradient), overrides classic-only `timeTheme` colors.
+    let appearance: HomeDesign.ResolvedTheme?
     /// Positions the hint card away from the controls users must tap.
     let variant: Variant
     /// When set with `onPrimaryButton`, the dimmed backdrop absorbs stray taps so only the card (and its button) advances the flow.
@@ -36,6 +38,7 @@ struct OnboardingCoachMarkView: View {
         title: String,
         message: String,
         timeTheme: HomeDesign.TimeTheme,
+        appearance: HomeDesign.ResolvedTheme? = nil,
         variant: Variant,
         primaryButtonTitle: String? = nil,
         onPrimaryButton: (() -> Void)? = nil,
@@ -48,6 +51,7 @@ struct OnboardingCoachMarkView: View {
         self.title = title
         self.message = message
         self.timeTheme = timeTheme
+        self.appearance = appearance
         self.variant = variant
         self.primaryButtonTitle = primaryButtonTitle
         self.onPrimaryButton = onPrimaryButton
@@ -56,6 +60,14 @@ struct OnboardingCoachMarkView: View {
         self.secondaryButtonTitle = secondaryButtonTitle
         self.onSecondaryButton = onSecondaryButton
         self.secondaryButtonAccessibilityIdentifier = secondaryButtonAccessibilityIdentifier
+    }
+
+    private var textColor: Color {
+        appearance?.textColor ?? timeTheme.textColor
+    }
+
+    private var usesLightForeground: Bool {
+        appearance?.usesLightForeground ?? timeTheme.usesLightForeground
     }
 
     private var showsDimmingBackdrop: Bool {
@@ -89,7 +101,7 @@ struct OnboardingCoachMarkView: View {
 
                     ZStack {
                         if showsDimmingBackdrop {
-                            Color.black.opacity(timeTheme.usesLightForeground ? 0.12 : 0.08)
+                            Color.black.opacity(usesLightForeground ? 0.12 : 0.08)
                                 .ignoresSafeArea()
                                 .accessibilityHidden(true)
                                 .allowsHitTesting(blocksBackground)
@@ -145,62 +157,75 @@ struct OnboardingCoachMarkView: View {
 
     @ViewBuilder
     private var hintCard: some View {
-        OnboardingTutorialChrome.card(timeTheme: timeTheme) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(title)
-                    .appFont(size: 19, weight: .semibold)
-                    .foregroundStyle(timeTheme.textColor)
-                    .kerning(-0.2)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(message)
-                    .appFont(size: 16, weight: .regular)
-                    .foregroundStyle(timeTheme.textColor.opacity(0.82))
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if let primaryButtonTitle, let onPrimaryButton {
-                    Button(action: onPrimaryButton) {
-                        Text(primaryButtonTitle)
-                            .onboardingPrimaryCapsule()
-                    }
-                    .buttonStyle(.hapticPlain)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 6)
-                    .accessibilityIdentifier(primaryButtonAccessibilityIdentifier ?? "Onboarding.CoachContinue")
-
-                    if let secondaryButtonTitle, let onSecondaryButton {
-                        Button(action: onSecondaryButton) {
-                            Text(secondaryButtonTitle)
-                                .appFont(size: 15, weight: .regular)
-                                .foregroundColor(timeTheme.textColor.opacity(0.7))
-                                .underline(true, color: timeTheme.textColor.opacity(0.3))
-                                .frame(maxWidth: .infinity, alignment: .center)
-                        }
-                        .buttonStyle(.hapticPlain)
-                        .padding(.top, 4)
-                        .accessibilityIdentifier(secondaryButtonAccessibilityIdentifier ?? "Onboarding.CoachSecondary")
-                    }
+        Group {
+            if let appearance {
+                OnboardingTutorialChrome.card(appearance: appearance) {
+                    hintCardContent
+                }
+            } else {
+                OnboardingTutorialChrome.card(timeTheme: timeTheme) {
+                    hintCardContent
                 }
             }
-            .frame(maxWidth: 360, alignment: .leading)
-            .padding(24)
         }
+    }
+
+    @ViewBuilder
+    private var hintCardContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .appFont(size: 19, weight: .semibold)
+                .foregroundStyle(textColor)
+                .kerning(-0.2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(message)
+                .appFont(size: 16, weight: .regular)
+                .foregroundStyle(textColor.opacity(0.82))
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let primaryButtonTitle, let onPrimaryButton {
+                Button(action: onPrimaryButton) {
+                    Text(primaryButtonTitle)
+                        .onboardingPrimaryCapsule()
+                }
+                .buttonStyle(.hapticPlain)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 6)
+                .accessibilityIdentifier(primaryButtonAccessibilityIdentifier ?? "Onboarding.CoachContinue")
+
+                if let secondaryButtonTitle, let onSecondaryButton {
+                    Button(action: onSecondaryButton) {
+                        Text(secondaryButtonTitle)
+                            .appFont(size: 15, weight: .regular)
+                            .foregroundColor(textColor.opacity(0.7))
+                            .underline(true, color: textColor.opacity(0.3))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    .buttonStyle(.hapticPlain)
+                    .padding(.top, 4)
+                    .accessibilityIdentifier(secondaryButtonAccessibilityIdentifier ?? "Onboarding.CoachSecondary")
+                }
+            }
+        }
+        .frame(maxWidth: 360, alignment: .leading)
+        .padding(24)
     }
 }
 
 struct OnboardingHighlightModifier: ViewModifier {
     let isHighlighted: Bool
-    let timeTheme: HomeDesign.TimeTheme
+    let textColor: Color
 
     func body(content: Content) -> some View {
         content
             .overlay {
                 if isHighlighted {
                     Capsule()
-                        .stroke(timeTheme.textColor.opacity(0.8), lineWidth: 1.5)
+                        .stroke(textColor.opacity(0.8), lineWidth: 1.5)
                         .padding(-6)
-                        .shadow(color: timeTheme.textColor.opacity(0.3), radius: 8)
+                        .shadow(color: textColor.opacity(0.3), radius: 8)
                         .allowsHitTesting(false)
                 }
             }
@@ -211,6 +236,10 @@ struct OnboardingHighlightModifier: ViewModifier {
 
 extension View {
     func onboardingHighlight(_ isHighlighted: Bool, timeTheme: HomeDesign.TimeTheme) -> some View {
-        modifier(OnboardingHighlightModifier(isHighlighted: isHighlighted, timeTheme: timeTheme))
+        modifier(OnboardingHighlightModifier(isHighlighted: isHighlighted, textColor: timeTheme.textColor))
+    }
+
+    func onboardingHighlight(_ isHighlighted: Bool, appearance: HomeDesign.ResolvedTheme) -> some View {
+        modifier(OnboardingHighlightModifier(isHighlighted: isHighlighted, textColor: appearance.textColor))
     }
 }

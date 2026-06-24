@@ -169,7 +169,7 @@ fun MasjidlyApp(
                             .navigationBarsPadding(),
                     ) {
                         AdhanMiniPlayerBar(
-                            timeTheme = theme,
+                            appearance = theme,
                             language = settingsStore.appLanguage,
                         )
                     }

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.ui.home.MasjidlyColors
+import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import com.mikhailspeaks.masjidly.ui.onboarding.OnboardingPrimaryCapsule
@@ -45,7 +46,7 @@ import java.util.Locale
  */
 @Composable
 fun WhatsNewOverlay(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     onDismiss: () -> Unit,
 ) {
@@ -61,7 +62,7 @@ fun WhatsNewOverlay(
             WhatsNewBackdrop(theme = theme, onDismiss = onDismiss)
 
             OnboardingTutorialChrome.Card(
-                timeTheme = theme,
+                appearance = theme,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(horizontal = 24.dp)
@@ -82,7 +83,7 @@ fun WhatsNewOverlay(
 
 @Composable
 private fun WhatsNewBackdrop(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onDismiss: () -> Unit,
 ) {
     Box(
@@ -128,7 +129,7 @@ private fun WhatsNewModalContent(
     version: String,
     items: List<WhatsNewItem>,
     copy: WhatsNewModalCopy,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onDismiss: () -> Unit,
 ) {
     val shouldScrollItems = items.size > 3
