@@ -44,6 +44,6 @@ private fun skyDrawableFor(theme: TimeTheme): Int = when (theme) {
 
 internal fun widgetContentPadding(family: MasjidlyWidgetFamily) = when (family) {
     MasjidlyWidgetFamily.SMALL -> 12.dp
-    MasjidlyWidgetFamily.MEDIUM -> 12.dp
+    MasjidlyWidgetFamily.MEDIUM -> 8.dp
     MasjidlyWidgetFamily.LARGE -> 14.dp
 }

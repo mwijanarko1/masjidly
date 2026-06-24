@@ -29,7 +29,7 @@ abstract class MasjidlyPrayerWidget(
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
             val snapshot = WidgetSnapshotStore(context).readSnapshot()
-            val includeTomorrowFajr = family == MasjidlyWidgetFamily.SMALL
+            val includeTomorrowFajr = family != MasjidlyWidgetFamily.LARGE
             val state = snapshot?.let {
                 WidgetResolver.resolve(
                     snapshot = it,
