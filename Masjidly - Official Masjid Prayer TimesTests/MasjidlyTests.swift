@@ -162,6 +162,12 @@ struct PrayerEngineTests {
         #expect(PrayerTimesEngine.formatHeroCountdownClock(totalSeconds: 545) == "-9:05")
         #expect(PrayerTimesEngine.formatHeroCountdownClock(totalSeconds: 0) == "-0:00")
     }
+
+    @Test func duhaWindowFifteenMinutesAfterSunriseUntilBeforeDhuhr() {
+        let window = PrayerTimesEngine.duhaWindow(sunrise: "05:00", dhuhr: "13:00")
+        #expect(window?.start == "05:15")
+        #expect(window?.end == "12:45")
+    }
 }
 
 @Suite("Qibla direction")
@@ -246,8 +252,17 @@ struct SettingsStoreTests {
         #expect(SettingsStore(defaults: defaults).hasCompletedOnboarding == true)
     }
 
+    @Test func defaultGradientSetsMatchProduct() {
+        #expect(HomeDesign.TimeTheme.fajr.defaultGradientSet() == .set2)
+        #expect(HomeDesign.TimeTheme.sunrise.defaultGradientSet() == .set2)
+        #expect(HomeDesign.TimeTheme.dhuhr.defaultGradientSet() == .classic)
+        #expect(HomeDesign.TimeTheme.asr.defaultGradientSet() == .set2)
+        #expect(HomeDesign.TimeTheme.maghrib.defaultGradientSet() == .set2)
+        #expect(HomeDesign.TimeTheme.isha.defaultGradientSet() == .set2)
+    }
+
     @Test func assignedSkyMatchesProductRules() {
-        #expect(HomeDesign.TimeTheme.fajr.sky(set: .set2).baseColors.first == Color(hex: "6274E7"))
+        #expect(HomeDesign.TimeTheme.fajr.sky(set: .set2).baseColors.first == Color(hex: "103783"))
         #expect(HomeDesign.TimeTheme.fajr.sky(set: .classic).baseColors.first == Color(hex: "020326"))
         #expect(HomeDesign.TimeTheme.sunrise.sky(set: .set2).usesMeshComposition == false)
         #expect(HomeDesign.TimeTheme.maghrib.sky(set: .set2).usesMeshComposition == false)
@@ -268,6 +283,28 @@ struct SettingsStoreTests {
         #expect(reloaded.skyGradientSet(for: .fajr) == .classic)
         #expect(reloaded.skyGradientSet(for: .maghrib) == .set2)
         #expect(reloaded.resolvedAppearance(for: .fajr).textColor == .white)
+    }
+
+    @Test @MainActor func customGradientColorsPersistAndResolveAppearance() {
+        let defaults = UserDefaults(suiteName: "SettingsStoreTests.customGradientColorsPersistAndResolveAppearance")!
+        defaults.removePersistentDomain(forName: "SettingsStoreTests.customGradientColorsPersistAndResolveAppearance")
+
+        let store = SettingsStore(defaults: defaults)
+        store.setSkyGradientSet(.custom, for: .dhuhr)
+        store.setCustomGradientColors(
+            HomeDesign.CustomSkyGradientColors(topHex: "103783", bottomHex: "8752A3"),
+            for: .dhuhr
+        )
+
+        let appearance = store.resolvedAppearance(for: .dhuhr)
+        #expect(appearance.gradientSet == .custom)
+        #expect(appearance.sky.baseColors.first == Color(hex: "103783"))
+        #expect(appearance.sky.baseColors.last == Color(hex: "8752A3"))
+        #expect(appearance.textColor == .white)
+
+        let reloaded = SettingsStore(defaults: defaults)
+        #expect(reloaded.skyGradientSet(for: .dhuhr) == .custom)
+        #expect(reloaded.customGradientColors(for: .dhuhr).topHex == "103783")
     }
 
     @Test func notificationSettingsDecodesLegacyJSONWithChannelDefaults() throws {

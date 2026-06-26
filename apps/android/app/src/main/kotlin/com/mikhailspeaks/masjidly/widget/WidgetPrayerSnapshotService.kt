@@ -169,7 +169,3 @@ class WidgetPrayerSnapshotService(
         jummah = jummah,
     )
 }
-
-private suspend fun updateAllMasjidlyWidgets(context: Context) {
-    com.mikhailspeaks.masjidly.widget.updateAllMasjidlyWidgets(context)
-}

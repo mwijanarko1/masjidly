@@ -64,6 +64,7 @@ enum MasjidlyWidgetSharedConfig {
     static let themeModeKey = "widgetThemeMode"
     static let fixedThemeKey = "widgetFixedTheme"
     static let prayerGradientStylesKey = "widgetPrayerGradientStyles"
+    static let prayerCustomGradientColorsKey = "widgetPrayerCustomGradientColors"
 }
 
 struct MasjidlyWidgetMosqueSnapshot: Codable, Equatable, Sendable {

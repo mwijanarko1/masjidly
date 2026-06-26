@@ -248,6 +248,13 @@ enum PrayerTimesEngine {
         return String(format: "%02d:%02d", h, m)
     }
 
+    /// Duha begins 15 minutes after sunrise and ends 15 minutes before Dhuhr.
+    static func duhaWindow(sunrise: String, dhuhr: String) -> (start: String, end: String)? {
+        guard let start = addMinutesToTime(sunrise, minutesToAdd: 15),
+              let end = addMinutesToTime(dhuhr, minutesToAdd: -15) else { return nil }
+        return (start, end)
+    }
+
     private static func resolveRelativeIqamah(_ iqamahValue: String, adhanTime: String) -> String {
         let value = iqamahValue.trimmingCharacters(in: .whitespacesAndNewlines)
         if let r = try? NSRegularExpression(pattern: #"^adhan\s*\+\s*(\d+)\s*(?:mins?|minutes?)?$"#, options: .caseInsensitive),

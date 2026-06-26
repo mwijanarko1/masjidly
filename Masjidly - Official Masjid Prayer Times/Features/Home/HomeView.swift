@@ -19,6 +19,8 @@ struct HomeView: View {
     @State private var showingSettings = false
     @State private var showingTimetable = false
     @State private var showingWhatsNew = false
+    @State private var showingDatePicker = false
+    @State private var datePickerSelection = Date()
     @State private var showUpdateAlert = false
     @State private var showReviewFeedbackPrompt = false
     @State private var pendingRelease: MasjidlyRelease?
@@ -52,6 +54,7 @@ struct HomeView: View {
         AnyView(homeNotificationChrome)
             .fullScreenCover(isPresented: $showingTimetable, content: timetableFullScreenView)
             .fullScreenCover(isPresented: $showingSettings, content: settingsFullScreenView)
+            .sheet(isPresented: $showingDatePicker, content: datePickerSheet)
             .enjoymentReviewAlert(
                 title: homeLS("review.enjoyment.title", locale: locale),
                 message: homeLS("review.enjoyment.message", locale: locale),
@@ -224,40 +227,60 @@ struct HomeView: View {
 
                 if let d = model.displayedPrayerTimes {
                     homePrayerPage(for: d)
-                } else if shouldShowMissingCurrentMonthTimes {
-                    missingCurrentMonthTimesView(metrics: metrics)
-                } else if model.loadState == .loading || model.loadState == .idle {
+                } else if model.isLoadingDisplayedDate || model.loadState == .loading || model.loadState == .idle {
                     ProgressView()
                         .tint(currentAppearance.textColor)
+                } else if shouldShowMissingCurrentMonthTimes {
+                    missingCurrentMonthTimesView(metrics: metrics)
                 } else {
                     loadErrorRecoveryView(metrics: metrics)
                 }
 
-                VStack {
-                    HStack(alignment: .center) {
-                        calendarButton
-                            .padding(.leading, metrics.leadingChromeInset)
+                VStack(spacing: 0) {
+                    ZStack {
+                        HStack(alignment: .center) {
+                            calendarButton
+                                .padding(.leading, metrics.leadingChromeInset)
 
-                        Spacer()
+                            Spacer(minLength: 0)
+
+                            settingsButton
+                                .padding(.trailing, metrics.trailingChromeInset)
+                        }
 
                         dateDisplay
-
-                        Spacer()
-
-                        settingsButton
-                            .padding(.trailing, metrics.trailingChromeInset)
                     }
                     .padding(.top, metrics.topChromeInset)
-                    Spacer()
+
+                    Spacer(minLength: 0)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
                 onboardingOverlay
             }
+            .contentShape(Rectangle())
+            .simultaneousGesture(homeDaySwipeGesture)
         )
     }
 
+    private var homeDaySwipeGesture: some Gesture {
+        DragGesture(minimumDistance: 28, coordinateSpace: .local)
+            .onEnded { value in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+                guard abs(horizontal) > abs(vertical), abs(horizontal) > 56 else { return }
+                if horizontal > 0 {
+                    model.goToPreviousDay()
+                } else {
+                    model.goToNextDay()
+                }
+            }
+    }
+
     private var shouldShowMissingCurrentMonthTimes: Bool {
-        model.selectedMosque != nil && (model.loadState == .loaded || model.loadState == .empty)
+        model.selectedMosque != nil
+            && !model.isLoadingDisplayedDate
+            && (model.loadState == .loaded || model.loadState == .empty)
     }
 
     private func loadErrorRecoveryView(metrics: HomeViewportMetrics) -> some View {
@@ -379,15 +402,24 @@ struct HomeView: View {
             }
             return heroParts.clock
         }()
-        let iqSubtitle = prayer.canonical == "Jummah"
-            ? secondJummahSubtitleLine(raw: model.iqamahTimes?.jummah)
-            : iqamahSubtitleLine(
-                prayerName: prayer.canonical,
-                adhanRaw: prayer.time,
-                daily: daily,
-                iq: model.iqamahTimes,
-                mosqueSlug: slug
-            )
+        let iqSubtitle: String? = {
+            switch prayer.canonical {
+            case "Sunrise":
+                return duhaSubtitleLine(daily: daily)
+            case "Jummah":
+                guard settings.showIqamahTime else { return nil }
+                return secondJummahSubtitleLine(raw: model.iqamahTimes?.jummah)
+            default:
+                guard settings.showIqamahTime else { return nil }
+                return iqamahSubtitleLine(
+                    prayerName: prayer.canonical,
+                    adhanRaw: prayer.time,
+                    daily: daily,
+                    iq: model.iqamahTimes,
+                    mosqueSlug: slug
+                )
+            }
+        }()
         let displayName = PrayerLocalization.displayName(canonicalEnglish: prayer.canonical, locale: locale)
         let labels = prayers.map { PrayerLocalization.displayName(canonicalEnglish: $0.canonical, locale: locale) }
 
@@ -557,6 +589,8 @@ struct HomeView: View {
             .animation(.easeInOut(duration: 0.8), value: settings.fixedTheme)
             .animation(.easeInOut(duration: 0.8), value: settings.themeMode)
             .animation(.easeInOut(duration: 0.8), value: settings.skyGradientSet(for: currentTheme).rawValue)
+            .animation(.easeInOut(duration: 0.8), value: settings.customGradientColors(for: currentTheme).topHex)
+            .animation(.easeInOut(duration: 0.8), value: settings.customGradientColors(for: currentTheme).bottomHex)
             .ignoresSafeArea()
     }
 
@@ -729,39 +763,100 @@ struct HomeView: View {
     }
 
     private var dateDisplay: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
+            dateNavStepButton(
+                systemName: "chevron.left",
+                accessibilityKey: "accessibility.previous_day",
+                action: model.goToPreviousDay
+            )
+
             Button {
-                model.goToPreviousDay()
+                datePickerSelection = model.displayedDate
+                showingDatePicker = true
             } label: {
-                Image(systemName: "chevron.left")
-                    .appFont(size: 13, weight: .semibold)
-                    .foregroundColor(currentAppearance.textColor.opacity(0.5))
-                    .frame(width: 32, height: 32)
+                VStack(alignment: .center, spacing: 2) {
+                    Text(dateString(for: model.displayedDate))
+                        .appFont(size: 13, weight: .semibold)
+                        .foregroundColor(currentAppearance.textColor.opacity(0.88))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+
+                    Text(hijriDateString(for: model.displayedDate))
+                        .appFont(size: 10, weight: .medium)
+                        .foregroundColor(currentAppearance.textColor.opacity(0.55))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.18))
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .strokeBorder(currentAppearance.textColor.opacity(0.12), lineWidth: 0.5)
+                )
             }
             .buttonStyle(.hapticPlain)
-            
-            VStack(alignment: .center, spacing: 2) {
-                Text(dateString(for: model.displayedDate).uppercased())
-                    .appFont(size: 13, weight: .semibold)
-                    .kerning(1.0)
-                    .foregroundColor(currentAppearance.textColor.opacity(0.6))
-                
-                Text(hijriDateString(for: model.displayedDate).uppercased())
-                    .appFont(size: 10, weight: .medium)
-                    .kerning(0.8)
-                    .foregroundColor(currentAppearance.textColor.opacity(0.4))
-            }
-            
-            Button {
-                model.goToNextDay()
-            } label: {
-                Image(systemName: "chevron.right")
-                    .appFont(size: 13, weight: .semibold)
-                    .foregroundColor(currentAppearance.textColor.opacity(0.5))
-                    .frame(width: 32, height: 32)
-            }
-            .buttonStyle(.hapticPlain)
+            .accessibilityLabel(Text(homeLS("accessibility.pick_date", locale: locale)))
+            .accessibilityHint(Text(homeLS("accessibility.pick_date_hint", locale: locale)))
+
+            dateNavStepButton(
+                systemName: "chevron.right",
+                accessibilityKey: "accessibility.next_day",
+                action: model.goToNextDay
+            )
         }
+        .fixedSize(horizontal: true, vertical: true)
+    }
+
+    private func dateNavStepButton(
+        systemName: String,
+        accessibilityKey: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .appFont(size: 16, weight: .semibold)
+                .foregroundColor(currentAppearance.textColor.opacity(0.72))
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(Color.white.opacity(0.18)))
+        }
+        .buttonStyle(.hapticPlain)
+        .accessibilityLabel(Text(homeLS(accessibilityKey, locale: locale)))
+    }
+
+    @ViewBuilder
+    private func datePickerSheet() -> some View {
+        NavigationStack {
+            DatePicker(
+                homeLS("home.pick_date_title", locale: locale),
+                selection: $datePickerSelection,
+                displayedComponents: .date
+            )
+            .datePickerStyle(.graphical)
+            .labelsHidden()
+            .environment(\.timeZone, PrayerTimesEngine.sheffieldTimeZone)
+            .padding(.horizontal, 12)
+            .navigationTitle(homeLS("home.pick_date_title", locale: locale))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(homeLS("action.cancel", locale: locale)) {
+                        showingDatePicker = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(homeLS("settings.done", locale: locale)) {
+                        model.goToDate(datePickerSelection)
+                        showingDatePicker = false
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 
     private func dateString(for date: Date) -> String {
@@ -976,6 +1071,15 @@ struct HomeView: View {
         default:
             return nil
         }
+    }
+
+    private func duhaSubtitleLine(daily: DailyPrayerTimes) -> String? {
+        guard settings.showDuhaTime else { return nil }
+        guard let window = PrayerTimesEngine.duhaWindow(sunrise: daily.sunrise, dhuhr: daily.dhuhr) else { return nil }
+        let start = formatTime(window.start)
+        let end = formatTime(window.end)
+        let format = homeLS("home.duha_format", locale: locale)
+        return String(format: format, locale: locale, arguments: [start, end])
     }
 
     /// Subtitle under adhan as localized `Iqamah: <time>`; when iqamah equals adhan, uses the same formatted string as the hero adhan.

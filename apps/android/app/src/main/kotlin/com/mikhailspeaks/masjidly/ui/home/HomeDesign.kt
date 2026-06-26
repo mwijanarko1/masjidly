@@ -17,15 +17,22 @@ enum class ThemeMode(val wireValue: String) {
     }
 }
 
-/** User-facing labels: **Original** (`classic`), **Modern** (`set2`). */
+/** User-facing labels: **Original** (`classic`), **Modern** (`set2`), **Custom** (`custom`). */
 enum class SkyGradientSet(val wireValue: String) {
     CLASSIC("classic"),
     SET2("set2"),
+    CUSTOM("custom"),
     ;
 
     companion object {
-        fun fromWire(value: String?): SkyGradientSet? =
-            entries.firstOrNull { it.wireValue == value?.lowercase() }
+        fun fromWire(value: String?): SkyGradientSet? {
+            val normalized = when (value?.lowercase()) {
+                "original" -> CLASSIC.wireValue
+                "modern" -> SET2.wireValue
+                else -> value?.lowercase()
+            }
+            return entries.firstOrNull { it.wireValue == normalized }
+        }
     }
 }
 
@@ -45,10 +52,29 @@ data class SkyTheme(
 data class ResolvedTheme(
     val timeTheme: TimeTheme,
     val gradientSet: SkyGradientSet,
+    val customTopColor: Color? = null,
+    val customBottomColor: Color? = null,
 ) {
-    val sky: SkyTheme get() = timeTheme.sky(gradientSet)
-    val textColor: Color get() = timeTheme.textColor(gradientSet)
-    val usesLightForeground: Boolean get() = timeTheme.usesLightForeground(gradientSet)
+    val sky: SkyTheme
+        get() = when {
+            gradientSet == SkyGradientSet.CUSTOM && customTopColor != null && customBottomColor != null ->
+                SkyTheme(listOf(customTopColor, customBottomColor), glowColor = null)
+            else -> timeTheme.sky(gradientSet)
+        }
+
+    val textColor: Color
+        get() = when {
+            gradientSet == SkyGradientSet.CUSTOM && customTopColor != null && customBottomColor != null ->
+                textColorForCustomGradient(customTopColor, customBottomColor)
+            else -> timeTheme.textColor(gradientSet)
+        }
+
+    val usesLightForeground: Boolean
+        get() = when {
+            gradientSet == SkyGradientSet.CUSTOM && customTopColor != null && customBottomColor != null ->
+                textColorForCustomGradient(customTopColor, customBottomColor) == Color.White
+            else -> timeTheme.usesLightForeground(gradientSet)
+        }
     val wireValue: String get() = timeTheme.wireValue
     val top: Color get() = sky.top
     val bottom: Color get() = sky.bottom
@@ -76,10 +102,10 @@ enum class TimeTheme(val wireValue: String) {
     TAHAJJUD("tahajjud"),
     ;
 
-    /** Default appearance when no per-prayer override is applied (onboarding, etc.). */
-    val sky: SkyTheme get() = sky(defaultGradientSet())
-    val textColor: Color get() = textColor(defaultGradientSet())
-    val usesLightForeground: Boolean get() = usesLightForeground(defaultGradientSet())
+    /** Fallback when only a [TimeTheme] is available — mirrors iOS `TimeTheme.sky` (always set2). */
+    val sky: SkyTheme get() = sky(SkyGradientSet.SET2)
+    val textColor: Color get() = textColor(SkyGradientSet.SET2)
+    val usesLightForeground: Boolean get() = usesLightForeground(SkyGradientSet.SET2)
     val top: Color get() = sky.top
     val bottom: Color get() = sky.bottom
     val glow: Color? get() = sky.glowColor
@@ -95,13 +121,13 @@ enum class TimeTheme(val wireValue: String) {
         )
 
     fun defaultGradientSet(): SkyGradientSet = when (this) {
-        FAJR, SUNRISE, MAGHRIB -> SkyGradientSet.SET2
+        FAJR, SUNRISE, ASR, MAGHRIB, ISHA -> SkyGradientSet.SET2
         else -> SkyGradientSet.CLASSIC
     }
 
     fun sky(set: SkyGradientSet): SkyTheme = when (set) {
         SkyGradientSet.CLASSIC -> classicSetSky
-        SkyGradientSet.SET2 -> set2Sky
+        SkyGradientSet.SET2, SkyGradientSet.CUSTOM -> set2Sky
     }
 
     fun textColor(set: SkyGradientSet): Color = when (set) {
@@ -109,7 +135,7 @@ enum class TimeTheme(val wireValue: String) {
             FAJR, MAGHRIB, ISHA, TAHAJJUD -> Color.White
             else -> Color(0xFF111111)
         }
-        SkyGradientSet.SET2 -> when (this) {
+        SkyGradientSet.SET2, SkyGradientSet.CUSTOM -> when (this) {
             FAJR, ISHA, TAHAJJUD -> Color.White
             else -> Color(0xFF111111)
         }
@@ -120,24 +146,25 @@ enum class TimeTheme(val wireValue: String) {
     private val set2Sky: SkyTheme
         get() = when (this) {
             FAJR -> SkyTheme(
-                baseColors = listOf(Color(0xFF6274E7), Color(0xFF8752A3)),
+                baseColors = listOf(Color(0xFF103783), Color(0xFF8752A3)),
                 glowColor = null,
             )
             SUNRISE -> SkyTheme(
                 baseColors = listOf(
-                    Color(0xFF9FF1F2),
-                    Color(0xFF6CD4E4),
-                    Color(0xFF73E1EA),
-                    Color(0xFFBDE2BD),
+                    Color(0xFF07C8F9),
+                    Color(0xFFB597F6),
                 ),
                 glowColor = null,
             )
             DHUHR -> SkyTheme(
-                baseColors = listOf(Color(0xFFEBF4F5), Color(0xFFB5C6E0)),
+                baseColors = listOf(Color(0xFFEBF4F5), Color(0xFF60EFFF)),
                 glowColor = null,
             )
             ASR -> SkyTheme(
-                baseColors = listOf(Color(0xFFFBD07C), Color(0xFFF7F779)),
+                baseColors = listOf(
+                    Color(0xFF60EFFF),
+                    Color(0xFFF3F98A),
+                ),
                 glowColor = null,
             )
             MAGHRIB -> SkyTheme(

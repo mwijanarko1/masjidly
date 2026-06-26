@@ -1,2 +1,9 @@
-# Copy to local.properties (gitignored). Minimal device-only SDK on this Mac:
-sdk.dir=/Users/mikhail/Library/Android/sdk
+# Copy to local.properties and set sdk.dir to your Android SDK install.
+# local.properties is gitignored (machine-specific).
+#
+# macOS example (external SSD):
+# sdk.dir=/Volumes/Mikhail Seagate 2TB SSD/AndroidDev/sdk
+#
+# Or set ANDROID_HOME and omit this file — Gradle will use the env var.
+
+sdk.dir=/path/to/Android/sdk

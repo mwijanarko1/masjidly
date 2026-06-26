@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import com.mikhailspeaks.masjidly.ui.home.MasjidlyColors
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
+import com.mikhailspeaks.masjidly.ui.home.SkyGradientSet
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
 
@@ -36,7 +37,7 @@ object OnboardingTutorialChrome {
         content: @Composable () -> Unit,
     ) {
         Card(
-            appearance = ResolvedTheme(timeTheme, timeTheme.defaultGradientSet()),
+            appearance = ResolvedTheme(timeTheme, SkyGradientSet.SET2),
             modifier = modifier,
             content = content,
         )

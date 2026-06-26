@@ -44,26 +44,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.mikhailspeaks.masjidly.BuildConfig
 import com.mikhailspeaks.masjidly.data.SettingsStore
 import com.mikhailspeaks.masjidly.domain.AdhanPrayerToggle
@@ -93,7 +95,6 @@ import com.mikhailspeaks.masjidly.ui.home.ThemeMode
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import com.mikhailspeaks.masjidly.widget.updateAllMasjidlyWidgets
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
-import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import android.content.pm.PackageManager
 
@@ -344,6 +345,14 @@ fun SettingsScreen(
                 SettingsPlainSection(LocaleStrings.t("settings.section.display.title", language), theme) {
                     SettingsToggleRow(LocaleStrings.t("settings.time.24h.title", language), settingsStore.uses24HourTime, theme) {
                         settingsStore.uses24HourTime = it
+                    }
+                    SettingsDivider(theme)
+                    SettingsToggleRow(LocaleStrings.t("settings.iqamah_time.title", language), settingsStore.showIqamahTime, theme) {
+                        settingsStore.showIqamahTime = it
+                    }
+                    SettingsDivider(theme)
+                    SettingsToggleRow(LocaleStrings.t("settings.duha_time.title", language), settingsStore.showDuhaTime, theme) {
+                        settingsStore.showDuhaTime = it
                     }
                     if (supportsMultipleAsrAdhan) {
                         SettingsDivider(theme)
@@ -777,6 +786,7 @@ private fun ReminderPickerRow(
     theme: ResolvedTheme,
     onSelect: (Int?) -> Unit,
 ) {
+    var sheetOpen by remember { mutableStateOf(false) }
     val options = listOf(
         null to LocaleStrings.t("settings.reminder.none", language),
         5 to LocaleStrings.t("settings.reminder.5min", language),
@@ -784,9 +794,30 @@ private fun ReminderPickerRow(
         15 to LocaleStrings.t("settings.reminder.15min", language),
         30 to LocaleStrings.t("settings.reminder.30min", language),
     )
-    PickerRow(label, options.map { (k, v) -> (k?.toString() ?: "none") to v }, selected?.toString() ?: "none", language, theme) { key ->
-        onSelect(if (key == "none") null else key.toIntOrNull())
+    val selectedKey = selected?.toString() ?: "none"
+    val displayValue = options.firstOrNull { (key, _) -> (key?.toString() ?: "none") == selectedKey }?.second ?: "—"
+    val pickerOptions = remember(options) {
+        options.map { (key, value) -> SettingsPickerOption(key?.toString() ?: "none", value) }
     }
+
+    SettingsReminderMenuPickerRow(
+        label = label,
+        displayValue = displayValue,
+        theme = theme,
+        onClick = { sheetOpen = true },
+    )
+    SettingsPickerBottomSheet(
+        visible = sheetOpen,
+        title = label,
+        options = pickerOptions,
+        selectedKey = selectedKey,
+        theme = theme,
+        language = language,
+        onDismiss = { sheetOpen = false },
+        onSelect = { key ->
+            onSelect(if (key == "none") null else key.toIntOrNull())
+        },
+    )
 }
 
 @Composable
@@ -1061,29 +1092,136 @@ private fun SkyGradientSettingsSection(
         language = language,
         onToggle = { expanded = !expanded },
     ) {
-        TimeTheme.configurableGradientThemes.forEachIndexed { index, prayerTheme ->
-            if (index > 0) SettingsDivider(theme)
-            val label = LocaleStrings.format(
-                "settings.theme.gradient.prayer_format",
-                language,
-                prayerThemeLabel(prayerTheme, language),
-            )
-            PickerRow(
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            TimeTheme.configurableGradientThemes.forEach { prayerTheme ->
+                SkyGradientPickerRow(
+                    prayerTheme = prayerTheme,
+                    language = language,
+                    settingsStore = settingsStore,
+                    sheetTheme = theme,
+                    onGradientChanged = onGradientChanged,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SkyGradientPickerRow(
+    prayerTheme: TimeTheme,
+    language: AppLanguage,
+    settingsStore: SettingsStore,
+    sheetTheme: ResolvedTheme,
+    onGradientChanged: () -> Unit,
+) {
+    val gradientSet = settingsStore.skyGradientSet(prayerTheme)
+    val appearance = settingsStore.resolvedAppearanceFor(prayerTheme)
+    val label = LocaleStrings.format(
+        "settings.theme.gradient.prayer_format",
+        language,
+        prayerThemeLabel(prayerTheme, language),
+    )
+    val options = SkyGradientSet.entries.map { set ->
+        set.wireValue to skyGradientSetLabel(set, language)
+    }
+    val selectedKey = gradientSet.wireValue
+    val selectedLabel = options.firstOrNull { it.first == selectedKey }?.second ?: "—"
+    val pickerOptions = remember(options) {
+        options.map { (key, value) -> SettingsPickerOption(key, value) }
+    }
+    var sheetOpen by remember { mutableStateOf(false) }
+    var topColorPickerOpen by remember { mutableStateOf(false) }
+    var bottomColorPickerOpen by remember { mutableStateOf(false) }
+    val customColors = settingsStore.customGradientColors(prayerTheme)
+
+    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Brush.verticalGradient(appearance.sky.baseColors))
+                .border(0.5.dp, appearance.textColor.copy(alpha = 0.16f), RoundedCornerShape(12.dp)),
+        ) {
+            MenuPickerRowContent(
                 label = label,
-                options = SkyGradientSet.entries.map { set ->
-                    set.wireValue to skyGradientSetLabel(set, language)
-                },
-                selectedKey = settingsStore.skyGradientSet(for = prayerTheme).wireValue,
-                language = language,
-                theme = theme,
-            ) { key ->
-                SkyGradientSet.fromWire(key)?.let { set ->
-                    settingsStore.setSkyGradientSet(set, for = prayerTheme)
-                    onGradientChanged()
+                displayValue = selectedLabel,
+                textColor = appearance.textColor,
+                onClick = { sheetOpen = true },
+                metrics = MenuPickerMetrics.SettingsGradient,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                    .heightIn(min = 44.dp),
+            )
+
+            if (gradientSet == SkyGradientSet.CUSTOM) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    CustomGradientColorButton(
+                        label = LocaleStrings.t("settings.theme.gradient.custom.top", language),
+                        color = customColors.topColor,
+                        textColor = appearance.textColor,
+                        onClick = { topColorPickerOpen = true },
+                        modifier = Modifier.weight(1f),
+                    )
+                    CustomGradientColorButton(
+                        label = LocaleStrings.t("settings.theme.gradient.custom.bottom", language),
+                        color = customColors.bottomColor,
+                        textColor = appearance.textColor,
+                        onClick = { bottomColorPickerOpen = true },
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
     }
+
+    SettingsPickerBottomSheet(
+        visible = sheetOpen,
+        title = label,
+        options = pickerOptions,
+        selectedKey = selectedKey,
+        theme = sheetTheme,
+        language = language,
+        onDismiss = { sheetOpen = false },
+        onSelect = { key ->
+            SkyGradientSet.fromWire(key)?.let { set ->
+                settingsStore.setSkyGradientSet(set, prayerTheme)
+                onGradientChanged()
+            }
+        },
+    )
+
+    SkyGradientColorPickerSheet(
+        visible = topColorPickerOpen,
+        title = LocaleStrings.t("settings.theme.gradient.custom.top", language),
+        initialColor = customColors.topColor,
+        theme = sheetTheme,
+        language = language,
+        onDismiss = { topColorPickerOpen = false },
+        onConfirm = { color ->
+            settingsStore.setCustomGradientTopColor(color, prayerTheme)
+            onGradientChanged()
+        },
+    )
+
+    SkyGradientColorPickerSheet(
+        visible = bottomColorPickerOpen,
+        title = LocaleStrings.t("settings.theme.gradient.custom.bottom", language),
+        initialColor = customColors.bottomColor,
+        theme = sheetTheme,
+        language = language,
+        onDismiss = { bottomColorPickerOpen = false },
+        onConfirm = { color ->
+            settingsStore.setCustomGradientBottomColor(color, prayerTheme)
+            onGradientChanged()
+        },
+    )
 }
 
 @Composable
@@ -1132,6 +1270,7 @@ private fun CollapsibleSettingsSubsection(
 private fun skyGradientSetLabel(set: SkyGradientSet, language: AppLanguage): String = when (set) {
     SkyGradientSet.CLASSIC -> LocaleStrings.t("settings.theme.gradient.classic", language)
     SkyGradientSet.SET2 -> LocaleStrings.t("settings.theme.gradient.set2", language)
+    SkyGradientSet.CUSTOM -> LocaleStrings.t("settings.theme.gradient.custom", language)
 }
 
 private fun showDevToast(context: android.content.Context, message: String) {
@@ -1145,7 +1284,7 @@ private fun SettingsSectionTitle(title: String, theme: ResolvedTheme) {
         style = rememberAppTextStyle(13f, FontWeight.SemiBold),
         color = theme.textColor.copy(alpha = 0.52f),
         letterSpacing = 0.4.sp,
-        modifier = Modifier.padding(bottom = 8.dp),
+        modifier = Modifier.padding(bottom = 4.dp),
     )
 }
 

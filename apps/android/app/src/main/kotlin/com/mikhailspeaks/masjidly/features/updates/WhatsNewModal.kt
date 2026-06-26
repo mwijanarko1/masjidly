@@ -1,6 +1,5 @@
 package com.mikhailspeaks.masjidly.features.updates
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,36 +12,40 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mikhailspeaks.masjidly.domain.AppLanguage
+import com.mikhailspeaks.masjidly.features.onboarding.OnboardingPrimaryButton
+import com.mikhailspeaks.masjidly.features.onboarding.OnboardingScrim
+import com.mikhailspeaks.masjidly.features.onboarding.OnboardingTutorialCard
+import com.mikhailspeaks.masjidly.features.onboarding.OnboardingTutorialCardStyle
+import com.mikhailspeaks.masjidly.features.onboarding.onboardingCardMutedColor
+import com.mikhailspeaks.masjidly.features.onboarding.onboardingCardTextColor
 import com.mikhailspeaks.masjidly.ui.home.MasjidlyColors
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
-import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
-import com.mikhailspeaks.masjidly.ui.onboarding.OnboardingPrimaryCapsule
-import com.mikhailspeaks.masjidly.ui.onboarding.OnboardingTutorialChrome
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
 import java.util.Locale
 
 /**
- * "What's New" overlay — mirrors iOS `WhatsNewModalView` + `HomeView.whatsNewOverlay`.
+ * "What's New" overlay — uses the same opaque tutorial card + scrim as onboarding modals.
  */
 @Composable
 fun WhatsNewOverlay(
@@ -53,20 +56,29 @@ fun WhatsNewOverlay(
     val locale = language.resolvedLocale()
     val copy = WhatsNewModalCopy.forLocale(locale)
     val items = WhatsNew.localizedUpdates(locale)
+    val cardStyle = OnboardingTutorialCardStyle.Light
+    val cardTextColor = onboardingCardTextColor(theme, cardStyle)
+    val cardMutedColor = onboardingCardMutedColor(theme, cardStyle)
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val maxCardHeight = minOf(580.dp, maxHeight - 80.dp)
-        val cardMaxWidth = minOf(380.dp, maxWidth - 48.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        OnboardingScrim(
+            theme = theme,
+            modifier = Modifier.hapticClickable(onClick = onDismiss),
+        )
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            WhatsNewBackdrop(theme = theme, onDismiss = onDismiss)
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            val maxCardHeight = minOf(580.dp, maxHeight - 80.dp)
 
-            OnboardingTutorialChrome.Card(
-                appearance = theme,
+            OnboardingTutorialCard(
+                theme = theme,
+                style = cardStyle,
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 24.dp)
-                    .width(cardMaxWidth)
+                    .widthIn(max = 400.dp)
                     .heightIn(max = maxCardHeight),
             ) {
                 WhatsNewModalContent(
@@ -74,50 +86,9 @@ fun WhatsNewOverlay(
                     items = items,
                     copy = copy,
                     theme = theme,
+                    cardTextColor = cardTextColor,
+                    cardMutedColor = cardMutedColor,
                     onDismiss = onDismiss,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WhatsNewBackdrop(
-    theme: ResolvedTheme,
-    onDismiss: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.4f))
-            .hapticClickable(onClick = onDismiss),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        theme.sky.baseColors.map { it.copy(alpha = 0.55f) },
-                    ),
-                ),
-        )
-        theme.sky.glowColor?.let { glow ->
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val center = androidx.compose.ui.geometry.Offset(size.width * 0.5f, size.height * 0.82f)
-                val radius = 500f
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            glow.copy(alpha = 0.4f * theme.sky.glowBaseAlpha),
-                            glow.copy(alpha = 0.15f * theme.sky.glowBaseAlpha),
-                            Color.Transparent,
-                        ),
-                        center = center,
-                        radius = radius,
-                    ),
-                    radius = radius,
-                    center = center,
-                    blendMode = BlendMode.Screen,
                 )
             }
         }
@@ -130,14 +101,15 @@ private fun WhatsNewModalContent(
     items: List<WhatsNewItem>,
     copy: WhatsNewModalCopy,
     theme: ResolvedTheme,
+    cardTextColor: Color,
+    cardMutedColor: Color,
     onDismiss: () -> Unit,
 ) {
     val shouldScrollItems = items.size > 3
-    val textColor = theme.textColor
 
     Column(
         modifier = Modifier.padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -146,16 +118,18 @@ private fun WhatsNewModalContent(
         ) {
             Text(
                 text = copy.title,
-                style = rememberAppTextStyle(26f, FontWeight.Bold),
-                color = textColor,
+                style = rememberAppTextStyle(23f, FontWeight.SemiBold),
+                color = cardTextColor,
+                textAlign = TextAlign.Center,
+                letterSpacing = (-0.5f).sp,
             )
             Text(
                 text = copy.versionLabel(version),
                 style = rememberAppTextStyle(14f, FontWeight.Medium),
-                color = textColor.copy(alpha = 0.62f),
+                color = cardMutedColor,
                 modifier = Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(textColor.copy(alpha = 0.1f))
+                    .background(cardTextColor.copy(alpha = 0.1f))
                     .padding(horizontal = 16.dp, vertical = 6.dp),
             )
             if (shouldScrollItems) {
@@ -167,12 +141,12 @@ private fun WhatsNewModalContent(
                     Text(
                         text = copy.swipeHint,
                         style = rememberAppTextStyle(12f, FontWeight.Medium),
-                        color = textColor.copy(alpha = 0.45f),
+                        color = cardMutedColor.copy(alpha = 0.6f),
                     )
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
-                        tint = textColor.copy(alpha = 0.45f),
+                        tint = cardMutedColor.copy(alpha = 0.6f),
                         modifier = Modifier.size(12.dp),
                     )
                 }
@@ -181,7 +155,6 @@ private fun WhatsNewModalContent(
 
         val itemsModifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 2.dp)
             .then(
                 if (shouldScrollItems) {
                     Modifier
@@ -197,15 +170,17 @@ private fun WhatsNewModalContent(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             items.forEach { item ->
-                WhatsNewItemRow(item = item, textColor = textColor)
+                WhatsNewItemRow(
+                    item = item,
+                    cardTextColor = cardTextColor,
+                    cardMutedColor = cardMutedColor,
+                )
             }
         }
 
-        OnboardingPrimaryCapsule(
-            label = copy.continueLabel,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
+        OnboardingPrimaryButton(
+            text = copy.continueLabel,
+            theme = theme,
             onClick = onDismiss,
         )
     }
@@ -214,7 +189,8 @@ private fun WhatsNewModalContent(
 @Composable
 private fun WhatsNewItemRow(
     item: WhatsNewItem,
-    textColor: Color,
+    cardTextColor: Color,
+    cardMutedColor: Color,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -222,7 +198,10 @@ private fun WhatsNewItemRow(
         verticalAlignment = Alignment.Top,
     ) {
         Icon(
-            imageVector = Icons.Default.BugReport,
+            imageVector = when (item.icon) {
+                WhatsNewIcon.WIDGET -> Icons.Default.Widgets
+                WhatsNewIcon.PALETTE -> Icons.Default.Palette
+            },
             contentDescription = null,
             tint = MasjidlyColors.accent,
             modifier = Modifier
@@ -234,14 +213,14 @@ private fun WhatsNewItemRow(
         ) {
             Text(
                 text = item.title,
-                style = rememberAppTextStyle(17f, FontWeight.Bold),
-                color = textColor,
+                style = rememberAppTextStyle(17f, FontWeight.SemiBold),
+                color = cardTextColor,
             )
             Text(
                 text = item.description,
-                style = rememberAppTextStyle(14f, FontWeight.Normal),
-                color = textColor.copy(alpha = 0.72f),
-                lineHeight = 20.sp,
+                style = rememberAppTextStyle(16f),
+                color = cardMutedColor,
+                lineHeight = 22.sp,
             )
         }
     }

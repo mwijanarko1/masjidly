@@ -16,7 +16,7 @@ object WidgetThemeResolver {
         } else {
             TimeTheme.fromWire(prayerId)
         }
-        return settings.resolvedAppearance(for = timeTheme)
+        return settings.resolvedAppearanceFor(timeTheme)
     }
 
     fun Color.toGlanceColorProvider(): ColorProvider = ColorProvider(this)

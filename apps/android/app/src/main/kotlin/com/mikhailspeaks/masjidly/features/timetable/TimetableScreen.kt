@@ -71,6 +71,7 @@ import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingStep
 import com.mikhailspeaks.masjidly.features.onboarding.TimetableOnboardingOverlay
 import com.mikhailspeaks.masjidly.features.settings.MasjidlySupportMail
+import com.mikhailspeaks.masjidly.ui.home.HomeDateFormatting
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import java.text.NumberFormat
@@ -300,25 +301,40 @@ private fun TimetableHeader(
     highlightCloseButton: Boolean,
     onBack: () -> Unit,
 ) {
-    val dateLabel = formattedSelectedDate(selectedDate, currentMonth, currentYear, locale)
+    val gregorianLabel = formattedSelectedDate(selectedDate, currentMonth, currentYear, locale)
+    val hijriLabel = formattedHijriDate(selectedDate, currentMonth, currentYear, locale)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 4.dp),
+        ) {
             Text(
-                text = dateLabel,
-                style = rememberAppTextStyle(24f, FontWeight.Light),
+                text = gregorianLabel,
+                style = rememberAppTextStyle(18f, FontWeight.Light),
                 color = theme.textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (hijriLabel.isNotEmpty()) {
+                Text(
+                    text = hijriLabel,
+                    style = rememberAppTextStyle(14f, FontWeight.Light),
+                    color = theme.textColor.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = mosqueName,
-                style = rememberAppTextStyle(15f),
+                style = rememberAppTextStyle(14f),
                 color = theme.textColor.copy(alpha = 0.7f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -879,6 +895,11 @@ private fun monthTitle(month: Int, year: Int, locale: Locale): String {
 private fun formattedSelectedDate(day: Int, month: Int, year: Int, locale: Locale): String {
     val zdt = ZonedDateTime.of(year, month, day, 12, 0, 0, 0, PrayerTimesEngine.sheffieldTimeZone)
     return DateTimeFormatter.ofPattern("EEEE · d MMMM", locale).format(zdt)
+}
+
+private fun formattedHijriDate(day: Int, month: Int, year: Int, locale: Locale): String {
+    val zdt = ZonedDateTime.of(year, month, day, 12, 0, 0, 0, PrayerTimesEngine.sheffieldTimeZone)
+    return HomeDateFormatting.hijriDateString(zdt.toInstant(), locale)
 }
 
 private fun shortWeekday(day: Int, month: Int, year: Int, locale: Locale): String {

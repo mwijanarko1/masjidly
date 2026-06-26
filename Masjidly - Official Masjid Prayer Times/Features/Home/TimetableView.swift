@@ -236,18 +236,18 @@ struct TimetableView: View {
     }
 
     private var headerBar: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(formattedSelectedDate(day: selectedDate))
-                    .appFont(size: 24, weight: .light)
+                Text(formattedSelectedDateWithHijri(day: selectedDate))
+                    .appFont(size: 18, weight: .light)
                     .foregroundStyle(appearance.textColor)
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
                 Text(mosqueName)
-                    .appFont(size: 15, weight: .regular)
+                    .appFont(size: 14, weight: .regular)
                     .foregroundStyle(appearance.textColor.opacity(0.7))
             }
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
             Button {
                 onDismiss?()
                 dismiss()
@@ -645,6 +645,23 @@ struct TimetableView: View {
         formatter.locale = locale
         formatter.dateFormat = "EEEE · d MMMM"
         return formatter.string(from: date)
+    }
+
+    private func hijriDateString(for date: Date) -> String {
+        let islamicCalendar = Calendar(identifier: .islamicUmmAlQura)
+        let formatter = DateFormatter()
+        formatter.calendar = islamicCalendar
+        formatter.locale = locale
+        formatter.dateFormat = "d MMMM yyyy"
+        return formatter.string(from: date)
+    }
+
+    private func formattedSelectedDateWithHijri(day: Int) -> String {
+        let gregorian = formattedSelectedDate(day: day)
+        guard let date = dateFor(day: day) else { return gregorian }
+        let hijri = hijriDateString(for: date)
+        guard !hijri.isEmpty else { return gregorian }
+        return "\(gregorian) · \(hijri)"
     }
     
     private func resolveIqamahString(id: String, adhan: String, iqamahRaw: DailyIqamahTimes?, maghrib: String, for date: Date) -> String {

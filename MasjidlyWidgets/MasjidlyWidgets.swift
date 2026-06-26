@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import WidgetKit
 
 @main
@@ -129,6 +130,7 @@ struct MasjidlyPrayerWidgetView: View {
     var body: some View {
         let theme = MasjidlyWidgetTheme.resolvedTheme(for: entry.state.prayerId)
         let gradientSet = MasjidlyWidgetTheme.resolvedGradientSet(for: entry.state.prayerId)
+        let customColors = MasjidlyWidgetTheme.resolvedCustomGradientColors(for: entry.state.prayerId)
         
         Group {
             if entry.state.kind != .content {
@@ -136,19 +138,22 @@ struct MasjidlyPrayerWidgetView: View {
             } else {
                 switch family {
                 case .systemSmall:
-                    smallView(theme: theme, gradientSet: gradientSet)
+                    smallView(theme: theme, gradientSet: gradientSet, customColors: customColors)
                 case .systemMedium:
-                    mediumView(theme: theme, gradientSet: gradientSet)
+                    mediumView(theme: theme, gradientSet: gradientSet, customColors: customColors)
                 case .systemLarge:
-                    largeView(theme: theme, gradientSet: gradientSet)
+                    largeView(theme: theme, gradientSet: gradientSet, customColors: customColors)
                 case .accessoryInline:
                     Text(accessoryInlineText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .truncationMode(.tail)
                 case .accessoryCircular:
                     accessoryCircularView
                 case .accessoryRectangular:
                     accessoryRectangularView
                 default:
-                    smallView(theme: theme, gradientSet: gradientSet)
+                    smallView(theme: theme, gradientSet: gradientSet, customColors: customColors)
                 }
             }
         }
@@ -159,7 +164,7 @@ struct MasjidlyPrayerWidgetView: View {
             } else if entry.state.kind != .content {
                 Color(hex: "111111")
             } else {
-                backgroundView(for: theme, gradientSet: gradientSet)
+                backgroundView(for: theme, gradientSet: gradientSet, customColors: customColors)
             }
         }
     }
@@ -220,8 +225,23 @@ struct MasjidlyPrayerWidgetView: View {
     }
 
     @ViewBuilder
-    private func backgroundView(for theme: MasjidlyWidgetTheme.TimeTheme, gradientSet: MasjidlyWidgetTheme.SkyGradientSet) -> some View {
-        let sky = theme.sky(set: gradientSet)
+    private func backgroundView(
+        for theme: MasjidlyWidgetTheme.TimeTheme,
+        gradientSet: MasjidlyWidgetTheme.SkyGradientSet,
+        customColors: MasjidlyWidgetTheme.CustomSkyGradientColors?
+    ) -> some View {
+        let sky: MasjidlyWidgetTheme.SkyTheme = {
+            if gradientSet == .custom,
+               let customColors {
+                return MasjidlyWidgetTheme.SkyTheme(
+                    baseColors: [customColors.topColor, customColors.bottomColor],
+                    gradientStops: nil,
+                    glowColor: nil,
+                    radialOverlays: []
+                )
+            }
+            return theme.sky(set: gradientSet)
+        }()
         GeometryReader { geo in
             let span = max(geo.size.width, geo.size.height)
             ZStack {
@@ -299,21 +319,30 @@ struct MasjidlyPrayerWidgetView: View {
         }
     }
 
-    private func smallView(theme: MasjidlyWidgetTheme.TimeTheme, gradientSet: MasjidlyWidgetTheme.SkyGradientSet) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private func smallView(
+        theme: MasjidlyWidgetTheme.TimeTheme,
+        gradientSet: MasjidlyWidgetTheme.SkyGradientSet,
+        customColors: MasjidlyWidgetTheme.CustomSkyGradientColors?
+    ) -> some View {
+        let textColor = MasjidlyWidgetTheme.resolvedWidgetTextColor(
+            theme: theme,
+            gradientSet: gradientSet,
+            customColors: customColors
+        )
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: entry.state.iconName)
                     .widgetFont(size: 16, weight: .medium, locale: entry.locale)
-                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.8))
+                    .foregroundStyle(textColor.opacity(0.8))
                 Text(entry.state.prayerName)
                     .widgetFont(size: 15, weight: .medium, locale: entry.locale)
-                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.75))
+                    .foregroundStyle(textColor.opacity(0.75))
                     .lineLimit(1)
             }
 
             Text(entry.state.adhanTime)
                 .widgetFont(size: 36, weight: .light, locale: entry.locale)
-                .foregroundStyle(theme.textColor(set: gradientSet))
+                .foregroundStyle(textColor)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
@@ -322,12 +351,14 @@ struct MasjidlyPrayerWidgetView: View {
             if !entry.state.iqamahTime.isEmpty {
                 Text(String(format: widgetLS("widget.iqamah_format", locale: entry.locale), entry.state.iqamahTime))
                     .widgetFont(size: 14, weight: .regular, locale: entry.locale)
-                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.6))
+                    .foregroundStyle(textColor.opacity(0.6))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
         }
         .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clipped()
     }
 
     private var currentDateMediumString: String {
@@ -337,19 +368,28 @@ struct MasjidlyPrayerWidgetView: View {
         return formatter.string(from: entry.state.displayDate)
     }
 
-    private func mediumView(theme: MasjidlyWidgetTheme.TimeTheme, gradientSet: MasjidlyWidgetTheme.SkyGradientSet) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+    private func mediumView(
+        theme: MasjidlyWidgetTheme.TimeTheme,
+        gradientSet: MasjidlyWidgetTheme.SkyGradientSet,
+        customColors: MasjidlyWidgetTheme.CustomSkyGradientColors?
+    ) -> some View {
+        let textColor = MasjidlyWidgetTheme.resolvedWidgetTextColor(
+            theme: theme,
+            gradientSet: gradientSet,
+            customColors: customColors
+        )
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Text(entry.state.mosqueDisplayName)
                     .widgetFont(size: 13, weight: .semibold, locale: entry.locale)
-                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.7))
+                    .foregroundStyle(textColor.opacity(0.7))
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                 Spacer(minLength: 4)
                 Text(currentDateMediumString.uppercased())
                     .widgetFont(size: 12, weight: .semibold, locale: entry.locale)
                     .kerning(0.8)
-                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.45))
+                    .foregroundStyle(textColor.opacity(0.45))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -360,7 +400,7 @@ struct MasjidlyPrayerWidgetView: View {
                 Text(widgetLS("widget.iqamah", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .trailing)
             }
             .widgetFont(size: 11, weight: .bold, locale: entry.locale)
-            .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.35))
+            .foregroundStyle(textColor.opacity(0.35))
             .textCase(.uppercase)
             
             VStack(spacing: 6) {
@@ -368,7 +408,7 @@ struct MasjidlyPrayerWidgetView: View {
                     HStack {
                         Text(row.name)
                             .widgetFont(size: 20, weight: row.isNext ? .bold : .regular, locale: entry.locale)
-                            .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.35) : theme.textColor(set: gradientSet))
+                            .foregroundStyle(row.isPassed ? textColor.opacity(0.35) : textColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
@@ -376,7 +416,7 @@ struct MasjidlyPrayerWidgetView: View {
                         Text(row.adhan)
                             .widgetFont(size: 20, weight: row.isNext ? .bold : .semibold, locale: entry.locale)
                             .monospacedDigit()
-                            .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.35) : theme.textColor(set: gradientSet))
+                            .foregroundStyle(row.isPassed ? textColor.opacity(0.35) : textColor)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -386,7 +426,7 @@ struct MasjidlyPrayerWidgetView: View {
                             Text(row.iqamahs.joined(separator: ", "))
                                 .widgetFont(size: 20, weight: .regular, locale: entry.locale)
                                 .monospacedDigit()
-                                .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.2) : theme.textColor(set: gradientSet).opacity(0.6))
+                                .foregroundStyle(row.isPassed ? textColor.opacity(0.2) : textColor.opacity(0.6))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)
                         }
@@ -396,6 +436,8 @@ struct MasjidlyPrayerWidgetView: View {
             }
         }
         .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clipped()
     }
 
     private var fullDateString: String {
@@ -405,58 +447,34 @@ struct MasjidlyPrayerWidgetView: View {
         return formatter.string(from: entry.state.displayDate)
     }
 
-    private func largeView(theme: MasjidlyWidgetTheme.TimeTheme, gradientSet: MasjidlyWidgetTheme.SkyGradientSet) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private func largeView(
+        theme: MasjidlyWidgetTheme.TimeTheme,
+        gradientSet: MasjidlyWidgetTheme.SkyGradientSet,
+        customColors: MasjidlyWidgetTheme.CustomSkyGradientColors?
+    ) -> some View {
+        let textColor = MasjidlyWidgetTheme.resolvedWidgetTextColor(
+            theme: theme,
+            gradientSet: gradientSet,
+            customColors: customColors
+        )
+        return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Text(entry.state.mosqueDisplayName)
                     .widgetFont(size: 16, weight: .semibold, locale: entry.locale)
-                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.7))
+                    .foregroundStyle(textColor.opacity(0.7))
                     .lineLimit(2)
                     .minimumScaleFactor(0.5)
                 Spacer(minLength: 6)
                 Text(fullDateString.uppercased())
                     .widgetFont(size: 13, weight: .semibold, locale: entry.locale)
                     .kerning(0.8)
-                    .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.5))
+                    .foregroundStyle(textColor.opacity(0.5))
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
             }
 
-            // ── Next prayer summary ──
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.state.prayerName)
-                        .widgetFont(size: 18, weight: .medium, locale: entry.locale)
-                        .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.75))
-                        .lineLimit(1)
-
-                    Text(entry.state.adhanTime)
-                        .widgetFont(size: 48, weight: .light, locale: entry.locale)
-                        .foregroundStyle(theme.textColor(set: gradientSet))
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
-
-                Spacer()
-
-                if !entry.state.iqamahTime.isEmpty {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(widgetLS("widget.iqamah", locale: entry.locale))
-                            .widgetFont(size: 11, weight: .bold, locale: entry.locale)
-                            .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.35))
-                            .textCase(.uppercase)
-
-                        Text(entry.state.iqamahTime)
-                            .widgetFont(size: 22, weight: .regular, locale: entry.locale)
-                            .monospacedDigit()
-                            .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.7))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.65)
-                    }
-                }
-            }
-            .padding(.vertical, 12)
+            largeHeroCountdownView(textColor: textColor)
+                .frame(maxWidth: .infinity)
 
             HStack {
                 Text(widgetLS("widget.prayer", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .leading)
@@ -464,7 +482,7 @@ struct MasjidlyPrayerWidgetView: View {
                 Text(widgetLS("widget.iqamah", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .trailing)
             }
             .widgetFont(size: 12, weight: .bold, locale: entry.locale)
-            .foregroundStyle(theme.textColor(set: gradientSet).opacity(0.35))
+            .foregroundStyle(textColor.opacity(0.35))
             .textCase(.uppercase)
 
             VStack(spacing: 14) {
@@ -472,7 +490,7 @@ struct MasjidlyPrayerWidgetView: View {
                     HStack {
                         Text(row.name)
                             .widgetFont(size: 24, weight: row.isNext ? .bold : .regular, locale: entry.locale)
-                            .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.35) : theme.textColor(set: gradientSet))
+                            .foregroundStyle(row.isPassed ? textColor.opacity(0.35) : textColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
@@ -480,7 +498,7 @@ struct MasjidlyPrayerWidgetView: View {
                         Text(row.adhan)
                             .widgetFont(size: 24, weight: row.isNext ? .bold : .semibold, locale: entry.locale)
                             .monospacedDigit()
-                            .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.35) : theme.textColor(set: gradientSet))
+                            .foregroundStyle(row.isPassed ? textColor.opacity(0.35) : textColor)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -490,7 +508,7 @@ struct MasjidlyPrayerWidgetView: View {
                             Text(row.iqamahs.joined(separator: ", "))
                                 .widgetFont(size: 24, weight: .regular, locale: entry.locale)
                                 .monospacedDigit()
-                                .foregroundStyle(row.isPassed ? theme.textColor(set: gradientSet).opacity(0.2) : theme.textColor(set: gradientSet).opacity(0.6))
+                                .foregroundStyle(row.isPassed ? textColor.opacity(0.2) : textColor.opacity(0.6))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)
                         }
@@ -500,113 +518,152 @@ struct MasjidlyPrayerWidgetView: View {
             }
         }
         .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clipped()
     }
 
     private var accessoryCircularView: some View {
         let s = entry.state
-        let now = entry.date
         let target = s.targetDate
-        let until = target.map { $0.timeIntervalSince(now) } ?? 0
-        let showCountdown = until > 0 && until <= 45 * 60
+        let showLiveCountdown = target.map { $0 > entry.date } ?? false
+        let isIqamah = s.iqamahDate != nil && s.targetDate == s.iqamahDate
+
         return ZStack {
             AccessoryWidgetBackground()
-            VStack(spacing: 0) {
-                if showCountdown {
-                    Text(countdownAbbrev(until: until))
-                        .widgetFont(size: 18, weight: .semibold, locale: entry.locale)
-                        .monospacedDigit()
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(1)
-                    Text(s.prayerName)
-                        .widgetFont(size: 11, weight: .medium, locale: entry.locale)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.65)
-                        .padding(.top, 1)
-                } else {
-                    Text(s.iqamahDate != nil && s.targetDate == s.iqamahDate ? s.iqamahTime : s.adhanTime)
-                        .widgetFont(size: 15, weight: .semibold, locale: entry.locale)
-                        .monospacedDigit()
-                        .minimumScaleFactor(0.65)
-                        .lineLimit(1)
-                    Text(s.prayerName)
-                        .widgetFont(size: 11, weight: .medium, locale: entry.locale)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.65)
-                        .padding(.top, 1)
-                }
-            }
+            accessoryCircularContent(
+                state: s,
+                target: target,
+                showLiveCountdown: showLiveCountdown,
+                isIqamah: isIqamah
+            )
+            .widgetAccessoryScaleToFit(designSize: CGSize(width: 54, height: 54))
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
         .widgetAccentable()
     }
 
-    private var accessoryRectangularView: some View {
-        let s = entry.state
-        let hasFollowing = !s.followingPrayerName.isEmpty && !s.followingAdhanTime.isEmpty
-
-        return VStack(alignment: .leading, spacing: 2) {
-            Text(s.mosqueDisplayName)
-                .widgetFont(size: 11, weight: .semibold, locale: entry.locale)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .frame(maxWidth: .infinity, alignment: .center)
-
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Image(systemName: s.iconName)
-                    .widgetFont(size: 16, weight: .semibold, locale: entry.locale)
-                    .symbolRenderingMode(.hierarchical)
-                Text(s.prayerName)
-                    .widgetFont(size: 17, weight: .semibold, locale: entry.locale)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                Spacer(minLength: 4)
-                Text(s.adhanTime)
-                    .widgetFont(size: 17, weight: .bold, locale: entry.locale)
+    @ViewBuilder
+    private func accessoryCircularContent(
+        state s: MasjidlyWidgetState,
+        target: Date?,
+        showLiveCountdown: Bool,
+        isIqamah: Bool
+    ) -> some View {
+        VStack(spacing: 0) {
+            if showLiveCountdown, let target {
+                Text(accessoryCountdownCaption(prayerName: s.prayerName, isIqamah: isIqamah))
+                    .widgetFont(size: 7, weight: .bold, locale: entry.locale)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                    .widgetFittingLine()
+                    .frame(maxWidth: .infinity)
+                accessoryCircularCountdownClock(target: target)
+                    .padding(.top, 2)
+            } else {
+                Text(s.iqamahDate != nil && s.targetDate == s.iqamahDate ? s.iqamahTime : s.adhanTime)
+                    .widgetFont(size: 15, weight: .semibold, locale: entry.locale)
                     .monospacedDigit()
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.65)
-            }
-
-            if !s.iqamahTime.isEmpty {
-                HStack(spacing: 6) {
-                    Text(widgetLS("widget.iqamah", locale: entry.locale))
-                        .widgetFont(size: 14, weight: .medium, locale: entry.locale)
-                        .foregroundStyle(.secondary)
-                    Spacer(minLength: 4)
-                    Text(s.iqamahTime)
-                        .widgetFont(size: 14, weight: .medium, locale: entry.locale)
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.65)
-                }
-            }
-
-            if hasFollowing {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("↓")
-                        .widgetFont(size: 14, weight: .medium, locale: entry.locale)
-                        .foregroundStyle(.tertiary)
-                    Text(s.followingPrayerName)
-                        .widgetFont(size: 14, weight: .medium, locale: entry.locale)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Text("·")
-                        .widgetFont(.caption, locale: entry.locale)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.tertiary)
-                    Text(s.followingAdhanTime)
-                        .widgetFont(size: 15, weight: .semibold, locale: entry.locale)
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                }
-                .padding(.top, 1)
+                    .widgetFittingLine()
+                Text(s.prayerName)
+                    .widgetFont(size: 10, weight: .medium, locale: entry.locale)
+                    .widgetFittingLine()
+                    .padding(.top, 2)
             }
         }
-        .widgetAccentable()
+        .padding(.horizontal, 2)
+    }
+
+    private func accessoryCircularCountdownClock(target: Date) -> some View {
+        let remaining = max(0, target.timeIntervalSince(entry.date))
+        let underOneHour = remaining < 3_600
+        let font = widgetUIFont(size: 14, weight: .bold)
+        let timerLocale = Locale(identifier: "en_GB")
+        let timerWidth = min(
+            underOneHour ? widgetCountdownMMSSWidth(font: font) : widgetCountdownHMSWidth(font: font),
+            48
+        )
+
+        return Group {
+            if underOneHour {
+                Text(timerInterval: entry.date...target, countsDown: true, showsHours: false)
+            } else {
+                Text(timerInterval: entry.date...target, countsDown: true, showsHours: true)
+            }
+        }
+        .font(Font(font))
+        .monospacedDigit()
+        .multilineTextAlignment(.center)
+        .frame(width: timerWidth)
+        .environment(\.locale, timerLocale)
+        .widgetFittingLine()
+    }
+
+    private func accessoryCountdownCaption(prayerName: String, isIqamah: Bool, compact: Bool = false) -> String {
+        let kind = widgetLS(
+            isIqamah ? "widget.countdown.iqamah_in" : "widget.countdown.adhan_in",
+            locale: entry.locale
+        )
+        if compact {
+            return kind
+        }
+        return "\(prayerName) · \(kind)"
+    }
+
+    private var accessoryRectangularView: some View {
+        accessoryRectangularContent
+            .widgetAccessoryScaleToFit(designSize: CGSize(width: 168, height: 62))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+            .widgetAccentable()
+    }
+
+    private var accessoryRectangularContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(entry.state.mosqueDisplayName)
+                .widgetFont(size: 9, weight: .semibold, locale: entry.locale)
+                .foregroundStyle(.secondary)
+                .widgetFittingLine()
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 1)
+
+            ForEach(entry.state.rows.prefix(5)) { row in
+                accessoryRectangularPrayerRow(row: row)
+            }
+        }
+        .padding(.horizontal, 1)
+    }
+
+    private func accessoryRectangularPrayerRow(row: MasjidlyWidgetPrayerRow) -> some View {
+        let isNext = row.isNext
+        let isPassed = row.isPassed
+        let timeWeight: Font.Weight = isNext ? .bold : .semibold
+        let iqamahText = row.iqamahs.joined(separator: ", ")
+
+        return HStack(spacing: 3) {
+            Text(row.name)
+                .widgetFont(size: 10, weight: isNext ? .bold : .medium, locale: entry.locale)
+                .foregroundStyle(isNext ? .primary : (isPassed ? .tertiary : .secondary))
+                .widgetFittingLine()
+                .layoutPriority(1)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+
+            Text(row.adhan)
+                .widgetFont(size: 10, weight: timeWeight, locale: entry.locale)
+                .monospacedDigit()
+                .foregroundStyle(isNext ? .primary : (isPassed ? .tertiary : .secondary))
+                .widgetFittingLine()
+                .layoutPriority(0)
+                .frame(width: 44, alignment: .trailing)
+
+            Text(iqamahText)
+                .widgetFont(size: 10, weight: .regular, locale: entry.locale)
+                .monospacedDigit()
+                .foregroundStyle(isPassed ? .tertiary : .secondary)
+                .widgetFittingLine()
+                .layoutPriority(0)
+                .frame(width: 44, alignment: .trailing)
+        }
     }
 
     private var accessoryInlineText: String {
@@ -619,6 +676,95 @@ struct MasjidlyPrayerWidgetView: View {
             }
         }
         return "\(s.mosqueDisplayName) · \(s.prayerName) \(s.adhanTime)"
+    }
+
+    private func largeHeroCountdownView(textColor: Color) -> some View {
+        let state = entry.state
+        let isIqamah = state.iqamahDate != nil && state.targetDate == state.iqamahDate
+        let headline = widgetCountdownHeadline(
+            prayerName: state.prayerName,
+            isIqamah: isIqamah,
+            locale: entry.locale
+        )
+        let showLiveCountdown = state.targetDate.map { $0 > entry.date } ?? false
+
+        return VStack(alignment: .center, spacing: 4) {
+            Text(headline)
+                .widgetFont(size: 14, weight: .medium, locale: entry.locale)
+                .foregroundStyle(textColor.opacity(0.75))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            if showLiveCountdown, let target = state.targetDate {
+                largeHeroCountdownClock(target: target, textColor: textColor)
+            } else {
+                Text(state.adhanTime)
+                    .widgetFont(size: 32, weight: .regular, locale: entry.locale)
+                    .foregroundStyle(textColor)
+                    .monospacedDigit()
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+    }
+
+    /// Native WidgetKit countdown — `Text(timerInterval:)` ticks every second without per-second timeline entries.
+    private func largeHeroCountdownClock(target: Date, textColor: Color) -> some View {
+        let remaining = max(0, target.timeIntervalSince(entry.date))
+        let underOneHour = remaining < 3_600
+        let fontSize: CGFloat = 36
+        let font = widgetUIFont(size: fontSize, weight: .medium)
+        let timerLocale = Locale(identifier: "en_GB")
+
+        return HStack(spacing: 0) {
+            Spacer(minLength: 0)
+            HStack(spacing: 0) {
+                if underOneHour {
+                    Text("-00:")
+                        .font(Font(font))
+                        .foregroundStyle(textColor)
+                    Text(timerInterval: entry.date...target, countsDown: true, showsHours: false)
+                        .font(Font(font))
+                        .foregroundStyle(textColor)
+                        .monospacedDigit()
+                        .multilineTextAlignment(.leading)
+                        .frame(width: widgetCountdownMMSSWidth(font: font), alignment: .leading)
+                        .environment(\.locale, timerLocale)
+                } else {
+                    Text("-")
+                        .font(Font(font))
+                        .foregroundStyle(textColor)
+                    Text(timerInterval: entry.date...target, countsDown: true, showsHours: true)
+                        .font(Font(font))
+                        .foregroundStyle(textColor)
+                        .monospacedDigit()
+                        .multilineTextAlignment(.leading)
+                        .frame(width: widgetCountdownHMSWidth(font: font), alignment: .leading)
+                        .environment(\.locale, timerLocale)
+                }
+            }
+            .fixedSize(horizontal: true, vertical: false)
+            Spacer(minLength: 0)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func widgetCountdownMMSSWidth(font: UIFont) -> CGFloat {
+        let sample = "59:59" as NSString
+        return ceil(sample.size(withAttributes: [.font: font]).width) + 2
+    }
+
+    private func widgetCountdownHMSWidth(font: UIFont) -> CGFloat {
+        let sample = "9:59:59" as NSString
+        return ceil(sample.size(withAttributes: [.font: font]).width) + 2
     }
 
     private func countdownAbbrev(until seconds: TimeInterval) -> String {
@@ -648,10 +794,19 @@ struct MasjidlyPrayerWidgetView: View {
 
 
 enum MasjidlyWidgetTheme {
-    /// User-facing labels: **Original** (`classic`), **Modern** (`set2`).
+    /// User-facing labels: **Original** (`classic`), **Modern** (`set2`), **Custom** (`custom`).
     enum SkyGradientSet: String {
         case classic
         case set2
+        case custom
+    }
+
+    struct CustomSkyGradientColors: Codable, Equatable, Sendable {
+        var topHex: String
+        var bottomHex: String
+
+        var topColor: Color { Color(hex: topHex) }
+        var bottomColor: Color { Color(hex: bottomHex) }
     }
 
     struct SkyRadialOverlay {
@@ -764,7 +919,7 @@ enum MasjidlyWidgetTheme {
 
         func defaultGradientSet() -> SkyGradientSet {
             switch self {
-            case .fajr, .sunrise, .maghrib:
+            case .fajr, .sunrise, .asr, .maghrib, .isha:
                 return .set2
             default:
                 return .classic
@@ -776,6 +931,8 @@ enum MasjidlyWidgetTheme {
             case .classic:
                 return classicSetSky
             case .set2:
+                return set2Sky
+            case .custom:
                 return set2Sky
             }
         }
@@ -789,7 +946,7 @@ enum MasjidlyWidgetTheme {
                 default:
                     return Color(hex: "111111")
                 }
-            case .set2:
+            case .set2, .custom:
                 switch self {
                 case .fajr, .isha, .tahajjud:
                     return .white
@@ -801,9 +958,7 @@ enum MasjidlyWidgetTheme {
 
         func showsStars(set: SkyGradientSet) -> Bool {
             switch set {
-            case .classic:
-                return self == .fajr || self == .isha || self == .tahajjud
-            case .set2:
+            case .classic, .set2, .custom:
                 return self == .fajr || self == .isha || self == .tahajjud
             }
         }
@@ -812,7 +967,7 @@ enum MasjidlyWidgetTheme {
             switch self {
             case .fajr:
                 return SkyTheme(
-                    baseColors: [Color(hex: "6274E7"), Color(hex: "8752A3")],
+                    baseColors: [Color(hex: "103783"), Color(hex: "8752A3")],
                     gradientStops: nil,
                     glowColor: nil,
                     radialOverlays: []
@@ -820,10 +975,8 @@ enum MasjidlyWidgetTheme {
             case .sunrise:
                 return SkyTheme(
                     baseColors: [
-                        Color(hex: "9FF1F2"),
-                        Color(hex: "6CD4E4"),
-                        Color(hex: "73E1EA"),
-                        Color(hex: "BDE2BD"),
+                        Color(hex: "07C8F9"),
+                        Color(hex: "B597F6"),
                     ],
                     gradientStops: nil,
                     glowColor: nil,
@@ -831,14 +984,17 @@ enum MasjidlyWidgetTheme {
                 )
             case .dhuhr:
                 return SkyTheme(
-                    baseColors: [Color(hex: "EBF4F5"), Color(hex: "B5C6E0")],
+                    baseColors: [Color(hex: "EBF4F5"), Color(hex: "60EFFF")],
                     gradientStops: nil,
                     glowColor: nil,
                     radialOverlays: []
                 )
             case .asr:
                 return SkyTheme(
-                    baseColors: [Color(hex: "FBD07C"), Color(hex: "F7F779")],
+                    baseColors: [
+                        Color(hex: "60EFFF"),
+                        Color(hex: "F3F98A"),
+                    ],
                     gradientStops: nil,
                     glowColor: nil,
                     radialOverlays: []
@@ -1026,6 +1182,33 @@ enum MasjidlyWidgetTheme {
         return set
     }
 
+    static func resolvedCustomGradientColors(for prayerId: String) -> CustomSkyGradientColors? {
+        let resolvedTheme = resolvedTheme(for: prayerId)
+        guard resolvedGradientSet(for: prayerId) == .custom,
+              let defaults = UserDefaults(suiteName: MasjidlyWidgetSharedConfig.appGroupIdentifier),
+              let data = defaults.data(forKey: MasjidlyWidgetSharedConfig.prayerCustomGradientColorsKey),
+              let colorsByPrayer = try? JSONDecoder().decode([String: CustomSkyGradientColors].self, from: data) else {
+            return nil
+        }
+        return colorsByPrayer[resolvedTheme.rawValue]
+    }
+
+    static func resolvedWidgetTextColor(
+        theme: TimeTheme,
+        gradientSet: SkyGradientSet,
+        customColors: CustomSkyGradientColors?
+    ) -> Color {
+        if gradientSet == .custom, let customColors {
+            return textColorForCustomGradient(top: customColors.topColor, bottom: customColors.bottomColor)
+        }
+        return theme.textColor(set: gradientSet)
+    }
+
+    static func textColorForCustomGradient(top: Color, bottom: Color) -> Color {
+        let luminance = (top.widgetRelativeLuminance + bottom.widgetRelativeLuminance) / 2
+        return luminance < 0.45 ? .white : Color(hex: "111111")
+    }
+
     static func resolvedTheme(for prayerId: String) -> TimeTheme {
         guard let defaults = UserDefaults(suiteName: MasjidlyWidgetSharedConfig.appGroupIdentifier) else {
             return theme(for: prayerId)
@@ -1078,6 +1261,16 @@ private func widgetLS(_ key: String, locale: Locale) -> String {
         if lang == "ur" { return "اقامت %@" }
         if lang == "id" { return "Iqamah %@" }
         return "Iqamah %@"
+    case "widget.countdown.adhan_in":
+        if lang == "ar" { return "الأذان بعد" }
+        if lang == "ur" { return "اذان میں" }
+        if lang == "id" { return "AZAN DALAM" }
+        return "ADHAN IN"
+    case "widget.countdown.iqamah_in":
+        if lang == "ar" { return "الإقامة بعد" }
+        if lang == "ur" { return "اقامت میں" }
+        if lang == "id" { return "IQAMAH DALAM" }
+        return "IQAMAH IN"
     case "widget.unavailable":
         if lang == "ar" { return "أوقات الصلاة غير متوفرة" }
         if lang == "ur" { return "نماز کے اوقات دستیاب نہیں ہیں" }
@@ -1098,12 +1291,49 @@ private func widgetLS(_ key: String, locale: Locale) -> String {
     }
 }
 
+private func widgetCountdownHeadline(prayerName: String, isIqamah: Bool, locale: Locale) -> String {
+    let lang = String(locale.identifier.prefix(2))
+    switch lang {
+    case "ar":
+        return isIqamah ? "الإقامة ل\(prayerName) بعد" : "الأذان ل\(prayerName) بعد"
+    case "ur":
+        return isIqamah ? "\(prayerName) کی اقامت میں" : "\(prayerName) کا اذان میں"
+    case "id":
+        return isIqamah ? "Iqamah \(prayerName) dalam" : "Adzan \(prayerName) dalam"
+    default:
+        return isIqamah
+            ? "The Iqamah of \(prayerName) is in"
+            : "The Adhan of \(prayerName) is in"
+    }
+}
+
 extension View {
+    func widgetFittingLine() -> some View {
+        lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .truncationMode(.tail)
+    }
+
+    func widgetAccessoryScaleToFit(designSize: CGSize) -> some View {
+        GeometryReader { geometry in
+            let scale = min(
+                geometry.size.width / designSize.width,
+                geometry.size.height / designSize.height,
+                1
+            )
+            self
+                .frame(width: designSize.width, height: designSize.height, alignment: .center)
+                .scaleEffect(scale, anchor: .center)
+                .frame(width: geometry.size.width, height: geometry.size.height, alignment: .center)
+                .clipped()
+        }
+    }
+
     func widgetFont(size: CGFloat, weight: Font.Weight = .regular, locale: Locale = Locale(identifier: "en")) -> some View {
         let isArabic = locale.identifier.hasPrefix("ar")
         let isUrdu = locale.identifier.hasPrefix("ur")
         let scale: CGFloat = isUrdu ? 1.25 : (isArabic ? 1.20 : 1.00)
-        return self.font(.custom("Gill Sans", size: size * scale).weight(weight))
+        return self.font(Font(widgetUIFont(size: size * scale, weight: weight)))
     }
     
     func widgetFont(_ style: Font, locale: Locale = Locale(identifier: "en")) -> some View {
@@ -1127,7 +1357,52 @@ extension View {
     }
 }
 
+private func widgetUIFont(size: CGFloat, weight: Font.Weight) -> UIFont {
+    let name: String = switch weight {
+    case .bold, .heavy, .black: "GillSans-Bold"
+    case .semibold: "GillSans-SemiBold"
+    case .medium: "GillSans-Medium"
+    case .light, .thin, .ultraLight: "GillSans-Light"
+    default: "GillSans"
+    }
+    return UIFont(name: name, size: size)
+        ?? UIFont.systemFont(ofSize: size, weight: weight.uiKitWeight)
+}
+
+private extension Font.Weight {
+    var uiKitWeight: UIFont.Weight {
+        switch self {
+        case .ultraLight: .ultraLight
+        case .thin: .thin
+        case .light: .light
+        case .regular: .regular
+        case .medium: .medium
+        case .semibold: .semibold
+        case .bold: .bold
+        case .heavy: .heavy
+        case .black: .black
+        default: .regular
+        }
+    }
+}
+
 extension Color {
+    var widgetRelativeLuminance: Double {
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+
+        func channel(_ value: CGFloat) -> Double {
+            let scaled = Double(value)
+            return scaled <= 0.03928 ? scaled / 12.92 : pow((scaled + 0.055) / 1.055, 2.4)
+        }
+
+        return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
+    }
+
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0

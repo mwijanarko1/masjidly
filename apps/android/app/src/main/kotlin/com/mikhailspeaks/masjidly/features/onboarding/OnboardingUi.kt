@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -57,6 +58,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -65,24 +67,43 @@ import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.LocaleStrings
 import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.MosqueSelection
+import com.mikhailspeaks.masjidly.features.settings.OnboardingMenuPickerRow
+import com.mikhailspeaks.masjidly.features.settings.OnboardingReminderMenuPickerRow
 import com.mikhailspeaks.masjidly.features.settings.SettingsPickerBottomSheet
 import com.mikhailspeaks.masjidly.features.settings.SettingsPickerOption
 import com.mikhailspeaks.masjidly.ui.haptic.HapticTextButton
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import com.mikhailspeaks.masjidly.ui.haptic.performMasjidlyButtonTapHaptic
-import com.mikhailspeaks.masjidly.ui.home.TimeTheme
+import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
 
 private val Accent = Color(0xFF47A6FF)
 private val AccentDark = Color(0xFF2E8DFF)
 
-@Composable
-private fun onboardingCardTextColor(theme: TimeTheme): Color =
-    if (theme.usesLightForeground) Color.White else Color(0xFF1A1A1A)
+enum class OnboardingTutorialCardStyle {
+    /** Dark card at night, light card by day — follows [ResolvedTheme.usesLightForeground]. */
+    Themed,
+    /** Always the light `#FAFAFA` card with dark text. */
+    Light,
+}
+
+private fun usesLightTutorialCard(theme: ResolvedTheme, style: OnboardingTutorialCardStyle): Boolean =
+    when (style) {
+        OnboardingTutorialCardStyle.Themed -> !theme.usesLightForeground
+        OnboardingTutorialCardStyle.Light -> true
+    }
 
 @Composable
-private fun onboardingCardMutedColor(theme: TimeTheme): Color =
-    onboardingCardTextColor(theme).copy(alpha = 0.75f)
+fun onboardingCardTextColor(
+    theme: ResolvedTheme,
+    style: OnboardingTutorialCardStyle = OnboardingTutorialCardStyle.Themed,
+): Color = if (usesLightTutorialCard(theme, style)) Color(0xFF1A1A1A) else Color.White
+
+@Composable
+fun onboardingCardMutedColor(
+    theme: ResolvedTheme,
+    style: OnboardingTutorialCardStyle = OnboardingTutorialCardStyle.Themed,
+): Color = onboardingCardTextColor(theme, style).copy(alpha = 0.75f)
 
 enum class CoachMarkVariant {
     BelowTopChrome,
@@ -92,7 +113,7 @@ enum class CoachMarkVariant {
 }
 
 @Composable
-fun OnboardingScrim(theme: TimeTheme, modifier: Modifier = Modifier) {
+fun OnboardingScrim(theme: ResolvedTheme, modifier: Modifier = Modifier) {
     val scrimColor = if (theme.usesLightForeground) {
         Color(0xFF050814).copy(alpha = 0.72f)
     } else {
@@ -107,7 +128,7 @@ fun OnboardingScrim(theme: TimeTheme, modifier: Modifier = Modifier) {
 
 @Composable
 private fun OnboardingFullScreenShell(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -119,20 +140,22 @@ private fun OnboardingFullScreenShell(
 
 @Composable
 fun OnboardingTutorialCard(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     modifier: Modifier = Modifier,
+    style: OnboardingTutorialCardStyle = OnboardingTutorialCardStyle.Themed,
     content: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(24.dp)
-    val cardColor = if (theme.usesLightForeground) {
-        Color(0xFF1C2033)
-    } else {
+    val usesLightCard = usesLightTutorialCard(theme, style)
+    val cardColor = if (usesLightCard) {
         Color(0xFFFAFAFA)
-    }
-    val borderColor = if (theme.usesLightForeground) {
-        Color.White.copy(alpha = 0.14f)
     } else {
+        Color(0xFF1C2033)
+    }
+    val borderColor = if (usesLightCard) {
         Color(0xFFE8E8E8)
+    } else {
+        Color.White.copy(alpha = 0.14f)
     }
     Box(
         modifier = modifier
@@ -147,7 +170,7 @@ fun OnboardingTutorialCard(
 @Composable
 fun OnboardingPrimaryButton(
     text: String,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
@@ -186,7 +209,7 @@ fun OnboardingPrimaryButton(
 fun OnboardingCoachMarkView(
     title: String,
     message: String,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     variant: CoachMarkVariant,
     primaryButtonTitle: String? = null,
     onPrimaryButton: (() -> Unit)? = null,
@@ -343,7 +366,7 @@ private val OnboardingHighlightCapsule = RoundedCornerShape(percent = 50)
 @Composable
 fun OnboardingHighlight(
     highlighted: Boolean,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
     content: @Composable () -> Unit,
@@ -385,7 +408,7 @@ fun OnboardingHighlight(
 
 @Composable
 fun LanguageSelectionOnboardingScreen(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     selectedLanguage: AppLanguage,
     onSelectLanguage: (AppLanguage) -> Unit,
     onContinue: (AppLanguage) -> Unit,
@@ -466,7 +489,7 @@ fun LanguageSelectionOnboardingScreen(
 @Composable
 fun MosqueSelectionOnboardingScreen(
     mosques: List<Mosque>,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     selectedMosqueId: String,
     isContinuing: Boolean,
@@ -542,6 +565,7 @@ fun MosqueSelectionOnboardingScreen(
                             style = rememberAppTextStyle(16f),
                             textAlign = TextAlign.Center,
                             lineHeight = 22.sp,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                     Column {
@@ -634,59 +658,15 @@ private fun OnboardingPickerDivider(textColor: Color) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 24.dp)
             .height(0.5.dp)
             .background(textColor.copy(0.12f)),
     )
 }
 
 @Composable
-private fun OnboardingMenuPickerRow(
-    label: String,
-    displayValue: String,
-    textColor: Color,
-    onClick: () -> Unit,
-    multilineValue: Boolean = false,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .hapticClickable(onClick = onClick)
-            .padding(vertical = 12.dp)
-            .heightIn(min = 44.dp),
-        verticalAlignment = if (multilineValue) Alignment.Top else Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            color = textColor,
-            style = rememberAppTextStyle(17f),
-            modifier = Modifier.weight(1f),
-        )
-        Row(
-            modifier = Modifier.weight(1.2f),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = if (multilineValue) Alignment.Top else Alignment.CenterVertically,
-        ) {
-            Text(
-                text = displayValue,
-                color = textColor,
-                style = rememberAppTextStyle(17f),
-                textAlign = TextAlign.End,
-                maxLines = if (multilineValue) Int.MAX_VALUE else 1,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = textColor.copy(0.7f),
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
-
-@Composable
 fun OnboardingNotificationSetupScreen(
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     draft: OnboardingNotificationDraft,
     isSaving: Boolean,
@@ -846,13 +826,13 @@ fun OnboardingNotificationSetupScreen(
                         style = rememberAppTextStyle(16f, FontWeight.SemiBold),
                         letterSpacing = 0.5.sp,
                     )
-                    OnboardingMenuPickerRow(
+                    OnboardingReminderMenuPickerRow(
                         label = LocaleStrings.t("settings.reminder.before_adhan", language),
                         displayValue = reminderLabel(draft.preAdhanReminderMinutes),
                         textColor = cardTextColor,
                         onClick = { adhanReminderSheet = true },
                     )
-                    OnboardingMenuPickerRow(
+                    OnboardingReminderMenuPickerRow(
                         label = LocaleStrings.t("settings.reminder.before_iqamah", language),
                         displayValue = reminderLabel(draft.preIqamahReminderMinutes),
                         textColor = cardTextColor,
@@ -961,7 +941,7 @@ private fun CollapsiblePrayerSection(
 @Composable
 fun HomeOnboardingOverlay(
     step: OnboardingStep,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     mosques: List<Mosque>,
     onboarding: OnboardingFlowViewModel,
@@ -1068,7 +1048,7 @@ fun HomeOnboardingOverlay(
 @Composable
 fun TimetableOnboardingOverlay(
     step: OnboardingStep,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     onboarding: OnboardingFlowViewModel,
 ) {
@@ -1095,7 +1075,7 @@ fun TimetableOnboardingOverlay(
 @Composable
 fun SettingsOnboardingOverlay(
     step: OnboardingStep,
-    theme: TimeTheme,
+    theme: ResolvedTheme,
     language: AppLanguage,
     onboarding: OnboardingFlowViewModel,
 ) {

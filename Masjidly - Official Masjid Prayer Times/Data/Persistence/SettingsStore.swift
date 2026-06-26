@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 import WidgetKit
 
 enum AsrIqamahPreference: String, CaseIterable, Identifiable, Codable, Sendable {
@@ -27,8 +28,11 @@ final class SettingsStore: SettingsPersisting {
         case themeMode
         case fixedTheme
         case prayerGradientStylesJSON
+        case prayerCustomGradientColorsJSON
         case asrIqamahPreference
         case hideQiblaCompass
+        case showDuhaTime
+        case showIqamahTime
         case firstAppOpenTrackedAt1970
         case hasCompletedEnjoymentReviewFlow
         case lastSeenBuildVersion
@@ -106,6 +110,41 @@ final class SettingsStore: SettingsPersisting {
         }
     }
 
+    private var prayerCustomGradientColors: [String: HomeDesign.CustomSkyGradientColors] {
+        didSet {
+            if let data = try? JSONEncoder().encode(prayerCustomGradientColors) {
+                defaults.set(data, forKey: Key.prayerCustomGradientColorsJSON.rawValue)
+            } else {
+                defaults.removeObject(forKey: Key.prayerCustomGradientColorsJSON.rawValue)
+            }
+            syncWidgetThemeSettings()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+
+    func customGradientColors(for theme: HomeDesign.TimeTheme) -> HomeDesign.CustomSkyGradientColors {
+        prayerCustomGradientColors[theme.rawValue] ?? HomeDesign.CustomSkyGradientColors.defaults(for: theme)
+    }
+
+    func setCustomGradientColors(_ colors: HomeDesign.CustomSkyGradientColors, for theme: HomeDesign.TimeTheme) {
+        guard HomeDesign.TimeTheme.configurableGradientThemes.contains(theme) else { return }
+        var colorsByPrayer = prayerCustomGradientColors
+        colorsByPrayer[theme.rawValue] = colors
+        prayerCustomGradientColors = colorsByPrayer
+    }
+
+    func setCustomGradientTopColor(_ color: Color, for theme: HomeDesign.TimeTheme) {
+        var colors = customGradientColors(for: theme)
+        colors.topHex = color.hexRGBString()
+        setCustomGradientColors(colors, for: theme)
+    }
+
+    func setCustomGradientBottomColor(_ color: Color, for theme: HomeDesign.TimeTheme) {
+        var colors = customGradientColors(for: theme)
+        colors.bottomHex = color.hexRGBString()
+        setCustomGradientColors(colors, for: theme)
+    }
+
     func skyGradientSet(for theme: HomeDesign.TimeTheme) -> HomeDesign.SkyGradientSet {
         guard HomeDesign.TimeTheme.configurableGradientThemes.contains(theme) else {
             return theme.defaultGradientSet()
@@ -119,12 +158,19 @@ final class SettingsStore: SettingsPersisting {
         var styles = prayerGradientStyles
         styles[theme.rawValue] = set.rawValue
         prayerGradientStyles = styles
+        if set == .custom, prayerCustomGradientColors[theme.rawValue] == nil {
+            setCustomGradientColors(HomeDesign.CustomSkyGradientColors.defaults(for: theme), for: theme)
+        }
     }
 
     func resolvedAppearance(for theme: HomeDesign.TimeTheme) -> HomeDesign.ResolvedTheme {
-        HomeDesign.ResolvedTheme(
+        let gradientSet = skyGradientSet(for: theme)
+        let customColors = customGradientColors(for: theme)
+        return HomeDesign.ResolvedTheme(
             timeTheme: theme,
-            gradientSet: skyGradientSet(for: theme)
+            gradientSet: gradientSet,
+            customTopColor: gradientSet == .custom ? customColors.topColor : nil,
+            customBottomColor: gradientSet == .custom ? customColors.bottomColor : nil
         )
     }
 
@@ -139,6 +185,16 @@ final class SettingsStore: SettingsPersisting {
     /// When true, the Qibla compass rings and pointer are hidden (user deferred location).
     var hideQiblaCompass: Bool {
         didSet { defaults.set(hideQiblaCompass, forKey: Key.hideQiblaCompass.rawValue) }
+    }
+
+    /// When true, the Sunrise home page shows the Duha prayer window under the sunrise time.
+    var showDuhaTime: Bool {
+        didSet { defaults.set(showDuhaTime, forKey: Key.showDuhaTime.rawValue) }
+    }
+
+    /// When true, prayer home pages show iqamah times under the adhan time.
+    var showIqamahTime: Bool {
+        didSet { defaults.set(showIqamahTime, forKey: Key.showIqamahTime.rawValue) }
     }
 
     /// First launch time used for the “enjoying the app?” review prompt eligibility (`nil` until recorded).
@@ -196,11 +252,27 @@ final class SettingsStore: SettingsPersisting {
         } else {
             prayerGradientStyles = [:]
         }
+        if let data = defaults.data(forKey: Key.prayerCustomGradientColorsJSON.rawValue),
+           let decoded = try? JSONDecoder().decode([String: HomeDesign.CustomSkyGradientColors].self, from: data) {
+            prayerCustomGradientColors = decoded
+        } else {
+            prayerCustomGradientColors = [:]
+        }
         asrIqamahPreference = AsrIqamahPreference(rawValue: defaults.string(forKey: Key.asrIqamahPreference.rawValue) ?? "") ?? .first
         if defaults.object(forKey: Key.hideQiblaCompass.rawValue) == nil {
             hideQiblaCompass = false
         } else {
             hideQiblaCompass = defaults.bool(forKey: Key.hideQiblaCompass.rawValue)
+        }
+        if defaults.object(forKey: Key.showDuhaTime.rawValue) == nil {
+            showDuhaTime = true
+        } else {
+            showDuhaTime = defaults.bool(forKey: Key.showDuhaTime.rawValue)
+        }
+        if defaults.object(forKey: Key.showIqamahTime.rawValue) == nil {
+            showIqamahTime = true
+        } else {
+            showIqamahTime = defaults.bool(forKey: Key.showIqamahTime.rawValue)
         }
         if defaults.object(forKey: Key.firstAppOpenTrackedAt1970.rawValue) != nil {
             firstAppOpenTrackedAt = Date(timeIntervalSince1970: defaults.double(forKey: Key.firstAppOpenTrackedAt1970.rawValue))
@@ -224,6 +296,11 @@ final class SettingsStore: SettingsPersisting {
             appGroupDefaults.set(data, forKey: WidgetPrayerSharedConfig.prayerGradientStylesKey)
         } else {
             appGroupDefaults.removeObject(forKey: WidgetPrayerSharedConfig.prayerGradientStylesKey)
+        }
+        if let data = try? JSONEncoder().encode(prayerCustomGradientColors) {
+            appGroupDefaults.set(data, forKey: WidgetPrayerSharedConfig.prayerCustomGradientColorsKey)
+        } else {
+            appGroupDefaults.removeObject(forKey: WidgetPrayerSharedConfig.prayerCustomGradientColorsKey)
         }
     }
 

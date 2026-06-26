@@ -8,14 +8,14 @@ Implementation: `Masjidly - Official Masjid Prayer Times/Features/Home/HomeDesig
 
 ## Production assignment
 
-These are configurable in **Settings → Theme → Sky gradients** (collapsible). Defaults: Fajr, Sunrise, and Maghrib use **Modern**; others use **Original**.
+These are configurable in **Settings → Theme → Sky gradients** (collapsible). Defaults: Fajr, Sunrise, Asr, and Isha use **Modern**; Dhuhr and Maghrib use **Original**.
 
 | Prayer   | Original | Modern |
 |----------|----------|---------|
-| Fajr     | Navy linear + orange glow | `#6274E7` → `#8752A3` linear |
-| Sunrise  | Sunrise linear + glow | Linear Asr pastel colors |
+| Fajr     | Navy linear + orange glow | `#103783` → `#8752A3` linear |
+| Sunrise  | Sunrise linear + glow | `#07C8F9` → `#B597F6` linear |
 | Dhuhr    | Original linear | `#EBF4F5` → `#B5C6E0` linear |
-| Asr      | Original linear | `#FBD07C` → `#F7F779` linear |
+| Asr      | Original linear | `#73E1EA` → `#F7F779` linear |
 | Maghrib  | Purple/pink linear | `#F2D7D9` → `#E786A7` linear |
 | Isha     | Original linear | `#000328` → `#00458E` linear |
 
@@ -52,7 +52,7 @@ Linear colors: `#9FF1F2` → `#6CD4E4` → `#73E1EA` → `#BDE2BD`.
 Optional bottom radial **glow** is rendered separately in `AtmosphericSkyBackground`.
 
 ### Fajr
-- `#6274E7` → `#8752A3` (linear, top → bottom — same angle as Dhuhr)
+- `#103783` → `#8752A3` (linear, top → bottom — same angle as Dhuhr)
 - Glow: none
 
 ### Sunrise

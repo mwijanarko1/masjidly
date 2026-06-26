@@ -1,5 +1,6 @@
 package com.mikhailspeaks.masjidly.widget
 
+import com.mikhailspeaks.masjidly.domain.HeroCountdownLabelKind
 import kotlinx.serialization.Serializable
 
 object WidgetSharedConfig {
@@ -86,6 +87,8 @@ data class WidgetPrayerState(
     val prayerName: String,
     val adhanTime: String,
     val iqamahTime: String,
+    val targetDateEpochMillis: Long? = null,
+    val countdownLabelKind: HeroCountdownLabelKind? = null,
     val rows: List<WidgetPrayerRow>,
     val displayDateEpochMillis: Long,
 ) {
@@ -100,6 +103,8 @@ data class WidgetPrayerState(
             prayerName = "Dhuhr",
             adhanTime = "1:10pm",
             iqamahTime = "1:30pm",
+            targetDateEpochMillis = System.currentTimeMillis() + 3_600_000,
+            countdownLabelKind = HeroCountdownLabelKind.ADHAN_IN,
             rows = listOf(
                 WidgetPrayerRow("fajr", "Fajr", "5:00am", listOf("5:20am"), isPassed = true, isNext = false),
                 WidgetPrayerRow("dhuhr", "Dhuhr", "1:10pm", listOf("1:30pm"), isPassed = false, isNext = true),

@@ -33,7 +33,11 @@ final class HomeViewModel {
     var displayedDate: Date = Date()
 
     var loadState: LoadState = .idle
+    /// True while fetching prayer payload for a newly navigated month/day.
+    private(set) var isLoadingDisplayedDate = false
     var lastError: String?
+
+    private var activeDisplayedDateLoads = 0
 
     /// Last time a full prayer payload network refresh succeeded (UTC). Used for foreground throttle.
     private(set) var lastPrayerPayloadRefreshAt: Date?
@@ -163,6 +167,13 @@ final class HomeViewModel {
         loadOrApplyPrayerTimesForDisplayedDate()
     }
 
+    /// Jump to a specific calendar day (e.g. from the native date picker).
+    func goToDate(_ date: Date) {
+        let parts = PrayerTimesEngine.getDateInSheffield(date)
+        displayedDate = PrayerTimesEngine.sheffieldNoonUTC(year: parts.year, month: parts.month, day: parts.day)
+        loadOrApplyPrayerTimesForDisplayedDate()
+    }
+
     /// Return to the most recent date that successfully displayed prayer times.
     func goToLastAvailablePrayerDate() {
         guard let lastAvailablePrayerDate else { return }
@@ -230,11 +241,23 @@ final class HomeViewModel {
             return
         }
 
+        if hydrateMonthFromCache(for: targetDate, mosque: mosque) {
+            return
+        }
+
+        activeDisplayedDateLoads += 1
+        isLoadingDisplayedDate = true
         clearDisplayedPrayerTimes()
         Task { [weak self] in
             guard let self else { return }
+            defer { self.finishDisplayedDateLoad() }
             await self.loadPrayerPayload(for: targetDate, mosque: mosque)
         }
+    }
+
+    private func finishDisplayedDateLoad() {
+        activeDisplayedDateLoads = max(0, activeDisplayedDateLoads - 1)
+        isLoadingDisplayedDate = activeDisplayedDateLoads > 0
     }
 
     private func loadedMonthMatches(_ date: Date) -> Bool {
@@ -377,25 +400,28 @@ final class HomeViewModel {
 
     /// Fill in-memory state from disk cache for the given mosque (no-op if cache miss).
     private func hydrateFromCache(for mosque: Mosque) {
-        let date = displayedDate
+        if hydrateMonthFromCache(for: displayedDate, mosque: mosque) {
+            loadState = .loaded
+        }
+    }
+
+    @discardableResult
+    private func hydrateMonthFromCache(for date: Date, mosque: Mosque) -> Bool {
         let sh = PrayerTimesEngine.getDateInSheffield(date)
-        guard let monthName = MonthName.from(monthNumber: sh.month) else { return }
+        guard let monthName = MonthName.from(monthNumber: sh.month) else { return false }
 
         let isoDate = PrayerTimesEngine.isoDateString(year: sh.year, month: sh.month, day: sh.day)
-        let cachedMonthly = diskCache.loadMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year)
-        let cachedRamadan = diskCache.loadRamadan(slug: mosque.slug, date: isoDate)
-        let cachedDst = diskCache.loadUkDst()
-
-        guard let monthly = cachedMonthly else { return }
+        guard let monthly = diskCache.loadMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year) else {
+            return false
+        }
 
         monthData = monthly
-        ramadanData = cachedRamadan
-        ukDst = cachedDst?.ukDstDates ?? []
+        ramadanData = diskCache.loadRamadan(slug: mosque.slug, date: isoDate)
+        ukDst = diskCache.loadUkDst()?.ukDstDates ?? ukDst
         loadedMonthNumber = sh.month
         loadedMonthYear = sh.year
-
         applyPrayerTimes(for: date, mosque: mosque)
-        loadState = .loaded
+        return displayedPrayerTimes != nil
     }
 
     func refreshWidgetSnapshotForCurrentMosque() async {

@@ -4,7 +4,9 @@ import android.content.Context
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.AsrIqamahPreference
 import com.mikhailspeaks.masjidly.domain.NotificationSettings
+import com.mikhailspeaks.masjidly.ui.home.CustomSkyGradientColors
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
+import com.mikhailspeaks.masjidly.ui.home.toHexString
 import com.mikhailspeaks.masjidly.ui.home.SkyGradientSet
 import com.mikhailspeaks.masjidly.ui.home.ThemeMode
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
@@ -22,6 +24,10 @@ class SettingsStore(context: Context) {
     private val appContext = context.applicationContext
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
+    init {
+        migrateLegacyPrayerGradientStylesIfNeeded()
+    }
 
     private val _revision = MutableStateFlow(0)
     val revision: StateFlow<Int> = _revision.asStateFlow()
@@ -107,6 +113,22 @@ class SettingsStore(context: Context) {
             bump()
         }
 
+    /** When true, the Sunrise home page shows the Duha prayer window under the sunrise time. */
+    var showDuhaTime: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_DUHA_TIME, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_SHOW_DUHA_TIME, value).apply()
+            bump()
+        }
+
+    /** When true, prayer home pages show iqamah times under the adhan time. */
+    var showIqamahTime: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_IQAMAH_TIME, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_SHOW_IQAMAH_TIME, value).apply()
+            bump()
+        }
+
     /** First launch timestamp for the soft review prompt — mirrors iOS `firstAppOpenTrackedAt`. */
     var firstAppOpenTrackedAt: Instant?
         get() = prefs.getLong(KEY_FIRST_APP_OPEN_TRACKED_AT, 0L).takeIf { it > 0L }?.let(Instant::ofEpochMilli)
@@ -161,26 +183,102 @@ class SettingsStore(context: Context) {
 
     fun resolvedLocale() = appLanguage.resolvedLocale()
 
-    fun resolvedTheme(dynamicTheme: TimeTheme): ResolvedTheme = resolvedAppearance(dynamicTheme)
-
-    fun resolvedAppearance(for timeTheme: TimeTheme): ResolvedTheme =
-        ResolvedTheme(timeTheme, skyGradientSet(for = timeTheme))
-
-    fun resolvedAppearance(dynamicTheme: TimeTheme): ResolvedTheme {
+    fun resolvedTheme(dynamicTheme: TimeTheme): ResolvedTheme {
         val timeTheme = if (themeMode == ThemeMode.DYNAMIC) dynamicTheme else fixedTheme
-        return resolvedAppearance(for = timeTheme)
+        return resolvedAppearanceFor(timeTheme)
     }
 
-    fun skyGradientSet(for timeTheme: TimeTheme): SkyGradientSet {
-        val raw = prayerGradientStyles[timeTheme.wireValue] ?: timeTheme.defaultGradientSet().wireValue
-        return SkyGradientSet.fromWire(raw) ?: timeTheme.defaultGradientSet()
+    fun resolvedAppearanceFor(timeTheme: TimeTheme): ResolvedTheme {
+        val gradientSet = skyGradientSet(timeTheme)
+        val customColors = customGradientColors(timeTheme)
+        return ResolvedTheme(
+            timeTheme = timeTheme,
+            gradientSet = gradientSet,
+            customTopColor = if (gradientSet == SkyGradientSet.CUSTOM) customColors.topColor else null,
+            customBottomColor = if (gradientSet == SkyGradientSet.CUSTOM) customColors.bottomColor else null,
+        )
     }
 
-    fun setSkyGradientSet(set: SkyGradientSet, for timeTheme: TimeTheme) {
+    fun customGradientColors(timeTheme: TimeTheme): CustomSkyGradientColors =
+        prayerCustomGradientColors[timeTheme.wireValue] ?: CustomSkyGradientColors.defaultsFor(timeTheme)
+
+    fun setCustomGradientColors(colors: CustomSkyGradientColors, timeTheme: TimeTheme) {
+        if (timeTheme !in TimeTheme.configurableGradientThemes) return
+        val updated = prayerCustomGradientColors.toMutableMap()
+        updated[timeTheme.wireValue] = colors
+        prayerCustomGradientColors = updated
+    }
+
+    fun setCustomGradientTopColor(color: androidx.compose.ui.graphics.Color, timeTheme: TimeTheme) {
+        val colors = customGradientColors(timeTheme).copy(topHex = color.toHexString())
+        setCustomGradientColors(colors, timeTheme)
+    }
+
+    fun setCustomGradientBottomColor(color: androidx.compose.ui.graphics.Color, timeTheme: TimeTheme) {
+        val colors = customGradientColors(timeTheme).copy(bottomHex = color.toHexString())
+        setCustomGradientColors(colors, timeTheme)
+    }
+
+    fun skyGradientSet(timeTheme: TimeTheme): SkyGradientSet {
+        if (timeTheme !in TimeTheme.configurableGradientThemes) {
+            return timeTheme.defaultGradientSet()
+        }
+        val override = prayerGradientStyles[timeTheme.wireValue] ?: return timeTheme.defaultGradientSet()
+        return SkyGradientSet.fromWire(override) ?: timeTheme.defaultGradientSet()
+    }
+
+    fun setSkyGradientSet(set: SkyGradientSet, timeTheme: TimeTheme) {
+        if (timeTheme !in TimeTheme.configurableGradientThemes) return
         val styles = prayerGradientStyles.toMutableMap()
         styles[timeTheme.wireValue] = set.wireValue
         prayerGradientStyles = styles
+        if (set == SkyGradientSet.CUSTOM && prayerCustomGradientColors[timeTheme.wireValue] == null) {
+            setCustomGradientColors(CustomSkyGradientColors.defaultsFor(timeTheme), timeTheme)
+        }
     }
+
+    private fun migrateLegacyPrayerGradientStylesIfNeeded() {
+        val current = prayerGradientStyles
+        if (current.isEmpty()) return
+        val migrated = migratePrayerGradientStyles(current)
+        if (migrated != current) {
+            prayerGradientStyles = migrated
+        }
+    }
+
+    private fun migratePrayerGradientStyles(styles: Map<String, String>): Map<String, String> {
+        val configurableKeys = TimeTheme.configurableGradientThemes.map { it.wireValue }.toSet()
+        val normalized = styles
+            .mapKeys { (key, _) -> key.lowercase() }
+            .mapValues { (_, value) -> normalizeGradientWireValue(value) }
+            .filterKeys { it in configurableKeys }
+
+        if (normalized.isEmpty()) return emptyMap()
+
+        // Older builds seeded every prayer as "classic" — drop so per-prayer product defaults apply.
+        val legacyAllClassic = normalized.size >= configurableKeys.size &&
+            normalized.values.all { it == SkyGradientSet.CLASSIC.wireValue }
+        if (legacyAllClassic) return emptyMap()
+
+        return normalized
+    }
+
+    private fun normalizeGradientWireValue(raw: String): String = when (raw.lowercase()) {
+        "original" -> SkyGradientSet.CLASSIC.wireValue
+        "modern" -> SkyGradientSet.SET2.wireValue
+        else -> raw.lowercase()
+    }
+
+    private var prayerCustomGradientColors: Map<String, CustomSkyGradientColors>
+        get() {
+            val raw = prefs.getString(KEY_PRAYER_CUSTOM_GRADIENT_COLORS_JSON, null) ?: return emptyMap()
+            return runCatching { json.decodeFromString<Map<String, CustomSkyGradientColors>>(raw) }
+                .getOrDefault(emptyMap())
+        }
+        set(value) {
+            prefs.edit().putString(KEY_PRAYER_CUSTOM_GRADIENT_COLORS_JSON, json.encodeToString(value)).apply()
+            bump()
+        }
 
     private var prayerGradientStyles: Map<String, String>
         get() {
@@ -206,10 +304,13 @@ class SettingsStore(context: Context) {
         private const val KEY_THEME_MODE = "themeMode"
         private const val KEY_FIXED_THEME = "fixedTheme"
         private const val KEY_HIDE_QIBLA = "hideQiblaCompass"
+        private const val KEY_SHOW_DUHA_TIME = "showDuhaTime"
+        private const val KEY_SHOW_IQAMAH_TIME = "showIqamahTime"
         private const val KEY_FIRST_APP_OPEN_TRACKED_AT = "firstAppOpenTrackedAt1970"
         private const val KEY_HAS_COMPLETED_ENJOYMENT_REVIEW_FLOW = "hasCompletedEnjoymentReviewFlow"
         private const val KEY_LAST_SEEN_BUILD_VERSION = "lastSeenBuildVersion"
         private const val KEY_NOTIFICATIONS_JSON = "notificationsJSON"
         private const val KEY_PRAYER_GRADIENT_STYLES_JSON = "prayerGradientStylesJSON"
+        private const val KEY_PRAYER_CUSTOM_GRADIENT_COLORS_JSON = "prayerCustomGradientColorsJSON"
     }
 }

@@ -3,7 +3,12 @@ package com.mikhailspeaks.masjidly.features.home
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.background
 import com.mikhailspeaks.masjidly.ui.haptic.HapticTextButton
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
@@ -23,6 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -54,9 +60,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.mikhailspeaks.masjidly.ui.home.AtmosphericSkyBackground
+import com.mikhailspeaks.masjidly.ui.home.rememberHomeThemeAnimation
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -154,6 +160,8 @@ fun HomeScreen(
 
     val dynamicTheme = TimeTheme.homeHeroTheme(state.displayedPrayerTimes, state.selectedPrayerIndex)
     val theme = settingsStore.resolvedTheme(dynamicTheme)
+    val themeAnimation = rememberHomeThemeAnimation(theme)
+    val textColor = themeAnimation.textColor
 
   @Suppress("UNUSED_VARIABLE")
     val _settingsTick = settingsRevision
@@ -162,33 +170,7 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize(),
     ) {
-        // Multi-layer atmospheric background matching iOS
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(theme.sky.baseColors))
-        )
-        // Horizon glow approximating iOS RadialGradient
-        theme.sky.glowColor?.let { glow ->
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val center = androidx.compose.ui.geometry.Offset(size.width * 0.5f, size.height * 0.82f)
-                val maxRadius = size.width * 0.7f
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            glow.copy(alpha = 0.6f * theme.sky.glowBaseAlpha),
-                            glow.copy(alpha = 0.3f * theme.sky.glowBaseAlpha),
-                            Color.Transparent,
-                        ),
-                        center = center,
-                        radius = maxRadius,
-                    ),
-                    radius = maxRadius,
-                    center = center,
-                    blendMode = BlendMode.Screen,
-                )
-            }
-        }
+        AtmosphericSkyBackground(animation = themeAnimation)
         when {
             state.displayedPrayerTimes != null && state.selectedMosque != null -> {
                 HomePrayerContent(
@@ -204,7 +186,10 @@ fun HomeScreen(
                     locale = locale,
                     language = language,
                     theme = theme,
+                    textColor = textColor,
                     hideQibla = hideQibla,
+                    showDuhaTime = settingsStore.showDuhaTime,
+                    showIqamahTime = settingsStore.showIqamahTime,
                     locationPermissionGranted = hasLocationPermission,
                     onSelectPrayer = { index ->
                         viewModel.selectPrayerIndex(index)
@@ -219,6 +204,7 @@ fun HomeScreen(
                     state.loadState == HomeViewModel.LoadState.EMPTY) -> {
                 MissingMonthState(
                     theme = theme,
+                    textColor = textColor,
                     language = language,
                     displayedDate = state.displayedDate,
                     locale = locale,
@@ -231,12 +217,13 @@ fun HomeScreen(
                 state.loadState == HomeViewModel.LoadState.IDLE -> {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color = theme.textColor,
+                    color = textColor,
                 )
             }
             else -> {
                 HomeErrorState(
                     theme = theme,
+                    textColor = textColor,
                     language = language,
                     onRetry = {
                         if (state.selectedMosque != null) viewModel.manualRefresh() else viewModel.load()
@@ -247,6 +234,7 @@ fun HomeScreen(
 
         HomeTopChrome(
             theme = theme,
+            textColor = textColor,
             language = language,
             displayedDate = state.displayedDate,
             locale = locale,
@@ -343,6 +331,7 @@ private data class ReviewPromptCopy(
 @Composable
 private fun HomeTopChrome(
     theme: ResolvedTheme,
+    textColor: Color,
     language: AppLanguage,
     displayedDate: Instant,
     locale: Locale,
@@ -384,7 +373,7 @@ private fun HomeTopChrome(
                         Icon(
                             Icons.Default.CalendarMonth,
                             contentDescription = LocaleStrings.t("accessibility.timetable", language),
-                            tint = theme.textColor,
+                            tint = textColor,
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -406,7 +395,7 @@ private fun HomeTopChrome(
                     Icon(
                         Icons.Default.ChevronLeft,
                         contentDescription = null,
-                        tint = theme.textColor.copy(alpha = 0.5f),
+                        tint = textColor.copy(alpha = 0.5f),
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -419,7 +408,7 @@ private fun HomeTopChrome(
                 ) {
                     Text(
                         text = gregorian,
-                        color = theme.textColor.copy(alpha = 0.6f),
+                        color = textColor.copy(alpha = 0.6f),
                         style = rememberAppTextStyle(13f, FontWeight.SemiBold),
                         textAlign = TextAlign.Center,
                         letterSpacing = 1.sp,
@@ -427,7 +416,7 @@ private fun HomeTopChrome(
                     )
                     Text(
                         text = hijrah,
-                        color = theme.textColor.copy(alpha = 0.4f),
+                        color = textColor.copy(alpha = 0.4f),
                         textAlign = TextAlign.Center,
                         style = rememberAppTextStyle(10f, FontWeight.Medium),
                         letterSpacing = 0.8.sp,
@@ -444,7 +433,7 @@ private fun HomeTopChrome(
                     Icon(
                         Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = theme.textColor.copy(alpha = 0.5f),
+                        tint = textColor.copy(alpha = 0.5f),
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -468,7 +457,7 @@ private fun HomeTopChrome(
                         Icon(
                             Icons.Default.Settings,
                             contentDescription = LocaleStrings.t("accessibility.settings", language),
-                            tint = theme.textColor,
+                            tint = textColor,
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -509,7 +498,10 @@ private fun HomePrayerContent(
     locale: Locale,
     language: AppLanguage,
     theme: ResolvedTheme,
+    textColor: Color,
     hideQibla: Boolean,
+    showDuhaTime: Boolean,
+    showIqamahTime: Boolean,
     locationPermissionGranted: Boolean,
     onSelectPrayer: (Int) -> Unit,
     highlightPrayerShortcuts: Boolean = false,
@@ -533,8 +525,8 @@ private fun HomePrayerContent(
     LaunchedEffect(heroCountdownEnabled) {
         if (!heroCountdownEnabled) return@LaunchedEffect
         while (true) {
-            delay(1000)
             now = Instant.now()
+            delay(1000)
         }
     }
     val heroPresentation = if (heroCountdownEnabled) {
@@ -568,6 +560,8 @@ private fun HomePrayerContent(
         locale = locale,
         jummahSlots = jummahSlots,
         language = language,
+        showDuhaTime = showDuhaTime,
+        showIqamahTime = showIqamahTime,
     )
 
     val quickInfo = computeQuickInfo(prayerTimes, monthData, displayedDate, uses24HourTime, locale)
@@ -592,6 +586,7 @@ private fun HomePrayerContent(
         ) {
             QiblaPrayerIcon(
                 theme = theme,
+                textColor = textColor,
                 rotationDegrees = if (showQiblaPointer) qiblaRotation else null,
                 showCountdown = showHeroCountdown && heroPresentation != null,
                 countdownLabel = countdownLabel,
@@ -623,57 +618,129 @@ private fun HomePrayerContent(
         }
         Spacer(modifier = Modifier.height(60.dp))
 
-        // Hero time (88pt, light weight, matching iOS) — clock + meridiem in one uniform Text
-        Text(
-            text = heroParts.meridiem?.let { "${heroParts.clock}\u2009${it}" } ?: heroParts.clock,
-            style = rememberAppTextStyle(88f, FontWeight.Light),
-            color = theme.textColor,
-            letterSpacing = (-1.76f).sp,
-            maxLines = 1,
-            softWrap = false,
-        )
-
-        // Iqamah subtitle (26pt, matching iOS)
-        iqamahSubtitle?.let {
-            Text(
-                text = it,
-                style = rememberAppTextStyle(26f),
-                color = theme.textColor.copy(alpha = 0.78f),
-                maxLines = 2,
+        AnimatedContent(
+            targetState = index,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(250)) togetherWith fadeOut(animationSpec = tween(250))
+            },
+            label = "heroPrayerTime",
+        ) { animatedIndex ->
+            val animatedEntry = prayerEntries[animatedIndex]
+            val heroParts = PrayerTimesEngine.formatPrayerTimeHeroParts(
+                animatedEntry.adhan,
+                uses24HourTime,
+                locale,
             )
+            val iqamahSubtitle = iqamahSubtitleLine(
+                canonical = animatedEntry.canonical,
+                adhanRaw = animatedEntry.adhan,
+                daily = prayerTimes,
+                iq = iqamahTimes,
+                mosqueSlug = mosqueSlug,
+                displayedDate = displayedDate,
+                uses24Hour = uses24HourTime,
+                asrPreference = asrPreference,
+                locale = locale,
+                jummahSlots = jummahSlots,
+                language = language,
+                showDuhaTime = showDuhaTime,
+                showIqamahTime = showIqamahTime,
+            )
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = heroParts.meridiem?.let { "${heroParts.clock}\u2009${it}" } ?: heroParts.clock,
+                    style = rememberAppTextStyle(88f, FontWeight.Light),
+                    color = textColor,
+                    letterSpacing = (-1.76f).sp,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+
+                iqamahSubtitle?.let {
+                    Text(
+                        text = it,
+                        style = rememberAppTextStyle(26f),
+                        color = textColor.copy(alpha = 0.78f),
+                        maxLines = 2,
+                    )
+                }
+            }
         }
 
         // Spacer to push prayer name + letter picker to bottom
         Spacer(modifier = Modifier.weight(1f))
 
-        // Prayer name (36pt, matching iOS)
-        Text(
-            text = entry.displayName,
-            style = rememberAppTextStyle(36f),
-            color = theme.textColor,
-            letterSpacing = (-0.36f).sp,
-        )
+        AnimatedContent(
+            targetState = index,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(250)) togetherWith fadeOut(animationSpec = tween(250))
+            },
+            label = "heroPrayerName",
+        ) { animatedIndex ->
+            Text(
+                text = prayerEntries[animatedIndex].displayName,
+                style = rememberAppTextStyle(36f),
+                color = textColor,
+                letterSpacing = (-0.36f).sp,
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Prayer letter picker — iOS highlights the whole HStack when in prayerShortcut step.
-        Box(modifier = Modifier.padding(horizontal = 20.dp)) {
-            OnboardingHighlight(
-                highlighted = highlightPrayerShortcuts,
-                theme = theme,
-                shape = RoundedCornerShape(percent = 50),
+        PrayerLetterPicker(
+            prayerEntries = prayerEntries,
+            selectedIndex = index,
+            textColor = textColor,
+            theme = theme,
+            highlightPrayerShortcuts = highlightPrayerShortcuts,
+            onSelectPrayer = onSelectPrayer,
+        )
+    }
+}
+
+@Composable
+private fun PrayerLetterPicker(
+    prayerEntries: List<PrayerEntry>,
+    selectedIndex: Int,
+    textColor: Color,
+    theme: ResolvedTheme,
+    highlightPrayerShortcuts: Boolean,
+    onSelectPrayer: (Int) -> Unit,
+) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(selectedIndex) {
+        listState.animateScrollToItem(selectedIndex)
+        val info = listState.layoutInfo
+        val item = info.visibleItemsInfo.find { it.index == selectedIndex } ?: return@LaunchedEffect
+        val viewportWidth = info.viewportEndOffset - info.viewportStartOffset
+        val centerOffset = item.offset - (viewportWidth - item.size) / 2
+        if (centerOffset != 0) {
+            listState.animateScrollBy(centerOffset.toFloat(), animationSpec = tween(250))
+        }
+    }
+
+    Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+        OnboardingHighlight(
+            highlighted = highlightPrayerShortcuts,
+            theme = theme,
+            shape = RoundedCornerShape(percent = 50),
+        ) {
+            LazyRow(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
-                ) {
-                prayerEntries.forEachIndexed { i, item ->
+                itemsIndexed(prayerEntries) { i, item ->
                     val letter = run {
                         val name = item.displayName
                         val stripped = if (name.startsWith("ال")) name.drop(2) else name
                         stripped.first().toString().uppercase()
                     }
-                    val isSelected = i == index
+                    val isSelected = i == selectedIndex
                     Text(
                         text = letter,
                         style = rememberAppTextStyle(
@@ -681,9 +748,9 @@ private fun HomePrayerContent(
                             if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         ),
                         color = if (isSelected) {
-                            theme.textColor
+                            textColor
                         } else {
-                            theme.textColor.copy(alpha = 0.38f)
+                            textColor.copy(alpha = 0.38f)
                         },
                         modifier = Modifier
                             .heightIn(min = 36.dp)
@@ -693,7 +760,6 @@ private fun HomePrayerContent(
                     )
                 }
             }
-        }
         }
     }
 }
@@ -781,6 +847,7 @@ private fun PrayerCarouselCard(
 @Composable
 private fun MissingMonthState(
     theme: ResolvedTheme,
+    textColor: Color,
     language: AppLanguage,
     displayedDate: Instant,
     locale: Locale,
@@ -805,14 +872,14 @@ private fun MissingMonthState(
         Text(
             text = LocaleStrings.t("home.missing_times.title", language),
             style = MaterialTheme.typography.headlineSmall,
-            color = theme.textColor,
+            color = textColor,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = monthTitle,
             style = MaterialTheme.typography.bodyLarge,
-            color = theme.textColor.copy(alpha = 0.72f),
+            color = textColor.copy(alpha = 0.72f),
             textAlign = TextAlign.Center,
         )
         if (hasFallback) {
@@ -821,7 +888,7 @@ private fun MissingMonthState(
                 onClick = onGoToAvailable,
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(theme.textColor.copy(alpha = 0.92f)),
+                    .background(textColor.copy(alpha = 0.92f)),
             ) {
                 Text(
                     text = LocaleStrings.t("home.go_to_available_times", language),
@@ -845,14 +912,19 @@ private fun MissingMonthState(
         ) {
             Text(
                 text = LocaleStrings.t("home.missing_times.email_button", language),
-                color = theme.textColor,
+                color = textColor,
             )
         }
     }
 }
 
 @Composable
-private fun HomeErrorState(theme: ResolvedTheme, language: AppLanguage, onRetry: () -> Unit) {
+private fun HomeErrorState(
+    theme: ResolvedTheme,
+    textColor: Color,
+    language: AppLanguage,
+    onRetry: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -862,7 +934,7 @@ private fun HomeErrorState(theme: ResolvedTheme, language: AppLanguage, onRetry:
     ) {
         Text(
             text = LocaleStrings.t("home.load_error", language),
-            color = theme.textColor,
+            color = textColor,
             style = MaterialTheme.typography.bodyLarge,
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -870,7 +942,7 @@ private fun HomeErrorState(theme: ResolvedTheme, language: AppLanguage, onRetry:
             onClick = onRetry,
             modifier = Modifier
                 .clip(CircleShape)
-                .background(theme.textColor.copy(alpha = 0.92f)),
+                .background(textColor.copy(alpha = 0.92f)),
         ) {
             Text(
                 text = LocaleStrings.t("action.retry", language),
@@ -897,8 +969,17 @@ private fun iqamahSubtitleLine(
     locale: Locale,
     jummahSlots: List<String>,
     language: AppLanguage,
+    showDuhaTime: Boolean,
+    showIqamahTime: Boolean,
 ): String? {
-    if (canonical == "Sunrise") return null
+    if (canonical == "Sunrise") {
+        if (!showDuhaTime) return null
+        val window = PrayerTimesEngine.duhaWindow(daily.sunrise, daily.dhuhr) ?: return null
+        val start = PrayerTimesEngine.formatPrayerClockForDisplay(window.start, uses24Hour, locale)
+        val end = PrayerTimesEngine.formatPrayerClockForDisplay(window.end, uses24Hour, locale)
+        return LocaleStrings.format("home.duha_format", language, start, end)
+    }
+    if (!showIqamahTime) return null
     if (canonical == "Jummah" && jummahSlots.size >= 2) {
         val second = PrayerTimesEngine.formatPrayerClockForDisplay(jummahSlots[1], uses24Hour, locale)
         return LocaleStrings.format("home.jummah_2_format", language, second)

@@ -76,6 +76,22 @@ struct SettingsView: View {
                         )
                         .padding(.vertical, 12)
 
+                        settingsRowDivider
+                        SettingsToggleRow(
+                            title: localized("settings.iqamah_time.title"),
+                            isOn: Bindable(settings).showIqamahTime,
+                            appearance: currentAppearance
+                        )
+                        .padding(.vertical, 12)
+
+                        settingsRowDivider
+                        SettingsToggleRow(
+                            title: localized("settings.duha_time.title"),
+                            isOn: Bindable(settings).showDuhaTime,
+                            appearance: currentAppearance
+                        )
+                        .padding(.vertical, 12)
+
                         if model.supportsMultipleAsrAdhan {
                             settingsRowDivider
                             asrIqamahPickerRow
@@ -779,31 +795,38 @@ struct SettingsView: View {
 
     private func prayerGradientPickerRow(for theme: HomeDesign.TimeTheme) -> some View {
         let appearance = settings.resolvedAppearance(for: theme)
+        let isCustom = settings.skyGradientSet(for: theme) == .custom
 
-        return HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(gradientPickerTitle(for: theme))
-                .appFont(size: 17, weight: .regular)
-                .foregroundColor(appearance.textColor)
-                .multilineTextAlignment(.leading)
-                .lineLimit(2)
-                .layoutPriority(1)
-                .fixedSize(horizontal: true, vertical: false)
+        return VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(gradientPickerTitle(for: theme))
+                    .appFont(size: 17, weight: .regular)
+                    .foregroundColor(appearance.textColor)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                    .layoutPriority(1)
+                    .fixedSize(horizontal: true, vertical: false)
 
-            Spacer(minLength: 12)
+                Spacer(minLength: 12)
 
-            Picker("", selection: skyGradientSetBinding(for: theme)) {
-                ForEach(HomeDesign.SkyGradientSet.allCases) { set in
-                    Text(skyGradientSetLabel(set))
-                        .appFont(size: 17)
-                        .tag(set)
+                Picker("", selection: skyGradientSetBinding(for: theme)) {
+                    ForEach(HomeDesign.SkyGradientSet.allCases) { set in
+                        Text(skyGradientSetLabel(set))
+                            .appFont(size: 17)
+                            .tag(set)
+                    }
                 }
+                .pickerStyle(.menu)
+                .tint(appearance.textColor)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .pickerStyle(.menu)
-            .tint(appearance.textColor)
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            if isCustom {
+                customGradientColorControls(for: theme, appearance: appearance)
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -819,7 +842,38 @@ struct SettingsView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(appearance.textColor.opacity(0.16), lineWidth: 0.5)
         }
-        .frame(minHeight: 44)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func customGradientColorControls(for theme: HomeDesign.TimeTheme, appearance: HomeDesign.ResolvedTheme) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            CustomSkyColorPickerCard(
+                label: localized("settings.theme.gradient.custom.top"),
+                color: customTopColorBinding(for: theme),
+                textColor: appearance.textColor
+            )
+            CustomSkyColorPickerCard(
+                label: localized("settings.theme.gradient.custom.bottom"),
+                color: customBottomColorBinding(for: theme),
+                textColor: appearance.textColor
+            )
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 14)
+    }
+
+    private func customTopColorBinding(for theme: HomeDesign.TimeTheme) -> Binding<Color> {
+        Binding(
+            get: { settings.customGradientColors(for: theme).topColor },
+            set: { settings.setCustomGradientTopColor($0, for: theme) }
+        )
+    }
+
+    private func customBottomColorBinding(for theme: HomeDesign.TimeTheme) -> Binding<Color> {
+        Binding(
+            get: { settings.customGradientColors(for: theme).bottomColor },
+            set: { settings.setCustomGradientBottomColor($0, for: theme) }
+        )
     }
 
     private func skyGradientSetBinding(for theme: HomeDesign.TimeTheme) -> Binding<HomeDesign.SkyGradientSet> {
@@ -838,6 +892,7 @@ struct SettingsView: View {
         switch set {
         case .classic: localized("settings.theme.gradient.classic")
         case .set2: localized("settings.theme.gradient.set2")
+        case .custom: localized("settings.theme.gradient.custom")
         }
     }
 
@@ -1417,6 +1472,37 @@ private struct NotificationToggleRow: View {
         }
         .tint(appearance.textColor)
         .frame(minHeight: 44)
+    }
+}
+
+private struct CustomSkyColorPickerCard: View {
+    let label: String
+    @Binding var color: Color
+    let textColor: Color
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            ColorPicker("", selection: $color, supportsOpacity: false)
+                .labelsHidden()
+
+            Text(label)
+                .appFont(size: 15, weight: .regular)
+                .foregroundColor(textColor)
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .allowsHitTesting(false)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(textColor.opacity(0.12))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(label))
     }
 }
 

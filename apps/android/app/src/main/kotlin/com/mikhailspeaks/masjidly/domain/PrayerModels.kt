@@ -174,9 +174,10 @@ data class HeroCountdownPresentation(
 
     /** Elapsed fraction of `[progressStartDate, targetDate]` — matches accessory widget ring. */
     fun progress01(at: Instant): Double {
-        val span = (targetDate.epochSecond - progressStartDate.epochSecond).toDouble()
-        if (span <= 0) return 0.0
-        val t = (at.epochSecond - progressStartDate.epochSecond) / span
+        val spanMillis = Duration.between(progressStartDate, targetDate).toMillis().toDouble()
+        if (spanMillis <= 0) return 0.0
+        val elapsedMillis = Duration.between(progressStartDate, at).toMillis().toDouble()
+        val t = elapsedMillis / spanMillis
         return minOf(1.0, maxOf(0.0, t))
     }
 }

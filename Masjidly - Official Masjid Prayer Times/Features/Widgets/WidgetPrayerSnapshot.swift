@@ -9,6 +9,7 @@ enum WidgetPrayerSharedConfig {
     static let themeModeKey = "widgetThemeMode"
     static let fixedThemeKey = "widgetFixedTheme"
     static let prayerGradientStylesKey = "widgetPrayerGradientStyles"
+    static let prayerCustomGradientColorsKey = "widgetPrayerCustomGradientColors"
 }
 
 struct WidgetMosqueSnapshot: Codable, Equatable, Sendable {

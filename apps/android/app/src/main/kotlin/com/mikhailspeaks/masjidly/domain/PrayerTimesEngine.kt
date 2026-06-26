@@ -274,6 +274,15 @@ object PrayerTimesEngine {
         return String.format(Locale.ROOT, "%02d:%02d", total / 60, total % 60)
     }
 
+    data class DuhaWindow(val start: String, val end: String)
+
+    /** Duha begins 15 minutes after sunrise and ends 15 minutes before Dhuhr. */
+    fun duhaWindow(sunrise: String, dhuhr: String): DuhaWindow? {
+        val start = addMinutesToTime(sunrise, 15) ?: return null
+        val end = addMinutesToTime(dhuhr, -15) ?: return null
+        return DuhaWindow(start, end)
+    }
+
     fun resolveRelativeIqamah(iqamahValue: String, adhanTime: String): String {
         val value = iqamahValue.trim()
         adhanPlusMinutesRegex.matchEntire(value)?.groupValues?.getOrNull(1)?.toIntOrNull()?.let { mins ->

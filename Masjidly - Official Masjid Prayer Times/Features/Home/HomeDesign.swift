@@ -1,12 +1,28 @@
 import SwiftUI
 
 enum HomeDesign {
-    /// Per-prayer sky style. User-facing labels: **Original** (`.classic`), **Modern** (`.set2`).
+    /// Per-prayer sky style. User-facing labels: **Original** (`.classic`), **Modern** (`.set2`), **Custom** (`.custom`).
     enum SkyGradientSet: String, CaseIterable, Identifiable, Codable, Sendable {
         case classic
         case set2
+        case custom
 
         var id: String { rawValue }
+    }
+
+    struct CustomSkyGradientColors: Codable, Equatable, Sendable {
+        var topHex: String
+        var bottomHex: String
+
+        var topColor: Color { Color(hex: topHex) }
+        var bottomColor: Color { Color(hex: bottomHex) }
+
+        static func defaults(for theme: TimeTheme) -> CustomSkyGradientColors {
+            let sky = theme.sky(set: theme.defaultGradientSet())
+            let top = sky.baseColors.first ?? .white
+            let bottom = sky.baseColors.last ?? .black
+            return CustomSkyGradientColors(topHex: top.hexRGBString(), bottomHex: bottom.hexRGBString())
+        }
     }
 
     struct SkyRadialOverlay: Sendable {
@@ -68,12 +84,47 @@ enum HomeDesign {
     struct ResolvedTheme {
         let timeTheme: TimeTheme
         let gradientSet: SkyGradientSet
+        let customTopColor: Color?
+        let customBottomColor: Color?
 
-        var sky: SkyTheme { timeTheme.sky(set: gradientSet) }
-        var textColor: Color { timeTheme.textColor(set: gradientSet) }
+        init(
+            timeTheme: TimeTheme,
+            gradientSet: SkyGradientSet,
+            customTopColor: Color? = nil,
+            customBottomColor: Color? = nil
+        ) {
+            self.timeTheme = timeTheme
+            self.gradientSet = gradientSet
+            self.customTopColor = customTopColor
+            self.customBottomColor = customBottomColor
+        }
+
+        var sky: SkyTheme {
+            if gradientSet == .custom,
+               let customTopColor,
+               let customBottomColor {
+                return SkyTheme(baseColors: [customTopColor, customBottomColor], glowColor: nil)
+            }
+            return timeTheme.sky(set: gradientSet)
+        }
+
+        var textColor: Color {
+            if gradientSet == .custom,
+               let customTopColor,
+               let customBottomColor {
+                return Self.textColorForCustomGradient(top: customTopColor, bottom: customBottomColor)
+            }
+            return timeTheme.textColor(set: gradientSet)
+        }
+
         var iconColor: Color { textColor }
-        var usesLightForeground: Bool { timeTheme.usesLightForeground(set: gradientSet) }
+        var usesLightForeground: Bool { textColor == .white }
         var gradient: Gradient { sky.resolvedGradient }
+
+        static func textColorForCustomGradient(top: Color, bottom: Color) -> Color {
+            let luminance = (top.relativeLuminance + bottom.relativeLuminance) / 2
+            return luminance < 0.45 ? .white : Color(hex: "111111")
+        }
 
         /// Filled settings action rows (location recovery, etc.) — readable on both classic and pastel skies.
         var settingsActionButtonForeground: Color {
@@ -107,12 +158,14 @@ enum HomeDesign {
                 return classicSetSky
             case .set2:
                 return set2Sky
+            case .custom:
+                return set2Sky
             }
         }
 
         func defaultGradientSet() -> SkyGradientSet {
             switch self {
-            case .fajr, .sunrise, .maghrib:
+            case .fajr, .sunrise, .asr, .maghrib, .isha:
                 return .set2
             default:
                 return .classic
@@ -122,13 +175,13 @@ enum HomeDesign {
         private var set2Sky: SkyTheme {
             switch self {
             case .fajr:
-                return SkyTheme(baseColors: [Color(hex: "6274E7"), Color(hex: "8752A3")], glowColor: nil)
+                return SkyTheme(baseColors: [Color(hex: "103783"), Color(hex: "8752A3")], glowColor: nil)
             case .sunrise:
                 return set2SunriseSky
             case .dhuhr:
-                return SkyTheme(baseColors: [Color(hex: "EBF4F5"), Color(hex: "B5C6E0")], glowColor: nil)
+                return SkyTheme(baseColors: [Color(hex: "EBF4F5"), Color(hex: "60EFFF")], glowColor: nil)
             case .asr:
-                return SkyTheme(baseColors: [Color(hex: "FBD07C"), Color(hex: "F7F779")], glowColor: nil)
+                return set2AsrSky
             case .maghrib:
                 return SkyTheme(
                     baseColors: [
@@ -147,10 +200,18 @@ enum HomeDesign {
         private var set2SunriseSky: SkyTheme {
             SkyTheme(
                 baseColors: [
-                    Color(hex: "9FF1F2"),
-                    Color(hex: "6CD4E4"),
-                    Color(hex: "73E1EA"),
-                    Color(hex: "BDE2BD"),
+                    Color(hex: "07C8F9"),
+                    Color(hex: "B597F6"),
+                ],
+                glowColor: nil
+            )
+        }
+
+        private var set2AsrSky: SkyTheme {
+            SkyTheme(
+                baseColors: [
+                    Color(hex: "60EFFF"),
+                    Color(hex: "F3F98A"),
                 ],
                 glowColor: nil
             )
@@ -190,7 +251,7 @@ enum HomeDesign {
                 default:
                     return Color(hex: "111111")
                 }
-            case .set2:
+            case .set2, .custom:
                 switch self {
                 case .fajr, .isha, .tahajjud:
                     return .white
@@ -442,6 +503,32 @@ struct RoundedCorner: Shape {
 }
 
 extension Color {
+    var relativeLuminance: Double {
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+
+        func channel(_ value: CGFloat) -> Double {
+            let scaled = Double(value)
+            return scaled <= 0.03928 ? scaled / 12.92 : pow((scaled + 0.055) / 1.055, 2.4)
+        }
+
+        return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
+    }
+
+    func hexRGBString() -> String {
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        return String(format: "%02X%02X%02X", Int(red * 255), Int(green * 255), Int(blue * 255))
+    }
+
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0

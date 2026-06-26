@@ -43,6 +43,7 @@ fun QiblaPrayerIcon(
     rotationDegrees: Float?,
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
+    textColor: Color = theme.textColor,
     showCountdown: Boolean = false,
     countdownLabel: String = "",
     countdownTime: String = "",
@@ -51,7 +52,7 @@ fun QiblaPrayerIcon(
     onLongPress: (() -> Unit)? = null,
 ) {
     val scale = size.value / FRAME_REF
-    val color = theme.textColor
+    val color = textColor
     val outerRingOpacity by animateFloatAsState(
         targetValue = if (showCountdown) 0.42f else 0.24f,
         animationSpec = tween(220),

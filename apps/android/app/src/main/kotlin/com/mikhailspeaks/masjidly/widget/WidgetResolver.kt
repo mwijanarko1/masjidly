@@ -2,6 +2,7 @@ package com.mikhailspeaks.masjidly.widget
 
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.AsrIqamahPreference
+import com.mikhailspeaks.masjidly.domain.HeroCountdownLabelKind
 import com.mikhailspeaks.masjidly.domain.PrayerTimesEngine
 import java.time.DayOfWeek
 import java.time.Instant
@@ -153,6 +154,7 @@ object WidgetResolver {
 
         var nextPrayerIndex = 0
         var nextEventDate: Instant? = null
+        var nextEventIsIqamah = false
         var foundTodayEvent = false
 
         for ((i, p) in prayersList.withIndex()) {
@@ -160,6 +162,7 @@ object WidgetResolver {
             if (adhanDate != null && adhanDate.isAfter(now)) {
                 nextPrayerIndex = i
                 nextEventDate = adhanDate
+                nextEventIsIqamah = false
                 foundTodayEvent = true
                 break
             }
@@ -177,6 +180,7 @@ object WidgetResolver {
                 if (iqamahDate != null && iqamahDate.isAfter(now)) {
                     nextPrayerIndex = i
                     nextEventDate = iqamahDate
+                    nextEventIsIqamah = true
                     foundTodayEvent = true
                     break
                 }
@@ -241,6 +245,13 @@ object WidgetResolver {
             wallClock = { wallClockDay(it, nextWallClockBase) },
         )
 
+        val targetDate = if (isNextFajrTomorrow) next.adhanDate else nextEventDate
+        val countdownLabelKind = when {
+            nextEventIsIqamah -> HeroCountdownLabelKind.IQAMAH_IN
+            nextPrayerIndex == 0 && !isNextFajrTomorrow -> HeroCountdownLabelKind.ADHAN_IN
+            else -> HeroCountdownLabelKind.NEXT_PRAYER
+        }
+
         val rows = prayersList.flatMapIndexed { i, p ->
             val isNext = i == nextPrayerIndex && !isNextFajrTomorrow
             val isPassed = when {
@@ -290,6 +301,8 @@ object WidgetResolver {
             prayerName = next.name,
             adhanTime = format(next.adhan, snapshot.uses24HourTime, locale, now),
             iqamahTime = format(displayIqamahRaw, snapshot.uses24HourTime, locale, now),
+            targetDateEpochMillis = targetDate?.toEpochMilli(),
+            countdownLabelKind = countdownLabelKind,
             rows = rows,
             displayDateEpochMillis = dayStart.toInstant().toEpochMilli(),
         )
