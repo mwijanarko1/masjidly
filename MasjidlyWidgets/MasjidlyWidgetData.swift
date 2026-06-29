@@ -235,8 +235,14 @@ private extension String {
 
 struct MasjidlyWidgetSnapshotStore {
     func readSnapshot() -> MasjidlyWidgetSnapshot? {
-        guard let defaults = UserDefaults(suiteName: MasjidlyWidgetSharedConfig.appGroupIdentifier),
-              let data = defaults.data(forKey: MasjidlyWidgetSharedConfig.snapshotKey),
+        guard let defaults = UserDefaults(suiteName: MasjidlyWidgetSharedConfig.appGroupIdentifier) else {
+            return nil
+        }
+        let selectedId = defaults.string(forKey: MasjidlyWidgetSharedConfig.appSelectedMosqueIdKey) ?? ""
+        let keys = selectedId.isEmpty
+            ? [MasjidlyWidgetSharedConfig.snapshotKey]
+            : [MasjidlyWidgetSharedConfig.snapshotByMosquePrefix + selectedId, MasjidlyWidgetSharedConfig.snapshotKey]
+        guard let data = keys.lazy.compactMap({ defaults.data(forKey: $0) }).first,
               let snapshot = try? JSONDecoder().decode(MasjidlyWidgetSnapshot.self, from: data),
               snapshot.schemaVersion == 1 else {
             return nil

@@ -12,6 +12,7 @@ data class WhatsNewItem(
 )
 
 enum class WhatsNewIcon {
+    BUG_FIX,
     PALETTE,
     WIDGET,
 }
@@ -35,50 +36,30 @@ object WhatsNew {
         return when (code) {
             "ar" -> listOf(
                 WhatsNewItem(
-                    title = "ودجات مُعاد تصميمها",
-                    description = "ودجات الشاشة الرئيسية والقفل مع عدّاد مباشر وجداول الصلاة.",
-                    icon = WhatsNewIcon.WIDGET,
-                ),
-                WhatsNewItem(
-                    title = "تدرجات صلاة جديدة",
-                    description = "أصلي أو عصري أو مخصص لكل صلاة في الإعدادات ← السمة.",
-                    icon = WhatsNewIcon.PALETTE,
+                    title = "إصلاحات أخطاء",
+                    description = "تحسينات وإصلاحات لجعل التطبيق أكثر موثوقية.",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
             "ur" -> listOf(
                 WhatsNewItem(
-                    title = "ویجٹس کا نیا ڈیزائن",
-                    description = "ہوم اور لاک اسکرین ویجٹس میں لائیو کاؤنٹ ڈاؤن اور مکمل اوقات۔",
-                    icon = WhatsNewIcon.WIDGET,
-                ),
-                WhatsNewItem(
-                    title = "نئے نماز کے گریڈینٹ",
-                    description = "ہر نماز کے لیے اصل، جدید یا حسبِ مناسب۔ ترتیبات ← تھیم۔",
-                    icon = WhatsNewIcon.PALETTE,
+                    title = "بگ فکسز",
+                    description = "ایپ کو زیادہ قابلِ اعتماد بنانے کے لیے اصلاحات اور بہتریاں۔",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
             "id" -> listOf(
                 WhatsNewItem(
-                    title = "Widget didesain ulang",
-                    description = "Widget layar utama dan kunci dengan hitung mundur langsung dan jadwal lengkap.",
-                    icon = WhatsNewIcon.WIDGET,
-                ),
-                WhatsNewItem(
-                    title = "Gradien salat baru",
-                    description = "Asli, Modern, atau Kustom per salat di Pengaturan → Tema.",
-                    icon = WhatsNewIcon.PALETTE,
+                    title = "Perbaikan bug",
+                    description = "Peningkatan dan perbaikan agar aplikasi lebih andal.",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
             else -> listOf(
                 WhatsNewItem(
-                    title = "Redesigned widgets",
-                    description = "Home and lock screen widgets with live countdowns and full prayer times.",
-                    icon = WhatsNewIcon.WIDGET,
-                ),
-                WhatsNewItem(
-                    title = "New prayer gradients",
-                    description = "Original, Modern, or Custom colors per prayer in Settings → Theme.",
-                    icon = WhatsNewIcon.PALETTE,
+                    title = "Bug fixes",
+                    description = "Improvements and fixes to make the app more reliable.",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
         }

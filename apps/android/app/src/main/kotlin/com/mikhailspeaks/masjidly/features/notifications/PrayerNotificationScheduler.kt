@@ -396,7 +396,6 @@ class PrayerNotificationScheduler(
         generation: Int,
     ) {
         if (addBudget <= 0 || !isCurrentGeneration(generation)) return
-        if (!PrayerNotificationPermissions.canScheduleExactAlarms(appContext)) return
 
         val intent = PrayerNotificationReceiver.buildIntent(
             context = appContext,

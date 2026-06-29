@@ -100,7 +100,7 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(loadState = LoadState.LOADING) }
             try {
-                refreshPrayerPayload(mosque)
+                refreshPrayerPayload(mosque, checkVersions = true)
                 _uiState.update { it.copy(loadState = LoadState.LOADED, lastError = null) }
             } catch (e: Exception) {
                 _uiState.update {
@@ -140,7 +140,7 @@ class HomeViewModel(
     /** Used by onboarding mosque selection — mirrors iOS `selectMosque`. */
     suspend fun switchToMosque(mosque: Mosque) {
         _uiState.update { it.copy(selectedMosque = mosque, lastError = null) }
-        refreshPrayerPayload(mosque)
+        refreshPrayerPayload(mosque, checkVersions = true)
         _uiState.update { it.copy(loadState = LoadState.LOADED) }
     }
 
@@ -156,11 +156,7 @@ class HomeViewModel(
         if (refreshTask?.isActive == true) return
 
         refreshTask = viewModelScope.launch {
-            try {
-                refreshPrayerPayload(mosque)
-            } catch (_: Exception) {
-                // Silent on foreground resume.
-            }
+            runNetworkRefresh()
         }
     }
 
@@ -216,9 +212,13 @@ class HomeViewModel(
 
     private suspend fun runNetworkRefresh() {
         try {
-            val list = repository.listMosques()
+            val cachedRevision = diskCache.loadDataRevision()
+            val revision = runCatching { repository.getDataRevision() }.getOrNull()
+            val cachedMosques = diskCache.loadMosques()
+            val revisionUnchanged = revision != null && cachedRevision == revision && cachedMosques != null
+            val list = if (revisionUnchanged) cachedMosques!! else repository.listMosques()
             val visible = MosqueSelection.visibleMosques(list)
-            diskCache.saveMosques(visible)
+            if (!revisionUnchanged) diskCache.saveMosques(visible)
 
             val mosque = MosqueSelection.resolveSelectedMosque(
                 mosques = list,
@@ -236,7 +236,8 @@ class HomeViewModel(
             settings.selectedCountryGroupingKey = MosqueSelection.countryGroupingKey(mosque)
 
             _uiState.update { it.copy(mosques = visible, selectedMosque = mosque) }
-            refreshPrayerPayload(mosque)
+            refreshPrayerPayload(mosque, checkVersions = !revisionUnchanged)
+            if (revision != null) diskCache.saveDataRevision(revision)
             _uiState.update { it.copy(loadState = LoadState.LOADED, lastError = null) }
         } catch (e: Exception) {
             val mosques = _uiState.value.mosques
@@ -265,11 +266,49 @@ class HomeViewModel(
         )
     }
 
-    private suspend fun refreshPrayerPayload(mosque: Mosque) {
+    private suspend fun refreshPrayerPayload(mosque: Mosque, checkVersions: Boolean = true) {
         val now = Instant.now()
         val sh = PrayerTimesEngine.getDateInSheffield(now)
         val monthName = MonthName.from(sh.month) ?: return
         val isoDate = PrayerTimesEngine.isoDateString(sh.year, sh.month, sh.day)
+        val cachedMonthly = diskCache.loadMonthly(mosque.slug, monthName.rawValue, sh.year)
+        val cachedRamadan = diskCache.loadRamadan(mosque.slug, isoDate)
+        val cachedDst = diskCache.loadUkDst()
+        val cachedVersions = diskCache.loadVersions(mosque.slug, monthName.rawValue, sh.year)
+
+        if (!checkVersions && cachedMonthly != null) {
+            _uiState.update {
+                it.copy(
+                    monthData = cachedMonthly,
+                    ramadanData = cachedRamadan,
+                    ukDst = cachedDst?.ukDstDates ?: emptyList(),
+                    lastPrayerPayloadRefreshAt = Instant.now(),
+                )
+            }
+            loadedMonthNumber = sh.month
+            loadedMonthYear = sh.year
+            applyPrayerTimes(_uiState.value.displayedDate, mosque)
+            widgetSnapshotService.refreshSnapshot(mosque)
+            return
+        }
+
+        val versions = runCatching { repository.getPrayerDataVersions(mosque.slug, monthName, sh.year) }.getOrNull()
+        if (versions != null && cachedVersions?.versions == versions && cachedMonthly != null) {
+            diskCache.saveVersions(mosque.slug, monthName.rawValue, sh.year, versions)
+            _uiState.update {
+                it.copy(
+                    monthData = cachedMonthly,
+                    ramadanData = cachedRamadan,
+                    ukDst = cachedDst?.ukDstDates ?: emptyList(),
+                    lastPrayerPayloadRefreshAt = Instant.now(),
+                )
+            }
+            loadedMonthNumber = sh.month
+            loadedMonthYear = sh.year
+            applyPrayerTimes(_uiState.value.displayedDate, mosque)
+            widgetSnapshotService.refreshSnapshot(mosque)
+            return
+        }
 
         val monthly = repository.getMonthlyPrayerTimes(mosque.slug, monthName, sh.year)
         val ramadan = repository.getRamadanTimetable(mosque.slug, isoDate)
@@ -282,6 +321,7 @@ class HomeViewModel(
         }
         ramadan?.let { diskCache.saveRamadan(mosque.slug, isoDate, it) }
         dstCalendar?.let { diskCache.saveUkDst(it) }
+        versions?.let { diskCache.saveVersions(mosque.slug, monthName.rawValue, sh.year, it) }
 
         _uiState.update {
             it.copy(

@@ -1,5 +1,22 @@
 import Foundation
 
+struct DataRevision: Codable, Equatable, Sendable {
+    let dataRevision: Double
+    let updatedAt: Double
+}
+
+struct PrayerDataVersions: Codable, Equatable, Sendable {
+    let mosquesUpdatedAt: Double
+    let monthlyUpdatedAt: Double
+    let ramadanUpdatedAt: Double
+    let dstUpdatedAt: Double
+}
+
+struct CachedPrayerDataVersions: Codable, Equatable, Sendable {
+    let versions: PrayerDataVersions
+    let checkedAt: Date
+}
+
 struct Mosque: Codable, Equatable, Identifiable, Sendable {
     let id: String
     let name: String

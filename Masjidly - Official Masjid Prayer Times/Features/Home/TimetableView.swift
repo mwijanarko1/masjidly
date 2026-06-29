@@ -4,16 +4,16 @@ private func ttLS(_ key: String, locale: Locale) -> String {
     LocaleBundle.string(forKey: key, locale: locale)
 }
 
-private enum TimetableTimeColumns {
-    /// Adhan / Iqamah — 105pt accommodates bold 18pt 12-hour strings
-    /// (e.g. `10:07 PM`) even with Arabic (1.20×) or Urdu (1.25×) font scaling.
-    /// Width increased from 94 to prevent minimumScaleFactor from shrinking
-    /// the next-prayer row's bold text below the nominal 18pt.
-    static let width: CGFloat = 105
+private struct TimetableLayout {
+    let timeColumnWidth: CGFloat
+    let horizontalPadding: CGFloat
 
-    /// Shared row font size for prayer name, adhan, and iqamah.
-    /// Uniform for all rows/dates; time column width accommodates this size.
     static let rowFontSize: CGFloat = 18
+
+    init(width: CGFloat) {
+        horizontalPadding = width < 340 ? 14 : 24
+        timeColumnWidth = min(105, max(78, (width - (horizontalPadding * 2) - 24 - 76) / 2))
+    }
 }
 
 struct TimetableView: View {
@@ -442,37 +442,42 @@ struct TimetableView: View {
                 iqamahDisplay: "-"))
         }
 
-        return VStack(spacing: 8) {
-            HStack(alignment: .top, spacing: 8) {
-                Text(ttLS("timetable.header.prayer", locale: locale))
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(ttLS("timetable.header.adhan", locale: locale))
-                    .multilineTextAlignment(.trailing)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(width: TimetableTimeColumns.width, alignment: .trailing)
-                Text(ttLS("timetable.header.iqamah", locale: locale))
-                    .multilineTextAlignment(.trailing)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(width: TimetableTimeColumns.width, alignment: .trailing)
-            }
-            .appFont(size: 13, weight: .medium)
-            .foregroundStyle(appearance.textColor.opacity(0.5))
-            .padding(.horizontal, 24)
-            .padding(.bottom, 4)
+        return GeometryReader { geometry in
+            let layout = TimetableLayout(width: geometry.size.width)
 
-            ForEach(rows) { r in
-                prayerRow(
-                    name: r.name,
-                    adhanDisplay: r.adhanDisplay,
-                    iqamahDisplay: r.iqamahDisplay,
-                    isNext: r.id == nextId,
-                    isPast: isToday && isTimePast(r.adhanSortKey, now: currentHHMM, isNextDayRow: r.id == "midnight" || r.id == "lastThird")
-                )
+            VStack(spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
+                    Text(ttLS("timetable.header.prayer", locale: locale))
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(ttLS("timetable.header.adhan", locale: locale))
+                        .multilineTextAlignment(.trailing)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(width: layout.timeColumnWidth, alignment: .trailing)
+                    Text(ttLS("timetable.header.iqamah", locale: locale))
+                        .multilineTextAlignment(.trailing)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(width: layout.timeColumnWidth, alignment: .trailing)
+                }
+                .appFont(size: 13, weight: .medium)
+                .foregroundStyle(appearance.textColor.opacity(0.5))
+                .padding(.horizontal, layout.horizontalPadding)
+                .padding(.bottom, 4)
+
+                ForEach(rows) { r in
+                    prayerRow(
+                        name: r.name,
+                        adhanDisplay: r.adhanDisplay,
+                        iqamahDisplay: r.iqamahDisplay,
+                        isNext: r.id == nextId,
+                        isPast: isToday && isTimePast(r.adhanSortKey, now: currentHHMM, isNextDayRow: r.id == "midnight" || r.id == "lastThird"),
+                        layout: layout
+                    )
+                }
             }
         }
     }
@@ -536,42 +541,41 @@ struct TimetableView: View {
         return cal.component(.weekday, from: date) == 6
     }
 
-    private func prayerRow(name: String, adhanDisplay: String, iqamahDisplay: String, isNext: Bool, isPast: Bool) -> some View {
+    private func prayerRow(name: String, adhanDisplay: String, iqamahDisplay: String, isNext: Bool, isPast: Bool, layout: TimetableLayout) -> some View {
         let opacity = isPast ? 0.35 : 1.0
         let weight: Font.Weight = isNext ? .semibold : .regular
         let iqamahWeight: Font.Weight = isNext ? .bold : .medium
 
         return HStack(alignment: .top, spacing: 12) {
             Text(name)
-                .appFont(size: TimetableTimeColumns.rowFontSize, weight: weight)
+                .appFont(size: TimetableLayout.rowFontSize, weight: weight)
                 .foregroundStyle(appearance.textColor.opacity(opacity))
                 .multilineTextAlignment(.leading)
-                .lineLimit(5)
-                .fixedSize(horizontal: false, vertical: true)
-                .minimumScaleFactor(isNext ? 1.0 : 0.75)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
 
             Text(adhanDisplay)
-                .appFont(size: TimetableTimeColumns.rowFontSize, weight: weight)
+                .appFont(size: TimetableLayout.rowFontSize, weight: weight)
                 .monospacedDigit()
                 .foregroundStyle(appearance.textColor.opacity(opacity * 0.75))
                 .lineLimit(1)
-                .minimumScaleFactor(isNext ? 1.0 : 0.78)
+                .minimumScaleFactor(0.7)
                 .multilineTextAlignment(.trailing)
-                .frame(width: TimetableTimeColumns.width, alignment: .trailing)
+                .frame(width: layout.timeColumnWidth, alignment: .trailing)
 
             Text(iqamahDisplay)
-                .appFont(size: TimetableTimeColumns.rowFontSize, weight: iqamahWeight)
+                .appFont(size: TimetableLayout.rowFontSize, weight: iqamahWeight)
                 .monospacedDigit()
                 .foregroundStyle(appearance.textColor.opacity(opacity))
                 .lineLimit(1)
-                .minimumScaleFactor(isNext ? 1.0 : 0.78)
+                .minimumScaleFactor(0.7)
                 .multilineTextAlignment(.trailing)
-                .frame(width: TimetableTimeColumns.width, alignment: .trailing)
+                .frame(width: layout.timeColumnWidth, alignment: .trailing)
         }
         .padding(.vertical, 16)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, layout.horizontalPadding)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(isNext ? appearance.textColor.opacity(0.08) : Color.clear)
@@ -685,6 +689,9 @@ struct TimetableView: View {
 
 private final class TimetablePreviewPrayerRepository: PrayerRepository {
     func listMosques() async throws -> [Mosque] { [] }
+    func getPrayerDataVersions(mosqueSlug: String, month: MonthName, year: Int) async throws -> PrayerDataVersions {
+        PrayerDataVersions(mosquesUpdatedAt: 0, monthlyUpdatedAt: 0, ramadanUpdatedAt: 0, dstUpdatedAt: 0)
+    }
     func getMonthlyPrayerTimes(mosqueSlug: String, month: MonthName, year: Int) async throws -> MonthPrayerData? { nil }
     func getRamadanTimetable(mosqueSlug: String, date: String?) async throws -> RamadanPrayerData? { nil }
     func getUkDstDates() async throws -> UkDstCalendar? { nil }

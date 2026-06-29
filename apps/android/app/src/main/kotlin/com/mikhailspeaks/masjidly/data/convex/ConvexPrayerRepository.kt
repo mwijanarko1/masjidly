@@ -1,9 +1,11 @@
 package com.mikhailspeaks.masjidly.data.convex
 
+import com.mikhailspeaks.masjidly.domain.DataRevision
 import com.mikhailspeaks.masjidly.domain.IqamahTimeRange
 import com.mikhailspeaks.masjidly.domain.MonthName
 import com.mikhailspeaks.masjidly.domain.MonthPrayerData
 import com.mikhailspeaks.masjidly.domain.Mosque
+import com.mikhailspeaks.masjidly.domain.PrayerDataVersions
 import com.mikhailspeaks.masjidly.domain.PrayerRepository
 import com.mikhailspeaks.masjidly.domain.PrayerTime
 import com.mikhailspeaks.masjidly.domain.RamadanPrayerData
@@ -22,10 +24,32 @@ class ConvexPrayerRepository(
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) : PrayerRepository {
 
+    private fun mightBeRamadanDate(date: String): Boolean {
+        val month = date.drop(5).take(2).toIntOrNull() ?: return true
+        return month in 1..4
+    }
+
     override suspend fun listMosques(): List<Mosque> {
         val value = client.query("mosques:list", emptyMap())
         val wire = json.decodeFromJsonElement<List<MosqueWire>>(value)
         return wire.map { it.toDomain() }
+    }
+
+    override suspend fun getDataRevision(): DataRevision {
+        val value = client.query("prayerTimes:getDataRevision", emptyMap())
+        return json.decodeFromJsonElement<DataRevision>(value)
+    }
+
+    override suspend fun getPrayerDataVersions(mosqueSlug: String, month: MonthName, year: Int): PrayerDataVersions {
+        val value = client.query(
+            "prayerTimes:getDataVersions",
+            client.jsonArgs {
+                putString("mosqueSlug", mosqueSlug)
+                putString("month", month.rawValue)
+                putDouble("year", year.toDouble())
+            },
+        )
+        return json.decodeFromJsonElement<PrayerDataVersions>(value)
     }
 
     override suspend fun getMonthlyPrayerTimes(
@@ -50,6 +74,8 @@ class ConvexPrayerRepository(
         mosqueSlug: String,
         date: String?,
     ): RamadanPrayerData? {
+        if (date != null && !mightBeRamadanDate(date)) return null
+
         val value = client.query(
             "prayerTimes:getRamadan",
             if (date != null) {

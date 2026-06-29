@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 
 class PrayerNotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -81,7 +82,15 @@ class PrayerNotificationReceiver : BroadcastReceiver() {
 
         fun scheduleExact(context: Context, fireAtMillis: Long, pendingIntent: PendingIntent) {
             val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAtMillis, pendingIntent)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || PrayerNotificationPermissions.canScheduleExactAlarms(context)) {
+                try {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAtMillis, pendingIntent)
+                    return
+                } catch (_: SecurityException) {
+                    // Exact-alarm access can be revoked between checking and scheduling.
+                }
+            }
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAtMillis, pendingIntent)
         }
 
         fun cancel(context: Context, id: String) {

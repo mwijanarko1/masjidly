@@ -83,27 +83,32 @@ class WidgetPrayerSnapshotService(
 
             val dateString = PrayerTimesEngine.isoDateString(parts.year, parts.month, parts.day)
             val ramadan = fetchRamadan(mosqueSlug = mosque.slug, date = dateString)
-            val raw = PrayerTimesEngine.resolvePrayerTimes(
-                slug = mosque.slug,
-                on = date,
-                monthly = monthly,
-                ramadan = ramadan,
-                ukDst = dst,
-                asrTimingPreference = settings.asrIqamahPreference,
-            )
-            val displayed = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date = date, mosqueSlug = mosque.slug)
-            val iqamah = PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
-                slug = mosque.slug,
-                on = date,
-                monthly = monthly,
-                ramadan = ramadan,
-                ukDst = dst,
-            )
-            daySnapshots += WidgetPrayerDaySnapshot(
-                date = dateString,
-                prayers = displayed.toWidgetDailyPrayerTimes(),
-                iqamah = iqamah.toWidgetDailyIqamahTimes(),
-            )
+            try {
+                val raw = PrayerTimesEngine.resolvePrayerTimes(
+                    slug = mosque.slug,
+                    on = date,
+                    monthly = monthly,
+                    ramadan = ramadan,
+                    ukDst = dst,
+                    asrTimingPreference = settings.asrIqamahPreference,
+                )
+                val displayed = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date = date, mosqueSlug = mosque.slug)
+                val iqamah = PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
+                    slug = mosque.slug,
+                    on = date,
+                    monthly = monthly,
+                    ramadan = ramadan,
+                    ukDst = dst,
+                )
+                daySnapshots += WidgetPrayerDaySnapshot(
+                    date = dateString,
+                    prayers = displayed.toWidgetDailyPrayerTimes(),
+                    iqamah = iqamah.toWidgetDailyIqamahTimes(),
+                )
+            } catch (error: Throwable) {
+                if (offset == 0) throw error
+                break
+            }
         }
 
         return WidgetPrayerSnapshot(

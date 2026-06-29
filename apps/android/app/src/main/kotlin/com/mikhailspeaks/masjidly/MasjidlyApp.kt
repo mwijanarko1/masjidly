@@ -32,7 +32,9 @@ import com.mikhailspeaks.masjidly.features.updates.UpdatePromptDialog
 import com.mikhailspeaks.masjidly.features.updates.WhatsNew
 import com.mikhailspeaks.masjidly.features.updates.WhatsNewOverlay
 import com.mikhailspeaks.masjidly.features.audio.AdhanMiniPlayerBar
+import com.mikhailspeaks.masjidly.features.notifications.ExactAlarmPromptDialog
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationContent
+import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermissions
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationScheduler
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import com.mikhailspeaks.masjidly.ui.navigation.MasjidlyNavHost
@@ -58,6 +60,7 @@ fun MasjidlyApp(
     var showUpdateAlert by remember { mutableStateOf(false) }
     var pendingRelease by remember { mutableStateOf<MasjidlyRelease?>(null) }
     var hasCheckedForUpdate by remember { mutableStateOf(false) }
+    var showExactAlarmPrompt by remember { mutableStateOf(false) }
 
     @Suppress("UNUSED_VARIABLE")
     val _tick = settingsRevision
@@ -101,6 +104,18 @@ fun MasjidlyApp(
         showUpdateAlert = true
     }
 
+    fun maybeShowExactAlarmPrompt() {
+        val missing = settingsStore.hasCompletedOnboarding &&
+            settingsStore.notifications.masterEnabled &&
+            !PrayerNotificationPermissions.canScheduleExactAlarms(context)
+        if (missing && !settingsStore.hasDismissedExactAlarmPrompt) showExactAlarmPrompt = true
+        if (!missing) showExactAlarmPrompt = false
+    }
+
+    LaunchedEffect(settingsStore.hasCompletedOnboarding, settingsRevision) {
+        maybeShowExactAlarmPrompt()
+    }
+
     LaunchedEffect(settingsStore.hasCompletedOnboarding, homeState.loadState, settingsRevision) {
         if (!settingsStore.hasCompletedOnboarding) return@LaunchedEffect
         if (homeState.loadState == HomeViewModel.LoadState.IDLE) return@LaunchedEffect
@@ -134,6 +149,7 @@ fun MasjidlyApp(
             val observer = LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
                     homeViewModel.refreshFromNetworkIfStale()
+                    maybeShowExactAlarmPrompt()
                     scope.launch { homeViewModel.resyncNotificationsIfNeeded() }
                 }
             }
@@ -173,6 +189,21 @@ fun MasjidlyApp(
                             language = settingsStore.appLanguage,
                         )
                     }
+                }
+
+                if (showExactAlarmPrompt) {
+                    ExactAlarmPromptDialog(
+                        language = settingsStore.appLanguage,
+                        onLater = {
+                            settingsStore.hasDismissedExactAlarmPrompt = true
+                            showExactAlarmPrompt = false
+                        },
+                        onAllow = {
+                            settingsStore.hasDismissedExactAlarmPrompt = true
+                            showExactAlarmPrompt = false
+                            PrayerNotificationPermissions.openExactAlarmSettings(context)
+                        },
+                    )
                 }
 
                 if (showUpdateAlert && pendingRelease != null) {

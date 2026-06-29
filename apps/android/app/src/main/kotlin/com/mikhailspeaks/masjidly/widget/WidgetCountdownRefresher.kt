@@ -54,16 +54,17 @@ object WidgetCountdownRefresher {
             return
         }
 
-        val remainingSeconds = ((targetMillis - System.currentTimeMillis()) / 1000).toInt()
-        if (remainingSeconds <= 0 || remainingSeconds > COUNTDOWN_WINDOW_SECONDS) {
-            cancel(appContext)
+        val nowMillis = System.currentTimeMillis()
+        val remainingSeconds = ((targetMillis - nowMillis) / 1000).toInt()
+        if (remainingSeconds <= 0) {
+            scheduleAlarm(appContext, nowMillis + 1_000L)
             return
         }
 
-        val fireAtMillis = if (remainingSeconds <= 1) {
-            targetMillis
-        } else {
-            System.currentTimeMillis() + SYNC_INTERVAL_MILLIS
+        val fireAtMillis = when {
+            remainingSeconds <= 1 -> targetMillis
+            remainingSeconds > COUNTDOWN_WINDOW_SECONDS -> targetMillis - COUNTDOWN_WINDOW_SECONDS * 1_000L
+            else -> nowMillis + SYNC_INTERVAL_MILLIS
         }
         scheduleAlarm(appContext, fireAtMillis)
     }

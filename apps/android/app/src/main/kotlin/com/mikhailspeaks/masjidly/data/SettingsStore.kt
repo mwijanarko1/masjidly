@@ -149,6 +149,13 @@ class SettingsStore(context: Context) {
             bump()
         }
 
+    var hasDismissedExactAlarmPrompt: Boolean
+        get() = prefs.getBoolean(KEY_HAS_DISMISSED_EXACT_ALARM_PROMPT, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_HAS_DISMISSED_EXACT_ALARM_PROMPT, value).apply()
+            bump()
+        }
+
     fun ensureFirstAppOpenTrackedAtRecordedIfNeeded() {
         if (firstAppOpenTrackedAt == null) firstAppOpenTrackedAt = Instant.now()
     }
@@ -308,6 +315,7 @@ class SettingsStore(context: Context) {
         private const val KEY_SHOW_IQAMAH_TIME = "showIqamahTime"
         private const val KEY_FIRST_APP_OPEN_TRACKED_AT = "firstAppOpenTrackedAt1970"
         private const val KEY_HAS_COMPLETED_ENJOYMENT_REVIEW_FLOW = "hasCompletedEnjoymentReviewFlow"
+        private const val KEY_HAS_DISMISSED_EXACT_ALARM_PROMPT = "hasDismissedExactAlarmPrompt"
         private const val KEY_LAST_SEEN_BUILD_VERSION = "lastSeenBuildVersion"
         private const val KEY_NOTIFICATIONS_JSON = "notificationsJSON"
         private const val KEY_PRAYER_GRADIENT_STYLES_JSON = "prayerGradientStylesJSON"

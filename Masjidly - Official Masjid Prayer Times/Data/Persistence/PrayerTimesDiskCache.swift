@@ -6,9 +6,11 @@ import Foundation
 /// ```
 /// Application Support/PrayerTimesCache/
 ///   mosques.json
+///   data_revision.json
 ///   uk_dst.json
 ///   monthly_{slug}_{month}_{year}.json
 ///   ramadan_{slug}_{date}.json
+///   versions_{slug}_{month}_{year}.json
 /// ```
 @MainActor
 final class PrayerTimesDiskCache: Sendable {
@@ -72,6 +74,18 @@ final class PrayerTimesDiskCache: Sendable {
         try saveJSON(mosques, to: url(for: Self.mosquesFile))
     }
 
+    // MARK: - Data revision
+
+    private static let dataRevisionFile = "data_revision.json"
+
+    func loadDataRevision() -> DataRevision? {
+        loadJSON(from: url(for: Self.dataRevisionFile))
+    }
+
+    func saveDataRevision(_ revision: DataRevision) throws {
+        try saveJSON(revision, to: url(for: Self.dataRevisionFile))
+    }
+
     // MARK: - UK DST
 
     private static let ukDstFile = "uk_dst.json"
@@ -82,6 +96,20 @@ final class PrayerTimesDiskCache: Sendable {
 
     func saveUkDst(_ dst: UkDstCalendar) throws {
         try saveJSON(dst, to: url(for: Self.ukDstFile))
+    }
+
+    // MARK: - Versions
+
+    private static func versionsFilename(slug: String, month: String, year: Int) -> String {
+        "versions_\(Self.safe(slug))_\(month)_\(year).json"
+    }
+
+    func loadVersions(slug: String, month: String, year: Int) -> CachedPrayerDataVersions? {
+        loadJSON(from: url(for: Self.versionsFilename(slug: slug, month: month, year: year)))
+    }
+
+    func saveVersions(slug: String, month: String, year: Int, versions: PrayerDataVersions) throws {
+        try saveJSON(CachedPrayerDataVersions(versions: versions, checkedAt: Date()), to: url(for: Self.versionsFilename(slug: slug, month: month, year: year)))
     }
 
     // MARK: - Monthly

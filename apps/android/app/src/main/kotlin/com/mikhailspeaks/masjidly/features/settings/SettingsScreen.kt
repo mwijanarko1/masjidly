@@ -618,10 +618,13 @@ private fun NotificationSettingsSection(
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { _ ->
+        if (!PrayerNotificationPermissions.canScheduleExactAlarms(context)) {
+            PrayerNotificationPermissions.openExactAlarmSettings(context)
+        }
         settingsViewModel.onNotificationsChanged()
     }
 
-    fun requestNotificationPermissionIfNeeded() {
+    fun requestNotificationPermissionsIfNeeded() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             val granted = ContextCompat.checkSelfPermission(
                 context,
@@ -629,14 +632,18 @@ private fun NotificationSettingsSection(
             ) == PackageManager.PERMISSION_GRANTED
             if (!granted) {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
             }
+        }
+        if (!PrayerNotificationPermissions.canScheduleExactAlarms(context)) {
+            PrayerNotificationPermissions.openExactAlarmSettings(context)
         }
     }
 
     fun persistMaster(enabled: Boolean) {
         notifications = notifications.copy(masterEnabled = enabled)
         settingsStore.notifications = notifications
-        if (enabled) requestNotificationPermissionIfNeeded()
+        if (enabled) requestNotificationPermissionsIfNeeded()
         settingsViewModel.onNotificationsChanged()
     }
 
@@ -644,6 +651,7 @@ private fun NotificationSettingsSection(
         updated.syncMasterFlag()
         notifications = updated
         settingsStore.notifications = updated
+        if (updated.masterEnabled) requestNotificationPermissionsIfNeeded()
         settingsViewModel.onNotificationsChanged()
     }
 

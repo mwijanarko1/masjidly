@@ -611,58 +611,82 @@ struct MasjidlyPrayerWidgetView: View {
     }
 
     private var accessoryRectangularView: some View {
-        accessoryRectangularContent
-            .widgetAccessoryScaleToFit(designSize: CGSize(width: 168, height: 62))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
-            .widgetAccentable()
+        GeometryReader { geometry in
+            let metrics = accessoryRectangularMetrics(for: geometry.size)
+            accessoryRectangularContent(metrics: metrics)
+                .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
+        }
+        .widgetAccentable()
     }
 
-    private var accessoryRectangularContent: some View {
+    private func accessoryRectangularMetrics(for size: CGSize) -> AccessoryRectangularMetrics {
+        let rowCount = min(entry.state.rows.count, 5)
+        let headerHeight = size.height * 0.14
+        let rowSlotHeight = rowCount > 0
+            ? (size.height - headerHeight) / CGFloat(rowCount)
+            : size.height - headerHeight
+        let bodyFontSize = min(13, max(11, rowSlotHeight * 0.9))
+        let headerFontSize = min(12, max(10, headerHeight * 0.82))
+        let timeColumnWidth = max(44, bodyFontSize * 4.15)
+        return AccessoryRectangularMetrics(
+            headerFontSize: headerFontSize,
+            bodyFontSize: bodyFontSize,
+            headerHeight: headerHeight,
+            rowSlotHeight: rowSlotHeight,
+            timeColumnWidth: timeColumnWidth
+        )
+    }
+
+    private func accessoryRectangularContent(metrics: AccessoryRectangularMetrics) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(entry.state.mosqueDisplayName)
-                .widgetFont(size: 9, weight: .semibold, locale: entry.locale)
+                .widgetFont(size: metrics.headerFontSize, weight: .semibold, locale: entry.locale)
                 .foregroundStyle(.secondary)
-                .widgetFittingLine()
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.bottom, 1)
+                .widgetFittingLine(minimumScale: 0.85)
+                .frame(maxWidth: .infinity, minHeight: metrics.headerHeight, maxHeight: metrics.headerHeight, alignment: .center)
 
             ForEach(entry.state.rows.prefix(5)) { row in
-                accessoryRectangularPrayerRow(row: row)
+                accessoryRectangularPrayerRow(row: row, metrics: metrics)
+                    .frame(minHeight: metrics.rowSlotHeight, maxHeight: metrics.rowSlotHeight)
             }
         }
-        .padding(.horizontal, 1)
+        .lineSpacing(-1)
     }
 
-    private func accessoryRectangularPrayerRow(row: MasjidlyWidgetPrayerRow) -> some View {
+    private func accessoryRectangularPrayerRow(
+        row: MasjidlyWidgetPrayerRow,
+        metrics: AccessoryRectangularMetrics
+    ) -> some View {
         let isNext = row.isNext
         let isPassed = row.isPassed
         let timeWeight: Font.Weight = isNext ? .bold : .semibold
-        let iqamahText = row.iqamahs.joined(separator: ", ")
+        let iqamahText = row.iqamahs
+            .map { compactAccessoryIqamahLabel($0) }
+            .joined(separator: ", ")
 
-        return HStack(spacing: 3) {
+        return HStack(spacing: 4) {
             Text(row.name)
-                .widgetFont(size: 10, weight: isNext ? .bold : .medium, locale: entry.locale)
+                .widgetFont(size: metrics.bodyFontSize, weight: isNext ? .bold : .medium, locale: entry.locale)
                 .foregroundStyle(isNext ? .primary : (isPassed ? .tertiary : .secondary))
-                .widgetFittingLine()
+                .widgetFittingLine(minimumScale: 0.85)
                 .layoutPriority(1)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
 
             Text(row.adhan)
-                .widgetFont(size: 10, weight: timeWeight, locale: entry.locale)
+                .widgetFont(size: metrics.bodyFontSize, weight: timeWeight, locale: entry.locale)
                 .monospacedDigit()
                 .foregroundStyle(isNext ? .primary : (isPassed ? .tertiary : .secondary))
-                .widgetFittingLine()
+                .widgetFittingLine(minimumScale: 0.85)
                 .layoutPriority(0)
-                .frame(width: 44, alignment: .trailing)
+                .frame(width: metrics.timeColumnWidth, alignment: .trailing)
 
             Text(iqamahText)
-                .widgetFont(size: 10, weight: .regular, locale: entry.locale)
+                .widgetFont(size: metrics.bodyFontSize, weight: .regular, locale: entry.locale)
                 .monospacedDigit()
                 .foregroundStyle(isPassed ? .tertiary : .secondary)
-                .widgetFittingLine()
+                .widgetFittingLine(minimumScale: 0.85)
                 .layoutPriority(0)
-                .frame(width: 44, alignment: .trailing)
+                .frame(width: metrics.timeColumnWidth, alignment: .trailing)
         }
     }
 
@@ -718,6 +742,7 @@ struct MasjidlyPrayerWidgetView: View {
     private func largeHeroCountdownClock(target: Date, textColor: Color) -> some View {
         let remaining = max(0, target.timeIntervalSince(entry.date))
         let underOneHour = remaining < 3_600
+        let underTenMinutes = remaining < 600
         let fontSize: CGFloat = 36
         let font = widgetUIFont(size: fontSize, weight: .medium)
         let timerLocale = Locale(identifier: "en_GB")
@@ -726,7 +751,7 @@ struct MasjidlyPrayerWidgetView: View {
             Spacer(minLength: 0)
             HStack(spacing: 0) {
                 if underOneHour {
-                    Text("-00:")
+                    Text(underTenMinutes ? "-00:0" : "-00:")
                         .font(Font(font))
                         .foregroundStyle(textColor)
                     Text(timerInterval: entry.date...target, countsDown: true, showsHours: false)
@@ -758,7 +783,7 @@ struct MasjidlyPrayerWidgetView: View {
     }
 
     private func widgetCountdownMMSSWidth(font: UIFont) -> CGFloat {
-        let sample = "59:59" as NSString
+        let sample = "09:59" as NSString
         return ceil(sample.size(withAttributes: [.font: font]).width) + 2
     }
 
@@ -1307,10 +1332,32 @@ private func widgetCountdownHeadline(prayerName: String, isIqamah: Bool, locale:
     }
 }
 
+/// Short iqamah labels for the narrow lock-screen rectangular column.
+private func compactAccessoryIqamahLabel(_ iqamah: String) -> String {
+    let trimmed = iqamah.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.compare("After Maghrib", options: .caseInsensitive) == .orderedSame {
+        return "AM"
+    }
+    if trimmed.lowercased().hasPrefix("after ") {
+        let prayer = trimmed.dropFirst(6).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let first = prayer.first else { return trimmed }
+        return "A\(String(first).uppercased())"
+    }
+    return trimmed
+}
+
+private struct AccessoryRectangularMetrics {
+    let headerFontSize: CGFloat
+    let bodyFontSize: CGFloat
+    let headerHeight: CGFloat
+    let rowSlotHeight: CGFloat
+    let timeColumnWidth: CGFloat
+}
+
 extension View {
-    func widgetFittingLine() -> some View {
+    func widgetFittingLine(minimumScale: CGFloat = 0.5) -> some View {
         lineLimit(1)
-            .minimumScaleFactor(0.5)
+            .minimumScaleFactor(minimumScale)
             .truncationMode(.tail)
     }
 

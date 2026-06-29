@@ -100,23 +100,28 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
 
             let dateString = PrayerTimesEngine.isoDateString(year: parts.year, month: parts.month, day: parts.day)
             let ramadan = try await fetchRamadan(mosqueSlug: mosque.slug, date: dateString)
-            let raw = try PrayerTimesEngine.resolvePrayerTimes(
-                slug: mosque.slug,
-                on: date,
-                monthly: monthly,
-                ramadan: ramadan,
-                ukDst: dst,
-                asrTimingPreference: settings.asrIqamahPreference
-            )
-            let displayed = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date: date, mosqueSlug: mosque.slug)
-            let iqamah = try PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
-                slug: mosque.slug,
-                on: date,
-                monthly: monthly,
-                ramadan: ramadan,
-                ukDst: dst
-            )
-            daySnapshots.append(WidgetPrayerDaySnapshot(date: dateString, prayers: displayed, iqamah: iqamah))
+            do {
+                let raw = try PrayerTimesEngine.resolvePrayerTimes(
+                    slug: mosque.slug,
+                    on: date,
+                    monthly: monthly,
+                    ramadan: ramadan,
+                    ukDst: dst,
+                    asrTimingPreference: settings.asrIqamahPreference
+                )
+                let displayed = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date: date, mosqueSlug: mosque.slug)
+                let iqamah = try PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
+                    slug: mosque.slug,
+                    on: date,
+                    monthly: monthly,
+                    ramadan: ramadan,
+                    ukDst: dst
+                )
+                daySnapshots.append(WidgetPrayerDaySnapshot(date: dateString, prayers: displayed, iqamah: iqamah))
+            } catch {
+                if offset == 0 { throw error }
+                break
+            }
         }
 
         return WidgetPrayerSnapshot(

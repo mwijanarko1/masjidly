@@ -2,12 +2,33 @@ package com.mikhailspeaks.masjidly.domain
 
 import java.time.Duration
 import java.time.Instant
+import kotlinx.serialization.Serializable
 import kotlin.math.floor
 
 /** Default mosque slug (matches iOS `MosqueDefaults.defaultSlug`). */
 object MosqueDefaults {
     const val DEFAULT_MOSQUE_SLUG = "muslim-welfare-house"
 }
+
+@Serializable
+data class DataRevision(
+    val dataRevision: Double,
+    val updatedAt: Double,
+)
+
+@Serializable
+data class PrayerDataVersions(
+    val mosquesUpdatedAt: Double,
+    val monthlyUpdatedAt: Double,
+    val ramadanUpdatedAt: Double,
+    val dstUpdatedAt: Double,
+)
+
+@Serializable
+data class CachedPrayerDataVersions(
+    val versions: PrayerDataVersions,
+    val checkedAtEpochMillis: Long,
+)
 
 data class Mosque(
     val id: String,

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Masjidly Debug</string>
+    <string name="masjidly_prayer_widget_name">Masjidly Debug</string>
+    <string name="masjidly_prayer_widget_small_name">Masjidly Debug Small</string>
+    <string name="masjidly_prayer_widget_medium_name">Masjidly Debug Medium</string>
+    <string name="masjidly_prayer_widget_large_name">Masjidly Debug Large</string>
+</resources>

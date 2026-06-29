@@ -25,7 +25,6 @@ class PrayerNotificationActionReceiver : BroadcastReceiver() {
             intent.getStringExtra(PrayerNotificationReceiver.EXTRA_MOSQUE_SLUG)?.let { put(PrayerNotificationContent.UserInfoKey.MOSQUE_SLUG, it) }
             intent.getStringExtra(PrayerNotificationReceiver.EXTRA_ISO_DATE)?.let { put(PrayerNotificationContent.UserInfoKey.ISO_DATE, it) }
         }
-        if (!PrayerNotificationPermissions.canScheduleExactAlarms(context)) return
         val snoozeId = "$id.snooze"
         val alarmIntent = PrayerNotificationReceiver.buildIntent(context, snoozeId, title, body, categoryId, extras)
         PrayerNotificationReceiver.scheduleExact(

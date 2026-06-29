@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -648,99 +649,114 @@ private fun PrayerRows(
     }
     val rows = baseRows + nightRows
 
-    Column(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(horizontal = 16.dp),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                LocaleStrings.t("timetable.header.prayer", language),
-                modifier = Modifier.weight(1f),
-                color = theme.textColor.copy(alpha = 0.5f),
-                style = rememberAppTextStyle(13f, FontWeight.Medium),
-            )
-            Text(
-                LocaleStrings.t("timetable.header.adhan", language),
-                modifier = Modifier.width(TIME_COL_WIDTH.dp),
-                color = theme.textColor.copy(alpha = 0.5f),
-                style = rememberAppTextStyle(13f, FontWeight.Medium),
-                textAlign = TextAlign.End,
-            )
-            Text(
-                LocaleStrings.t("timetable.header.iqamah", language),
-                modifier = Modifier.width(TIME_COL_WIDTH.dp),
-                color = theme.textColor.copy(alpha = 0.5f),
-                style = rememberAppTextStyle(13f, FontWeight.Medium),
-                textAlign = TextAlign.End,
-            )
-        }
+        val rowPadding = if (maxWidth < 340.dp) 14.dp else 24.dp
+        val timeColumnWidth = ((maxWidth - (rowPadding * 2) - 24.dp - 76.dp) / 2f)
+            .coerceIn(78.dp, TIME_COL_WIDTH.dp)
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            rows.forEach { r ->
-                val isNext = r.id == nextId
-                val isPast = isToday && isTimePast(
-                    r.adhanSortKey,
-                    nowHHMM,
-                    r.id == "midnight" || r.id == "lastThird",
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = rowPadding)
+                    .padding(bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    LocaleStrings.t("timetable.header.prayer", language),
+                    modifier = Modifier.weight(1f),
+                    color = theme.textColor.copy(alpha = 0.5f),
+                    style = rememberAppTextStyle(13f, FontWeight.Medium),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                val opacity = if (isPast) 0.35f else 1f
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            if (isNext) theme.textColor.copy(alpha = 0.08f) else Color.Transparent,
+                Text(
+                    LocaleStrings.t("timetable.header.adhan", language),
+                    modifier = Modifier.width(timeColumnWidth),
+                    color = theme.textColor.copy(alpha = 0.5f),
+                    style = rememberAppTextStyle(13f, FontWeight.Medium),
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    LocaleStrings.t("timetable.header.iqamah", language),
+                    modifier = Modifier.width(timeColumnWidth),
+                    color = theme.textColor.copy(alpha = 0.5f),
+                    style = rememberAppTextStyle(13f, FontWeight.Medium),
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                rows.forEach { r ->
+                    val isNext = r.id == nextId
+                    val isPast = isToday && isTimePast(
+                        r.adhanSortKey,
+                        nowHHMM,
+                        r.id == "midnight" || r.id == "lastThird",
+                    )
+                    val opacity = if (isPast) 0.35f else 1f
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                if (isNext) theme.textColor.copy(alpha = 0.08f) else Color.Transparent,
+                            )
+                            .padding(vertical = 16.dp, horizontal = rowPadding),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Text(
+                            r.name,
+                            modifier = Modifier.weight(1f),
+                            color = theme.textColor.copy(alpha = opacity),
+                            style = rememberAppTextStyle(
+                                ROW_FONT_SIZE.toFloat(),
+                                if (isNext) FontWeight.SemiBold else FontWeight.Normal,
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false,
                         )
-                        .padding(vertical = 16.dp, horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    Text(
-                        r.name,
-                        modifier = Modifier.weight(1f),
-                        color = theme.textColor.copy(alpha = opacity),
-                        style = rememberAppTextStyle(
-                            ROW_FONT_SIZE.toFloat(),
-                            if (isNext) FontWeight.SemiBold else FontWeight.Normal,
-                        ),
-                        maxLines = 5,
-                    )
-                    Text(
-                        r.adhanDisplay,
-                        modifier = Modifier.width(TIME_COL_WIDTH.dp),
-                        color = theme.textColor.copy(alpha = opacity * 0.75f),
-                        style = rememberAppTextStyle(
-                            ROW_FONT_SIZE.toFloat(),
-                            if (isNext) FontWeight.SemiBold else FontWeight.Normal,
-                            tabularDigits = true,
-                        ),
-                        textAlign = TextAlign.End,
-                        maxLines = 1,
-                    )
-                    Text(
-                        r.iqamahDisplay,
-                        modifier = Modifier.width(TIME_COL_WIDTH.dp),
-                        color = theme.textColor.copy(alpha = opacity),
-                        style = rememberAppTextStyle(
-                            ROW_FONT_SIZE.toFloat(),
-                            if (isNext) FontWeight.Bold else FontWeight.Medium,
-                            tabularDigits = true,
-                        ),
-                        textAlign = TextAlign.End,
-                        maxLines = 1,
-                    )
+                        Text(
+                            r.adhanDisplay,
+                            modifier = Modifier.width(timeColumnWidth),
+                            color = theme.textColor.copy(alpha = opacity * 0.75f),
+                            style = rememberAppTextStyle(
+                                ROW_FONT_SIZE.toFloat(),
+                                if (isNext) FontWeight.SemiBold else FontWeight.Normal,
+                                tabularDigits = true,
+                            ),
+                            textAlign = TextAlign.End,
+                            maxLines = 1,
+                            overflow = TextOverflow.Clip,
+                        )
+                        Text(
+                            r.iqamahDisplay,
+                            modifier = Modifier.width(timeColumnWidth),
+                            color = theme.textColor.copy(alpha = opacity),
+                            style = rememberAppTextStyle(
+                                ROW_FONT_SIZE.toFloat(),
+                                if (isNext) FontWeight.Bold else FontWeight.Medium,
+                                tabularDigits = true,
+                            ),
+                            textAlign = TextAlign.End,
+                            maxLines = 1,
+                            overflow = TextOverflow.Clip,
+                        )
+                    }
                 }
             }
+            Spacer(modifier = Modifier.height(32.dp))
         }
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 

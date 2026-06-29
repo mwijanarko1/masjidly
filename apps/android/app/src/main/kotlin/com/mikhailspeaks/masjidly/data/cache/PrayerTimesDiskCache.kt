@@ -1,8 +1,11 @@
 package com.mikhailspeaks.masjidly.data.cache
 
 import android.content.Context
+import com.mikhailspeaks.masjidly.domain.CachedPrayerDataVersions
+import com.mikhailspeaks.masjidly.domain.DataRevision
 import com.mikhailspeaks.masjidly.domain.MonthPrayerData
 import com.mikhailspeaks.masjidly.domain.Mosque
+import com.mikhailspeaks.masjidly.domain.PrayerDataVersions
 import com.mikhailspeaks.masjidly.domain.RamadanPrayerData
 import com.mikhailspeaks.masjidly.domain.UkDstCalendar
 import java.io.File
@@ -42,11 +45,25 @@ class PrayerTimesDiskCache(context: Context) {
         save(MOSQUES_FILE, mosques.map { it.toCache() })
     }
 
+    fun loadDataRevision(): DataRevision? =
+        load<DataRevision>(DATA_REVISION_FILE)
+
+    fun saveDataRevision(revision: DataRevision) {
+        save(DATA_REVISION_FILE, revision)
+    }
+
     fun loadUkDst(): UkDstCalendar? =
         load<UkDstCalendarCache>(UK_DST_FILE)?.toDomain()
 
     fun saveUkDst(dst: UkDstCalendar) {
         save(UK_DST_FILE, dst.toCache())
+    }
+
+    fun loadVersions(slug: String, month: String, year: Int): CachedPrayerDataVersions? =
+        load<CachedPrayerDataVersions>(versionsFilename(slug, month, year))
+
+    fun saveVersions(slug: String, month: String, year: Int, versions: PrayerDataVersions) {
+        save(versionsFilename(slug, month, year), CachedPrayerDataVersions(versions, System.currentTimeMillis()))
     }
 
     fun loadMonthly(slug: String, month: String, year: Int): MonthPrayerData? {
@@ -74,11 +91,15 @@ class PrayerTimesDiskCache(context: Context) {
     private fun monthlyFilename(slug: String, month: String, year: Int) =
         "monthly_${safe(slug)}_${month}_$year.json"
 
+    private fun versionsFilename(slug: String, month: String, year: Int) =
+        "versions_${safe(slug)}_${month}_$year.json"
+
     private fun ramadanFilename(slug: String, date: String) =
         "ramadan_${safe(slug)}_${safe(date)}.json"
 
     companion object {
         private const val MOSQUES_FILE = "mosques.json"
+        private const val DATA_REVISION_FILE = "data_revision.json"
         private const val UK_DST_FILE = "uk_dst.json"
     }
 }

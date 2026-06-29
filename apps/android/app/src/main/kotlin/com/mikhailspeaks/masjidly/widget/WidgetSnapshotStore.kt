@@ -9,7 +9,11 @@ class WidgetSnapshotStore(context: Context) {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     fun readSnapshot(): WidgetPrayerSnapshot? {
-        val raw = prefs.getString(WidgetSharedConfig.SNAPSHOT_KEY, null) ?: return null
+        val selectedId = prefs.getString(WidgetSharedConfig.APP_SELECTED_MOSQUE_ID_KEY, null).orEmpty()
+        val raw = listOf(
+            selectedId.takeIf { it.isNotBlank() }?.let { snapshotKeyForMosque(it) },
+            WidgetSharedConfig.SNAPSHOT_KEY,
+        ).filterNotNull().firstNotNullOfOrNull { prefs.getString(it, null) } ?: return null
         return runCatching { json.decodeFromString<WidgetPrayerSnapshot>(raw) }
             .getOrNull()
             ?.takeIf { it.schemaVersion == WidgetPrayerSnapshot.CURRENT_SCHEMA_VERSION }
@@ -22,7 +26,9 @@ class WidgetSnapshotStore(context: Context) {
                 putString(WidgetSharedConfig.SNAPSHOT_KEY, encoded)
             }
             putString(snapshotKeyForMosque(snapshot.mosque.id), encoded)
-            putString(WidgetSharedConfig.APP_SELECTED_MOSQUE_ID_KEY, snapshot.mosque.id)
+            if (updateDefault) {
+                putString(WidgetSharedConfig.APP_SELECTED_MOSQUE_ID_KEY, snapshot.mosque.id)
+            }
             apply()
         }
     }

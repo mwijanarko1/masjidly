@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -67,6 +68,7 @@ import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.LocaleStrings
 import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.MosqueSelection
+import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermissions
 import com.mikhailspeaks.masjidly.features.settings.OnboardingMenuPickerRow
 import com.mikhailspeaks.masjidly.features.settings.OnboardingReminderMenuPickerRow
 import com.mikhailspeaks.masjidly.features.settings.SettingsPickerBottomSheet
@@ -684,14 +686,26 @@ fun OnboardingNotificationSetupScreen(
         draft.preAdhanReminderMinutes != null ||
         draft.preIqamahReminderMinutes != null
 
+    val context = LocalContext.current
+
+    fun requestExactAlarmIfNeeded() {
+        if (willEnableNotifications && !PrayerNotificationPermissions.canScheduleExactAlarms(context)) {
+            PrayerNotificationPermissions.openExactAlarmSettings(context)
+        }
+    }
+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { _ -> onContinue() }
+    ) { _ ->
+        requestExactAlarmIfNeeded()
+        onContinue()
+    }
 
     fun finishNotificationSetup() {
         if (willEnableNotifications && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
+            requestExactAlarmIfNeeded()
             onContinue()
         }
     }

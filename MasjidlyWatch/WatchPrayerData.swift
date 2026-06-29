@@ -698,8 +698,15 @@ private final class WatchDirectPrayerRefreshService: Sendable {
         try await query(path: "prayerTimes:getMonthly", args: ["mosqueSlug": mosqueSlug, "month": month, "year": Double(year)])
     }
 
+    private func mightBeRamadanDate(_ date: String) -> Bool {
+        guard date.count >= 7,
+              let month = Int(date.dropFirst(5).prefix(2)) else { return true }
+        return (1...4).contains(month)
+    }
+
     private func getRamadanTimetable(mosqueSlug: String, date: String) async throws -> RamadanPrayerData? {
-        try await query(path: "prayerTimes:getRamadan", args: ["mosqueSlug": mosqueSlug, "date": date])
+        guard mightBeRamadanDate(date) else { return nil }
+        return try await query(path: "prayerTimes:getRamadan", args: ["mosqueSlug": mosqueSlug, "date": date])
     }
 
     private func query<Value: Decodable>(path: String, args: [String: Any]) async throws -> Value? {
