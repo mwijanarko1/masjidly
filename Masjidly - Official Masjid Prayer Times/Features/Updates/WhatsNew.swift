@@ -23,33 +23,33 @@ struct WhatsNew {
         case "ar":
             return [
                 WhatsNewItem(
-                    title: "إصلاحات أخطاء",
-                    description: "تحسينات وإصلاحات لجعل التطبيق أكثر موثوقية.",
-                    icon: "wrench.and.screwdriver.fill"
+                    title: "اتجاهات إلى أقرب مسجد",
+                    description: "افتح إرشادات خطوة بخطوة إلى أقرب مسجد في تطبيق الخرائط المفضل لديك.",
+                    icon: "map.fill"
                 ),
             ]
         case "ur":
             return [
                 WhatsNewItem(
-                    title: "بگ فکسز",
-                    description: "ایپ کو زیادہ قابلِ اعتماد بنانے کے لیے اصلاحات اور بہتریاں۔",
-                    icon: "wrench.and.screwdriver.fill"
+                    title: "قریب ترین مسجد کا راستہ",
+                    description: "اپنی پسندیدہ نقشہ ایپ میں قریب ترین مسجد تک مرحلہ وار راستہ کھولیں۔",
+                    icon: "map.fill"
                 ),
             ]
         case "id":
             return [
                 WhatsNewItem(
-                    title: "Perbaikan bug",
-                    description: "Peningkatan dan perbaikan agar aplikasi lebih andal.",
-                    icon: "wrench.and.screwdriver.fill"
+                    title: "Petunjuk ke masjid terdekat",
+                    description: "Buka petunjuk arah langkah demi langkah ke masjid terdekat di aplikasi peta pilihan Anda.",
+                    icon: "map.fill"
                 ),
             ]
         default:
             return [
                 WhatsNewItem(
-                    title: "Bug fixes",
-                    description: "Improvements and fixes to make the app more reliable.",
-                    icon: "wrench.and.screwdriver.fill"
+                    title: "Directions to your nearest mosque",
+                    description: "Open turn-by-turn directions to the closest mosque in your preferred maps app.",
+                    icon: "map.fill"
                 ),
             ]
         }

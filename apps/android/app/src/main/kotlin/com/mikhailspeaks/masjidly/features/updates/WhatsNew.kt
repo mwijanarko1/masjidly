@@ -13,6 +13,7 @@ data class WhatsNewItem(
 
 enum class WhatsNewIcon {
     BUG_FIX,
+    MAP,
     PALETTE,
     WIDGET,
 }
@@ -36,30 +37,30 @@ object WhatsNew {
         return when (code) {
             "ar" -> listOf(
                 WhatsNewItem(
-                    title = "إصلاحات أخطاء",
-                    description = "تحسينات وإصلاحات لجعل التطبيق أكثر موثوقية.",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "اتجاهات إلى أقرب مسجد",
+                    description = "افتح إرشادات خطوة بخطوة إلى أقرب مسجد في تطبيق الخرائط المفضل لديك.",
+                    icon = WhatsNewIcon.MAP,
                 ),
             )
             "ur" -> listOf(
                 WhatsNewItem(
-                    title = "بگ فکسز",
-                    description = "ایپ کو زیادہ قابلِ اعتماد بنانے کے لیے اصلاحات اور بہتریاں۔",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "قریب ترین مسجد کا راستہ",
+                    description = "اپنی پسندیدہ نقشہ ایپ میں قریب ترین مسجد تک مرحلہ وار راستہ کھولیں۔",
+                    icon = WhatsNewIcon.MAP,
                 ),
             )
             "id" -> listOf(
                 WhatsNewItem(
-                    title = "Perbaikan bug",
-                    description = "Peningkatan dan perbaikan agar aplikasi lebih andal.",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "Petunjuk ke masjid terdekat",
+                    description = "Buka petunjuk arah langkah demi langkah ke masjid terdekat di aplikasi peta pilihan Anda.",
+                    icon = WhatsNewIcon.MAP,
                 ),
             )
             else -> listOf(
                 WhatsNewItem(
-                    title = "Bug fixes",
-                    description = "Improvements and fixes to make the app more reliable.",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "Directions to your nearest mosque",
+                    description = "Open turn-by-turn directions to the closest mosque in your preferred maps app.",
+                    icon = WhatsNewIcon.MAP,
                 ),
             )
         }

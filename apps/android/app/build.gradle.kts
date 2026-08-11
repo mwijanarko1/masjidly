@@ -22,8 +22,8 @@ android {
         applicationId = "com.mikhailspeaks.masjidly"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.3"
+        versionCode = 12
+        versionName = "1.3.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

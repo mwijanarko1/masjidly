@@ -51,3 +51,6 @@ scratch/
 
 # Project notes
 context.md
+
+# ASC CLI local artifacts
+.asc/

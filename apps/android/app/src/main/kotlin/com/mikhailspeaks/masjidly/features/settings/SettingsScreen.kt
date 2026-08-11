@@ -1,6 +1,7 @@
 package com.mikhailspeaks.masjidly.features.settings
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.net.Uri
@@ -122,6 +123,12 @@ fun SettingsScreen(
     val dynamicTheme = TimeTheme.homeHeroTheme(homeState.displayedPrayerTimes, homeState.selectedPrayerIndex)
     val theme = settingsStore.resolvedTheme(dynamicTheme)
     val language = settingsStore.appLanguage
+    val directionsApps = remember(context) { availableDirectionsApps(context) }
+    val selectedDirectionsAppPackage = directionsApps
+        .firstOrNull { it.packageName == settingsStore.directionsAppPackage }
+        ?.packageName
+        ?: directionsApps.firstOrNull()?.packageName
+        .orEmpty()
 
     val countries = remember(mosques) { MosqueSelection.countryOptions(mosques) }
     val effectiveCountryKey = remember(
@@ -333,9 +340,17 @@ fun SettingsScreen(
                     }
                     if (closestMosque != null) {
                         SettingsDivider(theme)
-                        ClosestMosqueRow(closestMosque!!, language, theme) { mosque ->
-                            selectMosque(mosque, settingsStore, homeViewModel, settingsViewModel)
-                        }
+                        ClosestMosqueRow(
+                            mosque = closestMosque!!,
+                            language = language,
+                            theme = theme,
+                            onSelect = { mosque ->
+                                selectMosque(mosque, settingsStore, homeViewModel, settingsViewModel)
+                            },
+                            onDirections = { mosque ->
+                                openDirections(context, mosque, selectedDirectionsAppPackage)
+                            },
+                        )
                     }
                 }
 
@@ -440,6 +455,21 @@ fun SettingsScreen(
                                     Manifest.permission.ACCESS_COARSE_LOCATION,
                                 ),
                             )
+                        }
+                    }
+                }
+
+                if (directionsApps.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    SettingsPlainSection(LocaleStrings.t("settings.closest_mosque.directions", language), theme) {
+                        PickerRow(
+                            label = LocaleStrings.t("settings.directions.app", language),
+                            options = directionsApps.map { it.packageName to it.displayName },
+                            selectedKey = selectedDirectionsAppPackage,
+                            language = language,
+                            theme = theme,
+                        ) { packageName ->
+                            settingsStore.directionsAppPackage = packageName
                         }
                     }
                 }
@@ -957,6 +987,7 @@ private fun ClosestMosqueRow(
     language: AppLanguage,
     theme: ResolvedTheme,
     onSelect: (Mosque) -> Unit,
+    onDirections: (Mosque) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -972,23 +1003,73 @@ private fun ClosestMosqueRow(
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(10.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(theme.textColor.copy(alpha = 0.14f))
-                .border(1.dp, theme.textColor.copy(alpha = 0.22f), RoundedCornerShape(14.dp))
-                .padding(vertical = 12.dp)
-                .hapticClickable { onSelect(mosque) },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = LocaleStrings.t("settings.closest_mosque.select", language),
-                color = theme.textColor,
-                style = rememberAppTextStyle(15f, FontWeight.SemiBold),
+        ClosestMosqueActionButton(
+            label = LocaleStrings.t("settings.closest_mosque.select", language),
+            theme = theme,
+        ) { onSelect(mosque) }
+        Spacer(modifier = Modifier.height(8.dp))
+        ClosestMosqueActionButton(
+            label = LocaleStrings.t("settings.closest_mosque.directions", language),
+            theme = theme,
+        ) { onDirections(mosque) }
+    }
+}
+
+@Composable
+private fun ClosestMosqueActionButton(
+    label: String,
+    theme: ResolvedTheme,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(theme.textColor.copy(alpha = 0.14f))
+            .border(1.dp, theme.textColor.copy(alpha = 0.22f), RoundedCornerShape(14.dp))
+            .padding(vertical = 12.dp)
+            .hapticClickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            color = theme.textColor,
+            style = rememberAppTextStyle(15f, FontWeight.SemiBold),
+        )
+    }
+}
+
+private data class DirectionsAppOption(
+    val packageName: String,
+    val displayName: String,
+)
+
+private fun availableDirectionsApps(context: Context): List<DirectionsAppOption> {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=0,0"))
+    return context.packageManager
+        .queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        .map { info ->
+            DirectionsAppOption(
+                packageName = info.activityInfo.packageName,
+                displayName = info.loadLabel(context.packageManager).toString(),
             )
         }
-    }
+        .distinctBy { it.packageName }
+        .sortedBy { it.displayName.lowercase() }
+}
+
+private fun openDirections(context: Context, mosque: Mosque, packageName: String) {
+    val geoUri = Uri.parse("geo:0,0?q=${mosque.lat},${mosque.lng}(${Uri.encode(mosque.name)})")
+    val selectedApp = Intent(Intent.ACTION_VIEW, geoUri)
+    if (packageName.isNotEmpty()) selectedApp.setPackage(packageName)
+    if (runCatching { context.startActivity(selectedApp) }.isSuccess) return
+
+    context.startActivity(
+        Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${mosque.lat},${mosque.lng}"),
+        ),
+    )
 }
 
 @Composable

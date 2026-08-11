@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -201,6 +202,7 @@ private fun WhatsNewItemRow(
         Icon(
             imageVector = when (item.icon) {
                 WhatsNewIcon.BUG_FIX -> Icons.Default.Build
+                WhatsNewIcon.MAP -> Icons.Default.Place
                 WhatsNewIcon.WIDGET -> Icons.Default.Widgets
                 WhatsNewIcon.PALETTE -> Icons.Default.Palette
             },

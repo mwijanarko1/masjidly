@@ -10,6 +10,24 @@ enum AsrIqamahPreference: String, CaseIterable, Identifiable, Codable, Sendable 
     var id: String { rawValue }
 }
 
+enum DirectionsApp: String, CaseIterable, Identifiable {
+    case appleMaps
+    case googleMaps
+    case waze
+    case citymapper
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .appleMaps: "Apple Maps"
+        case .googleMaps: "Google Maps"
+        case .waze: "Waze"
+        case .citymapper: "Citymapper"
+        }
+    }
+}
+
 @Observable
 @MainActor
 final class SettingsStore: SettingsPersisting {
@@ -30,6 +48,7 @@ final class SettingsStore: SettingsPersisting {
         case prayerGradientStylesJSON
         case prayerCustomGradientColorsJSON
         case asrIqamahPreference
+        case directionsApp
         case hideQiblaCompass
         case showDuhaTime
         case showIqamahTime
@@ -178,6 +197,10 @@ final class SettingsStore: SettingsPersisting {
         didSet { defaults.set(asrIqamahPreference.rawValue, forKey: Key.asrIqamahPreference.rawValue) }
     }
 
+    var directionsApp: DirectionsApp {
+        didSet { defaults.set(directionsApp.rawValue, forKey: Key.directionsApp.rawValue) }
+    }
+
     func resolvedTheme(dynamicTheme: HomeDesign.TimeTheme) -> HomeDesign.TimeTheme {
         themeMode == .dynamic ? dynamicTheme : fixedTheme
     }
@@ -259,6 +282,7 @@ final class SettingsStore: SettingsPersisting {
             prayerCustomGradientColors = [:]
         }
         asrIqamahPreference = AsrIqamahPreference(rawValue: defaults.string(forKey: Key.asrIqamahPreference.rawValue) ?? "") ?? .first
+        directionsApp = DirectionsApp(rawValue: defaults.string(forKey: Key.directionsApp.rawValue) ?? "") ?? .appleMaps
         if defaults.object(forKey: Key.hideQiblaCompass.rawValue) == nil {
             hideQiblaCompass = false
         } else {

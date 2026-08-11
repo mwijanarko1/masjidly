@@ -1,6 +1,7 @@
 import Observation
 import SwiftUI
 import CoreLocation
+import MapKit
 import UIKit
 
 private func LS(_ key: String, locale: Locale) -> String {
@@ -128,6 +129,11 @@ struct SettingsView: View {
                         appearance: currentAppearance
                     )
                     .padding(.vertical, 12)
+                }
+
+                settingsSectionBlock(titleKey: "settings.closest_mosque.directions") {
+                    directionsAppPickerRow
+                        .padding(.vertical, 12)
                 }
 
                 if shouldShowLocationRecovery {
@@ -593,27 +599,132 @@ struct SettingsView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .center)
 
-            Button {
+            closestMosqueActionButton(
+                title: localized("Use closest mosque"),
+                accessibilityIdentifier: "Settings.UseClosestMosque"
+            ) {
                 Task { await model.selectMosque(mosque) }
-            } label: {
-                Text(localized("Use closest mosque"))
-                    .appFont(size: 15, weight: .semibold)
-                    .foregroundColor(currentAppearance.textColor)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(currentAppearance.textColor.opacity(0.14))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(currentAppearance.textColor.opacity(0.22), lineWidth: 1)
-                    )
             }
-            .buttonStyle(.hapticPlain)
-            .accessibilityIdentifier("Settings.UseClosestMosque")
+
+            closestMosqueActionButton(
+                title: localized("settings.closest_mosque.directions"),
+                accessibilityIdentifier: "Settings.ClosestMosqueDirections"
+            ) {
+                openDirections(to: mosque)
+            }
         }
         .padding(.horizontal, 16)
+    }
+
+    private func closestMosqueActionButton(
+        title: String,
+        accessibilityIdentifier: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .appFont(size: 15, weight: .semibold)
+                .foregroundColor(currentAppearance.textColor)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(currentAppearance.textColor.opacity(0.14))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(currentAppearance.textColor.opacity(0.22), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.hapticPlain)
+        .accessibilityIdentifier(accessibilityIdentifier)
+    }
+
+    private var availableDirectionsApps: [DirectionsApp] {
+        DirectionsApp.allCases.filter { app in
+            guard app != .appleMaps,
+                  let url = directionsAppURL(for: app, mosque: nil) else {
+                return app == .appleMaps
+            }
+            return UIApplication.shared.canOpenURL(url)
+        }
+    }
+
+    private var selectedDirectionsApp: DirectionsApp {
+        availableDirectionsApps.contains(settings.directionsApp) ? settings.directionsApp : .appleMaps
+    }
+
+    private var directionsAppPickerRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(localized("settings.directions.app"))
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(currentAppearance.textColor)
+
+            Spacer(minLength: 12)
+
+            Picker("", selection: Binding(
+                get: { selectedDirectionsApp },
+                set: { settings.directionsApp = $0 }
+            )) {
+                ForEach(availableDirectionsApps) { app in
+                    Text(app.displayName)
+                        .appFont(size: 17)
+                        .tag(app)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(currentAppearance.textColor)
+        }
+        .frame(minHeight: 44)
+    }
+
+    private func openDirections(to mosque: Mosque) {
+        let app = selectedDirectionsApp
+        if app == .appleMaps {
+            let destination = MKMapItem(
+                placemark: MKPlacemark(
+                    coordinate: CLLocationCoordinate2D(latitude: mosque.lat, longitude: mosque.lng)
+                )
+            )
+            destination.name = mosque.name
+            destination.openInMaps(launchOptions: [
+                MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
+            ])
+            return
+        }
+
+        guard let url = directionsAppURL(for: app, mosque: mosque) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func directionsAppURL(for app: DirectionsApp, mosque: Mosque?) -> URL? {
+        let coordinate = mosque.map { "\($0.lat),\($0.lng)" } ?? ""
+        var components = URLComponents()
+
+        switch app {
+        case .appleMaps:
+            return nil
+        case .googleMaps:
+            components.scheme = "comgooglemaps"
+            components.host = ""
+            components.queryItems = mosque.map { _ in
+                [URLQueryItem(name: "daddr", value: coordinate), URLQueryItem(name: "directionsmode", value: "driving")]
+            }
+        case .waze:
+            components.scheme = "waze"
+            components.host = ""
+            components.queryItems = mosque.map { _ in
+                [URLQueryItem(name: "ll", value: coordinate), URLQueryItem(name: "navigate", value: "yes")]
+            }
+        case .citymapper:
+            components.scheme = "citymapper"
+            components.host = "directions"
+            components.queryItems = mosque.map {
+                [URLQueryItem(name: "endcoord", value: coordinate), URLQueryItem(name: "endname", value: $0.name)]
+            }
+        }
+
+        return components.url
     }
 
     private var countryPickerRow: some View {

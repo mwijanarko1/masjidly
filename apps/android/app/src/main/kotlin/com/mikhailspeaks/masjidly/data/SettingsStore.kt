@@ -106,6 +106,13 @@ class SettingsStore(context: Context) {
             bump()
         }
 
+    var directionsAppPackage: String?
+        get() = prefs.getString(KEY_DIRECTIONS_APP_PACKAGE, null)
+        set(value) {
+            prefs.edit().putString(KEY_DIRECTIONS_APP_PACKAGE, value).apply()
+            bump()
+        }
+
     var hideQiblaCompass: Boolean
         get() = prefs.getBoolean(KEY_HIDE_QIBLA, false)
         set(value) {
@@ -310,6 +317,7 @@ class SettingsStore(context: Context) {
         private const val KEY_APP_LANGUAGE = "appLanguage"
         private const val KEY_THEME_MODE = "themeMode"
         private const val KEY_FIXED_THEME = "fixedTheme"
+        private const val KEY_DIRECTIONS_APP_PACKAGE = "directionsAppPackage"
         private const val KEY_HIDE_QIBLA = "hideQiblaCompass"
         private const val KEY_SHOW_DUHA_TIME = "showDuhaTime"
         private const val KEY_SHOW_IQAMAH_TIME = "showIqamahTime"
