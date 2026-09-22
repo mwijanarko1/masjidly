@@ -98,10 +98,13 @@ final class SettingsViewModel {
         guard auth == .authorized || auth == .provisional else { return }
 
         let slug = settings.selectedMosqueSlug ?? ""
+        let mosqueName = mosques.first(where: { $0.slug == slug })?.name
+            ?? mosques.first(where: { $0.id == settings.selectedMosqueId })?.name
+            ?? ""
 
         switch type {
         case .adhan:
-            let copy = PrayerNotificationContent.adhanCopy(prayerKey: "maghrib", isFriday: false)
+            let copy = PrayerNotificationContent.adhanCopy(prayerKey: "maghrib", isFriday: false, mosqueName: mosqueName)
             await enqueueTestNotification(
                 title: copy.title,
                 body: copy.body,
@@ -110,7 +113,7 @@ final class SettingsViewModel {
                 userInfo: PrayerNotificationContent.debugUserInfo(kind: .adhan, prayerKey: "maghrib", mosqueSlug: slug)
             )
         case .iqamah:
-            let copy = PrayerNotificationContent.iqamahCopy(prayerKey: "maghrib", isFriday: false)
+            let copy = PrayerNotificationContent.iqamahCopy(prayerKey: "maghrib", isFriday: false, mosqueName: mosqueName)
             await enqueueTestNotification(
                 title: copy.title,
                 body: copy.body,
@@ -119,7 +122,12 @@ final class SettingsViewModel {
                 userInfo: PrayerNotificationContent.debugUserInfo(kind: .iqamah, prayerKey: "maghrib", mosqueSlug: slug)
             )
         case .reminder:
-            let copy = PrayerNotificationContent.beforeAdhanReminderCopy(prayerKey: "maghrib", isFriday: false, minutes: 10)
+            let copy = PrayerNotificationContent.beforeAdhanReminderCopy(
+                prayerKey: "maghrib",
+                isFriday: false,
+                minutes: 10,
+                mosqueName: mosqueName
+            )
             await enqueueTestNotification(
                 title: copy.title,
                 body: copy.body,
@@ -128,7 +136,7 @@ final class SettingsViewModel {
                 userInfo: PrayerNotificationContent.debugUserInfo(kind: .reminderBeforeAdhan, prayerKey: "maghrib", mosqueSlug: slug)
             )
         case .all:
-            let adhan = PrayerNotificationContent.adhanCopy(prayerKey: "maghrib", isFriday: false)
+            let adhan = PrayerNotificationContent.adhanCopy(prayerKey: "maghrib", isFriday: false, mosqueName: mosqueName)
             await enqueueTestNotification(
                 title: adhan.title,
                 body: adhan.body,
@@ -136,7 +144,7 @@ final class SettingsViewModel {
                 sound: PrayerNotificationContent.sound(for: settings.notifications, channel: .adhan),
                 userInfo: PrayerNotificationContent.debugUserInfo(kind: .adhan, prayerKey: "maghrib", mosqueSlug: slug)
             )
-            let iq = PrayerNotificationContent.iqamahCopy(prayerKey: "maghrib", isFriday: false)
+            let iq = PrayerNotificationContent.iqamahCopy(prayerKey: "maghrib", isFriday: false, mosqueName: mosqueName)
             await enqueueTestNotification(
                 title: iq.title,
                 body: iq.body,
@@ -144,7 +152,12 @@ final class SettingsViewModel {
                 sound: PrayerNotificationContent.sound(for: settings.notifications, channel: .iqamah),
                 userInfo: PrayerNotificationContent.debugUserInfo(kind: .iqamah, prayerKey: "maghrib", mosqueSlug: slug)
             )
-            let rem = PrayerNotificationContent.beforeAdhanReminderCopy(prayerKey: "maghrib", isFriday: false, minutes: 10)
+            let rem = PrayerNotificationContent.beforeAdhanReminderCopy(
+                prayerKey: "maghrib",
+                isFriday: false,
+                minutes: 10,
+                mosqueName: mosqueName
+            )
             await enqueueTestNotification(
                 title: rem.title,
                 body: rem.body,

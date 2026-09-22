@@ -1934,7 +1934,36 @@
       }
     },
     "notification.copy.adhan.body" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأذان الآن في %@. اضغط لسماع الأذان."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adhan is now in %@. Tap to hear adhan."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azan sekarang di %@. Ketuk untuk mendengar azan."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اذان اب %@ میں ہے۔ اذان سننے کے لیے ٹیپ کریں۔"
+          }
+        }
+      }
+    },
+    "notification.copy.adhan.body_fallback" : {
+      "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

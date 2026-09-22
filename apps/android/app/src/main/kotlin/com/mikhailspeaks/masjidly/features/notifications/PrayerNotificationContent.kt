@@ -62,38 +62,73 @@ object PrayerNotificationContent {
             else -> prayerKey.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
         }
 
-    fun adhanCopy(prayerKey: String, isFriday: Boolean, language: AppLanguage): Pair<String, String> {
-        val name = prayerDisplayName(prayerKey, isFriday, language)
-        return LocaleStrings.format("notification.copy.adhan.title", language, name) to
-            LocaleStrings.t("notification.copy.adhan.body", language)
+    /** Appends the selected mosque so lock-screen copy identifies which timetable fired. */
+    fun bodyWithMosque(mosqueName: String, body: String): String {
+        val trimmedMosque = mosqueName.trim()
+        if (trimmedMosque.isEmpty()) return body
+        val trimmedBody = body.trim()
+        val core = if (trimmedBody.endsWith(".")) trimmedBody.dropLast(1) else trimmedBody
+        return "$core in $trimmedMosque."
     }
 
-    fun iqamahCopy(prayerKey: String, isFriday: Boolean, language: AppLanguage): Pair<String, String> {
+    fun adhanCopy(
+        prayerKey: String,
+        isFriday: Boolean,
+        mosqueName: String,
+        language: AppLanguage,
+    ): Pair<String, String> {
+        val name = prayerDisplayName(prayerKey, isFriday, language)
+        val trimmedMosque = mosqueName.trim()
+        val body = if (trimmedMosque.isEmpty()) {
+            LocaleStrings.t("notification.copy.adhan.body_fallback", language)
+        } else {
+            LocaleStrings.format("notification.copy.adhan.body", language, trimmedMosque)
+        }
+        return LocaleStrings.format("notification.copy.adhan.title", language, name) to body
+    }
+
+    fun iqamahCopy(
+        prayerKey: String,
+        isFriday: Boolean,
+        mosqueName: String,
+        language: AppLanguage,
+    ): Pair<String, String> {
         val name = prayerDisplayName(prayerKey, isFriday, language)
         return LocaleStrings.format("notification.copy.iqamah.title", language, name) to
-            LocaleStrings.format("notification.copy.iqamah.body", language, name)
+            bodyWithMosque(
+                mosqueName,
+                LocaleStrings.format("notification.copy.iqamah.body", language, name),
+            )
     }
 
     fun beforeAdhanReminderCopy(
         prayerKey: String,
         isFriday: Boolean,
         minutes: Int,
+        mosqueName: String,
         language: AppLanguage,
     ): Pair<String, String> {
         val name = prayerDisplayName(prayerKey, isFriday, language)
         return LocaleStrings.format("notification.copy.before_adhan.title", language, name) to
-            LocaleStrings.format("notification.copy.before_adhan.body", language, minutes.toString())
+            bodyWithMosque(
+                mosqueName,
+                LocaleStrings.format("notification.copy.before_adhan.body", language, minutes.toString()),
+            )
     }
 
     fun beforeIqamahReminderCopy(
         prayerKey: String,
         isFriday: Boolean,
         minutes: Int,
+        mosqueName: String,
         language: AppLanguage,
     ): Pair<String, String> {
         val name = prayerDisplayName(prayerKey, isFriday, language)
         return LocaleStrings.format("notification.copy.before_iqamah.title", language, name) to
-            LocaleStrings.format("notification.copy.before_iqamah.body", language, minutes.toString())
+            bodyWithMosque(
+                mosqueName,
+                LocaleStrings.format("notification.copy.before_iqamah.body", language, minutes.toString()),
+            )
     }
 
     @Suppress("UNUSED_PARAMETER")

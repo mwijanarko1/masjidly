@@ -72,9 +72,12 @@ class SettingsViewModel(
             if (!notificationScheduler.requestAuthorizationIfNeeded()) return@launch
             val language = settings.appLanguage
             val slug = settings.selectedMosqueSlug.orEmpty()
+            val mosqueName = mosques.firstOrNull { it.slug == slug }?.name
+                ?: mosques.firstOrNull { it.id == settings.selectedMosqueId }?.name
+                ?: ""
             when (type) {
                 TestNotificationType.ADHAN -> {
-                    val copy = PrayerNotificationContent.adhanCopy("maghrib", isFriday = false, language)
+                    val copy = PrayerNotificationContent.adhanCopy("maghrib", isFriday = false, mosqueName, language)
                     PrayerNotificationPresenter.showInstantTest(
                         context = context,
                         title = copy.first,
@@ -88,7 +91,7 @@ class SettingsViewModel(
                     )
                 }
                 TestNotificationType.IQAMAH -> {
-                    val copy = PrayerNotificationContent.iqamahCopy("maghrib", isFriday = false, language)
+                    val copy = PrayerNotificationContent.iqamahCopy("maghrib", isFriday = false, mosqueName, language)
                     PrayerNotificationPresenter.showInstantTest(
                         context = context,
                         title = copy.first,
@@ -106,7 +109,8 @@ class SettingsViewModel(
                         "maghrib",
                         isFriday = false,
                         minutes = 10,
-                        language,
+                        mosqueName = mosqueName,
+                        language = language,
                     )
                     PrayerNotificationPresenter.showInstantTest(
                         context = context,

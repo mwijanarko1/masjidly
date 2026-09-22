@@ -84,6 +84,7 @@ class PrayerNotificationScheduler(
             ?: diskCache.loadUkDst()?.ukDstDates
             ?: emptyList()
         val slug = mosque.slug
+        val mosqueName = mosque.name
         val nowParts = PrayerTimesEngine.getDateInSheffield(Instant.now())
         val baseDay = LocalDate.of(nowParts.year, nowParts.month, nowParts.day)
             .atStartOfDay(PrayerTimesEngine.sheffieldTimeZone)
@@ -146,12 +147,12 @@ class PrayerNotificationScheduler(
             val isFriday = dayDate.atZone(PrayerTimesEngine.sheffieldTimeZone).dayOfWeek == DayOfWeek.FRIDAY
 
             scheduleAdhanIfEnabled(
-                settings, slug, iso, "masjidly.prayer.$slug.$iso.fajr.adhan",
+                settings, slug, mosqueName, iso, "masjidly.prayer.$slug.$iso.fajr.adhan",
                 "masjidly.prayer.$slug.$iso.fajr.adhan_reminder",
                 "fajr", displayed.fajr, isFriday, dayDate, language, generation,
             )
             scheduleIqamahIfEnabled(
-                settings, slug, iso, "masjidly.prayer.$slug.$iso.fajr.iqamah",
+                settings, slug, mosqueName, iso, "masjidly.prayer.$slug.$iso.fajr.iqamah",
                 "masjidly.prayer.$slug.$iso.fajr.iqamah_reminder",
                 "fajr",
                 PrayerTimesEngine.getIqamahTime("fajr", displayed.fajr, iq),
@@ -160,26 +161,26 @@ class PrayerNotificationScheduler(
 
             val dhuhrTime = displayed.dhuhr
             scheduleAdhanIfEnabled(
-                settings, slug, iso, "masjidly.prayer.$slug.$iso.dhuhr.adhan",
+                settings, slug, mosqueName, iso, "masjidly.prayer.$slug.$iso.dhuhr.adhan",
                 "masjidly.prayer.$slug.$iso.dhuhr.adhan_reminder",
                 "dhuhr", dhuhrTime, isFriday, dayDate, language, generation,
             )
             val iqLabel = if (isFriday) iq.jummah else PrayerTimesEngine.getIqamahTime("dhuhr", dhuhrTime, iq)
             val iqPrayerKey = if (isFriday) "jummah" else "dhuhr"
             scheduleIqamahIfEnabled(
-                settings, slug, iso,
+                settings, slug, mosqueName, iso,
                 "masjidly.prayer.$slug.$iso.$iqPrayerKey.iqamah",
                 "masjidly.prayer.$slug.$iso.$iqPrayerKey.iqamah_reminder",
                 "dhuhr", iqLabel, isFriday, dayDate, language, generation,
             )
 
             scheduleAdhanIfEnabled(
-                settings, slug, iso, "masjidly.prayer.$slug.$iso.asr.adhan",
+                settings, slug, mosqueName, iso, "masjidly.prayer.$slug.$iso.asr.adhan",
                 "masjidly.prayer.$slug.$iso.asr.adhan_reminder",
                 "asr", displayed.asr, isFriday, dayDate, language, generation,
             )
             scheduleIqamahIfEnabled(
-                settings, slug, iso, "masjidly.prayer.$slug.$iso.asr.iqamah",
+                settings, slug, mosqueName, iso, "masjidly.prayer.$slug.$iso.asr.iqamah",
                 "masjidly.prayer.$slug.$iso.asr.iqamah_reminder",
                 "asr",
                 PrayerTimesEngine.selectAsrIqamahTime(iq.asr, displayed.asr, asrIqamahPreference),
@@ -187,12 +188,12 @@ class PrayerNotificationScheduler(
             )
 
             scheduleAdhanIfEnabled(
-                settings, slug, iso, "masjidly.prayer.$slug.$iso.maghrib.adhan",
+                settings, slug, mosqueName, iso, "masjidly.prayer.$slug.$iso.maghrib.adhan",
                 "masjidly.prayer.$slug.$iso.maghrib.adhan_reminder",
                 "maghrib", displayed.maghrib, isFriday, dayDate, language, generation,
             )
             scheduleIqamahIfEnabled(
-                settings, slug, iso, "masjidly.prayer.$slug.$iso.maghrib.iqamah",
+                settings, slug, mosqueName, iso, "masjidly.prayer.$slug.$iso.maghrib.iqamah",
                 "masjidly.prayer.$slug.$iso.maghrib.iqamah_reminder",
                 "maghrib",
                 PrayerTimesEngine.getIqamahTime("maghrib", displayed.maghrib, iq),
@@ -200,12 +201,12 @@ class PrayerNotificationScheduler(
             )
 
             scheduleAdhanIfEnabled(
-                settings, slug, iso, "masjidly.prayer.$slug.$iso.isha.adhan",
+                settings, slug, mosqueName, iso, "masjidly.prayer.$slug.$iso.isha.adhan",
                 "masjidly.prayer.$slug.$iso.isha.adhan_reminder",
                 "isha", displayed.isha, isFriday, dayDate, language, generation,
             )
             scheduleIqamahIfEnabled(
-                settings, slug, iso, "masjidly.prayer.$slug.$iso.isha.iqamah",
+                settings, slug, mosqueName, iso, "masjidly.prayer.$slug.$iso.isha.iqamah",
                 "masjidly.prayer.$slug.$iso.isha.iqamah_reminder",
                 "isha",
                 PrayerTimesEngine.resolveIshaIqamahForDisplay(
@@ -247,6 +248,7 @@ class PrayerNotificationScheduler(
     private fun scheduleAdhanIfEnabled(
         settings: NotificationSettings,
         mosqueSlug: String,
+        mosqueName: String,
         iso: String,
         id: String,
         reminderId: String,
@@ -259,7 +261,7 @@ class PrayerNotificationScheduler(
     ) {
         if (!isAdhanForPrayerEnabled(prayerKey, settings)) return
         if (settings.adhanEnabled) {
-            val (title, body) = PrayerNotificationContent.adhanCopy(prayerKey, isFriday, language)
+            val (title, body) = PrayerNotificationContent.adhanCopy(prayerKey, isFriday, mosqueName, language)
             scheduleIfNeeded(
                 id = id,
                 title = title,
@@ -277,6 +279,7 @@ class PrayerNotificationScheduler(
             settings = settings,
             id = reminderId,
             mosqueSlug = mosqueSlug,
+            mosqueName = mosqueName,
             iso = iso,
             prayerKey = prayerKey,
             kind = ReminderKind.BEFORE_ADHAN,
@@ -292,6 +295,7 @@ class PrayerNotificationScheduler(
     private fun scheduleIqamahIfEnabled(
         settings: NotificationSettings,
         mosqueSlug: String,
+        mosqueName: String,
         iso: String,
         id: String,
         reminderId: String,
@@ -304,7 +308,7 @@ class PrayerNotificationScheduler(
     ) {
         if (!isIqamahForPrayerEnabled(prayerKey, settings)) return
         if (settings.iqamahEnabled) {
-            val (title, body) = PrayerNotificationContent.iqamahCopy(prayerKey, isFriday, language)
+            val (title, body) = PrayerNotificationContent.iqamahCopy(prayerKey, isFriday, mosqueName, language)
             scheduleIfNeeded(
                 id = id,
                 title = title,
@@ -322,6 +326,7 @@ class PrayerNotificationScheduler(
             settings = settings,
             id = reminderId,
             mosqueSlug = mosqueSlug,
+            mosqueName = mosqueName,
             iso = iso,
             prayerKey = prayerKey,
             kind = ReminderKind.BEFORE_IQAMAH,
@@ -343,6 +348,7 @@ class PrayerNotificationScheduler(
         settings: NotificationSettings,
         id: String,
         mosqueSlug: String,
+        mosqueName: String,
         iso: String,
         prayerKey: String,
         kind: ReminderKind,
@@ -359,9 +365,13 @@ class PrayerNotificationScheduler(
 
         val (title, body) = when (kind) {
             ReminderKind.BEFORE_ADHAN ->
-                PrayerNotificationContent.beforeAdhanReminderCopy(prayerKey, isFriday, minutesBefore, language)
+                PrayerNotificationContent.beforeAdhanReminderCopy(
+                    prayerKey, isFriday, minutesBefore, mosqueName, language,
+                )
             ReminderKind.BEFORE_IQAMAH ->
-                PrayerNotificationContent.beforeIqamahReminderCopy(prayerKey, isFriday, minutesBefore, language)
+                PrayerNotificationContent.beforeIqamahReminderCopy(
+                    prayerKey, isFriday, minutesBefore, mosqueName, language,
+                )
         }
         val payloadKind = when (kind) {
             ReminderKind.BEFORE_ADHAN -> PrayerNotificationContent.PayloadKind.REMINDER_BEFORE_ADHAN

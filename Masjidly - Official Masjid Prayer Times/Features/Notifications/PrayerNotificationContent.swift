@@ -98,42 +98,90 @@ enum PrayerNotificationContent {
         }
     }
 
-    static func adhanCopy(prayerKey: String, isFriday: Bool, locale: Locale = Locale(identifier: "en")) -> (title: String, body: String) {
+    /// Appends the selected mosque so lock-screen copy identifies which timetable fired.
+    static func bodyWithMosque(mosqueName: String, body: String) -> String {
+        let trimmedMosque = mosqueName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedMosque.isEmpty else { return body }
+        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let core = trimmedBody.hasSuffix(".") ? String(trimmedBody.dropLast()) : trimmedBody
+        return "\(core) in \(trimmedMosque)."
+    }
+
+    static func adhanCopy(
+        prayerKey: String,
+        isFriday: Bool,
+        mosqueName: String,
+        locale: Locale = Locale(identifier: "en")
+    ) -> (title: String, body: String) {
         let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
         let titleFormat = localized("notification.copy.adhan.title", locale: locale)
+        let trimmedMosque = mosqueName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body: String
+        if trimmedMosque.isEmpty {
+            body = localized("notification.copy.adhan.body_fallback", locale: locale)
+        } else {
+            let bodyFormat = localized("notification.copy.adhan.body", locale: locale)
+            body = String(format: bodyFormat, locale: locale, arguments: [trimmedMosque])
+        }
         return (
             String(format: titleFormat, locale: locale, arguments: [name]),
-            localized("notification.copy.adhan.body", locale: locale)
+            body
         )
     }
 
-    static func iqamahCopy(prayerKey: String, isFriday: Bool, locale: Locale = Locale(identifier: "en")) -> (title: String, body: String) {
+    static func iqamahCopy(
+        prayerKey: String,
+        isFriday: Bool,
+        mosqueName: String,
+        locale: Locale = Locale(identifier: "en")
+    ) -> (title: String, body: String) {
         let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
         let titleFormat = localized("notification.copy.iqamah.title", locale: locale)
         let bodyFormat = localized("notification.copy.iqamah.body", locale: locale)
         return (
             String(format: titleFormat, locale: locale, arguments: [name]),
-            String(format: bodyFormat, locale: locale, arguments: [name])
+            bodyWithMosque(
+                mosqueName: mosqueName,
+                body: String(format: bodyFormat, locale: locale, arguments: [name])
+            )
         )
     }
 
-    static func beforeAdhanReminderCopy(prayerKey: String, isFriday: Bool, minutes: Int, locale: Locale = Locale(identifier: "en")) -> (title: String, body: String) {
+    static func beforeAdhanReminderCopy(
+        prayerKey: String,
+        isFriday: Bool,
+        minutes: Int,
+        mosqueName: String,
+        locale: Locale = Locale(identifier: "en")
+    ) -> (title: String, body: String) {
         let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
         let titleFormat = localized("notification.copy.before_adhan.title", locale: locale)
         let bodyFormat = localized("notification.copy.before_adhan.body", locale: locale)
         return (
             String(format: titleFormat, locale: locale, arguments: [name]),
-            String(format: bodyFormat, locale: locale, arguments: [minutes])
+            bodyWithMosque(
+                mosqueName: mosqueName,
+                body: String(format: bodyFormat, locale: locale, arguments: [minutes])
+            )
         )
     }
 
-    static func beforeIqamahReminderCopy(prayerKey: String, isFriday: Bool, minutes: Int, locale: Locale = Locale(identifier: "en")) -> (title: String, body: String) {
+    static func beforeIqamahReminderCopy(
+        prayerKey: String,
+        isFriday: Bool,
+        minutes: Int,
+        mosqueName: String,
+        locale: Locale = Locale(identifier: "en")
+    ) -> (title: String, body: String) {
         let name = prayerDisplayName(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
         let titleFormat = localized("notification.copy.before_iqamah.title", locale: locale)
         let bodyFormat = localized("notification.copy.before_iqamah.body", locale: locale)
         return (
             String(format: titleFormat, locale: locale, arguments: [name]),
-            String(format: bodyFormat, locale: locale, arguments: [minutes])
+            bodyWithMosque(
+                mosqueName: mosqueName,
+                body: String(format: bodyFormat, locale: locale, arguments: [minutes])
+            )
         )
     }
 

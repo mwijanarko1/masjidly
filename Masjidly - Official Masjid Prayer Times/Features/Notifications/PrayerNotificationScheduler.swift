@@ -150,6 +150,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
 
         let ukDst = (try? await repository.getUkDstDates())?.ukDstDates ?? []
         let slug = mosque.slug
+        let mosqueName = mosque.name
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
         let baseDay = cal.startOfDay(for: Date())
@@ -188,6 +189,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleAdhanIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).fajr.adhan",
                 reminderId: "masjidly.prayer.\(slug).\(iso).fajr.adhan_reminder",
@@ -202,6 +204,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleIqamahIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).fajr.iqamah",
                 reminderId: "masjidly.prayer.\(slug).\(iso).fajr.iqamah_reminder",
@@ -217,6 +220,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleAdhanIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).dhuhr.adhan",
                 reminderId: "masjidly.prayer.\(slug).\(iso).dhuhr.adhan_reminder",
@@ -231,6 +235,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleIqamahIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).\(isFriday ? "jummah" : "dhuhr").iqamah",
                 reminderId: "masjidly.prayer.\(slug).\(iso).\(isFriday ? "jummah" : "dhuhr").iqamah_reminder",
@@ -245,6 +250,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleAdhanIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).asr.adhan",
                 reminderId: "masjidly.prayer.\(slug).\(iso).asr.adhan_reminder",
@@ -259,6 +265,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleIqamahIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).asr.iqamah",
                 reminderId: "masjidly.prayer.\(slug).\(iso).asr.iqamah_reminder",
@@ -273,6 +280,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleAdhanIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).maghrib.adhan",
                 reminderId: "masjidly.prayer.\(slug).\(iso).maghrib.adhan_reminder",
@@ -287,6 +295,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleIqamahIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).maghrib.iqamah",
                 reminderId: "masjidly.prayer.\(slug).\(iso).maghrib.iqamah_reminder",
@@ -301,6 +310,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleAdhanIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).isha.adhan",
                 reminderId: "masjidly.prayer.\(slug).\(iso).isha.adhan_reminder",
@@ -321,6 +331,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             try await scheduleIqamahIfEnabled(
                 settings: settings,
                 mosqueSlug: slug,
+                mosqueName: mosqueName,
                 iso: iso,
                 id: "masjidly.prayer.\(slug).\(iso).isha.iqamah",
                 reminderId: "masjidly.prayer.\(slug).\(iso).isha.iqamah_reminder",
@@ -363,6 +374,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
     private func scheduleAdhanIfEnabled(
         settings: NotificationSettings,
         mosqueSlug: String,
+        mosqueName: String,
         iso: String,
         id: String,
         reminderId: String,
@@ -375,7 +387,12 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
     ) async throws {
         guard isAdhanForPrayerEnabled(prayerKey: prayerKey, settings: settings) else { return }
         if settings.adhanEnabled {
-            let copy = PrayerNotificationContent.adhanCopy(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
+            let copy = PrayerNotificationContent.adhanCopy(
+                prayerKey: prayerKey,
+                isFriday: isFriday,
+                mosqueName: mosqueName,
+                locale: locale
+            )
             let info = Self.adhanUserInfo(prayerKey: prayerKey, mosqueSlug: mosqueSlug, iso: iso)
             try await scheduleIfNeeded(
                 id: id,
@@ -394,6 +411,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             settings: settings,
             id: reminderId,
             mosqueSlug: mosqueSlug,
+            mosqueName: mosqueName,
             iso: iso,
             prayerKey: prayerKey,
             kind: .beforeAdhan,
@@ -409,6 +427,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
     private func scheduleIqamahIfEnabled(
         settings: NotificationSettings,
         mosqueSlug: String,
+        mosqueName: String,
         iso: String,
         id: String,
         reminderId: String,
@@ -421,7 +440,12 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
     ) async throws {
         guard isIqamahForPrayerEnabled(prayerKey: prayerKey, settings: settings) else { return }
         if settings.iqamahEnabled {
-            let copy = PrayerNotificationContent.iqamahCopy(prayerKey: prayerKey, isFriday: isFriday, locale: locale)
+            let copy = PrayerNotificationContent.iqamahCopy(
+                prayerKey: prayerKey,
+                isFriday: isFriday,
+                mosqueName: mosqueName,
+                locale: locale
+            )
             let info = Self.iqamahUserInfo(prayerKey: prayerKey, mosqueSlug: mosqueSlug, iso: iso)
             try await scheduleIfNeeded(
                 id: id,
@@ -440,6 +464,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             settings: settings,
             id: reminderId,
             mosqueSlug: mosqueSlug,
+            mosqueName: mosqueName,
             iso: iso,
             prayerKey: prayerKey,
             kind: .beforeIqamah,
@@ -461,6 +486,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         settings: NotificationSettings,
         id: String,
         mosqueSlug: String,
+        mosqueName: String,
         iso: String,
         prayerKey: String,
         kind: ReminderKind,
@@ -486,12 +512,24 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         let payloadKind: PrayerNotificationContent.PayloadKind
         switch kind {
         case .beforeAdhan:
-            let copy = PrayerNotificationContent.beforeAdhanReminderCopy(prayerKey: prayerKey, isFriday: isFriday, minutes: minutesBefore, locale: locale)
+            let copy = PrayerNotificationContent.beforeAdhanReminderCopy(
+                prayerKey: prayerKey,
+                isFriday: isFriday,
+                minutes: minutesBefore,
+                mosqueName: mosqueName,
+                locale: locale
+            )
             title = copy.title
             body = copy.body
             payloadKind = .reminderBeforeAdhan
         case .beforeIqamah:
-            let copy = PrayerNotificationContent.beforeIqamahReminderCopy(prayerKey: prayerKey, isFriday: isFriday, minutes: minutesBefore, locale: locale)
+            let copy = PrayerNotificationContent.beforeIqamahReminderCopy(
+                prayerKey: prayerKey,
+                isFriday: isFriday,
+                minutes: minutesBefore,
+                mosqueName: mosqueName,
+                locale: locale
+            )
             title = copy.title
             body = copy.body
             payloadKind = .reminderBeforeIqamah
