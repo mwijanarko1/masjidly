@@ -109,6 +109,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onTestWhatsNew: () -> Unit = {},
     onTestUpdatePrompt: () -> Unit = {},
+    onTestClosestMosquePrompt: () -> Unit = {},
 ) {
     val homeState by homeViewModel.uiState.collectAsState()
     val onboardingState by onboardingViewModel.uiState.collectAsState()
@@ -597,6 +598,9 @@ fun SettingsScreen(
                         }
                         InsetActionButton(LocaleStrings.t("settings.development.test_update_prompt", language), theme) {
                             onTestUpdatePrompt()
+                        }
+                        InsetActionButton(LocaleStrings.t("settings.development.test_closest_mosque_prompt", language), theme) {
+                            onTestClosestMosquePrompt()
                         }
                         InsetActionButton(LocaleStrings.t("settings.development.test_review_prompt", language), theme) {
                             AppReviewPromptCoordinator.resetForTesting(settingsStore)

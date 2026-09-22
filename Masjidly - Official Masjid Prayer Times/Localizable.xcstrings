@@ -1005,6 +1005,118 @@
     "First Asr (Mithl 1)" : {
 
     },
+    "home.closest_mosque_prompt.keep_format" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أبقِ %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tetap pakai %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ رکھیں"
+          }
+        }
+      }
+    },
+    "home.closest_mosque_prompt.message" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أقرب مسجد مختلف عن المسجد الذي تستخدمه حالياً."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your nearest mosque is different from the one you're using."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjid terdekat berbeda dari yang sedang Anda gunakan."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آپ کا قریب ترین مسجد منتخب مسجد سے مختلف ہے۔"
+          }
+        }
+      }
+    },
+    "home.closest_mosque_prompt.title" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسجد أقرب قريب منك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closer mosque nearby"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masjid lebih dekat tersedia"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قریب تر مسجد دستیاب ہے"
+          }
+        }
+      }
+    },
+    "home.closest_mosque_prompt.use_format" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدم %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gunakan %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ استعمال کریں"
+          }
+        }
+      }
+    },
     "home.countdown.a11y.active" : {
       "extractionState" : "stale",
       "localizations" : {

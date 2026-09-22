@@ -184,6 +184,18 @@ class SettingsStore(context: Context) {
             bump()
         }
 
+    /** Closest mosque id dismissed for the launch prompt. Mirrors iOS `dismissedClosestMosqueId`. */
+    var dismissedClosestMosqueId: String?
+        get() = prefs.getString(KEY_DISMISSED_CLOSEST_MOSQUE_ID, null)
+        set(value) {
+            if (value == null) {
+                prefs.edit().remove(KEY_DISMISSED_CLOSEST_MOSQUE_ID).apply()
+            } else {
+                prefs.edit().putString(KEY_DISMISSED_CLOSEST_MOSQUE_ID, value).apply()
+            }
+            bump()
+        }
+
     var notifications: NotificationSettings
         get() {
             val raw = prefs.getString(KEY_NOTIFICATIONS_JSON, null) ?: return NotificationSettings()
@@ -325,6 +337,7 @@ class SettingsStore(context: Context) {
         private const val KEY_HAS_COMPLETED_ENJOYMENT_REVIEW_FLOW = "hasCompletedEnjoymentReviewFlow"
         private const val KEY_HAS_DISMISSED_EXACT_ALARM_PROMPT = "hasDismissedExactAlarmPrompt"
         private const val KEY_LAST_SEEN_BUILD_VERSION = "lastSeenBuildVersion"
+        private const val KEY_DISMISSED_CLOSEST_MOSQUE_ID = "dismissedClosestMosqueId"
         private const val KEY_NOTIFICATIONS_JSON = "notificationsJSON"
         private const val KEY_PRAYER_GRADIENT_STYLES_JSON = "prayerGradientStylesJSON"
         private const val KEY_PRAYER_CUSTOM_GRADIENT_COLORS_JSON = "prayerCustomGradientColorsJSON"

@@ -55,6 +55,7 @@ final class SettingsStore: SettingsPersisting {
         case firstAppOpenTrackedAt1970
         case hasCompletedEnjoymentReviewFlow
         case lastSeenBuildVersion
+        case dismissedClosestMosqueId
     }
 
     /// Stored fields so `@Observable` tracks mutations; UserDefaults syncs in `didSet`.
@@ -242,6 +243,17 @@ final class SettingsStore: SettingsPersisting {
         didSet { defaults.set(lastSeenBuildVersion, forKey: Key.lastSeenBuildVersion.rawValue) }
     }
 
+    /// Closest mosque id the user already dismissed (keep/use) for the launch prompt.
+    /// Prompt reappears only when the computed closest mosque changes to a different id.
+    var dismissedClosestMosqueId: String? {
+        didSet {
+            if let dismissedClosestMosqueId {
+                defaults.set(dismissedClosestMosqueId, forKey: Key.dismissedClosestMosqueId.rawValue)
+            } else {
+                defaults.removeObject(forKey: Key.dismissedClosestMosqueId.rawValue)
+            }
+        }
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -309,6 +321,7 @@ final class SettingsStore: SettingsPersisting {
             hasCompletedEnjoymentReviewFlow = defaults.bool(forKey: Key.hasCompletedEnjoymentReviewFlow.rawValue)
         }
         lastSeenBuildVersion = defaults.string(forKey: Key.lastSeenBuildVersion.rawValue)
+        dismissedClosestMosqueId = defaults.string(forKey: Key.dismissedClosestMosqueId.rawValue)
         syncWidgetThemeSettings()
     }
 

@@ -47,8 +47,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -72,11 +74,15 @@ import com.mikhailspeaks.masjidly.data.SettingsStore
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.DailyIqamahTimes
 import com.mikhailspeaks.masjidly.domain.DailyPrayerTimes
+import com.mikhailspeaks.masjidly.domain.ClosestMosquePromptDecision
 import com.mikhailspeaks.masjidly.domain.LocaleStrings
+import com.mikhailspeaks.masjidly.domain.Mosque
+import com.mikhailspeaks.masjidly.domain.MosqueSelection
 import com.mikhailspeaks.masjidly.domain.PrayerLocalization
 import com.mikhailspeaks.masjidly.domain.PrayerTimesEngine
 import com.mikhailspeaks.masjidly.features.settings.AppReviewPromptCoordinator
 import com.mikhailspeaks.masjidly.features.settings.MasjidlySupportMail
+import com.mikhailspeaks.masjidly.features.settings.SettingsClosestMosqueLocationProvider
 import com.mikhailspeaks.masjidly.features.onboarding.HomeOnboardingOverlay
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
@@ -94,6 +100,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 private fun Context.hasLocationPermission(): Boolean {
     val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -106,6 +113,7 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     settingsStore: SettingsStore,
     onboardingViewModel: OnboardingFlowViewModel,
+    closestMosquePromptTestTrigger: Int = 0,
     onOpenTimetable: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -118,9 +126,16 @@ fun HomeScreen(
     val hideQibla = settingsStore.hideQiblaCompass
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
+    val closestMosqueLocationProvider = remember(context) {
+        SettingsClosestMosqueLocationProvider(context)
+    }
     var hasLocationPermission by remember { mutableStateOf(context.hasLocationPermission()) }
     var showReviewPrompt by remember { mutableStateOf(false) }
     var showReviewFeedbackPrompt by remember { mutableStateOf(false) }
+    var pendingClosestMosque by remember { mutableStateOf<Mosque?>(null) }
+    var forceClosestMosquePrompt by remember { mutableStateOf(false) }
+    var closestMosqueCheckTrigger by remember { mutableIntStateOf(0) }
     val requestOnboardingLocation = rememberOnboardingLocationRequester {
         settingsStore.hideQiblaCompass = false
         hasLocationPermission = true
@@ -138,6 +153,42 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(
+        settingsStore.hasCompletedOnboarding,
+        onboardingStep,
+        state.mosques,
+        state.selectedMosque?.id,
+        closestMosqueCheckTrigger,
+    ) {
+        if (forceClosestMosquePrompt) return@LaunchedEffect
+        if (!settingsStore.hasCompletedOnboarding || onboardingStep != null || state.mosques.size < 2) {
+            pendingClosestMosque = null
+            return@LaunchedEffect
+        }
+        val location = closestMosqueLocationProvider.fetchLocation() ?: return@LaunchedEffect
+        if (forceClosestMosquePrompt) return@LaunchedEffect
+        val closest = ClosestMosquePromptDecision.closestMosque(
+            mosques = state.mosques,
+            userLat = location.latitude,
+            userLng = location.longitude,
+        ) ?: return@LaunchedEffect
+        pendingClosestMosque = closest.takeIf {
+            ClosestMosquePromptDecision.shouldPresent(
+                closestMosqueId = it.id,
+                selectedMosqueId = state.selectedMosque?.id ?: settingsStore.selectedMosqueId,
+                dismissedClosestMosqueId = settingsStore.dismissedClosestMosqueId,
+                visibleMosqueCount = MosqueSelection.visibleMosques(state.mosques).size,
+            )
+        }
+    }
+
+    LaunchedEffect(closestMosquePromptTestTrigger) {
+        if (closestMosquePromptTestTrigger == 0) return@LaunchedEffect
+        val selectedId = state.selectedMosque?.id ?: settingsStore.selectedMosqueId
+        forceClosestMosquePrompt = true
+        pendingClosestMosque = MosqueSelection.visibleMosques(state.mosques).firstOrNull { it.id != selectedId }
+    }
+
     val highlightPrayerShortcuts = onboardingStep is OnboardingStep.PrayerShortcut
     val highlightQibla = false
     val highlightTimetable = onboardingStep == OnboardingStep.OpenTimetable
@@ -152,10 +203,14 @@ fun HomeScreen(
                 if (granted && settingsStore.hideQiblaCompass) {
                     settingsStore.hideQiblaCompass = false
                 }
+                closestMosqueCheckTrigger++
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            closestMosqueLocationProvider.clear()
+        }
     }
 
     val dynamicTheme = TimeTheme.homeHeroTheme(state.displayedPrayerTimes, state.selectedPrayerIndex)
@@ -264,6 +319,35 @@ fun HomeScreen(
                 onRequestLocation = requestOnboardingLocation,
                 )
             }
+        }
+
+        pendingClosestMosque?.takeIf {
+            onboardingStep == null && !showReviewPrompt && !showReviewFeedbackPrompt
+        }?.let { closest ->
+            ClosestMosquePromptOverlay(
+                theme = theme,
+                language = language,
+                closestMosqueName = closest.name,
+                selectedMosqueName = state.selectedMosque?.name.orEmpty(),
+                onUseClosest = {
+                    forceClosestMosquePrompt = false
+                    settingsStore.dismissedClosestMosqueId = closest.id
+                    settingsStore.selectedMosqueId = closest.id
+                    settingsStore.selectedMosqueSlug = closest.slug
+                    settingsStore.selectedCityGroupingKey = closest.cityGroupingKey
+                    settingsStore.selectedCountryGroupingKey = MosqueSelection.countryGroupingKey(closest)
+                    pendingClosestMosque = null
+                    scope.launch {
+                        runCatching { viewModel.switchToMosque(closest) }
+                            .onFailure { viewModel.setLastError(it.localizedMessage) }
+                    }
+                },
+                onKeepSelected = {
+                    forceClosestMosquePrompt = false
+                    settingsStore.dismissedClosestMosqueId = closest.id
+                    pendingClosestMosque = null
+                },
+            )
         }
     }
 

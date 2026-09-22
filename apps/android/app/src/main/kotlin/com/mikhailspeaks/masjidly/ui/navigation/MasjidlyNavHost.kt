@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -29,6 +31,7 @@ fun MasjidlyNavHost(
     onTestUpdatePrompt: () -> Unit = {},
 ) {
     val navController = rememberNavController()
+    var closestMosquePromptTestTrigger by remember { mutableIntStateOf(0) }
     val settingsRevision by settingsStore.revision.collectAsState()
     val onboardingViewModel = remember(homeViewModel, settingsStore, notificationScheduler) {
         OnboardingFlowViewModel(settingsStore, homeViewModel, notificationScheduler)
@@ -46,6 +49,7 @@ fun MasjidlyNavHost(
                 viewModel = homeViewModel,
                 settingsStore = settingsStore,
                 onboardingViewModel = onboardingViewModel,
+                closestMosquePromptTestTrigger = closestMosquePromptTestTrigger,
                 onOpenTimetable = { navController.navigate(MasjidlyDestination.Timetable) },
                 onOpenSettings = { navController.navigate(MasjidlyDestination.Settings) },
             )
@@ -78,6 +82,11 @@ fun MasjidlyNavHost(
                 },
                 onTestWhatsNew = onTestWhatsNew,
                 onTestUpdatePrompt = onTestUpdatePrompt,
+                onTestClosestMosquePrompt = {
+                    closestMosquePromptTestTrigger++
+                    onboardingViewModel.handleSettingsClosed()
+                    navController.popBackStack()
+                },
             )
         }
     }

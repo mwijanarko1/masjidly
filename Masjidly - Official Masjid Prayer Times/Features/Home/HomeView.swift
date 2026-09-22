@@ -19,6 +19,8 @@ struct HomeView: View {
     @State private var showingSettings = false
     @State private var showingTimetable = false
     @State private var showingWhatsNew = false
+    @State private var showingClosestMosquePrompt = false
+    @State private var pendingClosestMosque: Mosque?
     @State private var showingDatePicker = false
     @State private var datePickerSelection = Date()
     @State private var showUpdateAlert = false
@@ -26,6 +28,8 @@ struct HomeView: View {
     @State private var pendingRelease: MasjidlyRelease?
     @State private var hasCheckedForUpdate = false
     @State private var qiblaDirectionProvider = QiblaDirectionProvider()
+    @State private var closestMosqueLocationProvider = ClosestMosqueLocationProvider()
+    @State private var hasRequestedClosestMosqueCheck = false
 
     private var dynamicTheme: HomeDesign.TimeTheme {
         HomeDesign.TimeTheme.homeHeroTheme(
@@ -67,6 +71,7 @@ struct HomeView: View {
                 onLoveIt: {
                     reviewPrompt.userConfirmedEnjoymentPositive()
                     presentUpdateAlertIfReady()
+                    presentClosestMosquePromptIfReady()
                 },
                 onNotReally: {
                     reviewPrompt.userConfirmedEnjoymentNegative()
@@ -81,12 +86,14 @@ struct HomeView: View {
                     HapticFeedback.buttonTap()
                     showReviewFeedbackPrompt = false
                     presentUpdateAlertIfReady()
+                    presentClosestMosquePromptIfReady()
                 }
                 Button(reviewFeedbackSendLabel) {
                     HapticFeedback.buttonTap()
                     openReviewFeedbackEmail()
                     showReviewFeedbackPrompt = false
                     presentUpdateAlertIfReady()
+                    presentClosestMosquePromptIfReady()
                 }
             } message: {
                 Text(reviewFeedbackMessage)
@@ -134,6 +141,11 @@ struct HomeView: View {
                 showingSettings = false
                 presentTestUpdateAlert()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .masjidlyShowClosestMosquePrompt)) { _ in
+                showingTimetable = false
+                showingSettings = false
+                presentTestClosestMosquePrompt()
+            }
     }
 
     private var homeStateChangeChrome: some View {
@@ -164,6 +176,7 @@ struct HomeView: View {
                 await model.resyncNotificationsIfNeeded()
                 checkWhatsNew()
                 checkForUpdateIfNeeded()
+                requestClosestMosquePromptCheckIfNeeded()
             }
             .onAppear {
                 Task { await model.applySelectionFromSettings() }
@@ -171,6 +184,7 @@ struct HomeView: View {
                 reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
                     isOnboardingBlocking: enjoymentReviewFlowBlocked
                 )
+                requestClosestMosquePromptCheckIfNeeded()
             }
             .onChange(of: settings.hasCompletedOnboarding) { _, completed in
                 guard completed else { return }
@@ -181,6 +195,7 @@ struct HomeView: View {
                 checkWhatsNew()
                 checkForUpdateIfNeeded()
                 presentUpdateAlertIfReady()
+                requestClosestMosquePromptCheckIfNeeded()
             }
             .onChange(of: onboarding.isActive) { _, isActive in
                 guard !isActive else { return }
@@ -188,6 +203,7 @@ struct HomeView: View {
                     isOnboardingBlocking: enjoymentReviewFlowBlocked
                 )
                 presentUpdateAlertIfReady()
+                presentClosestMosquePromptIfReady()
             }
             .onChange(of: settings.notifications.masterEnabled) { _, _ in
                 Task { await model.resyncNotificationsIfNeeded() }
@@ -201,6 +217,41 @@ struct HomeView: View {
                 reviewPrompt.considerPresentingEnjoymentPromptIfEligible(
                     isOnboardingBlocking: enjoymentReviewFlowBlocked
                 )
+                hasRequestedClosestMosqueCheck = false
+                requestClosestMosquePromptCheckIfNeeded()
+            }
+            .onChange(of: closestMosqueLocationProvider.currentLocation) { _, _ in
+                evaluateClosestMosquePromptCandidate()
+            }
+            .onChange(of: model.mosques.count) { _, _ in
+                evaluateClosestMosquePromptCandidate()
+            }
+            .onChange(of: settings.selectedMosqueId) { _, _ in
+                evaluateClosestMosquePromptCandidate()
+            }
+            .onChange(of: showingWhatsNew) { _, showing in
+                guard !showing else { return }
+                presentClosestMosquePromptIfReady()
+            }
+            .onChange(of: showUpdateAlert) { _, showing in
+                guard !showing else { return }
+                presentClosestMosquePromptIfReady()
+            }
+            .onChange(of: reviewPrompt.showEnjoymentPrompt) { _, showing in
+                guard !showing else { return }
+                presentClosestMosquePromptIfReady()
+            }
+            .onChange(of: showReviewFeedbackPrompt) { _, showing in
+                guard !showing else { return }
+                presentClosestMosquePromptIfReady()
+            }
+            .onChange(of: showingSettings) { _, showing in
+                guard !showing else { return }
+                presentClosestMosquePromptIfReady()
+            }
+            .onChange(of: showingTimetable) { _, showing in
+                guard !showing else { return }
+                presentClosestMosquePromptIfReady()
             }
     }
 
@@ -216,6 +267,8 @@ struct HomeView: View {
         .overlay {
             if showingWhatsNew {
                 whatsNewOverlay
+            } else if showingClosestMosquePrompt, let pendingClosestMosque {
+                closestMosquePromptOverlay(closest: pendingClosestMosque)
             }
         }
     }
@@ -515,6 +568,131 @@ struct HomeView: View {
             showingWhatsNew = false
         }
         presentUpdateAlertIfReady()
+        presentClosestMosquePromptIfReady()
+    }
+
+    @ViewBuilder
+    private func closestMosquePromptOverlay(closest: Mosque) -> some View {
+        GeometryReader { geo in
+            ZStack {
+                ZStack {
+                    Color.black.opacity(0.35)
+
+                    let whatsNewSky = currentAppearance.sky
+                    LinearGradient(
+                        colors: whatsNewSky.baseColors.map { $0.opacity(0.55) },
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+
+                    if let glow = whatsNewSky.glowColor {
+                        RadialGradient(
+                            colors: [glow.opacity(0.4 * whatsNewSky.glowBaseAlpha), glow.opacity(0.15 * whatsNewSky.glowBaseAlpha), .clear],
+                            center: UnitPoint(x: 0.5, y: 0.82),
+                            startRadius: 0,
+                            endRadius: 500
+                        )
+                        .blendMode(.screen)
+                    }
+                }
+                .ignoresSafeArea()
+                .onTapGesture {
+                    HapticFeedback.buttonTap()
+                    dismissClosestMosquePromptKeepingSelection(closestId: closest.id)
+                }
+
+                ClosestMosquePromptModalView(
+                    closestMosqueName: closest.name,
+                    selectedMosqueName: model.selectedMosque?.name ?? "",
+                    timeTheme: currentTheme,
+                    locale: locale,
+                    onUseClosest: {
+                        HapticFeedback.buttonTap()
+                        selectMosque(closest)
+                        settings.dismissedClosestMosqueId = closest.id
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            showingClosestMosquePrompt = false
+                            pendingClosestMosque = nil
+                        }
+                    },
+                    onKeepSelected: {
+                        HapticFeedback.buttonTap()
+                        dismissClosestMosquePromptKeepingSelection(closestId: closest.id)
+                    }
+                )
+                .padding(.horizontal, 24)
+                .frame(maxWidth: 380)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .transition(.opacity.animation(.easeInOut(duration: 0.25)))
+    }
+
+    private func dismissClosestMosquePromptKeepingSelection(closestId: String) {
+        settings.dismissedClosestMosqueId = closestId
+        withAnimation(.easeInOut(duration: 0.18)) {
+            showingClosestMosquePrompt = false
+            pendingClosestMosque = nil
+        }
+    }
+
+    private func requestClosestMosquePromptCheckIfNeeded() {
+        guard settings.hasCompletedOnboarding else { return }
+        guard !onboarding.isActive else { return }
+        guard !hasRequestedClosestMosqueCheck else { return }
+        hasRequestedClosestMosqueCheck = true
+        closestMosqueLocationProvider.start()
+        evaluateClosestMosquePromptCandidate()
+    }
+
+    private func evaluateClosestMosquePromptCandidate() {
+        guard settings.hasCompletedOnboarding else { return }
+        guard !onboarding.isActive else { return }
+        guard let location = closestMosqueLocationProvider.currentLocation else { return }
+        guard let closest = ClosestMosquePromptDecision.closestMosque(
+            in: model.mosques,
+            userLatitude: location.coordinate.latitude,
+            userLongitude: location.coordinate.longitude
+        ) else { return }
+
+        let shouldPresent = ClosestMosquePromptDecision.shouldPresent(
+            closestMosqueId: closest.id,
+            selectedMosqueId: model.selectedMosque?.id ?? settings.selectedMosqueId,
+            dismissedClosestMosqueId: settings.dismissedClosestMosqueId,
+            visibleMosqueCount: MosqueDefaults.visibleMosques(model.mosques).count
+        )
+        guard shouldPresent else {
+            if pendingClosestMosque?.id == closest.id, !showingClosestMosquePrompt {
+                pendingClosestMosque = nil
+            }
+            return
+        }
+
+        pendingClosestMosque = closest
+        presentClosestMosquePromptIfReady()
+    }
+
+    private func presentClosestMosquePromptIfReady() {
+        guard pendingClosestMosque != nil else { return }
+        guard settings.hasCompletedOnboarding else { return }
+        guard !onboarding.isActive else { return }
+        guard !showingWhatsNew else { return }
+        guard !showUpdateAlert else { return }
+        guard !reviewPrompt.showEnjoymentPrompt else { return }
+        guard !showReviewFeedbackPrompt else { return }
+        guard !showingSettings else { return }
+        guard !showingTimetable else { return }
+        guard !showingClosestMosquePrompt else { return }
+        withAnimation(.easeInOut(duration: 0.18)) {
+            showingClosestMosquePrompt = true
+        }
+    }
+
+    private func presentTestClosestMosquePrompt() {
+        let selectedId = model.selectedMosque?.id ?? settings.selectedMosqueId
+        guard let mosque = MosqueDefaults.visibleMosques(model.mosques).first(where: { $0.id != selectedId }) else { return }
+        pendingClosestMosque = mosque
+        showingClosestMosquePrompt = true
     }
 
     @ViewBuilder
@@ -917,6 +1095,7 @@ struct HomeView: View {
         guard !showReviewFeedbackPrompt else { return }
         guard !showingSettings else { return }
         guard !showingTimetable else { return }
+        guard !showingClosestMosquePrompt else { return }
         showUpdateAlert = true
     }
 
@@ -1133,6 +1312,7 @@ private extension View {
 extension Notification.Name {
     static let masjidlyShowWhatsNew = Notification.Name("masjidly.show.whatsnew")
     static let masjidlyShowUpdatePrompt = Notification.Name("masjidly.show.updatePrompt")
+    static let masjidlyShowClosestMosquePrompt = Notification.Name("masjidly.show.closestMosquePrompt")
 }
 
 // MARK: - Viewport-aware layout

@@ -715,3 +715,27 @@ private final class WidgetSnapshotWriterSpy: WidgetPrayerSnapshotWriting {
         directoryRefreshCount += 1
     }
 }
+
+@Suite("Closest mosque prompt")
+struct ClosestMosquePromptDecisionTests {
+    @Test func presentsOnlyForANewDifferentClosestMosque() {
+        #expect(ClosestMosquePromptDecision.shouldPresent(
+            closestMosqueId: "closest",
+            selectedMosqueId: "selected",
+            dismissedClosestMosqueId: nil,
+            visibleMosqueCount: 2
+        ))
+        #expect(!ClosestMosquePromptDecision.shouldPresent(
+            closestMosqueId: "closest",
+            selectedMosqueId: "selected",
+            dismissedClosestMosqueId: "closest",
+            visibleMosqueCount: 2
+        ))
+        #expect(!ClosestMosquePromptDecision.shouldPresent(
+            closestMosqueId: "selected",
+            selectedMosqueId: "selected",
+            dismissedClosestMosqueId: nil,
+            visibleMosqueCount: 2
+        ))
+    }
+}

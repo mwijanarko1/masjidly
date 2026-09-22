@@ -23,6 +23,11 @@ struct WhatsNew {
         case "ar":
             return [
                 WhatsNewItem(
+                    title: "تنبيه المسجد الأقرب",
+                    description: "سيخبرك مسجدلي عندما يكون مسجد آخر أقرب إليك، ويمكنك التبديل إليه بنقرة واحدة.",
+                    icon: "location.fill"
+                ),
+                WhatsNewItem(
                     title: "إصلاحات الأخطاء",
                     description: "تم إصلاح مشكلات لتحسين موثوقية التطبيق.",
                     icon: "wrench.and.screwdriver.fill"
@@ -30,6 +35,11 @@ struct WhatsNew {
             ]
         case "ur":
             return [
+                WhatsNewItem(
+                    title: "قریب ترین مسجد کی اطلاع",
+                    description: "جب کوئی دوسرا مسجد آپ کے زیادہ قریب ہو تو مسجدلی آپ کو بتائے گا، اور آپ ایک ٹیپ سے اسے منتخب کر سکتے ہیں۔",
+                    icon: "location.fill"
+                ),
                 WhatsNewItem(
                     title: "بگز کی اصلاحات",
                     description: "ایپ کی بھروسے مندی بہتر بنانے کے لیے مسائل درست کیے گئے۔",
@@ -39,6 +49,11 @@ struct WhatsNew {
         case "id":
             return [
                 WhatsNewItem(
+                    title: "Pemberitahuan masjid terdekat",
+                    description: "Masjidly memberi tahu saat masjid lain lebih dekat dan memungkinkan Anda beralih dengan satu ketukan.",
+                    icon: "location.fill"
+                ),
+                WhatsNewItem(
                     title: "Perbaikan bug",
                     description: "Memperbaiki masalah untuk meningkatkan keandalan aplikasi.",
                     icon: "wrench.and.screwdriver.fill"
@@ -46,6 +61,11 @@ struct WhatsNew {
             ]
         default:
             return [
+                WhatsNewItem(
+                    title: "Nearest mosque prompt",
+                    description: "Masjidly now lets you know when another mosque is closer and switch with one tap.",
+                    icon: "location.fill"
+                ),
                 WhatsNewItem(
                     title: "Bug fixes",
                     description: "Fixed issues to improve app reliability.",

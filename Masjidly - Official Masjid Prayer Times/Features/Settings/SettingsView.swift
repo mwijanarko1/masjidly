@@ -23,7 +23,7 @@ struct SettingsView: View {
         let manager = CLLocationManager()
         return manager.authorizationStatus
     }()
-    @State private var closestMosqueLocationProvider = SettingsClosestMosqueLocationProvider()
+    @State private var closestMosqueLocationProvider = ClosestMosqueLocationProvider()
     @State private var adhanPrayerSettingsExpanded = false
     @State private var iqamahPrayerSettingsExpanded = false
     @State private var prayerGradientSettingsExpanded = false
@@ -277,6 +277,21 @@ struct SettingsView: View {
                         } label: {
                             developmentChrome {
                                 Text("Test Update Prompt")
+                                    .appFont(size: 17, weight: .medium)
+                                    .foregroundColor(currentAppearance.textColor)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        .buttonStyle(.hapticPlain)
+
+                        Button {
+                            NotificationCenter.default.post(name: .masjidlyShowClosestMosquePrompt, object: nil)
+                            onDismiss?()
+                            dismiss()
+                        } label: {
+                            developmentChrome {
+                                Text("Test Nearest Mosque Prompt")
                                     .appFont(size: 17, weight: .medium)
                                     .foregroundColor(currentAppearance.textColor)
                                     .multilineTextAlignment(.leading)
@@ -1319,52 +1334,6 @@ struct SettingsView: View {
         )
     }
 
-}
-
-@Observable
-@MainActor
-private final class SettingsClosestMosqueLocationProvider: NSObject {
-    private let locationManager = CLLocationManager()
-
-    private(set) var currentLocation: CLLocation?
-
-    override init() {
-        super.init()
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        locationManager.distanceFilter = 250
-    }
-
-    func start() {
-        switch locationManager.authorizationStatus {
-        case .authorizedAlways, .authorizedWhenInUse:
-            locationManager.requestLocation()
-        case .notDetermined, .denied, .restricted:
-            currentLocation = nil
-        @unknown default:
-            currentLocation = nil
-        }
-    }
-
-    func clear() {
-        currentLocation = nil
-    }
-}
-
-extension SettingsClosestMosqueLocationProvider: CLLocationManagerDelegate {
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
-            manager.requestLocation()
-        }
-    }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        currentLocation = locations.last
-    }
-
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        currentLocation = nil
-    }
 }
 
 
