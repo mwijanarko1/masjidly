@@ -948,38 +948,56 @@ struct HomeView: View {
             )
             .fixedSize()
 
-            Button {
-                datePickerSelection = model.displayedDate
-                showingDatePicker = true
-            } label: {
-                VStack(alignment: .center, spacing: 2) {
-                    Text(dateString(for: model.displayedDate))
-                        .appFont(size: 13, weight: .semibold)
-                        .foregroundColor(currentAppearance.textColor.opacity(0.88))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
+            ZStack(alignment: .trailing) {
+                Button {
+                    datePickerSelection = model.displayedDate
+                    showingDatePicker = true
+                } label: {
+                    VStack(alignment: .center, spacing: 2) {
+                        Text(dateString(for: model.displayedDate))
+                            .appFont(size: 13, weight: .semibold)
+                            .foregroundColor(currentAppearance.textColor.opacity(0.88))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
 
-                    Text(hijriDateString(for: model.displayedDate))
-                        .appFont(size: 10, weight: .medium)
-                        .foregroundColor(currentAppearance.textColor.opacity(0.55))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
+                        Text(hijriDateString(for: model.displayedDate))
+                            .appFont(size: 10, weight: .medium)
+                            .foregroundColor(currentAppearance.textColor.opacity(0.55))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                    }
+                    .padding(.leading, 10)
+                    .padding(.trailing, isTodayInSheffield(model.displayedDate) ? 10 : 40)
+                    .padding(.vertical, 8)
+                    .frame(minWidth: 0, maxWidth: .infinity)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .frame(minWidth: 0, maxWidth: .infinity)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.18))
-                )
-                .overlay(
-                    Capsule(style: .continuous)
-                        .strokeBorder(currentAppearance.textColor.opacity(0.12), lineWidth: 0.5)
-                )
+                .buttonStyle(.hapticPlain)
+                .accessibilityLabel(Text(homeLS("accessibility.pick_date", locale: locale)))
+                .accessibilityHint(Text(homeLS("accessibility.pick_date_hint", locale: locale)))
+
+                if !isTodayInSheffield(model.displayedDate) {
+                    Button(action: model.goToToday) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .appFont(size: 13, weight: .semibold)
+                            .foregroundStyle(currentAppearance.textColor.opacity(0.9))
+                            .frame(width: 28, height: 28)
+                            .background(Circle().fill(Color.white.opacity(0.18)))
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(.hapticPlain)
+                    .accessibilityLabel(Text(homeLS("home.return_to_today", locale: locale)))
+                }
             }
-            .buttonStyle(.hapticPlain)
-            .accessibilityLabel(Text(homeLS("accessibility.pick_date", locale: locale)))
-            .accessibilityHint(Text(homeLS("accessibility.pick_date_hint", locale: locale)))
+            .frame(minWidth: 0, maxWidth: .infinity)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.18))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .strokeBorder(currentAppearance.textColor.opacity(0.12), lineWidth: 0.5)
+                    .allowsHitTesting(false)
+            )
 
             dateNavStepButton(
                 systemName: "chevron.right",

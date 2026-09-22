@@ -35,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -305,6 +306,7 @@ fun HomeScreen(
             },
             onPreviousDay = viewModel::goToPreviousDay,
             onNextDay = viewModel::goToNextDay,
+            onGoToToday = viewModel::goToToday,
         )
 
         onboardingStep?.let { step ->
@@ -425,9 +427,13 @@ private fun HomeTopChrome(
     onOpenSettings: () -> Unit,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
+    onGoToToday: () -> Unit,
 ) {
     val gregorian = HomeDateFormatting.gregorianDateString(displayedDate, locale)
     val hijrah = HomeDateFormatting.hijriDateString(displayedDate, locale)
+    val displayedDay = PrayerTimesEngine.getDateInSheffield(displayedDate)
+    val today = PrayerTimesEngine.getDateInSheffield(Instant.now())
+    val isToday = displayedDay == today
 
     Column(
         modifier = Modifier
@@ -486,26 +492,54 @@ private fun HomeTopChrome(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = gregorian,
-                        color = textColor.copy(alpha = 0.6f),
-                        style = rememberAppTextStyle(13f, FontWeight.SemiBold),
-                        textAlign = TextAlign.Center,
-                        letterSpacing = 1.sp,
-                        maxLines = 1,
-                    )
-                    Text(
-                        text = hijrah,
-                        color = textColor.copy(alpha = 0.4f),
-                        textAlign = TextAlign.Center,
-                        style = rememberAppTextStyle(10f, FontWeight.Medium),
-                        letterSpacing = 0.8.sp,
-                        maxLines = 1,
-                    )
+                    Column(
+                        modifier = Modifier.padding(end = if (isToday) 0.dp else 36.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = gregorian,
+                            color = textColor.copy(alpha = 0.6f),
+                            style = rememberAppTextStyle(13f, FontWeight.SemiBold),
+                            textAlign = TextAlign.Center,
+                            letterSpacing = 1.sp,
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = hijrah,
+                            color = textColor.copy(alpha = 0.4f),
+                            textAlign = TextAlign.Center,
+                            style = rememberAppTextStyle(10f, FontWeight.Medium),
+                            letterSpacing = 0.8.sp,
+                            maxLines = 1,
+                        )
+                    }
+
+                    if (!isToday) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.18f))
+                                .hapticClickable(onClick = onGoToToday)
+                                .semantics {
+                                    contentDescription = LocaleStrings.t("home.return_to_today", language)
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = textColor.copy(alpha = 0.9f),
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
