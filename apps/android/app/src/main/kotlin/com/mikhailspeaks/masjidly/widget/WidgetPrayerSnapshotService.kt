@@ -130,19 +130,19 @@ class WidgetPrayerSnapshotService(
         )
     }
 
-    private suspend fun fetchUkDstCalendar() = runCatching {
+    private suspend fun fetchUkDstCalendar() = diskCache.loadUkDst() ?: runCatching {
         repository.getUkDstDates()?.also { diskCache.saveUkDst(it) }
-    }.getOrNull() ?: diskCache.loadUkDst()
+    }.getOrNull()
 
     private suspend fun fetchMonthly(
         mosqueSlug: String,
         month: MonthName,
         year: Int,
-    ) = runCatching {
+    ) = diskCache.loadMonthly(mosqueSlug, month.rawValue, year) ?: runCatching {
         repository.getMonthlyPrayerTimes(mosqueSlug, month, year)?.also {
             diskCache.saveMonthly(mosqueSlug, month.rawValue, year, it)
         }
-    }.getOrNull() ?: diskCache.loadMonthly(mosqueSlug, month.rawValue, year)
+    }.getOrNull()
 
     private suspend fun fetchRamadan(mosqueSlug: String, date: String) = runCatching {
         repository.getRamadanTimetable(mosqueSlug, date)?.also {

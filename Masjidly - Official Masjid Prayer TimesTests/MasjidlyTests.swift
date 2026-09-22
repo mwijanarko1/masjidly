@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import Masjidly
 
@@ -215,8 +216,8 @@ struct SettingsStoreTests {
         s.selectedMosqueId = "bad-id"
         s.selectedMosqueSlug = MosqueDefaults.defaultSlug
         let mosques: [Mosque] = [
-            Mosque(id: "a", name: "A", address: "", lat: 0, lng: 0, slug: "other", website: nil, isHidden: false),
-            Mosque(id: "b", name: "MWH", address: "", lat: 0, lng: 0, slug: MosqueDefaults.defaultSlug, website: nil, isHidden: false),
+            Mosque(id: "a", name: "A", address: "", lat: 0, lng: 0, slug: "other", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false),
+            Mosque(id: "b", name: "MWH", address: "", lat: 0, lng: 0, slug: MosqueDefaults.defaultSlug, citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false),
         ]
         let m = MosqueDefaults.resolveSelectedMosque(mosques: mosques, selectedId: s.selectedMosqueId, selectedSlug: s.selectedMosqueSlug)
         #expect(m?.slug == MosqueDefaults.defaultSlug)
@@ -509,8 +510,8 @@ private final class OnboardingHarness {
         defaults = UserDefaults(suiteName: suiteName)!
         defaults.removePersistentDomain(forName: suiteName)
         mosques = [
-            Mosque(id: "a", name: "Mosque A", address: "", lat: 0, lng: 0, slug: "mosque-a", website: nil, isHidden: false),
-            Mosque(id: "b", name: "Mosque B", address: "", lat: 0, lng: 0, slug: "mosque-b", website: nil, isHidden: false),
+            Mosque(id: "a", name: "Mosque A", address: "", lat: 0, lng: 0, slug: "mosque-a", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false),
+            Mosque(id: "b", name: "Mosque B", address: "", lat: 0, lng: 0, slug: "mosque-b", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false),
         ]
         repository = MockPrayerRepository(mosques: mosques)
         scheduler = MockPrayerNotificationScheduler()
@@ -529,13 +530,19 @@ private final class OnboardingHarness {
 
 private final class MockPrayerRepository: PrayerRepository {
     let mosques: [Mosque]
+    private let revision: DataRevision
 
-    init(mosques: [Mosque]) {
+    init(mosques: [Mosque], revision: DataRevision = DataRevision(dataRevision: 0, updatedAt: 0)) {
         self.mosques = mosques
+        self.revision = revision
     }
 
     func listMosques() async throws -> [Mosque] {
         mosques
+    }
+
+    func getDataRevision() async throws -> DataRevision {
+        revision
     }
 
     func getMonthlyPrayerTimes(mosqueSlug: String, month: MonthName, year: Int) async throws -> MonthPrayerData? {
@@ -591,13 +598,13 @@ struct PrayerTimesDiskCacheTests {
     @Test func roundTripMosques() {
         let cache = PrayerTimesDiskCache()
         let mosques = [
-            Mosque(id: "a", name: "Alpha", address: "", lat: 0, lng: 0, slug: "alpha", website: nil, isHidden: false),
-            Mosque(id: "b", name: "Beta", address: "", lat: 0, lng: 0, slug: "beta", website: nil, isHidden: false),
+            Mosque(id: "disk-a", name: "Alpha", address: "", lat: 0, lng: 0, slug: "disk-alpha", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false),
+            Mosque(id: "disk-b", name: "Beta", address: "", lat: 0, lng: 0, slug: "disk-beta", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false),
         ]
         try? cache.saveMosques(mosques)
         let loaded: [Mosque]? = cache.loadMosques()
         #expect(loaded?.count == 2)
-        #expect(loaded?.first?.slug == "alpha")
+        #expect(loaded?.first?.slug == "disk-alpha")
     }
 
     @Test func roundTripMonthly() {
@@ -645,6 +652,7 @@ struct PrayerTimesDiskCacheTests {
 
     @Test func loadMosquesReturnsNilWhenMissing() {
         let cache = PrayerTimesDiskCache()
+        cache.removeMosques()
         let mosques: [Mosque]? = cache.loadMosques()
         #expect(mosques == nil)
     }
@@ -654,5 +662,56 @@ struct PrayerTimesDiskCacheTests {
         let safe = PrayerTimesDiskCache.safe(unsafe)
         #expect(!safe.contains("/"))
         #expect(!safe.contains("."))
+    }
+}
+
+@Suite("Home widget refresh")
+@MainActor
+struct HomeWidgetRefreshTests {
+    @Test func homeNetworkRefreshRefreshesWidgetsOnceForSelectedMosque() async {
+        let suiteName = "HomeWidgetRefresh.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        let mosques = [
+            Mosque(id: "a", name: "Mosque A", address: "", lat: 0, lng: 0, slug: "mosque-a", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false),
+            Mosque(id: "b", name: "Mosque B", address: "", lat: 0, lng: 0, slug: "mosque-b", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false),
+            Mosque(id: "c", name: "Mosque C", address: "", lat: 0, lng: 0, slug: "mosque-c", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false)
+        ]
+        let cache = PrayerTimesDiskCache()
+        // Force the "revision changed" path so the repository list is always used.
+        try? cache.saveDataRevision(DataRevision(dataRevision: -1, updatedAt: -1))
+        let repository = MockPrayerRepository(
+            mosques: mosques,
+            revision: DataRevision(dataRevision: 12_345, updatedAt: 12_345)
+        )
+        let writer = WidgetSnapshotWriterSpy()
+        let viewModel = HomeViewModel(
+            repository: repository,
+            settings: SettingsStore(defaults: defaults),
+            notificationScheduler: MockPrayerNotificationScheduler(),
+            widgetSnapshotWriter: writer,
+            diskCache: cache
+        )
+
+        await viewModel.load()
+
+        // Selected mosque refreshes once through the directory refresh; there is no
+        // separate standalone snapshot refresh in the same home network refresh.
+        #expect(writer.snapshotRefreshCount == 0)
+        #expect(writer.directoryRefreshCount == 1)
+    }
+}
+
+@MainActor
+private final class WidgetSnapshotWriterSpy: WidgetPrayerSnapshotWriting {
+    private(set) var snapshotRefreshCount = 0
+    private(set) var directoryRefreshCount = 0
+
+    func refreshSnapshot(for mosque: Mosque, days: Int) async {
+        snapshotRefreshCount += 1
+    }
+
+    func refreshSnapshots(for mosques: [Mosque], selectedMosque: Mosque?, days: Int) async {
+        directoryRefreshCount += 1
     }
 }

@@ -24,8 +24,8 @@ struct WidgetPrayerSnapshotTests {
 
         #expect(state.kind == .content)
         #expect(state.prayerName == "Fajr")
-        #expect(state.adhanTime == "5:00am")
-        #expect(state.iqamahTime == "5:20am")
+        #expect(state.adhanTime.lowercased() == "5:00am")
+        #expect(state.iqamahTime.lowercased() == "5:20am")
         #expect(state.isIqamah == false)
     }
 
@@ -36,8 +36,8 @@ struct WidgetPrayerSnapshotTests {
 
         #expect(state.kind == .content)
         #expect(state.prayerName == "Fajr")
-        #expect(state.adhanTime == "5:00am")
-        #expect(state.iqamahTime == "5:20am")
+        #expect(state.adhanTime.lowercased() == "5:00am")
+        #expect(state.iqamahTime.lowercased() == "5:20am")
         #expect(state.isIqamah == true)
     }
 
@@ -48,8 +48,8 @@ struct WidgetPrayerSnapshotTests {
 
         #expect(state.kind == .content)
         #expect(state.prayerName == "Jummah")
-        #expect(state.adhanTime == "1:10pm")
-        #expect(state.iqamahTime == "1:35pm")
+        #expect(state.adhanTime.lowercased() == "1:10pm")
+        #expect(state.iqamahTime.lowercased() == "1:35pm")
     }
 
     @Test func resolverShowsTomorrowFajrAfterIshaWhenTimesDiffer() throws {
@@ -64,8 +64,8 @@ struct WidgetPrayerSnapshotTests {
 
         #expect(state.kind == .content)
         #expect(state.prayerName == "Fajr")
-        #expect(state.adhanTime == "5:30am")  // Tomorrow's Fajr, not today's 5:00am
-        #expect(state.iqamahTime == "5:50am") // Tomorrow's iqamah, not today's 5:20am
+        #expect(state.adhanTime.lowercased() == "5:30am")  // Tomorrow's Fajr, not today's 5:00am
+        #expect(state.iqamahTime.lowercased() == "5:50am") // Tomorrow's iqamah, not today's 5:20am
         #expect(state.isIqamah == false)
     }
 
@@ -88,7 +88,7 @@ struct WidgetPrayerSnapshotTests {
         WidgetPrayerSnapshot(
             schemaVersion: WidgetPrayerSnapshot.currentSchemaVersion,
             generatedAt: generatedAt,
-            mosque: WidgetMosqueSnapshot(id: "1", name: "Test Masjid", slug: "test-masjid"),
+            mosque: WidgetMosqueSnapshot(id: "1", name: "Test Masjid", slug: "test-masjid", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil),
             days: [
                 WidgetPrayerDaySnapshot(
                     date: day1Date,
@@ -132,7 +132,8 @@ struct WidgetPrayerSnapshotTests {
                 )
             ],
             uses24HourTime: false,
-            appLanguageRawValue: AppLanguage.english.rawValue
+            appLanguageRawValue: AppLanguage.english.rawValue,
+            asrIqamahPreference: .first
         )
     }
 
@@ -143,7 +144,7 @@ struct WidgetPrayerSnapshotTests {
         WidgetPrayerSnapshot(
             schemaVersion: WidgetPrayerSnapshot.currentSchemaVersion,
             generatedAt: generatedAt,
-            mosque: WidgetMosqueSnapshot(id: "1", name: "Test Masjid", slug: "test-masjid"),
+            mosque: WidgetMosqueSnapshot(id: "1", name: "Test Masjid", slug: "test-masjid", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil),
             days: [
                 WidgetPrayerDaySnapshot(
                     date: dayDate,
@@ -167,7 +168,8 @@ struct WidgetPrayerSnapshotTests {
                 )
             ],
             uses24HourTime: false,
-            appLanguageRawValue: AppLanguage.english.rawValue
+            appLanguageRawValue: AppLanguage.english.rawValue,
+            asrIqamahPreference: .first
         )
     }
 

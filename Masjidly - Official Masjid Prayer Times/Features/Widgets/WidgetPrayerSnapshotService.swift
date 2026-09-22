@@ -65,15 +65,6 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
             await refreshSnapshot(for: selectedMosque, days: days)
         }
 
-        for mosque in visible where mosque.id != selectedMosque?.id {
-            do {
-                let snapshot = try await buildSnapshot(for: mosque, days: days)
-                try store.writeSnapshot(snapshot, updateDefault: false)
-            } catch {
-                // Keep any previous snapshot for this mosque.
-            }
-        }
-
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -144,25 +135,17 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
     }
 
     private func fetchUkDstCalendar() async throws -> UkDstCalendar? {
-        do {
-            let calendar = try await repository.getUkDstDates()
-            if let calendar { try? diskCache.saveUkDst(calendar) }
-            return calendar ?? diskCache.loadUkDst()
-        } catch {
-            if let cached = diskCache.loadUkDst() { return cached }
-            throw error
-        }
+        if let cached = diskCache.loadUkDst() { return cached }
+        let calendar = try await repository.getUkDstDates()
+        if let calendar { try? diskCache.saveUkDst(calendar) }
+        return calendar
     }
 
     private func fetchMonthly(mosqueSlug: String, month: MonthName, year: Int) async throws -> MonthPrayerData? {
-        do {
-            let monthly = try await repository.getMonthlyPrayerTimes(mosqueSlug: mosqueSlug, month: month, year: year)
-            if let monthly { try? diskCache.saveMonthly(slug: mosqueSlug, month: month.rawValue, year: year, data: monthly) }
-            return monthly ?? diskCache.loadMonthly(slug: mosqueSlug, month: month.rawValue, year: year)
-        } catch {
-            if let cached = diskCache.loadMonthly(slug: mosqueSlug, month: month.rawValue, year: year) { return cached }
-            throw error
-        }
+        if let cached = diskCache.loadMonthly(slug: mosqueSlug, month: month.rawValue, year: year) { return cached }
+        let monthly = try await repository.getMonthlyPrayerTimes(mosqueSlug: mosqueSlug, month: month, year: year)
+        if let monthly { try? diskCache.saveMonthly(slug: mosqueSlug, month: month.rawValue, year: year, data: monthly) }
+        return monthly
     }
 
     private func fetchRamadan(mosqueSlug: String, date: String) async throws -> RamadanPrayerData? {

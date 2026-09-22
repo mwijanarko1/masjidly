@@ -416,8 +416,7 @@ final class HomeViewModel {
             settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: mosque)
             try await refreshPrayerPayload(for: mosque, checkVersions: !revisionUnchanged)
             if let revision { try? diskCache.saveDataRevision(revision) }
-            await refreshWidgetSnapshot(for: mosque)
-            refreshWidgetSnapshotsInBackground(selected: mosque)
+            await refreshWidgetSnapshots(selected: mosque)
             loadState = .loaded
         } catch {
             lastError = error.localizedDescription
@@ -491,11 +490,7 @@ final class HomeViewModel {
         await widgetSnapshotWriter?.refreshSnapshot(for: mosque, days: 7)
     }
 
-    private func refreshWidgetSnapshotsInBackground(selected mosque: Mosque) {
-        let visibleMosques = mosques
-        let writer = widgetSnapshotWriter
-        Task { @MainActor in
-            await writer?.refreshSnapshots(for: visibleMosques, selectedMosque: mosque, days: 7)
-        }
+    private func refreshWidgetSnapshots(selected mosque: Mosque) async {
+        await widgetSnapshotWriter?.refreshSnapshots(for: mosques, selectedMosque: mosque, days: 7)
     }
 }

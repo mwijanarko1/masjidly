@@ -74,6 +74,12 @@ final class PrayerTimesDiskCache: Sendable {
         try saveJSON(mosques, to: url(for: Self.mosquesFile))
     }
 
+    func removeMosques() {
+        let fileURL = url(for: Self.mosquesFile)
+        guard fileManager.fileExists(atPath: fileURL.path) else { return }
+        try? fileManager.removeItem(at: fileURL)
+    }
+
     // MARK: - Data revision
 
     private static let dataRevisionFile = "data_revision.json"

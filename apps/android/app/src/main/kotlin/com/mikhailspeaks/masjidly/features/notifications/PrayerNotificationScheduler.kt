@@ -5,6 +5,7 @@ import com.mikhailspeaks.masjidly.data.cache.PrayerTimesDiskCache
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.AsrIqamahPreference
 import com.mikhailspeaks.masjidly.domain.MonthName
+import com.mikhailspeaks.masjidly.domain.MonthPrayerData
 import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.NotificationSettings
 import com.mikhailspeaks.masjidly.domain.PrayerRepository
@@ -79,7 +80,7 @@ class PrayerNotificationScheduler(
 
         addBudget = MAX_PENDING_NOTIFICATIONS
 
-        val ukDst = repository.getUkDstDates()?.ukDstDates
+        val ukDst = runCatching { repository.getUkDstDates()?.ukDstDates }.getOrNull()
             ?: diskCache.loadUkDst()?.ukDstDates
             ?: emptyList()
         val slug = mosque.slug
@@ -88,6 +89,8 @@ class PrayerNotificationScheduler(
             .atStartOfDay(PrayerTimesEngine.sheffieldTimeZone)
             .toInstant()
 
+        val monthlyCache = mutableMapOf<String, MonthPrayerData?>()
+
         for (offset in 0 until maxOf(1, days)) {
             if (!isCurrentGeneration(generation)) return
             val dayDate = baseDay.plus(offset.toLong(), ChronoUnit.DAYS)
@@ -95,11 +98,18 @@ class PrayerNotificationScheduler(
             val iso = PrayerTimesEngine.isoDateString(comps.year, comps.month, comps.day)
             val monthName = MonthName.from(comps.month) ?: continue
 
-            val monthly = try {
-                repository.getMonthlyPrayerTimes(slug, monthName, comps.year)
-                    ?: diskCache.loadMonthly(slug, monthName.rawValue, comps.year)
-            } catch (_: Exception) {
-                diskCache.loadMonthly(slug, monthName.rawValue, comps.year)
+            val monthKey = "${slug}-${comps.year}-${monthName.rawValue}"
+            val monthly: MonthPrayerData? = if (monthlyCache.containsKey(monthKey)) {
+                monthlyCache[monthKey]
+            } else {
+                val loaded = try {
+                    repository.getMonthlyPrayerTimes(slug, monthName, comps.year)
+                        ?: diskCache.loadMonthly(slug, monthName.rawValue, comps.year)
+                } catch (_: Exception) {
+                    diskCache.loadMonthly(slug, monthName.rawValue, comps.year)
+                }
+                monthlyCache[monthKey] = loaded
+                loaded
             }
             val ramadan = try {
                 repository.getRamadanTimetable(slug, iso)

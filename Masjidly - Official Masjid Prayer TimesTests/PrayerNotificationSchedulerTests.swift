@@ -171,6 +171,60 @@ struct PrayerNotificationSchedulerTests {
         let dated = prayer.compactMap { SchedulerTestTriggerDates.nextFireDate(for: $0.trigger) }
         #expect(dated == dated.sorted())
     }
+
+    @Test func reusesMonthlyPayloadAcrossDaysInSameRun() async throws {
+        let mosque = makeSchedulerMosque()
+        let repository = SchedulerPrayerRepository(mosque: mosque)
+        let center = RecordingPrayerNotificationCenter()
+        let scheduler = PrayerNotificationScheduler(repository: repository, center: center)
+        let settings = NotificationSettings(
+            masterEnabled: true,
+            adhanEnabled: true,
+            iqamahEnabled: false,
+            preAdhanReminderMinutes: nil,
+            preIqamahReminderMinutes: nil
+        )
+
+        try await scheduler.rescheduleUpcomingPrayerNotifications(
+            mosque: mosque,
+            days: 7,
+            settings: settings,
+            locale: Locale(identifier: "en_GB"),
+            asrIqamahPreference: .first
+        )
+
+        // Every distinct mosque/month/year key is fetched exactly once; a seven-day window
+        // spans at most two calendar months.
+        #expect(repository.monthlyRequestCount == repository.requestedMonthlyKeys.count)
+        #expect(repository.requestedMonthlyKeys.count <= 2)
+    }
+
+    @Test func cachesMissingMonthlyResultAcrossDaysInSameRun() async throws {
+        let mosque = makeSchedulerMosque()
+        let repository = SchedulerPrayerRepository(mosque: mosque)
+        repository.returnsNilMonthly = true
+        let center = RecordingPrayerNotificationCenter()
+        let scheduler = PrayerNotificationScheduler(repository: repository, center: center)
+        let settings = NotificationSettings(
+            masterEnabled: true,
+            adhanEnabled: true,
+            iqamahEnabled: true,
+            preAdhanReminderMinutes: nil,
+            preIqamahReminderMinutes: nil
+        )
+
+        try await scheduler.rescheduleUpcomingPrayerNotifications(
+            mosque: mosque,
+            days: 7,
+            settings: settings,
+            locale: Locale(identifier: "en_GB"),
+            asrIqamahPreference: .first
+        )
+
+        // A missing month must also be cached: reads equal distinct months, never once per day.
+        #expect(repository.monthlyRequestCount == repository.requestedMonthlyKeys.count)
+        #expect(repository.requestedMonthlyKeys.count <= 2)
+    }
 }
 
 
@@ -252,6 +306,9 @@ private final class RecordingPrayerNotificationCenter: PrayerNotificationCenter 
 
 private final class SchedulerPrayerRepository: PrayerRepository {
     private let mosque: Mosque
+    private(set) var monthlyRequestCount = 0
+    private(set) var requestedMonthlyKeys: Set<String> = []
+    var returnsNilMonthly = false
 
     init(mosque: Mosque) {
         self.mosque = mosque
@@ -262,7 +319,10 @@ private final class SchedulerPrayerRepository: PrayerRepository {
     }
 
     func getMonthlyPrayerTimes(mosqueSlug: String, month: MonthName, year: Int) async throws -> MonthPrayerData? {
-        MonthPrayerData(
+        monthlyRequestCount += 1
+        requestedMonthlyKeys.insert("\(mosqueSlug)-\(year)-\(month.rawValue)")
+        if returnsNilMonthly { return nil }
+        return MonthPrayerData(
             month: month.rawValue,
             prayerTimes: (1...31).map {
                 PrayerTime(

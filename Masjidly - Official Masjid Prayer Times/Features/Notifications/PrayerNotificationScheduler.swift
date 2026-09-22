@@ -153,6 +153,7 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = PrayerTimesEngine.sheffieldTimeZone
         let baseDay = cal.startOfDay(for: Date())
+        var monthlyCache: [String: MonthPrayerData?] = [:]
 
         for offset in 0..<max(1, days) {
             guard let dayDate = cal.date(byAdding: .day, value: offset, to: baseDay) else { continue }
@@ -160,7 +161,15 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             let iso = PrayerTimesEngine.isoDateString(year: comps.year, month: comps.month, day: comps.day)
             guard let monthName = MonthName.from(monthNumber: comps.month) else { continue }
 
-            let monthly = try await repository.getMonthlyPrayerTimes(mosqueSlug: slug, month: monthName, year: comps.year)
+            let monthly: MonthPrayerData?
+            let monthKey = "\(slug)-\(comps.year)-\(monthName.rawValue)"
+            if let cached = monthlyCache[monthKey] {
+                monthly = cached
+            } else {
+                let fetched = try await repository.getMonthlyPrayerTimes(mosqueSlug: slug, month: monthName, year: comps.year)
+                monthlyCache.updateValue(fetched, forKey: monthKey)
+                monthly = fetched
+            }
             let ramadan = try await repository.getRamadanTimetable(mosqueSlug: slug, date: iso)
 
             let displayed: DailyPrayerTimes

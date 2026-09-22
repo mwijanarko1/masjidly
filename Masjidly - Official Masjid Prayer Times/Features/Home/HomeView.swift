@@ -237,18 +237,17 @@ struct HomeView: View {
                 }
 
                 VStack(spacing: 0) {
-                    ZStack {
-                        HStack(alignment: .center) {
-                            calendarButton
-                                .padding(.leading, metrics.leadingChromeInset)
-
-                            Spacer(minLength: 0)
-
-                            settingsButton
-                                .padding(.trailing, metrics.trailingChromeInset)
-                        }
+                    HStack(alignment: .center, spacing: 8) {
+                        calendarButton
+                            .fixedSize()
+                            .padding(.leading, metrics.leadingChromeInset)
 
                         dateDisplay
+                            .frame(maxWidth: .infinity)
+
+                        settingsButton
+                            .fixedSize()
+                            .padding(.trailing, metrics.trailingChromeInset)
                     }
                     .padding(.top, metrics.topChromeInset)
 
@@ -763,12 +762,13 @@ struct HomeView: View {
     }
 
     private var dateDisplay: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 6) {
             dateNavStepButton(
                 systemName: "chevron.left",
                 accessibilityKey: "accessibility.previous_day",
                 action: model.goToPreviousDay
             )
+            .fixedSize()
 
             Button {
                 datePickerSelection = model.displayedDate
@@ -779,16 +779,17 @@ struct HomeView: View {
                         .appFont(size: 13, weight: .semibold)
                         .foregroundColor(currentAppearance.textColor.opacity(0.88))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
+                        .minimumScaleFactor(0.5)
 
                     Text(hijriDateString(for: model.displayedDate))
                         .appFont(size: 10, weight: .medium)
                         .foregroundColor(currentAppearance.textColor.opacity(0.55))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
+                        .minimumScaleFactor(0.5)
                 }
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 10)
                 .padding(.vertical, 8)
+                .frame(minWidth: 0, maxWidth: .infinity)
                 .background(
                     Capsule(style: .continuous)
                         .fill(Color.white.opacity(0.18))
@@ -807,8 +808,8 @@ struct HomeView: View {
                 accessibilityKey: "accessibility.next_day",
                 action: model.goToNextDay
             )
+            .fixedSize()
         }
-        .fixedSize(horizontal: true, vertical: true)
     }
 
     private func dateNavStepButton(
