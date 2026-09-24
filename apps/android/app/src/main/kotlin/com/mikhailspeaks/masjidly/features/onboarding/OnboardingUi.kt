@@ -1,5 +1,7 @@
 package com.mikhailspeaks.masjidly.features.onboarding
 
+import kotlinx.coroutines.launch
+
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -69,6 +72,7 @@ import com.mikhailspeaks.masjidly.domain.LocaleStrings
 import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.MosqueSelection
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermissions
+import com.mikhailspeaks.masjidly.features.settings.SettingsClosestMosqueLocationProvider
 import com.mikhailspeaks.masjidly.features.settings.OnboardingMenuPickerRow
 import com.mikhailspeaks.masjidly.features.settings.OnboardingReminderMenuPickerRow
 import com.mikhailspeaks.masjidly.features.settings.SettingsPickerBottomSheet
@@ -78,6 +82,12 @@ import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import com.mikhailspeaks.masjidly.ui.haptic.performMasjidlyButtonTapHaptic
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
 private val Accent = Color(0xFF47A6FF)
 private val AccentDark = Color(0xFF2E8DFF)
@@ -501,23 +511,33 @@ fun MosqueSelectionOnboardingScreen(
     val visible = remember(mosques) { MosqueSelection.visibleMosques(mosques) }
     val preselected = remember(visible, selectedMosqueId) {
         visible.firstOrNull { it.id == selectedMosqueId }
-            ?: visible.firstOrNull { it.slug == com.mikhailspeaks.masjidly.domain.MosqueDefaults.DEFAULT_MOSQUE_SLUG }
-            ?: visible.firstOrNull()
     }
-    var countryKey by remember(preselected) {
-        mutableStateOf(preselected?.let { MosqueSelection.countryGroupingKey(it) }.orEmpty())
+    var countryKey by remember(preselected, mosques) {
+        val firstCountry = MosqueSelection.countryOptions(mosques).firstOrNull()?.key.orEmpty()
+        mutableStateOf(preselected?.let { MosqueSelection.countryGroupingKey(it) } ?: firstCountry)
     }
-    var cityKey by remember(preselected) {
-        mutableStateOf(preselected?.cityGroupingKey.orEmpty())
+    var cityKey by remember(preselected, mosques, countryKey) {
+        val firstCity = MosqueSelection.cityOptions(mosques, countryKey).firstOrNull()?.key.orEmpty()
+        mutableStateOf(preselected?.cityGroupingKey ?: firstCity)
     }
-    var mosqueId by remember(preselected, selectedMosqueId) {
-        mutableStateOf(
-            selectedMosqueId.ifEmpty { preselected?.id.orEmpty() },
-        )
+    var mosqueId by remember(selectedMosqueId) {
+        mutableStateOf(selectedMosqueId)
     }
     var countrySheet by remember { mutableStateOf(false) }
     var citySheet by remember { mutableStateOf(false) }
     var mosqueSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedMosqueId) {
+        if (selectedMosqueId != mosqueId) {
+            mosqueId = selectedMosqueId
+            val m = visible.firstOrNull { it.id == selectedMosqueId }
+            if (m != null) {
+                countryKey = MosqueSelection.countryGroupingKey(m)
+                cityKey = m.cityGroupingKey
+            }
+        }
+    }
+
 
     val countryOptions = remember(mosques) { MosqueSelection.countryOptions(mosques) }
     val cityOptions = remember(mosques, countryKey) { MosqueSelection.cityOptions(mosques, countryKey) }
@@ -526,12 +546,13 @@ fun MosqueSelectionOnboardingScreen(
     }
 
     fun syncMosqueToCity(key: String) {
+        // Keep an empty selection empty so location (or the user) chooses the mosque.
+        if (mosqueId.isEmpty()) return
         val countryMosques = if (countryKey.isEmpty()) visible else MosqueSelection.mosquesInCountry(countryKey, mosques)
         val list = if (key.isEmpty()) countryMosques else MosqueSelection.mosquesInCity(key, countryMosques)
-        val first = list.firstOrNull() ?: return
         if (list.none { it.id == mosqueId }) {
-            mosqueId = first.id
-            onSelectedMosqueIdChange(first.id)
+            mosqueId = list.firstOrNull()?.id.orEmpty()
+            onSelectedMosqueIdChange(mosqueId)
         }
     }
 
@@ -597,10 +618,10 @@ fun MosqueSelectionOnboardingScreen(
                         text = LocaleStrings.t("onboarding.continue", language),
                         theme = theme,
                         onClick = {
-                            val mosque = mosquesInCity.firstOrNull { it.id == mosqueId } ?: mosquesInCity.firstOrNull()
+                            val mosque = mosquesInCity.firstOrNull { it.id == mosqueId }
                             if (mosque != null) onContinue(mosque)
                         },
-                        enabled = mosquesInCity.isNotEmpty() && !isContinuing,
+                        enabled = mosqueId.isNotEmpty() && mosquesInCity.isNotEmpty() && !isContinuing,
                         loading = isContinuing,
                     )
                 }
@@ -664,6 +685,168 @@ private fun OnboardingPickerDivider(textColor: Color) {
             .height(0.5.dp)
             .background(textColor.copy(0.12f)),
     )
+}
+
+@Composable
+fun LocationPermissionOnboardingScreen(
+    theme: ResolvedTheme,
+    language: AppLanguage,
+    onAllow: () -> Unit,
+    onSkip: () -> Unit,
+) {
+    OnboardingFullScreenShell(theme) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 18.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            val cardTextColor = onboardingCardTextColor(theme)
+            val cardMutedColor = onboardingCardMutedColor(theme)
+            OnboardingTutorialCard(
+                theme = theme,
+                modifier = Modifier.widthIn(max = 420.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(22.dp),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = LocaleStrings.t("onboarding.location.title", language),
+                            color = cardTextColor,
+                            style = rememberAppTextStyle(23f, FontWeight.SemiBold),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                            letterSpacing = (-0.5f).sp,
+                        )
+                        Text(
+                            text = LocaleStrings.t("onboarding.location.message", language),
+                            color = cardMutedColor,
+                            style = rememberAppTextStyle(16f),
+                            textAlign = TextAlign.Center,
+                            lineHeight = 22.sp,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OnboardingPrimaryButton(
+                            text = LocaleStrings.t("onboarding.location.turn_on", language),
+                            theme = theme,
+                            onClick = onAllow,
+                        )
+                        HapticTextButton(
+                            onClick = onSkip,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                        ) {
+                            Text(
+                                text = LocaleStrings.t("onboarding.location.skip", language),
+                                color = cardMutedColor,
+                                style = rememberAppTextStyle(16f, FontWeight.SemiBold),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeOnboardingOverlay(
+    step: OnboardingStep,
+    theme: ResolvedTheme,
+    language: AppLanguage,
+    mosques: List<Mosque>,
+    onboarding: OnboardingFlowViewModel,
+    onboardingState: OnboardingFlowViewModel.UiState,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val locationProvider = remember(context) { SettingsClosestMosqueLocationProvider(context) }
+
+    suspend fun applyClosestFromLocation(): Boolean {
+        val location = locationProvider.fetchLocation() ?: return false
+        onboarding.applyClosestMosqueIfNeeded(
+            mosques = mosques,
+            latitude = location.latitude,
+            longitude = location.longitude,
+        )
+        return true
+    }
+
+    fun finishLocationStepAfterPermission() {
+        scope.launch {
+            // Stay on the location card until the system prompt returns, then prefill if possible.
+            if (locationProvider.hasLocationPermission()) {
+                applyClosestFromLocation()
+            }
+            onboarding.continueAfterLocationStep()
+        }
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { _ ->
+        finishLocationStepAfterPermission()
+    }
+
+    when (step) {
+        OnboardingStep.ChooseLanguage -> LanguageSelectionOnboardingScreen(
+            theme = theme,
+            selectedLanguage = onboardingState.selectedLanguage,
+            onSelectLanguage = { /* local draft only */ },
+            onContinue = onboarding::selectLanguage,
+        )
+        OnboardingStep.RequestLocation -> LocationPermissionOnboardingScreen(
+            theme = theme,
+            language = language,
+            onAllow = {
+                if (locationProvider.hasLocationPermission()) {
+                    // No system prompt; still try a fix before mosque card.
+                    finishLocationStepAfterPermission()
+                } else {
+                    // Stay on this card while the system prompt is up.
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        ),
+                    )
+                }
+            },
+            onSkip = onboarding::continueAfterLocationStep,
+        )
+        OnboardingStep.ChooseMosque -> {
+            // Prefill if permission already exists and selection is still empty.
+            LaunchedEffect(Unit) {
+                if (locationProvider.hasLocationPermission() &&
+                    onboardingState.selectedMosqueId.isEmpty()
+                ) {
+                    applyClosestFromLocation()
+                }
+            }
+            MosqueSelectionOnboardingScreen(
+                mosques = mosques,
+                theme = theme,
+                language = language,
+                selectedMosqueId = onboardingState.selectedMosqueId,
+                isContinuing = onboardingState.isSelectingMosque,
+                onSelectedMosqueIdChange = onboarding::updateSelectedMosqueId,
+                onContinue = onboarding::selectMosque,
+            )
+        }
+        OnboardingStep.Notifications -> OnboardingNotificationSetupScreen(
+            theme = theme,
+            language = language,
+            draft = onboardingState.notificationDraft,
+            isSaving = onboardingState.isCompletingNotifications,
+            onDraftChange = { draft -> onboarding.updateNotificationDraft { draft } },
+            onContinue = onboarding::completeNotificationSetup,
+        )
+    }
 }
 
 @Composable
@@ -949,167 +1132,6 @@ private fun CollapsiblePrayerSection(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun HomeOnboardingOverlay(
-    step: OnboardingStep,
-    theme: ResolvedTheme,
-    language: AppLanguage,
-    mosques: List<Mosque>,
-    onboarding: OnboardingFlowViewModel,
-    onboardingState: OnboardingFlowViewModel.UiState,
-    onRequestLocation: () -> Unit,
-) {
-    when (step) {
-        OnboardingStep.ChooseLanguage -> LanguageSelectionOnboardingScreen(
-            theme = theme,
-            selectedLanguage = onboardingState.selectedLanguage,
-            onSelectLanguage = { /* local draft only */ },
-            onContinue = onboarding::selectLanguage,
-        )
-        OnboardingStep.ChooseMosque -> MosqueSelectionOnboardingScreen(
-            mosques = mosques,
-            theme = theme,
-            language = language,
-            selectedMosqueId = onboardingState.selectedMosqueId,
-            isContinuing = onboardingState.isSelectingMosque,
-            onSelectedMosqueIdChange = onboarding::updateSelectedMosqueId,
-            onContinue = onboarding::selectMosque,
-        )
-        is OnboardingStep.PrayerShortcut -> Box(modifier = Modifier.fillMaxSize()) {
-            OnboardingCoachMarkView(
-                title = LocaleStrings.t("onboarding.shortcut.title", language),
-                message = LocaleStrings.t("onboarding.shortcut.message_format", language),
-                theme = theme,
-                variant = CoachMarkVariant.AboveShortcutRow,
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding()
-                    .padding(bottom = 24.dp),
-                contentAlignment = Alignment.BottomCenter,
-            ) {
-                HapticTextButton(
-                    onClick = onboarding::skipToTutorialEnd,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .border(1.dp, theme.textColor.copy(0.27f), CircleShape)
-                        .padding(horizontal = 28.dp, vertical = 12.dp),
-                ) {
-                    Text(
-                        text = LocaleStrings.t("onboarding.skip_tutorial", language),
-                        color = theme.textColor.copy(0.72f),
-                        style = rememberAppTextStyle(15f, FontWeight.SemiBold),
-                    )
-                }
-            }
-        }
-        OnboardingStep.QiblaCountdown -> OnboardingCoachMarkView(
-            title = LocaleStrings.t("onboarding.qibla_countdown.title", language),
-            message = LocaleStrings.t("onboarding.qibla_countdown.message", language),
-            theme = theme,
-            variant = CoachMarkVariant.BelowQiblaIconLower,
-            primaryButtonTitle = LocaleStrings.t("onboarding.continue", language),
-            onPrimaryButton = onboarding::completeQiblaCountdownStep,
-            blocksBackgroundInteractions = false,
-        )
-        OnboardingStep.Qibla -> OnboardingCoachMarkView(
-            title = LocaleStrings.t("onboarding.qibla.title", language),
-            message = LocaleStrings.t("onboarding.qibla.message", language),
-            theme = theme,
-            variant = CoachMarkVariant.BelowQiblaIconLower,
-            primaryButtonTitle = LocaleStrings.t("onboarding.qibla.allow_location", language),
-            onPrimaryButton = {
-                onRequestLocation()
-                onboarding.completeQiblaOnboardingAllowingLocationRequest()
-            },
-            secondaryButtonTitle = LocaleStrings.t("onboarding.qibla.later", language),
-            onSecondaryButton = onboarding::completeQiblaOnboardingDeferringLocation,
-        )
-        OnboardingStep.OpenTimetable -> OnboardingCoachMarkView(
-            title = LocaleStrings.t("onboarding.timetable.title", language),
-            message = LocaleStrings.t("onboarding.timetable.message", language),
-            theme = theme,
-            variant = CoachMarkVariant.BelowTopChrome,
-            blocksBackgroundInteractions = false,
-        )
-        OnboardingStep.OpenSettings -> OnboardingCoachMarkView(
-            title = LocaleStrings.t("onboarding.settings.title", language),
-            message = LocaleStrings.t("onboarding.settings.message", language),
-            theme = theme,
-            variant = CoachMarkVariant.BelowTopChrome,
-            blocksBackgroundInteractions = false,
-        )
-        OnboardingStep.Notifications -> OnboardingNotificationSetupScreen(
-            theme = theme,
-            language = language,
-            draft = onboardingState.notificationDraft,
-            isSaving = onboardingState.isCompletingNotifications,
-            onDraftChange = { draft -> onboarding.updateNotificationDraft { draft } },
-            onContinue = onboarding::completeNotificationSetup,
-        )
-        OnboardingStep.ExploreTimetable,
-        OnboardingStep.CloseTimetable,
-        OnboardingStep.ExploreSettings,
-        OnboardingStep.CloseSettings,
-        -> Unit
-    }
-}
-
-@Composable
-fun TimetableOnboardingOverlay(
-    step: OnboardingStep,
-    theme: ResolvedTheme,
-    language: AppLanguage,
-    onboarding: OnboardingFlowViewModel,
-) {
-    when (step) {
-        OnboardingStep.ExploreTimetable -> OnboardingCoachMarkView(
-            title = LocaleStrings.t("onboarding.explore_timetable.title", language),
-            message = LocaleStrings.t("onboarding.explore_timetable.message", language),
-            theme = theme,
-            variant = CoachMarkVariant.FloatingBottom,
-            primaryButtonTitle = LocaleStrings.t("onboarding.continue", language),
-            onPrimaryButton = onboarding::acknowledgeTimetableExplore,
-        )
-        OnboardingStep.CloseTimetable -> OnboardingCoachMarkView(
-            title = LocaleStrings.t("onboarding.close_timetable.title", language),
-            message = LocaleStrings.t("onboarding.close_timetable.message", language),
-            theme = theme,
-            variant = CoachMarkVariant.BelowTopChrome,
-            blocksBackgroundInteractions = false,
-        )
-        else -> Unit
-    }
-}
-
-@Composable
-fun SettingsOnboardingOverlay(
-    step: OnboardingStep,
-    theme: ResolvedTheme,
-    language: AppLanguage,
-    onboarding: OnboardingFlowViewModel,
-) {
-    when (step) {
-        OnboardingStep.ExploreSettings -> OnboardingCoachMarkView(
-            title = LocaleStrings.t("onboarding.explore_settings.title", language),
-            message = LocaleStrings.t("onboarding.explore_settings.message", language),
-            theme = theme,
-            variant = CoachMarkVariant.FloatingBottom,
-            primaryButtonTitle = LocaleStrings.t("onboarding.continue", language),
-            onPrimaryButton = onboarding::acknowledgeSettingsExplore,
-        )
-        OnboardingStep.CloseSettings -> OnboardingCoachMarkView(
-            title = LocaleStrings.t("onboarding.close_settings.title", language),
-            message = LocaleStrings.t("onboarding.close_settings.message", language),
-            theme = theme,
-            variant = CoachMarkVariant.BelowTopChrome,
-            blocksBackgroundInteractions = false,
-        )
-        else -> Unit
     }
 }
 

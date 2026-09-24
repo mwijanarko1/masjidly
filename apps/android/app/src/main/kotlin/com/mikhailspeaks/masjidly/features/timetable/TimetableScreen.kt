@@ -70,7 +70,6 @@ import com.mikhailspeaks.masjidly.features.home.HomeViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingStep
-import com.mikhailspeaks.masjidly.features.onboarding.TimetableOnboardingOverlay
 import com.mikhailspeaks.masjidly.features.settings.MasjidlySupportMail
 import com.mikhailspeaks.masjidly.ui.home.HomeDateFormatting
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
@@ -211,7 +210,7 @@ fun TimetableScreen(
                     mosqueName = mosque?.name ?: "",
                     locale = locale,
                     language = language,
-                    highlightCloseButton = onboardingState.currentStep == OnboardingStep.CloseTimetable,
+                    highlightCloseButton = false,
                     onBack = onBack,
                 )
 
@@ -277,15 +276,6 @@ fun TimetableScreen(
                     }
                 }
             }
-        }
-
-        onboardingState.currentStep?.let { step ->
-            TimetableOnboardingOverlay(
-                step = step,
-                theme = theme,
-                language = language,
-                onboarding = onboardingViewModel,
-            )
         }
     }
 }

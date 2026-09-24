@@ -410,10 +410,14 @@ final class HomeViewModel {
                 loadState = .empty
                 return
             }
-            settings.selectedMosqueId = mosque.id
-            settings.selectedMosqueSlug = mosque.slug
-            settings.selectedCityGroupingKey = mosque.cityGroupingKey
-            settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: mosque)
+            // Only persist a resolved mosque once the user has finished onboarding.
+            // Writing the default (MWHS) here blocked closest-mosque prefill.
+            if settings.hasCompletedOnboarding {
+                settings.selectedMosqueId = mosque.id
+                settings.selectedMosqueSlug = mosque.slug
+                settings.selectedCityGroupingKey = mosque.cityGroupingKey
+                settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: mosque)
+            }
             try await refreshPrayerPayload(for: mosque, checkVersions: !revisionUnchanged)
             if let revision { try? diskCache.saveDataRevision(revision) }
             await refreshWidgetSnapshots(selected: mosque)

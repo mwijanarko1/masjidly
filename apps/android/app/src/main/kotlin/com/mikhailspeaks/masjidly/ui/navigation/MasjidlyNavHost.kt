@@ -60,7 +60,6 @@ fun MasjidlyNavHost(
                 settingsStore = settingsStore,
                 onboardingViewModel = onboardingViewModel,
                 onBack = {
-                    onboardingViewModel.handleTimetableClosed()
                     navController.popBackStack()
                 },
             )
@@ -77,14 +76,12 @@ fun MasjidlyNavHost(
                 settingsStore = settingsStore,
                 onboardingViewModel = onboardingViewModel,
                 onBack = {
-                    onboardingViewModel.handleSettingsClosed()
                     navController.popBackStack()
                 },
                 onTestWhatsNew = onTestWhatsNew,
                 onTestUpdatePrompt = onTestUpdatePrompt,
                 onTestClosestMosquePrompt = {
                     closestMosquePromptTestTrigger++
-                    onboardingViewModel.handleSettingsClosed()
                     navController.popBackStack()
                 },
             )

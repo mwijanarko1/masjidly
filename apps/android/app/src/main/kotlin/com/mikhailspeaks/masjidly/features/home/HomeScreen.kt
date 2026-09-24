@@ -88,7 +88,6 @@ import com.mikhailspeaks.masjidly.features.onboarding.HomeOnboardingOverlay
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingStep
-import com.mikhailspeaks.masjidly.features.onboarding.rememberOnboardingLocationRequester
 import com.mikhailspeaks.masjidly.features.qibla.rememberQiblaRotation
 import com.mikhailspeaks.masjidly.ui.home.HomeDateFormatting
 import com.mikhailspeaks.masjidly.ui.home.QiblaPrayerIcon
@@ -137,11 +136,6 @@ fun HomeScreen(
     var pendingClosestMosque by remember { mutableStateOf<Mosque?>(null) }
     var forceClosestMosquePrompt by remember { mutableStateOf(false) }
     var closestMosqueCheckTrigger by remember { mutableIntStateOf(0) }
-    val requestOnboardingLocation = rememberOnboardingLocationRequester {
-        settingsStore.hideQiblaCompass = false
-        hasLocationPermission = true
-    }
-
     LaunchedEffect(state.mosques) {
         onboardingViewModel.startIfNeeded(state.mosques)
     }
@@ -190,10 +184,10 @@ fun HomeScreen(
         pendingClosestMosque = MosqueSelection.visibleMosques(state.mosques).firstOrNull { it.id != selectedId }
     }
 
-    val highlightPrayerShortcuts = onboardingStep is OnboardingStep.PrayerShortcut
+    val highlightPrayerShortcuts = false
     val highlightQibla = false
-    val highlightTimetable = onboardingStep == OnboardingStep.OpenTimetable
-    val highlightSettings = onboardingStep == OnboardingStep.OpenSettings
+    val highlightTimetable = false
+    val highlightSettings = false
 
     // Mirrors iOS `handleQiblaAuthorizationStatusChange` — re-enable compass when location is granted.
     DisposableEffect(lifecycleOwner, settingsRevision) {
@@ -249,7 +243,6 @@ fun HomeScreen(
                     locationPermissionGranted = hasLocationPermission,
                     onSelectPrayer = { index ->
                         viewModel.selectPrayerIndex(index)
-                        onboardingViewModel.handlePrayerShortcutTap(index)
                     },
                     highlightPrayerShortcuts = highlightPrayerShortcuts,
                     highlightQibla = highlightQibla,
@@ -296,14 +289,8 @@ fun HomeScreen(
             locale = locale,
             highlightTimetable = highlightTimetable,
             highlightSettings = highlightSettings,
-            onOpenTimetable = {
-                onboardingViewModel.handleTimetableOpened()
-                onOpenTimetable()
-            },
-            onOpenSettings = {
-                onboardingViewModel.handleSettingsOpened()
-                onOpenSettings()
-            },
+            onOpenTimetable = onOpenTimetable,
+            onOpenSettings = onOpenSettings,
             onPreviousDay = viewModel::goToPreviousDay,
             onNextDay = viewModel::goToNextDay,
             onGoToToday = viewModel::goToToday,
@@ -312,13 +299,12 @@ fun HomeScreen(
         onboardingStep?.let { step ->
             Box(modifier = Modifier.fillMaxSize()) {
                 HomeOnboardingOverlay(
-                step = step,
-                theme = theme,
-                language = language,
-                mosques = state.mosques,
-                onboarding = onboardingViewModel,
-                onboardingState = onboardingState,
-                onRequestLocation = requestOnboardingLocation,
+                    step = step,
+                    theme = theme,
+                    language = language,
+                    mosques = state.mosques,
+                    onboarding = onboardingViewModel,
+                    onboardingState = onboardingState,
                 )
             }
         }

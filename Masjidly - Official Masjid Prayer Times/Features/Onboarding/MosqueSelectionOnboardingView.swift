@@ -100,6 +100,71 @@ private extension AppLanguage {
     }
 }
 
+struct LocationPermissionOnboardingView: View {
+    let timeTheme: HomeDesign.TimeTheme
+    let onAllow: () -> Void
+    let onSkip: () -> Void
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(timeTheme.usesLightForeground ? 0.32 : 0.18),
+                    Color.black.opacity(timeTheme.usesLightForeground ? 0.16 : 0.08),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            OnboardingTutorialChrome.card(timeTheme: timeTheme) {
+                VStack(spacing: 22) {
+                    VStack(spacing: 10) {
+                        Text(localized("onboarding.location.title"))
+                            .appFont(size: 23, weight: .semibold)
+                            .foregroundStyle(timeTheme.textColor)
+                            .kerning(-0.5)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+
+                        Text(localized("onboarding.location.message"))
+                            .appFont(size: 16)
+                            .foregroundStyle(timeTheme.textColor.opacity(0.72))
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    VStack(spacing: 12) {
+                        Button(action: onAllow) {
+                            Text(localized("onboarding.location.turn_on"))
+                                .onboardingPrimaryCapsule()
+                        }
+                        .buttonStyle(.hapticPlain)
+                        .accessibilityIdentifier("Onboarding.LocationAllow")
+
+                        Button(action: onSkip) {
+                            Text(localized("onboarding.location.skip"))
+                                .appFont(size: 16, weight: .semibold)
+                                .foregroundStyle(timeTheme.textColor.opacity(0.72))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.hapticPlain)
+                        .accessibilityIdentifier("Onboarding.LocationSkip")
+                    }
+                }
+                .padding(24)
+            }
+            .padding(.horizontal, 18)
+        }
+    }
+
+    private func localized(_ key: String) -> String {
+        LocaleBundle.string(forKey: key, locale: locale)
+    }
+}
+
 struct MosqueSelectionOnboardingView: View {
     let mosques: [Mosque]
     let timeTheme: HomeDesign.TimeTheme
@@ -124,19 +189,18 @@ struct MosqueSelectionOnboardingView: View {
         self.isContinuing = isContinuing
         self.onContinue = onContinue
 
-        // Seed country/city upfront so Pickers never see an empty invalid tag.
+        // Seed country/city for valid pickers. Only preselect a mosque when one was provided
+        // (e.g. closest-from-location). Never invent a default mosque.
         let visible = MosqueDefaults.visibleMosques(mosques)
         let preselected = visible.first(where: { $0.id == selectedMosqueId.wrappedValue })
-            ?? visible.first(where: { $0.slug == MosqueDefaults.defaultSlug })
-            ?? visible.first
         if let m = preselected {
             let ck = MosqueDefaults.countryGroupingKey(for: m)
             self._countryGroupingKey = State(initialValue: ck)
             self._cityGroupingKey = State(initialValue: m.cityGroupingKey)
         } else {
             let firstCountryKey = MosqueDefaults.countryOptions(from: mosques).first?.key ?? ""
-            self._countryGroupingKey = State(initialValue: firstCountryKey)
             let firstCityKey = MosqueDefaults.cityOptions(from: mosques, countryKey: firstCountryKey).first?.key ?? ""
+            self._countryGroupingKey = State(initialValue: firstCountryKey)
             self._cityGroupingKey = State(initialValue: firstCityKey)
         }
     }
@@ -164,7 +228,8 @@ struct MosqueSelectionOnboardingView: View {
         if let selected = mosquesInSelectedCity.first(where: { $0.id == selectedMosqueId }) {
             return selected.name
         }
-        return mosquesInSelectedCity.first?.name ?? ""
+        // Empty selection must not look like a default mosque is chosen.
+        return ""
     }
 
     var body: some View {
@@ -231,15 +296,15 @@ struct MosqueSelectionOnboardingView: View {
                     }
 
                     Button {
-                        guard let mosque = mosquesInSelectedCity.first(where: { $0.id == selectedMosqueId }) ?? mosquesInSelectedCity.first else { return }
+                        guard let mosque = mosquesInSelectedCity.first(where: { $0.id == selectedMosqueId }) else { return }
                         onContinue(mosque)
                     } label: {
                         Text(localized("onboarding.continue"))
                             .onboardingPrimaryCapsule()
                     }
                     .buttonStyle(.hapticPlain)
-                    .disabled(mosquesInSelectedCity.isEmpty || isContinuing)
-                    .opacity(mosquesInSelectedCity.isEmpty || isContinuing ? 0.45 : 1)
+                    .disabled(selectedMosqueId.isEmpty || mosquesInSelectedCity.isEmpty || isContinuing)
+                    .opacity(selectedMosqueId.isEmpty || mosquesInSelectedCity.isEmpty || isContinuing ? 0.45 : 1)
                     .accessibilityIdentifier("Onboarding.MosqueContinue")
                 }
                 .padding(24)
@@ -296,9 +361,10 @@ struct MosqueSelectionOnboardingView: View {
         } else {
             list = MosqueDefaults.mosques(inCityGroupingKey: key, mosques: countryMosques)
         }
-        guard let first = list.first else { return }
+        // Keep an empty selection empty so location (or the user) chooses the mosque.
+        guard !selectedMosqueId.isEmpty else { return }
         if !list.contains(where: { $0.id == selectedMosqueId }) {
-            selectedMosqueId = first.id
+            selectedMosqueId = list.first?.id ?? ""
         }
     }
 

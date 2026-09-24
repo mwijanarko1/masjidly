@@ -30,6 +30,7 @@ struct HomeView: View {
     @State private var qiblaDirectionProvider = QiblaDirectionProvider()
     @State private var closestMosqueLocationProvider = ClosestMosqueLocationProvider()
     @State private var hasRequestedClosestMosqueCheck = false
+    @State private var awaitingOnboardingLocationPermission = false
 
     private var dynamicTheme: HomeDesign.TimeTheme {
         HomeDesign.TimeTheme.homeHeroTheme(
@@ -220,8 +221,8 @@ struct HomeView: View {
                 hasRequestedClosestMosqueCheck = false
                 requestClosestMosquePromptCheckIfNeeded()
             }
-            .onChange(of: closestMosqueLocationProvider.currentLocation) { _, _ in
-                evaluateClosestMosquePromptCandidate()
+            .onChange(of: onboardingLocationSignal) { _, _ in
+                handleOnboardingLocationSignal()
             }
             .onChange(of: model.mosques.count) { _, _ in
                 evaluateClosestMosquePromptCandidate()
@@ -483,7 +484,7 @@ struct HomeView: View {
                 appearance: currentAppearance,
                 showQiblaCompass: !settings.hideQiblaCompass,
                 qiblaRotationDegrees: qiblaDirectionProvider.displayedRotationDegrees,
-                qiblaOnboardingHighlighted: onboarding.currentStep == .qibla || onboarding.currentStep == .qiblaCountdown,
+                qiblaOnboardingHighlighted: false,
                 mosqueSlug: slug,
                 dailyPrayerTimes: daily,
                 dailyIqamahTimes: model.iqamahTimes,
@@ -492,8 +493,8 @@ struct HomeView: View {
                 selectedIndex: model.selectedPrayerIndex,
                 totalCount: prayers.count,
                 onSelectPrayer: { model.selectedPrayerIndex = $0 },
-                highlightedShortcutIndex: highlightedPrayerShortcutIndex,
-                onShortcutTapped: { onboarding.handlePrayerShortcutTap(index: $0) }
+                highlightedShortcutIndex: nil,
+                onShortcutTapped: { _ in }
             )
             .onAppear {
                 let deferAuth = !settings.hasCompletedOnboarding || settings.hideQiblaCompass
@@ -645,6 +646,70 @@ struct HomeView: View {
         evaluateClosestMosquePromptCandidate()
     }
 
+    private func finishOnboardingLocationStep() {
+        awaitingOnboardingLocationPermission = false
+        if let location = closestMosqueLocationProvider.currentLocation {
+            onboarding.applyClosestMosqueIfNeeded(
+                from: model.mosques,
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude
+            )
+        }
+        guard onboarding.currentStep == .requestLocation else { return }
+        onboarding.continueAfterLocationStep()
+    }
+
+    /// Lightweight signal so HomeView body only needs one location-related onChange.
+    private var onboardingLocationSignal: Int {
+        var hasher = Hasher()
+        hasher.combine(closestMosqueLocationProvider.authorizationDecisionEpoch)
+        hasher.combine(closestMosqueLocationProvider.currentLocation?.timestamp.timeIntervalSince1970 ?? -1)
+        hasher.combine(closestMosqueLocationProvider.authorizationStatus.rawValue)
+        return hasher.finalize()
+    }
+
+    private func handleOnboardingLocationSignal() {
+        handleOnboardingLocationUpdate(closestMosqueLocationProvider.currentLocation)
+        handleOnboardingLocationAuthorizationDecision()
+    }
+
+    private func handleOnboardingLocationUpdate(_ location: CLLocation?) {
+        if let location,
+           onboarding.currentStep == .requestLocation || onboarding.currentStep == .chooseMosque {
+            onboarding.applyClosestMosqueIfNeeded(
+                from: model.mosques,
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude
+            )
+        }
+        if awaitingOnboardingLocationPermission,
+           onboarding.currentStep == .requestLocation,
+           closestMosqueLocationProvider.isAuthorized,
+           location != nil {
+            finishOnboardingLocationStep()
+        }
+        evaluateClosestMosquePromptCandidate()
+    }
+
+    private func handleOnboardingLocationAuthorizationDecision() {
+        guard awaitingOnboardingLocationPermission else { return }
+        guard onboarding.currentStep == .requestLocation else { return }
+        if !closestMosqueLocationProvider.isAuthorized {
+            finishOnboardingLocationStep()
+            return
+        }
+        if closestMosqueLocationProvider.currentLocation != nil {
+            finishOnboardingLocationStep()
+            return
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2.5))
+            guard awaitingOnboardingLocationPermission else { return }
+            guard onboarding.currentStep == .requestLocation else { return }
+            finishOnboardingLocationStep()
+        }
+    }
+
     private func evaluateClosestMosquePromptCandidate() {
         guard settings.hasCompletedOnboarding else { return }
         guard !onboarding.isActive else { return }
@@ -725,9 +790,7 @@ struct HomeView: View {
                 mosqueSlug: mosque.slug,
                 timeTheme: currentTheme,
                 model: model,
-                onDismiss: {
-                    onboarding.handleTimetableClosed()
-                }
+                onDismiss: nil
             )
             .environment(onboarding)
             .environment(\.locale, settings.resolvedLocale)
@@ -741,9 +804,7 @@ struct HomeView: View {
         SettingsView(
             model: settingsViewModel,
             timeTheme: currentTheme,
-            onDismiss: {
-                onboarding.handleSettingsClosed()
-            }
+            onDismiss: nil
         )
         .environment(onboarding)
         .environment(settings)
@@ -773,7 +834,6 @@ struct HomeView: View {
 
     private var settingsButton: some View {
         Button {
-            onboarding.handleSettingsOpened()
             showingSettings = true
         } label: {
             Image(systemName: "gearshape.fill")
@@ -783,13 +843,11 @@ struct HomeView: View {
                 .background(Circle().fill(Color.white.opacity(0.18)))
         }
         .buttonStyle(.hapticPlain)
-        .onboardingHighlight(onboarding.currentStep == .openSettings, timeTheme: currentTheme)
         .accessibilityLabel(Text(homeLS("accessibility.settings", locale: locale)))
     }
 
     private var calendarButton: some View {
         Button {
-            onboarding.handleTimetableOpened()
             showingTimetable = true
         } label: {
             Image(systemName: "calendar")
@@ -799,7 +857,6 @@ struct HomeView: View {
                 .background(Circle().fill(Color.white.opacity(0.18)))
         }
         .buttonStyle(.hapticPlain)
-        .onboardingHighlight(onboarding.currentStep == .openTimetable, timeTheme: currentTheme)
         .accessibilityLabel(Text(homeLS("accessibility.timetable", locale: locale)))
     }
 
@@ -816,6 +873,36 @@ struct HomeView: View {
                     onboarding.selectLanguage(language)
                 }
             )
+        case .requestLocation:
+            LocationPermissionOnboardingView(
+                timeTheme: currentTheme,
+                onAllow: {
+                    // Stay on this card until auth + (when possible) a location fix settle.
+                    awaitingOnboardingLocationPermission = true
+                    let prompted = closestMosqueLocationProvider.requestWhenInUseAuthorizationIfNeeded()
+                    if !prompted {
+                        if closestMosqueLocationProvider.isAuthorized {
+                            if closestMosqueLocationProvider.currentLocation != nil {
+                                finishOnboardingLocationStep()
+                            } else {
+                                // Already authorized: wait briefly for requestLocation().
+                                Task { @MainActor in
+                                    try? await Task.sleep(for: .seconds(2.5))
+                                    guard awaitingOnboardingLocationPermission else { return }
+                                    guard onboarding.currentStep == .requestLocation else { return }
+                                    finishOnboardingLocationStep()
+                                }
+                            }
+                        } else {
+                            finishOnboardingLocationStep()
+                        }
+                    }
+                },
+                onSkip: {
+                    awaitingOnboardingLocationPermission = false
+                    onboarding.continueAfterLocationStep()
+                }
+            )
         case .chooseMosque:
             MosqueSelectionOnboardingView(
                 mosques: model.mosques,
@@ -829,88 +916,15 @@ struct HomeView: View {
                     Task { await onboarding.selectMosque(mosque) }
                 }
             )
-        case .prayerShortcut:
-            ZStack(alignment: .bottom) {
-                OnboardingCoachMarkView(
-                    title: homeLS("onboarding.shortcut.title", locale: locale),
-                    message: homeLS("onboarding.shortcut.message_format", locale: locale),
-                    timeTheme: currentTheme,
-                    variant: .aboveShortcutRow
-                )
-                .allowsHitTesting(false)
-
-                Button {
-                    onboarding.skipToTutorialEnd()
-                } label: {
-                    Text("Skip tutorial")
-                        .appFont(size: 15, weight: .semibold)
-                        .foregroundColor(currentAppearance.textColor.opacity(0.7))
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 28)
-                        .background(
-                            Capsule()
-                                .strokeBorder(currentAppearance.textColor.opacity(0.25), lineWidth: 1)
-                        )
+            .onAppear {
+                if let location = closestMosqueLocationProvider.currentLocation {
+                    onboarding.applyClosestMosqueIfNeeded(
+                        from: model.mosques,
+                        latitude: location.coordinate.latitude,
+                        longitude: location.coordinate.longitude
+                    )
                 }
-                .buttonStyle(.hapticPlain)
-                .accessibilityIdentifier("Onboarding.SkipTutorial")
-                .padding(.bottom, 32)
             }
-        case .qiblaCountdown:
-            OnboardingCoachMarkView(
-                title: homeLS("onboarding.qibla_countdown.title", locale: locale),
-                message: homeLS("onboarding.qibla_countdown.message", locale: locale),
-                timeTheme: currentTheme,
-                variant: .belowQiblaIconLower,
-                primaryButtonTitle: homeLS("onboarding.continue", locale: locale),
-                onPrimaryButton: {
-                    onboarding.completeQiblaCountdownStep()
-                },
-                primaryButtonAccessibilityIdentifier: "Onboarding.QiblaCountdownContinue",
-                blocksBackgroundInteractions: false
-            )
-        case .qibla:
-            OnboardingCoachMarkView(
-                title: homeLS("onboarding.qibla.title", locale: locale),
-                message: homeLS("onboarding.qibla.message", locale: locale),
-                timeTheme: currentTheme,
-                variant: .belowQiblaIconLower,
-                primaryButtonTitle: homeLS("onboarding.qibla.allow_location", locale: locale),
-                onPrimaryButton: {
-                    qiblaDirectionProvider.requestWhenInUseAuthorizationIfNeeded()
-                    onboarding.completeQiblaOnboardingAllowingLocationRequest()
-                },
-                primaryButtonAccessibilityIdentifier: "Onboarding.QiblaAllow",
-                secondaryButtonTitle: homeLS("onboarding.qibla.later", locale: locale),
-                onSecondaryButton: {
-                    onboarding.completeQiblaOnboardingDeferringLocation()
-                },
-                secondaryButtonAccessibilityIdentifier: "Onboarding.QiblaLater"
-            )
-        case .openTimetable:
-            OnboardingCoachMarkView(
-                title: homeLS("onboarding.timetable.title", locale: locale),
-                message: homeLS("onboarding.timetable.message", locale: locale),
-                timeTheme: currentTheme,
-                variant: .belowTopChrome
-            )
-            .allowsHitTesting(false)
-        case .exploreTimetable:
-            EmptyView()
-        case .closeTimetable:
-            EmptyView()
-        case .openSettings:
-            OnboardingCoachMarkView(
-                title: homeLS("onboarding.settings.title", locale: locale),
-                message: homeLS("onboarding.settings.message", locale: locale),
-                timeTheme: currentTheme,
-                variant: .belowTopChrome
-            )
-            .allowsHitTesting(false)
-        case .exploreSettings:
-            EmptyView()
-        case .closeSettings:
-            EmptyView()
         case .notifications:
             OnboardingNotificationSetupView(
                 timeTheme: currentTheme,
@@ -928,10 +942,6 @@ struct HomeView: View {
         }
     }
 
-    private var highlightedPrayerShortcutIndex: Int? {
-        guard case .prayerShortcut(let index) = onboarding.currentStep else { return nil }
-        return index
-    }
 
     private func shortcutLetter(for index: Int) -> String {
         let letters = ["F", "S", "D", "A", "M", "I"]

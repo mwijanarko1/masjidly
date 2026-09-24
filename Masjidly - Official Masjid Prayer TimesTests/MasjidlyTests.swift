@@ -362,7 +362,7 @@ struct OnboardingFlowControllerTests {
         #expect(harness.controller.isActive == false)
     }
 
-    @Test func choosingLanguagePersistsSelectionAndAdvancesToMosqueSelection() {
+    @Test func choosingLanguagePersistsSelectionAndAdvancesToLocationStep() {
         let harness = OnboardingHarness()
         harness.controller.currentStep = .chooseLanguage
 
@@ -370,125 +370,77 @@ struct OnboardingFlowControllerTests {
 
         #expect(harness.settings.appLanguage == .urdu)
         #expect(harness.controller.selectedLanguage == .urdu)
+        #expect(harness.controller.currentStep == .requestLocation)
+    }
+
+    @Test func continuingAfterLocationStepAdvancesToMosqueSelection() {
+        let harness = OnboardingHarness()
+        harness.controller.currentStep = .requestLocation
+
+        harness.controller.continueAfterLocationStep()
+
         #expect(harness.controller.currentStep == .chooseMosque)
     }
 
-    @Test func choosingMosquePersistsSelectionAndStartsPrayerShortcuts() async {
+    @Test func choosingMosquePersistsSelectionAndAdvancesToNotifications() async {
         let harness = OnboardingHarness()
         harness.settings.hasCompletedOnboarding = false
         harness.homeViewModel.mosques = harness.mosques
         harness.settingsViewModel.mosques = harness.mosques
         harness.controller.startIfNeeded()
+        harness.controller.selectLanguage(.english)
+        harness.controller.continueAfterLocationStep()
 
         await harness.controller.selectMosque(harness.mosques[1])
 
         #expect(harness.settings.selectedMosqueId == "b")
         #expect(harness.settings.selectedMosqueSlug == "mosque-b")
-        #expect(harness.controller.currentStep == .prayerShortcut(index: 0))
+        #expect(harness.settings.hasCompletedOnboarding == false)
+        #expect(harness.controller.currentStep == .notifications)
         #expect(harness.controller.isSelectingMosque == false)
     }
 
-    @Test func choosingMosqueIsIgnoredOutsideSelectionStep() async {
+    @Test func completingNotificationSetupAppliesDraftAndFinishesOnboarding() async {
         let harness = OnboardingHarness()
-        harness.settings.selectedMosqueId = "a"
-        harness.controller.currentStep = .prayerShortcut(index: 0)
-
-        await harness.controller.selectMosque(harness.mosques[1])
-
-        #expect(harness.settings.selectedMosqueId == "a")
-        #expect(harness.controller.currentStep == .prayerShortcut(index: 0))
-    }
-
-    @Test func prayerShortcutStepOnlyRequiresOneShortcutTap() {
-        let harness = OnboardingHarness()
-        harness.controller.currentStep = .prayerShortcut(index: 0)
-
-        harness.controller.handlePrayerShortcutTap(index: 3)
-        #expect(harness.controller.currentStep == .qiblaCountdown)
-    }
-
-    @Test func qiblaDeferPathSetsHideCompassFlag() {
-        let harness = OnboardingHarness()
-        harness.controller.currentStep = .qibla
-        #expect(harness.settings.hideQiblaCompass == false)
-
-        harness.controller.completeQiblaOnboardingDeferringLocation()
-        #expect(harness.controller.currentStep == .openTimetable)
-        #expect(harness.settings.hideQiblaCompass == true)
-    }
-
-    @Test func completeQiblaOnboardingAllowingLocationRequestDoesNotSetHideCompass() {
-        let harness = OnboardingHarness()
-        harness.controller.currentStep = .qibla
-
-        harness.controller.completeQiblaOnboardingAllowingLocationRequest()
-        #expect(harness.controller.currentStep == .openTimetable)
-        #expect(harness.settings.hideQiblaCompass == false)
-    }
-
-    @Test func guidedSurfaceStepsAdvanceInOrder() {
-        let harness = OnboardingHarness()
-        harness.controller.currentStep = .prayerShortcut(index: 0)
-
-        harness.controller.handlePrayerShortcutTap(index: 0)
-        #expect(harness.controller.currentStep == .qiblaCountdown)
-
-        harness.controller.completeQiblaCountdownStep()
-        #expect(harness.controller.currentStep == .qibla)
-
-        harness.controller.completeQiblaOnboardingAllowingLocationRequest()
-        #expect(harness.controller.currentStep == .openTimetable)
-
-        harness.controller.handleTimetableOpened()
-        #expect(harness.controller.currentStep == .exploreTimetable)
-
-        harness.controller.acknowledgeTimetableExplore()
-        #expect(harness.controller.currentStep == .closeTimetable)
-
-        harness.controller.handleTimetableClosed()
-        #expect(harness.controller.currentStep == .openSettings)
-
-        harness.controller.handleSettingsOpened()
-        #expect(harness.controller.currentStep == .exploreSettings)
-
-        harness.controller.acknowledgeSettingsExplore()
-        #expect(harness.controller.currentStep == .closeSettings)
-
-        harness.controller.handleSettingsClosed()
-        #expect(harness.controller.currentStep == .notifications)
-    }
-
-    @Test func completingNotificationSetupSavesSettingsRequestsAuthorizationAndCompletes() async {
-        let harness = OnboardingHarness()
-        harness.homeViewModel.selectedMosque = harness.mosques[0]
+        harness.settings.hasCompletedOnboarding = false
+        harness.homeViewModel.mosques = harness.mosques
+        harness.homeViewModel.selectedMosque = harness.mosques[1]
+        harness.settingsViewModel.mosques = harness.mosques
         harness.controller.currentStep = .notifications
-        harness.controller.notificationDraft = OnboardingNotificationDraft(
-            adhanEnabled: true,
-            iqamahEnabled: false,
-            preAdhanReminderMinutes: 10
-        )
+        harness.controller.notificationDraft = .defaultEnabled
 
         await harness.controller.completeNotificationSetup()
 
         #expect(harness.settings.hasCompletedOnboarding == true)
         #expect(harness.settings.notifications.masterEnabled == true)
         #expect(harness.settings.notifications.adhanEnabled == true)
-        #expect(harness.settings.notifications.iqamahEnabled == false)
+        #expect(harness.settings.notifications.iqamahEnabled == true)
         #expect(harness.settings.notifications.preAdhanReminderMinutes == 10)
+        #expect(harness.settings.notifications.preIqamahReminderMinutes == 10)
         #expect(harness.scheduler.authorizationRequestCount == 1)
         #expect(harness.scheduler.rescheduleCount == 1)
         #expect(harness.controller.currentStep == nil)
     }
 
-    @Test func restartTutorialResetsHideQiblaCompass() {
+    @Test func choosingMosqueIsIgnoredOutsideSelectionStep() async {
+        let harness = OnboardingHarness()
+        harness.settings.selectedMosqueId = "a"
+        harness.controller.currentStep = .chooseLanguage
+
+        await harness.controller.selectMosque(harness.mosques[1])
+
+        #expect(harness.settings.selectedMosqueId == "a")
+        #expect(harness.controller.currentStep == .chooseLanguage)
+        #expect(harness.settings.hasCompletedOnboarding == false)
+    }
+
+    @Test func restartTutorialResetsOnboardingFlag() {
         let harness = OnboardingHarness()
         harness.settings.hasCompletedOnboarding = true
-        harness.settings.hideQiblaCompass = true
 
         harness.controller.restartTutorialFromDeveloperTools()
 
         #expect(harness.settings.hasCompletedOnboarding == false)
-        #expect(harness.settings.hideQiblaCompass == false)
         #expect(harness.controller.currentStep == .chooseLanguage)
     }
 }

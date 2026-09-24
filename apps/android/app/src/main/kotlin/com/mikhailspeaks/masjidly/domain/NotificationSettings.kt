@@ -8,8 +8,8 @@ data class NotificationSettings(
     var masterEnabled: Boolean = false,
     var adhanEnabled: Boolean = true,
     var iqamahEnabled: Boolean = true,
-    var preAdhanReminderMinutes: Int? = null,
-    var preIqamahReminderMinutes: Int? = null,
+    var preAdhanReminderMinutes: Int? = 10,
+    var preIqamahReminderMinutes: Int? = 10,
     var adhanFajr: Boolean = true,
     var adhanDhuhrJummah: Boolean = true,
     var adhanAsr: Boolean = true,
@@ -20,7 +20,18 @@ data class NotificationSettings(
     var iqamahAsr: Boolean = true,
     var iqamahMaghrib: Boolean = true,
     var iqamahIsha: Boolean = true,
-)
+) {
+    companion object {
+        /** Fresh-install / onboarding defaults: all adhan + iqamah, 10 min pre-reminders. */
+        val defaultEnabled = NotificationSettings(
+            masterEnabled = true,
+            adhanEnabled = true,
+            iqamahEnabled = true,
+            preAdhanReminderMinutes = 10,
+            preIqamahReminderMinutes = 10,
+        )
+    }
+}
 
 enum class AdhanPrayerToggle(val label: String) {
     FAJR("Fajr"),

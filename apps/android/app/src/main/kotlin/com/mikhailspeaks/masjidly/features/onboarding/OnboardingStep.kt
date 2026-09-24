@@ -1,18 +1,12 @@
 package com.mikhailspeaks.masjidly.features.onboarding
 
+import com.mikhailspeaks.masjidly.domain.NotificationSettings
+
 /** Mirrors iOS `OnboardingStep.swift`. */
 sealed class OnboardingStep {
     data object ChooseLanguage : OnboardingStep()
+    data object RequestLocation : OnboardingStep()
     data object ChooseMosque : OnboardingStep()
-    data class PrayerShortcut(val index: Int) : OnboardingStep()
-    data object QiblaCountdown : OnboardingStep()
-    data object Qibla : OnboardingStep()
-    data object OpenTimetable : OnboardingStep()
-    data object ExploreTimetable : OnboardingStep()
-    data object CloseTimetable : OnboardingStep()
-    data object OpenSettings : OnboardingStep()
-    data object ExploreSettings : OnboardingStep()
-    data object CloseSettings : OnboardingStep()
     data object Notifications : OnboardingStep()
 }
 
@@ -20,8 +14,8 @@ sealed class OnboardingStep {
 data class OnboardingNotificationDraft(
     var adhanEnabled: Boolean = true,
     var iqamahEnabled: Boolean = true,
-    var preAdhanReminderMinutes: Int? = null,
-    var preIqamahReminderMinutes: Int? = null,
+    var preAdhanReminderMinutes: Int? = 10,
+    var preIqamahReminderMinutes: Int? = 10,
     var fajr: Boolean = true,
     var dhuhrJummah: Boolean = true,
     var asr: Boolean = true,
@@ -39,12 +33,17 @@ data class OnboardingNotificationDraft(
     var iqamahIsha: Boolean = true,
 ) {
     companion object {
-        fun fromSettings(settings: com.mikhailspeaks.masjidly.domain.NotificationSettings): OnboardingNotificationDraft =
+        fun fromSettings(settings: NotificationSettings): OnboardingNotificationDraft =
             OnboardingNotificationDraft(
                 adhanEnabled = settings.adhanEnabled,
                 iqamahEnabled = settings.iqamahEnabled,
                 preAdhanReminderMinutes = settings.preAdhanReminderMinutes,
                 preIqamahReminderMinutes = settings.preIqamahReminderMinutes,
+                fajr = settings.fajr,
+                dhuhrJummah = settings.dhuhrJummah,
+                asr = settings.asr,
+                maghrib = settings.maghrib,
+                isha = settings.isha,
                 adhanFajr = settings.adhanFajr,
                 adhanDhuhrJummah = settings.adhanDhuhrJummah,
                 adhanAsr = settings.adhanAsr,
@@ -56,5 +55,9 @@ data class OnboardingNotificationDraft(
                 iqamahMaghrib = settings.iqamahMaghrib,
                 iqamahIsha = settings.iqamahIsha,
             )
+
+        /** Onboarding starts from the same defaults as a fresh install. */
+        val defaultEnabled: OnboardingNotificationDraft
+            get() = fromSettings(NotificationSettings.defaultEnabled)
     }
 }

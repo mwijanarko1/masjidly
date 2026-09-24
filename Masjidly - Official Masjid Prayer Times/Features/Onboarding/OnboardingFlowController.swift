@@ -12,7 +12,7 @@ final class OnboardingFlowController {
     var currentStep: OnboardingStep?
     var selectedLanguage: AppLanguage
     var selectedMosqueId = ""
-    var notificationDraft = OnboardingNotificationDraft()
+    var notificationDraft = OnboardingNotificationDraft.defaultEnabled
     var isSelectingMosque = false
     var isCompletingNotifications = false
 
@@ -31,28 +31,9 @@ final class OnboardingFlowController {
         self.settingsViewModel = settingsViewModel
         self.notificationScheduler = notificationScheduler
         selectedLanguage = settings.appLanguage
-        selectedMosqueId = settings.selectedMosqueId ?? ""
-        notificationDraft = OnboardingNotificationDraft(
-            adhanEnabled: settings.notifications.adhanEnabled,
-            iqamahEnabled: settings.notifications.iqamahEnabled,
-            preAdhanReminderMinutes: settings.notifications.preAdhanReminderMinutes,
-            preIqamahReminderMinutes: settings.notifications.preIqamahReminderMinutes,
-            fajr: settings.notifications.fajr,
-            dhuhrJummah: settings.notifications.dhuhrJummah,
-            asr: settings.notifications.asr,
-            maghrib: settings.notifications.maghrib,
-            isha: settings.notifications.isha,
-            adhanFajr: settings.notifications.adhanFajr,
-            adhanDhuhrJummah: settings.notifications.adhanDhuhrJummah,
-            adhanAsr: settings.notifications.adhanAsr,
-            adhanMaghrib: settings.notifications.adhanMaghrib,
-            adhanIsha: settings.notifications.adhanIsha,
-            iqamahFajr: settings.notifications.iqamahFajr,
-            iqamahDhuhrJummah: settings.notifications.iqamahDhuhrJummah,
-            iqamahAsr: settings.notifications.iqamahAsr,
-            iqamahMaghrib: settings.notifications.iqamahMaghrib,
-            iqamahIsha: settings.notifications.iqamahIsha
-        )
+        // Do not seed from settings: load may have resolved the default MWHS slug.
+        selectedMosqueId = ""
+        notificationDraft = .defaultEnabled
     }
 
     func startIfNeeded() {
@@ -64,9 +45,9 @@ final class OnboardingFlowController {
             currentStep = nil
             return
         }
-        if selectedMosqueId.isEmpty {
-            selectedMosqueId = settings.selectedMosqueId ?? homeViewModel.mosques.first?.id ?? settingsViewModel.mosques.first?.id ?? ""
-        }
+        // Fresh onboarding always starts without a mosque so location can prefill closest.
+        selectedMosqueId = ""
+        notificationDraft = .defaultEnabled
         currentStep = .chooseLanguage
     }
 
@@ -74,7 +55,25 @@ final class OnboardingFlowController {
         guard currentStep == .chooseLanguage else { return }
         selectedLanguage = language
         settings.appLanguage = language
+        currentStep = .requestLocation
+    }
+
+    func continueAfterLocationStep() {
+        guard currentStep == .requestLocation else { return }
         currentStep = .chooseMosque
+    }
+
+    /// Prefills the closest mosque once when the user has not chosen one yet.
+    /// Allowed on the location step (before advancing) and the mosque step.
+    func applyClosestMosqueIfNeeded(from mosques: [Mosque], latitude: Double, longitude: Double) {
+        guard selectedMosqueId.isEmpty else { return }
+        guard currentStep == .requestLocation || currentStep == .chooseMosque else { return }
+        guard let closest = ClosestMosquePromptDecision.closestMosque(
+            in: mosques,
+            userLatitude: latitude,
+            userLongitude: longitude
+        ) else { return }
+        selectedMosqueId = closest.id
     }
 
     func selectMosque(_ mosque: Mosque) async {
@@ -97,63 +96,7 @@ final class OnboardingFlowController {
         } catch {
             homeViewModel.lastError = error.localizedDescription
         }
-        currentStep = .prayerShortcut(index: 0)
-    }
 
-    func handlePrayerShortcutTap(index: Int) {
-        guard case .prayerShortcut(let expectedIndex) = currentStep,
-              expectedIndex == 0,
-              (0...5).contains(index) else { return }
-        currentStep = .qiblaCountdown
-    }
-
-    func skipToTutorialEnd() {
-        currentStep = .notifications
-    }
-
-    func completeQiblaCountdownStep() {
-        guard currentStep == .qiblaCountdown else { return }
-        currentStep = .qibla
-    }
-
-    func completeQiblaOnboardingAllowingLocationRequest() {
-        guard currentStep == .qibla else { return }
-        currentStep = .openTimetable
-    }
-
-    func completeQiblaOnboardingDeferringLocation() {
-        guard currentStep == .qibla else { return }
-        settings.hideQiblaCompass = true
-        currentStep = .openTimetable
-    }
-
-    func handleTimetableOpened() {
-        guard currentStep == .openTimetable else { return }
-        currentStep = .exploreTimetable
-    }
-
-    func acknowledgeTimetableExplore() {
-        guard currentStep == .exploreTimetable else { return }
-        currentStep = .closeTimetable
-    }
-
-    func handleTimetableClosed() {
-        guard currentStep == .closeTimetable else { return }
-        currentStep = .openSettings
-    }
-
-    func handleSettingsOpened() {
-        guard currentStep == .openSettings else { return }
-        currentStep = .exploreSettings
-    }
-
-    func acknowledgeSettingsExplore() {
-        guard currentStep == .exploreSettings else { return }
-        currentStep = .closeSettings
-    }
-
-    func handleSettingsClosed() {
-        guard currentStep == .closeSettings else { return }
         currentStep = .notifications
     }
 
@@ -162,20 +105,34 @@ final class OnboardingFlowController {
         isCompletingNotifications = true
         defer { isCompletingNotifications = false }
 
+        let draft = notificationDraft
         var next = settings.notifications
-        next.adhanEnabled = notificationDraft.adhanEnabled
-        next.iqamahEnabled = notificationDraft.iqamahEnabled
-        next.preAdhanReminderMinutes = notificationDraft.preAdhanReminderMinutes
-        next.preIqamahReminderMinutes = notificationDraft.preIqamahReminderMinutes
-        next.fajr = notificationDraft.fajr
-        next.dhuhrJummah = notificationDraft.dhuhrJummah
-        next.asr = notificationDraft.asr
-        next.maghrib = notificationDraft.maghrib
-        next.isha = notificationDraft.isha
-        next.masterEnabled = notificationDraft.adhanEnabled || 
-                            notificationDraft.iqamahEnabled || 
-                            notificationDraft.preAdhanReminderMinutes != nil ||
-                            notificationDraft.preIqamahReminderMinutes != nil
+        next.adhanEnabled = draft.adhanEnabled
+        next.iqamahEnabled = draft.iqamahEnabled
+        next.preAdhanReminderMinutes = draft.preAdhanReminderMinutes
+        next.preIqamahReminderMinutes = draft.preIqamahReminderMinutes
+        next.fajr = draft.fajr
+        next.dhuhrJummah = draft.dhuhrJummah
+        next.asr = draft.asr
+        next.maghrib = draft.maghrib
+        next.isha = draft.isha
+        next.adhanFajr = draft.adhanFajr
+        next.adhanDhuhrJummah = draft.adhanDhuhrJummah
+        next.adhanAsr = draft.adhanAsr
+        next.adhanMaghrib = draft.adhanMaghrib
+        next.adhanIsha = draft.adhanIsha
+        next.iqamahFajr = draft.iqamahFajr
+        next.iqamahDhuhrJummah = draft.iqamahDhuhrJummah
+        next.iqamahAsr = draft.iqamahAsr
+        next.iqamahMaghrib = draft.iqamahMaghrib
+        next.iqamahIsha = draft.iqamahIsha
+        next.masterEnabled =
+            draft.adhanEnabled
+            || draft.iqamahEnabled
+            || draft.preAdhanReminderMinutes != nil
+            || draft.preIqamahReminderMinutes != nil
+            || draft.adhanFajr || draft.adhanDhuhrJummah || draft.adhanAsr || draft.adhanMaghrib || draft.adhanIsha
+            || draft.iqamahFajr || draft.iqamahDhuhrJummah || draft.iqamahAsr || draft.iqamahMaghrib || draft.iqamahIsha
         settings.notifications = next
 
         if next.masterEnabled {
@@ -201,34 +158,11 @@ final class OnboardingFlowController {
 
 #if DEBUG
 extension OnboardingFlowController {
-    /// Resets onboarding state so the full tutorial overlay can be exercised again from the home screen.
+    /// Resets onboarding so language + location + mosque + notifications can be exercised again.
     func restartTutorialFromDeveloperTools() {
         settings.hasCompletedOnboarding = false
-        settings.hideQiblaCompass = false
-        if selectedMosqueId.isEmpty {
-            selectedMosqueId = settings.selectedMosqueId ?? homeViewModel.mosques.first?.id ?? settingsViewModel.mosques.first?.id ?? ""
-        }
-        notificationDraft = OnboardingNotificationDraft(
-            adhanEnabled: settings.notifications.adhanEnabled,
-            iqamahEnabled: settings.notifications.iqamahEnabled,
-            preAdhanReminderMinutes: settings.notifications.preAdhanReminderMinutes,
-            preIqamahReminderMinutes: settings.notifications.preIqamahReminderMinutes,
-            fajr: settings.notifications.fajr,
-            dhuhrJummah: settings.notifications.dhuhrJummah,
-            asr: settings.notifications.asr,
-            maghrib: settings.notifications.maghrib,
-            isha: settings.notifications.isha,
-            adhanFajr: settings.notifications.adhanFajr,
-            adhanDhuhrJummah: settings.notifications.adhanDhuhrJummah,
-            adhanAsr: settings.notifications.adhanAsr,
-            adhanMaghrib: settings.notifications.adhanMaghrib,
-            adhanIsha: settings.notifications.adhanIsha,
-            iqamahFajr: settings.notifications.iqamahFajr,
-            iqamahDhuhrJummah: settings.notifications.iqamahDhuhrJummah,
-            iqamahAsr: settings.notifications.iqamahAsr,
-            iqamahMaghrib: settings.notifications.iqamahMaghrib,
-            iqamahIsha: settings.notifications.iqamahIsha
-        )
+        selectedMosqueId = ""
+        notificationDraft = .defaultEnabled
         selectedLanguage = settings.appLanguage
         currentStep = .chooseLanguage
     }

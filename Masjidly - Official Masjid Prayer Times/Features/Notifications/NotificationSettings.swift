@@ -1,11 +1,20 @@
 import Foundation
 
 struct NotificationSettings: Codable, Equatable, Sendable {
+    /// Fresh-install / onboarding defaults: all adhan + iqamah, 10 min pre-reminders.
+    static let defaultEnabled = NotificationSettings(
+        masterEnabled: true,
+        adhanEnabled: true,
+        iqamahEnabled: true,
+        preAdhanReminderMinutes: 10,
+        preIqamahReminderMinutes: 10
+    )
+
     var masterEnabled: Bool = false
     var adhanEnabled: Bool = true
     var iqamahEnabled: Bool = true
-    var preAdhanReminderMinutes: Int? = nil
-    var preIqamahReminderMinutes: Int? = nil
+    var preAdhanReminderMinutes: Int? = 10
+    var preIqamahReminderMinutes: Int? = 10
     // Legacy single per-prayer flags (used for both adhan + iqamah before v1.1.2)
     var fajr: Bool = true
     var dhuhrJummah: Bool = true
@@ -51,8 +60,8 @@ struct NotificationSettings: Codable, Equatable, Sendable {
         masterEnabled: Bool = false,
         adhanEnabled: Bool = true,
         iqamahEnabled: Bool = true,
-        preAdhanReminderMinutes: Int? = nil,
-        preIqamahReminderMinutes: Int? = nil,
+        preAdhanReminderMinutes: Int? = 10,
+        preIqamahReminderMinutes: Int? = 10,
         fajr: Bool = true,
         dhuhrJummah: Bool = true,
         asr: Bool = true,

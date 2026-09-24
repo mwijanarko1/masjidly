@@ -230,10 +230,14 @@ class HomeViewModel(
                 return
             }
 
-            settings.selectedMosqueId = mosque.id
-            settings.selectedMosqueSlug = mosque.slug
-            settings.selectedCityGroupingKey = mosque.cityGroupingKey
-            settings.selectedCountryGroupingKey = MosqueSelection.countryGroupingKey(mosque)
+            // Only persist a resolved mosque once the user has finished onboarding.
+            // Writing the default (MWHS) here blocked closest-mosque prefill.
+            if (settings.hasCompletedOnboarding) {
+                settings.selectedMosqueId = mosque.id
+                settings.selectedMosqueSlug = mosque.slug
+                settings.selectedCityGroupingKey = mosque.cityGroupingKey
+                settings.selectedCountryGroupingKey = MosqueSelection.countryGroupingKey(mosque)
+            }
 
             _uiState.update { it.copy(mosques = visible, selectedMosque = mosque) }
             refreshPrayerPayload(mosque, checkVersions = !revisionUnchanged)

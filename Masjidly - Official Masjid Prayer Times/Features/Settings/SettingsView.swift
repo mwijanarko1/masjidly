@@ -350,31 +350,7 @@ struct SettingsView: View {
                 closestMosqueLocationProvider.start()
             }
         }
-        .overlay {
-            Group {
-                if onboarding.currentStep == .exploreSettings {
-                    OnboardingCoachMarkView(
-                        title: localized("onboarding.explore_settings.title"),
-                        message: localized("onboarding.explore_settings.message"),
-                        timeTheme: timeTheme,
-                        appearance: currentAppearance,
-                        variant: .floatingBottom,
-                        primaryButtonTitle: localized("onboarding.continue"),
-                        onPrimaryButton: { onboarding.acknowledgeSettingsExplore() },
-                        primaryButtonAccessibilityIdentifier: "Onboarding.SettingsExploreContinue"
-                    )
-                } else if onboarding.currentStep == .closeSettings {
-                    OnboardingCoachMarkView(
-                        title: localized("onboarding.close_settings.title"),
-                        message: localized("onboarding.close_settings.message"),
-                        timeTheme: timeTheme,
-                        appearance: currentAppearance,
-                        variant: .belowTopChrome
-                    )
-                    .allowsHitTesting(false)
-                }
-            }
-        }
+
     }
 
     private func localized(_ key: String) -> String {
@@ -400,8 +376,7 @@ struct SettingsView: View {
                     .background(Circle().fill(currentAppearance.textColor.opacity(0.1)))
             }
             .buttonStyle(.plain)
-            .onboardingHighlight(onboarding.currentStep == .closeSettings, appearance: currentAppearance)
-            .accessibilityIdentifier("Onboarding.SettingsClose")
+                        .accessibilityIdentifier("Onboarding.SettingsClose")
         }
         .padding(.bottom, 4)
     }

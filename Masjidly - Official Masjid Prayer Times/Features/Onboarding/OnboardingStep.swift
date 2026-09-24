@@ -2,24 +2,16 @@ import Foundation
 
 enum OnboardingStep: Equatable, Sendable {
     case chooseLanguage
+    case requestLocation
     case chooseMosque
-    case prayerShortcut(index: Int)
-    case qiblaCountdown
-    case qibla
-    case openTimetable
-    case exploreTimetable
-    case closeTimetable
-    case openSettings
-    case exploreSettings
-    case closeSettings
     case notifications
 }
 
 struct OnboardingNotificationDraft: Equatable, Sendable {
     var adhanEnabled: Bool = true
     var iqamahEnabled: Bool = true
-    var preAdhanReminderMinutes: Int? = nil
-    var preIqamahReminderMinutes: Int? = nil
+    var preAdhanReminderMinutes: Int? = 10
+    var preIqamahReminderMinutes: Int? = 10
     var fajr: Bool = true
     var dhuhrJummah: Bool = true
     var asr: Bool = true
@@ -40,8 +32,8 @@ struct OnboardingNotificationDraft: Equatable, Sendable {
     init(
         adhanEnabled: Bool = true,
         iqamahEnabled: Bool = true,
-        preAdhanReminderMinutes: Int? = nil,
-        preIqamahReminderMinutes: Int? = nil,
+        preAdhanReminderMinutes: Int? = 10,
+        preIqamahReminderMinutes: Int? = 10,
         fajr: Bool = true,
         dhuhrJummah: Bool = true,
         asr: Bool = true,
@@ -78,4 +70,31 @@ struct OnboardingNotificationDraft: Equatable, Sendable {
         self.iqamahMaghrib = iqamahMaghrib
         self.iqamahIsha = iqamahIsha
     }
+
+    static func from(_ settings: NotificationSettings) -> OnboardingNotificationDraft {
+        OnboardingNotificationDraft(
+            adhanEnabled: settings.adhanEnabled,
+            iqamahEnabled: settings.iqamahEnabled,
+            preAdhanReminderMinutes: settings.preAdhanReminderMinutes,
+            preIqamahReminderMinutes: settings.preIqamahReminderMinutes,
+            fajr: settings.fajr,
+            dhuhrJummah: settings.dhuhrJummah,
+            asr: settings.asr,
+            maghrib: settings.maghrib,
+            isha: settings.isha,
+            adhanFajr: settings.adhanFajr,
+            adhanDhuhrJummah: settings.adhanDhuhrJummah,
+            adhanAsr: settings.adhanAsr,
+            adhanMaghrib: settings.adhanMaghrib,
+            adhanIsha: settings.adhanIsha,
+            iqamahFajr: settings.iqamahFajr,
+            iqamahDhuhrJummah: settings.iqamahDhuhrJummah,
+            iqamahAsr: settings.iqamahAsr,
+            iqamahMaghrib: settings.iqamahMaghrib,
+            iqamahIsha: settings.iqamahIsha
+        )
+    }
+
+    /// Onboarding starts from the same defaults as a fresh install.
+    static let defaultEnabled = OnboardingNotificationDraft.from(.defaultEnabled)
 }

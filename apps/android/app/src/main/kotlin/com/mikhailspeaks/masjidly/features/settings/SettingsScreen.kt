@@ -89,7 +89,6 @@ import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingStep
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermissions
-import com.mikhailspeaks.masjidly.features.onboarding.SettingsOnboardingOverlay
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.home.SkyGradientSet
 import com.mikhailspeaks.masjidly.ui.home.ThemeMode
@@ -282,7 +281,7 @@ fun SettingsScreen(
                     modifier = Modifier.weight(1f),
                 )
                 OnboardingHighlight(
-                    highlighted = onboardingState.currentStep == OnboardingStep.CloseSettings,
+                    highlighted = false,
                     theme = theme,
                     shape = CircleShape,
                 ) {
@@ -611,15 +610,6 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
-        }
-
-        onboardingState.currentStep?.let { step ->
-            SettingsOnboardingOverlay(
-                step = step,
-                theme = theme,
-                language = settingsStore.appLanguage,
-                onboarding = onboardingViewModel,
-            )
         }
     }
 }

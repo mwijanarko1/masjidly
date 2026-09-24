@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mikhailspeaks.masjidly.data.SettingsStore
 import com.mikhailspeaks.masjidly.domain.AppLanguage
+import com.mikhailspeaks.masjidly.domain.ClosestMosquePromptDecision
 import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.MosqueSelection
 import com.mikhailspeaks.masjidly.features.home.HomeViewModel
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Android counterpart to iOS `OnboardingFlowController.swift`.
+ * Language → location → mosque → notifications, then done.
  */
 class OnboardingFlowViewModel(
     private val settings: SettingsStore,
@@ -28,7 +30,7 @@ class OnboardingFlowViewModel(
         val currentStep: OnboardingStep? = null,
         val selectedLanguage: AppLanguage = AppLanguage.ENGLISH,
         val selectedMosqueId: String = "",
-        val notificationDraft: OnboardingNotificationDraft = OnboardingNotificationDraft(),
+        val notificationDraft: OnboardingNotificationDraft = OnboardingNotificationDraft.defaultEnabled,
         val isSelectingMosque: Boolean = false,
         val isCompletingNotifications: Boolean = false,
     ) {
@@ -42,8 +44,9 @@ class OnboardingFlowViewModel(
         _uiState.update {
             it.copy(
                 selectedLanguage = settings.appLanguage,
-                selectedMosqueId = settings.selectedMosqueId.orEmpty(),
-                notificationDraft = OnboardingNotificationDraft.fromSettings(settings.notifications),
+                // Do not seed from settings: load may have resolved the default MWHS slug.
+                selectedMosqueId = "",
+                notificationDraft = OnboardingNotificationDraft.defaultEnabled,
             )
         }
     }
@@ -58,21 +61,18 @@ class OnboardingFlowViewModel(
         if (mosques.isEmpty()) {
             return
         }
-        // Do not restart mid-flow — settings changes (e.g. language) bump revision and
+        // Do not restart mid-flow: settings changes (e.g. language) bump revision and
         // would otherwise trap the user on step 1 forever.
         if (_uiState.value.currentStep != null) {
             return
         }
-        val selectedId = _uiState.value.selectedMosqueId.ifEmpty {
-            settings.selectedMosqueId
-                ?: mosques.firstOrNull()?.id
-                .orEmpty()
-        }
+        // Fresh onboarding always starts without a mosque so location can prefill closest.
         _uiState.update {
             it.copy(
-                selectedMosqueId = selectedId,
-                notificationDraft = OnboardingNotificationDraft.fromSettings(settings.notifications),
+                selectedMosqueId = "",
+                notificationDraft = OnboardingNotificationDraft.defaultEnabled,
                 isSelectingMosque = false,
+                isCompletingNotifications = false,
                 currentStep = OnboardingStep.ChooseLanguage,
             )
         }
@@ -81,7 +81,29 @@ class OnboardingFlowViewModel(
     fun selectLanguage(language: AppLanguage) {
         if (_uiState.value.currentStep != OnboardingStep.ChooseLanguage) return
         settings.appLanguage = language
-        _uiState.update { it.copy(selectedLanguage = language, currentStep = OnboardingStep.ChooseMosque) }
+        _uiState.update { it.copy(selectedLanguage = language, currentStep = OnboardingStep.RequestLocation) }
+    }
+
+    fun continueAfterLocationStep() {
+        if (_uiState.value.currentStep != OnboardingStep.RequestLocation) return
+        _uiState.update { it.copy(currentStep = OnboardingStep.ChooseMosque) }
+    }
+
+    /** Prefills the closest mosque once when the user has not chosen one yet. */
+    fun applyClosestMosqueIfNeeded(mosques: List<Mosque>, latitude: Double, longitude: Double) {
+        val state = _uiState.value
+        if (state.currentStep != OnboardingStep.RequestLocation &&
+            state.currentStep != OnboardingStep.ChooseMosque
+        ) {
+            return
+        }
+        if (state.selectedMosqueId.isNotEmpty()) return
+        val closest = ClosestMosquePromptDecision.closestMosque(
+            mosques = mosques,
+            userLat = latitude,
+            userLng = longitude,
+        ) ?: return
+        _uiState.update { it.copy(selectedMosqueId = closest.id) }
     }
 
     fun selectMosque(mosque: Mosque) {
@@ -96,8 +118,8 @@ class OnboardingFlowViewModel(
                 homeViewModel.switchToMosque(mosque)
                 _uiState.update {
                     it.copy(
-                        currentStep = OnboardingStep.PrayerShortcut(index = 0),
                         isSelectingMosque = false,
+                        currentStep = OnboardingStep.Notifications,
                     )
                 }
             } catch (e: Exception) {
@@ -115,65 +137,10 @@ class OnboardingFlowViewModel(
         _uiState.update { it.copy(notificationDraft = transform(it.notificationDraft)) }
     }
 
-    fun handlePrayerShortcutTap(index: Int) {
-        val step = _uiState.value.currentStep as? OnboardingStep.PrayerShortcut ?: return
-        if (step.index != 0 || index !in 0..5) return
-        _uiState.update { it.copy(currentStep = OnboardingStep.QiblaCountdown) }
-    }
-
-    fun skipToTutorialEnd() {
-        _uiState.update { it.copy(currentStep = OnboardingStep.Notifications) }
-    }
-
-    fun completeQiblaCountdownStep() {
-        if (_uiState.value.currentStep != OnboardingStep.QiblaCountdown) return
-        _uiState.update { it.copy(currentStep = OnboardingStep.Qibla) }
-    }
-
-    fun completeQiblaOnboardingAllowingLocationRequest() {
-        if (_uiState.value.currentStep != OnboardingStep.Qibla) return
-        settings.hideQiblaCompass = false
-        _uiState.update { it.copy(currentStep = OnboardingStep.OpenTimetable) }
-    }
-
-    fun completeQiblaOnboardingDeferringLocation() {
-        if (_uiState.value.currentStep != OnboardingStep.Qibla) return
-        settings.hideQiblaCompass = true
-        _uiState.update { it.copy(currentStep = OnboardingStep.OpenTimetable) }
-    }
-
-    fun handleTimetableOpened() {
-        if (_uiState.value.currentStep != OnboardingStep.OpenTimetable) return
-        _uiState.update { it.copy(currentStep = OnboardingStep.ExploreTimetable) }
-    }
-
-    fun acknowledgeTimetableExplore() {
-        if (_uiState.value.currentStep != OnboardingStep.ExploreTimetable) return
-        _uiState.update { it.copy(currentStep = OnboardingStep.CloseTimetable) }
-    }
-
-    fun handleTimetableClosed() {
-        if (_uiState.value.currentStep != OnboardingStep.CloseTimetable) return
-        _uiState.update { it.copy(currentStep = OnboardingStep.OpenSettings) }
-    }
-
-    fun handleSettingsOpened() {
-        if (_uiState.value.currentStep != OnboardingStep.OpenSettings) return
-        _uiState.update { it.copy(currentStep = OnboardingStep.ExploreSettings) }
-    }
-
-    fun acknowledgeSettingsExplore() {
-        if (_uiState.value.currentStep != OnboardingStep.ExploreSettings) return
-        _uiState.update { it.copy(currentStep = OnboardingStep.CloseSettings) }
-    }
-
-    fun handleSettingsClosed() {
-        if (_uiState.value.currentStep != OnboardingStep.CloseSettings) return
-        _uiState.update { it.copy(currentStep = OnboardingStep.Notifications) }
-    }
-
     fun completeNotificationSetup() {
-        if (_uiState.value.currentStep != OnboardingStep.Notifications || _uiState.value.isCompletingNotifications) {
+        if (_uiState.value.currentStep != OnboardingStep.Notifications ||
+            _uiState.value.isCompletingNotifications
+        ) {
             return
         }
         viewModelScope.launch {
@@ -185,6 +152,11 @@ class OnboardingFlowViewModel(
                     iqamahEnabled = draft.iqamahEnabled,
                     preAdhanReminderMinutes = draft.preAdhanReminderMinutes,
                     preIqamahReminderMinutes = draft.preIqamahReminderMinutes,
+                    fajr = draft.fajr,
+                    dhuhrJummah = draft.dhuhrJummah,
+                    asr = draft.asr,
+                    maghrib = draft.maghrib,
+                    isha = draft.isha,
                     adhanFajr = draft.adhanFajr,
                     adhanDhuhrJummah = draft.adhanDhuhrJummah,
                     adhanAsr = draft.adhanAsr,
@@ -198,12 +170,17 @@ class OnboardingFlowViewModel(
                     masterEnabled = draft.adhanEnabled ||
                         draft.iqamahEnabled ||
                         draft.preAdhanReminderMinutes != null ||
-                        draft.preIqamahReminderMinutes != null,
+                        draft.preIqamahReminderMinutes != null ||
+                        draft.adhanFajr || draft.adhanDhuhrJummah || draft.adhanAsr ||
+                        draft.adhanMaghrib || draft.adhanIsha ||
+                        draft.iqamahFajr || draft.iqamahDhuhrJummah || draft.iqamahAsr ||
+                        draft.iqamahMaghrib || draft.iqamahIsha,
                 )
                 settings.notifications = next
                 if (next.masterEnabled) {
                     notificationScheduler.requestAuthorizationIfNeeded()
-                    homeViewModel.uiState.value.selectedMosque?.let { mosque ->
+                    val mosque = homeViewModel.uiState.value.selectedMosque
+                    if (mosque != null) {
                         notificationScheduler.rescheduleUpcomingPrayerNotifications(
                             mosque = mosque,
                             days = 7,
@@ -217,8 +194,11 @@ class OnboardingFlowViewModel(
                 }
                 settings.lastSeenBuildVersion = WhatsNew.fullVersionString
                 settings.hasCompletedOnboarding = true
-                _uiState.update { it.copy(currentStep = null, isCompletingNotifications = false) }
-            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(currentStep = null, isCompletingNotifications = false)
+                }
+            } catch (e: Exception) {
+                homeViewModel.setLastError(e.localizedMessage)
                 _uiState.update { it.copy(isCompletingNotifications = false) }
             }
         }
@@ -226,19 +206,13 @@ class OnboardingFlowViewModel(
 
     fun restartTutorialFromDeveloperTools() {
         settings.hasCompletedOnboarding = false
-        settings.hideQiblaCompass = false
-        val mosques = homeViewModel.uiState.value.mosques
-        val selectedId = _uiState.value.selectedMosqueId.ifEmpty {
-            settings.selectedMosqueId
-                ?: mosques.firstOrNull()?.id
-                .orEmpty()
-        }
         _uiState.update {
             it.copy(
-                selectedMosqueId = selectedId,
+                selectedMosqueId = "",
                 selectedLanguage = settings.appLanguage,
-                notificationDraft = OnboardingNotificationDraft.fromSettings(settings.notifications),
+                notificationDraft = OnboardingNotificationDraft.defaultEnabled,
                 isSelectingMosque = false,
+                isCompletingNotifications = false,
                 currentStep = OnboardingStep.ChooseLanguage,
             )
         }

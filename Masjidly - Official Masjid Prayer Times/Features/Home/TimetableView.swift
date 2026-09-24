@@ -33,7 +33,6 @@ struct TimetableView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(SettingsStore.self) private var settings
-    @Environment(OnboardingFlowController.self) private var onboarding
     /// Derived from the observable store so language changes re-localize immediately.
     private var locale: Locale { settings.resolvedLocale }
 
@@ -132,31 +131,7 @@ struct TimetableView: View {
                 selectedDate = first.date
             }
         }
-        .overlay {
-            Group {
-                if onboarding.currentStep == .exploreTimetable {
-                    OnboardingCoachMarkView(
-                        title: ttLS("onboarding.explore_timetable.title", locale: locale),
-                        message: ttLS("onboarding.explore_timetable.message", locale: locale),
-                        timeTheme: timeTheme,
-                        variant: .floatingBottom,
-                        primaryButtonTitle: ttLS("onboarding.continue", locale: locale),
-                        onPrimaryButton: {
-                            onboarding.acknowledgeTimetableExplore()
-                        },
-                        primaryButtonAccessibilityIdentifier: "Onboarding.TimetableExploreContinue"
-                    )
-                } else if onboarding.currentStep == .closeTimetable {
-                    OnboardingCoachMarkView(
-                        title: ttLS("onboarding.close_timetable.title", locale: locale),
-                        message: ttLS("onboarding.close_timetable.message", locale: locale),
-                        timeTheme: timeTheme,
-                        variant: .belowTopChrome
-                    )
-                    .allowsHitTesting(false)
-                }
-            }
-        }
+
     }
 
     private var monthSwitcher: some View {
@@ -259,8 +234,7 @@ struct TimetableView: View {
                     .background(Circle().fill(appearance.textColor.opacity(0.1)))
             }
             .buttonStyle(.hapticPlain)
-            .onboardingHighlight(onboarding.currentStep == .closeTimetable, timeTheme: timeTheme)
-            .accessibilityIdentifier("Onboarding.TimetableClose")
+                        .accessibilityIdentifier("Onboarding.TimetableClose")
             .accessibilityLabel(Text(ttLS("timetable.close_a11y", locale: locale)))
         }
     }
