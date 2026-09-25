@@ -328,13 +328,14 @@ struct HomeView: View {
                 if !onboarding.isActive, !model.mosques.isEmpty {
                     mosqueTabs
                         .padding(.horizontal, 12)
-                        .padding(.bottom, max(metrics.safeBottom, 12))
+                        // Extra lift above home indicator so tab taps do not fight app switcher.
+                        .padding(.bottom, max(metrics.safeBottom, 12) + 20)
                 }
 
                 onboardingOverlay
             }
             .contentShape(Rectangle())
-            .simultaneousGesture(homeDaySwipeGesture(maxStartY: metrics.height - max(metrics.safeBottom, 12) - 60))
+            .simultaneousGesture(homeDaySwipeGesture(maxStartY: metrics.height - max(metrics.safeBottom, 12) - 80))
         )
     }
 
@@ -356,7 +357,7 @@ struct HomeView: View {
                                             .truncationMode(.tail)
                                             .frame(maxWidth: isSelected ? 168 : 88, alignment: .leading)
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(.hapticPlain)
                                     if ids.count > 1 {
                                         Button {
                                             closeTab(id, in: ids)
@@ -364,7 +365,7 @@ struct HomeView: View {
                                             Image(systemName: "xmark")
                                                 .font(.system(size: 10, weight: .bold))
                                         }
-                                        .buttonStyle(.plain)
+                                        .buttonStyle(.hapticPlain)
                                         .accessibilityLabel("Close \(mosque.name) tab")
                                     }
                                 }
@@ -424,7 +425,12 @@ struct HomeView: View {
     }
 
     private func setAddMosqueTabVisible(_ visible: Bool) {
-        withAnimation(reduceMotion ? .easeOut(duration: 0.18) : .spring(response: 0.48, dampingFraction: 0.88)) {
+        let animation: Animation = reduceMotion
+            ? .easeOut(duration: 0.18)
+            : visible
+                ? .spring(response: 0.48, dampingFraction: 0.88)
+                : .easeOut(duration: 0.24)
+        withAnimation(animation) {
             showingAddMosqueTab = visible
         }
     }
@@ -667,9 +673,12 @@ struct HomeView: View {
             )
             let cardTransition: AnyTransition = reduceMotion || addMosqueTabButtonFrame.isEmpty
                 ? .opacity
-                : .scale(scale: 0.08)
-                    .combined(with: .offset(origin))
-                    .combined(with: .opacity)
+                : .asymmetric(
+                    insertion: .scale(scale: 0.08)
+                        .combined(with: .offset(origin))
+                        .combined(with: .opacity),
+                    removal: .scale(scale: 0.96).combined(with: .opacity)
+                )
             ZStack {
                 if showingAddMosqueTab {
                     ZStack {
@@ -697,7 +706,7 @@ struct HomeView: View {
                         HapticFeedback.buttonTap()
                         setAddMosqueTabVisible(false)
                     }
-                    .transition(.opacity.animation(.easeInOut(duration: 0.24)))
+                    .transition(.opacity.animation(reduceMotion ? .easeOut(duration: 0.18) : .easeOut(duration: 0.24)))
                     .zIndex(0)
 
                     MosqueSelectionOnboardingView(

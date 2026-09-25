@@ -14,6 +14,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.background
 import com.mikhailspeaks.masjidly.ui.haptic.HapticTextButton
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
+import com.mikhailspeaks.masjidly.ui.haptic.rememberHapticOnClick
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -332,7 +333,9 @@ fun HomeScreen(
             }
             Row(
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                    .navigationBarsPadding().padding(horizontal = 12.dp, vertical = 12.dp),
+                    // Extra lift above gesture/nav bar so tab taps do not fight system gestures.
+                    .navigationBarsPadding()
+                    .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -367,10 +370,11 @@ fun HomeScreen(
                                     .padding(horizontal = tabPadding),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                TextButton(onClick = {
+                                val onSelectTab = rememberHapticOnClick {
                                     settingsStore.activeMosqueTabId = id
                                     viewModel.applySelectionFromSettings()
-                                }) {
+                                }
+                                TextButton(onClick = onSelectTab) {
                                     Text(
                                         mosque.name,
                                         color = tabForeground,
