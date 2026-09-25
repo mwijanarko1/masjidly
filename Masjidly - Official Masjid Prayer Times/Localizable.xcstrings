@@ -5130,6 +5130,34 @@
         }
       }
     },
+    "settings.mosque.website": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الموقع"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Website"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Situs web"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ویب سائٹ"
+          }
+        }
+      }
+    },
     "settings.navigation.title": {
       "extractionState": "stale",
       "localizations": {

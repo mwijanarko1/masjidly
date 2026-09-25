@@ -40,6 +40,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -344,6 +346,21 @@ fun SettingsScreen(
                     SettingsDivider(theme)
                     MosquePickerRow(LocaleStrings.t("settings.mosque.picker", language), mosquesInCity, effectiveMosqueId, language, theme) { mosque ->
                         selectMosque(mosque, settingsStore, homeViewModel, settingsViewModel)
+                    }
+                    val selectedMosque = mosquesInCity.firstOrNull { it.id == effectiveMosqueId }
+                        ?: mosquesInCity.firstOrNull()
+                    if (selectedMosque != null) {
+                        SelectedMosqueQuickLinks(
+                            mosque = selectedMosque,
+                            language = language,
+                            theme = theme,
+                            onWebsite = { url ->
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            },
+                            onDirections = { mosque ->
+                                openDirections(context, mosque, selectedDirectionsAppPackage)
+                            },
+                        )
                     }
                     if (closestMosque != null) {
                         SettingsDivider(theme)
@@ -996,6 +1013,72 @@ private fun MosquePickerRow(
             )
         }
     }
+}
+
+@Composable
+private fun SelectedMosqueQuickLinks(
+    mosque: Mosque,
+    language: AppLanguage,
+    theme: ResolvedTheme,
+    onWebsite: (String) -> Unit,
+    onDirections: (Mosque) -> Unit,
+) {
+    val websiteUrl = mosqueWebsiteUrl(mosque.website)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (websiteUrl != null) {
+            SelectedMosqueQuickLinkButton(
+                label = LocaleStrings.t("settings.mosque.website", language),
+                icon = Icons.Default.Language,
+                theme = theme,
+            ) { onWebsite(websiteUrl) }
+        }
+        SelectedMosqueQuickLinkButton(
+            label = LocaleStrings.t("settings.closest_mosque.directions", language),
+            icon = Icons.Default.Map,
+            theme = theme,
+        ) { onDirections(mosque) }
+    }
+}
+
+@Composable
+private fun SelectedMosqueQuickLinkButton(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    theme: ResolvedTheme,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .heightIn(min = 40.dp)
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+            .hapticClickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = theme.textColor.copy(alpha = 0.55f),
+            modifier = Modifier.size(15.dp),
+        )
+        Text(
+            text = label,
+            style = rememberAppTextStyle(14f),
+            color = theme.textColor.copy(alpha = 0.55f),
+        )
+    }
+}
+
+private fun mosqueWebsiteUrl(raw: String?): String? {
+    val trimmed = raw?.trim().orEmpty()
+    if (trimmed.isEmpty()) return null
+    return if (trimmed.contains("://")) trimmed else "https://$trimmed"
 }
 
 @Composable

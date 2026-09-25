@@ -64,8 +64,13 @@ struct SettingsView: View {
                         cityPickerRow
                             .padding(.vertical, 12)
                         settingsRowDivider
-                        mosquePickerRow
-                            .padding(.vertical, 12)
+                        VStack(alignment: .leading, spacing: 14) {
+                            mosquePickerRow
+                            if let selectedMosque {
+                                selectedMosqueQuickLinks(for: selectedMosque)
+                            }
+                        }
+                        .padding(.vertical, 14)
                         if let closestMosque {
                             settingsRowDivider
                             closestMosqueRow(closestMosque)
@@ -1018,12 +1023,16 @@ struct SettingsView: View {
         return localized(key)
     }
 
-    private var selectedMosqueDisplayName: String {
+    private var selectedMosque: Mosque? {
         if let id = settings.selectedMosqueId,
            let selected = mosquesInSelectedCity.first(where: { $0.id == id }) {
-            return selected.name
+            return selected
         }
-        return mosquesInSelectedCity.first?.name ?? ""
+        return mosquesInSelectedCity.first
+    }
+
+    private var selectedMosqueDisplayName: String {
+        selectedMosque?.name ?? ""
     }
 
     private var mosquePickerRow: some View {
@@ -1034,6 +1043,7 @@ struct SettingsView: View {
             selectedId: mosqueSelectionBinding.wrappedValue,
             timeTheme: timeTheme,
             searchPlaceholder: "Search mosques…",
+            minRowHeight: 52,
             multilineValue: true,
             isOpen: openMosquePicker == .mosque,
             onToggle: {
@@ -1048,6 +1058,60 @@ struct SettingsView: View {
                 }
             }
         )
+    }
+
+    private func selectedMosqueQuickLinks(for mosque: Mosque) -> some View {
+        HStack(spacing: 28) {
+            if let websiteURL = mosqueWebsiteURL(mosque.website) {
+                selectedMosqueQuickLinkButton(
+                    title: localized("settings.mosque.website"),
+                    systemImage: "globe",
+                    accessibilityIdentifier: "Settings.SelectedMosqueWebsite"
+                ) {
+                    UIApplication.shared.open(websiteURL)
+                }
+            }
+            selectedMosqueQuickLinkButton(
+                title: localized("settings.closest_mosque.directions"),
+                systemImage: "map",
+                accessibilityIdentifier: "Settings.SelectedMosqueDirections"
+            ) {
+                openDirections(to: mosque)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func selectedMosqueQuickLinkButton(
+        title: String,
+        systemImage: String,
+        accessibilityIdentifier: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 14, weight: .regular))
+                Text(title)
+                    .appFont(size: 14, weight: .regular)
+            }
+            .foregroundColor(currentAppearance.textColor.opacity(0.55))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.hapticPlain)
+        .accessibilityIdentifier(accessibilityIdentifier)
+    }
+
+    private func mosqueWebsiteURL(_ raw: String?) -> URL? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return nil
+        }
+        if let url = URL(string: raw), url.scheme != nil {
+            return url
+        }
+        return URL(string: "https://\(raw)")
     }
 
     private var adhanReminderPickerRow: some View {

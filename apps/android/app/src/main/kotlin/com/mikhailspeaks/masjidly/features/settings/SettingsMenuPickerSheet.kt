@@ -87,6 +87,8 @@ internal object MenuPickerMetrics {
     )
 
     val SettingsMosque = SettingsStandard.copy(
+        minRowHeight = 52.dp,
+        verticalPadding = 14.dp,
         multilineValue = true,
         alignment = MenuPickerRowAlignment.Top,
         chevronTopPadding = 2.dp,
