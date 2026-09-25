@@ -27,6 +27,12 @@ struct SettingsView: View {
     @State private var adhanPrayerSettingsExpanded = false
     @State private var iqamahPrayerSettingsExpanded = false
     @State private var prayerGradientSettingsExpanded = false
+    @State private var openMosquePicker: MosqueSettingsPicker?
+
+    private enum MosqueSettingsPicker: String, Identifiable {
+        case country, city, mosque
+        var id: String { rawValue }
+    }
     init(model: SettingsViewModel, timeTheme: HomeDesign.TimeTheme, onDismiss: (() -> Void)? = nil) {
         self.model = model
         self.dynamicTimeTheme = timeTheme
@@ -47,7 +53,7 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 24) {
                 settingsTitleHeaderRow
 
                 settingsSectionBlock(titleKey: "settings.section.mosque.title") {
@@ -66,6 +72,7 @@ struct SettingsView: View {
                                 .padding(.vertical, 12)
                         }
                     }
+                    .animation(.easeInOut(duration: 0.22), value: openMosquePicker)
                 }
 
                 settingsSectionBlock(titleKey: "settings.section.display.title") {
@@ -718,55 +725,49 @@ struct SettingsView: View {
     }
 
     private var countryPickerRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(localized("settings.country.picker"))
-                .appFont(size: 17, weight: .regular)
-                .foregroundColor(currentAppearance.textColor)
-                .multilineTextAlignment(.leading)
-                .lineLimit(1)
-                .layoutPriority(1)
-                .fixedSize(horizontal: true, vertical: false)
-
-            Spacer(minLength: 12)
-
-            Picker("", selection: countrySelectionBinding) {
-                ForEach(countryOptions, id: \.key) { opt in
-                    Text(opt.label)
-                        .appFont(size: 17)
-                        .tag(opt.key)
+        SearchablePickerField(
+            title: localized("settings.country.picker"),
+            value: countryOptions.first(where: { $0.key == effectiveCountryGroupingKey })?.label ?? "",
+            options: countryOptions.map { SearchablePickerOption(id: $0.key, label: $0.label) },
+            selectedId: effectiveCountryGroupingKey,
+            timeTheme: timeTheme,
+            searchPlaceholder: "Search countries…",
+            isOpen: openMosquePicker == .country,
+            onToggle: {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    openMosquePicker = openMosquePicker == .country ? nil : .country
+                }
+            },
+            onSelect: { key in
+                countrySelectionBinding.wrappedValue = key
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    openMosquePicker = nil
                 }
             }
-            .pickerStyle(.menu)
-            .tint(currentAppearance.textColor)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .frame(minHeight: 44)
+        )
     }
 
     private var cityPickerRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(localized("settings.city.picker"))
-                .appFont(size: 17, weight: .regular)
-                .foregroundColor(currentAppearance.textColor)
-                .multilineTextAlignment(.leading)
-                .lineLimit(1)
-                .layoutPriority(1)
-                .fixedSize(horizontal: true, vertical: false)
-
-            Spacer(minLength: 12)
-
-            Picker("", selection: citySelectionBinding) {
-                ForEach(cityOptions, id: \.key) { opt in
-                    Text(opt.label)
-                        .appFont(size: 17)
-                        .tag(opt.key)
+        SearchablePickerField(
+            title: localized("settings.city.picker"),
+            value: cityOptions.first(where: { $0.key == effectiveCityGroupingKey })?.label ?? "",
+            options: cityOptions.map { SearchablePickerOption(id: $0.key, label: $0.label) },
+            selectedId: effectiveCityGroupingKey,
+            timeTheme: timeTheme,
+            searchPlaceholder: "Search cities…",
+            isOpen: openMosquePicker == .city,
+            onToggle: {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    openMosquePicker = openMosquePicker == .city ? nil : .city
+                }
+            },
+            onSelect: { key in
+                citySelectionBinding.wrappedValue = key
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    openMosquePicker = nil
                 }
             }
-            .pickerStyle(.menu)
-            .tint(currentAppearance.textColor)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .frame(minHeight: 44)
+        )
     }
 
     private var languagePickerRow: some View {
@@ -1026,56 +1027,27 @@ struct SettingsView: View {
     }
 
     private var mosquePickerRow: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(localized("settings.mosque.picker"))
-                .appFont(size: 17, weight: .regular)
-                .foregroundColor(currentAppearance.textColor)
-                .multilineTextAlignment(.leading)
-                .lineLimit(1)
-                .layoutPriority(1)
-                .fixedSize(horizontal: true, vertical: false)
-
-            Spacer(minLength: 12)
-
-            Menu {
-                ForEach(mosquesInSelectedCity) { mosque in
-                    Button {
-                        Task { await model.selectMosque(mosque) }
-                    } label: {
-                        if mosque.id == mosqueSelectionBinding.wrappedValue {
-                            Label(mosque.name, systemImage: "checkmark")
-                                .lineLimit(nil)
-                                .fixedSize(horizontal: false, vertical: true)
-                        } else {
-                            Text(mosque.name)
-                                .lineLimit(nil)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
+        SearchablePickerField(
+            title: localized("settings.mosque.picker"),
+            value: selectedMosqueDisplayName,
+            options: mosquesInSelectedCity.map { SearchablePickerOption(id: $0.id, label: $0.name) },
+            selectedId: mosqueSelectionBinding.wrappedValue,
+            timeTheme: timeTheme,
+            searchPlaceholder: "Search mosques…",
+            multilineValue: true,
+            isOpen: openMosquePicker == .mosque,
+            onToggle: {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    openMosquePicker = openMosquePicker == .mosque ? nil : .mosque
                 }
-            } label: {
-                HStack(alignment: .top, spacing: 6) {
-                    Text(selectedMosqueDisplayName)
-                        .appFont(size: 17, weight: .regular)
-                        .foregroundColor(currentAppearance.textColor)
-                        .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.trailing)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-
-                    Image(systemName: "chevron.down")
-                        .appFont(size: 13, weight: .semibold)
-                        .foregroundColor(currentAppearance.textColor.opacity(0.7))
-                        .padding(.top, 2)
+            },
+            onSelect: { id in
+                mosqueSelectionBinding.wrappedValue = id
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    openMosquePicker = nil
                 }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .contentShape(Rectangle())
             }
-            .tint(currentAppearance.textColor)
-            .layoutPriority(1)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .frame(minHeight: 44)
+        )
     }
 
     private var adhanReminderPickerRow: some View {

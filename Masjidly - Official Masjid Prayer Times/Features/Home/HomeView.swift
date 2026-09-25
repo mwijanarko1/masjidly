@@ -31,6 +31,18 @@ struct HomeView: View {
     @State private var closestMosqueLocationProvider = ClosestMosqueLocationProvider()
     @State private var hasRequestedClosestMosqueCheck = false
     @State private var awaitingOnboardingLocationPermission = false
+    @State private var showingAddMosqueTab = false
+    @State private var addTabSelectedMosqueId = ""
+
+    private var openMosqueTabIds: [String] {
+        settings.openMosqueTabIds.isEmpty
+            ? [settings.selectedMosqueId ?? model.selectedMosque?.id].compactMap { $0 }
+            : settings.openMosqueTabIds
+    }
+
+    private var availableMosqueTabs: [Mosque] {
+        model.mosques.filter { !openMosqueTabIds.contains($0.id) }
+    }
 
     private var dynamicTheme: HomeDesign.TimeTheme {
         HomeDesign.TimeTheme.homeHeroTheme(
@@ -171,7 +183,7 @@ struct HomeView: View {
     private var homeLifecycleChrome: some View {
         homeContent
             .task {
-                await model.load()
+                if model.loadState == .idle { await model.load() }
                 await settingsViewModel.load()
                 onboarding.startIfNeeded()
                 await model.resyncNotificationsIfNeeded()
@@ -270,6 +282,8 @@ struct HomeView: View {
                 whatsNewOverlay
             } else if showingClosestMosquePrompt, let pendingClosestMosque {
                 closestMosquePromptOverlay(closest: pendingClosestMosque)
+            } else if showingAddMosqueTab {
+                addMosqueTabOverlay
             }
         }
     }
@@ -309,16 +323,127 @@ struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
+                if !onboarding.isActive, !model.mosques.isEmpty {
+                    mosqueTabs
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, max(metrics.safeBottom, 12))
+                }
+
                 onboardingOverlay
             }
             .contentShape(Rectangle())
-            .simultaneousGesture(homeDaySwipeGesture)
+            .simultaneousGesture(homeDaySwipeGesture(maxStartY: metrics.height - max(metrics.safeBottom, 12) - 60))
         )
     }
 
-    private var homeDaySwipeGesture: some Gesture {
+    private var mosqueTabs: some View {
+        let ids = openMosqueTabIds
+        return HStack(spacing: 8) {
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(ids, id: \.self) { id in
+                            if let mosque = model.mosques.first(where: { $0.id == id }) {
+                                let isSelected = model.selectedMosque?.id == id
+                                HStack(spacing: 4) {
+                                    Button {
+                                        activateTab(mosque)
+                                    } label: {
+                                        Text(mosque.name)
+                                            .lineLimit(1)
+                                            .truncationMode(.tail)
+                                            .frame(maxWidth: isSelected ? 168 : 88, alignment: .leading)
+                                    }
+                                    .buttonStyle(.plain)
+                                    if ids.count > 1 {
+                                        Button {
+                                            closeTab(id, in: ids)
+                                        } label: {
+                                            Image(systemName: "xmark")
+                                                .font(.system(size: 10, weight: .bold))
+                                        }
+                                        .buttonStyle(.plain)
+                                        .accessibilityLabel("Close \(mosque.name) tab")
+                                    }
+                                }
+                                .appFont(size: 13, weight: .semibold)
+                                .foregroundStyle(currentAppearance.textColor)
+                                .padding(.horizontal, isSelected ? 12 : 10)
+                                .padding(.vertical, 10)
+                                .background(
+                                    Capsule().fill(
+                                        currentAppearance.textColor.opacity(isSelected ? 0.3 : 0.12)
+                                    )
+                                )
+                                .id(id)
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onChange(of: model.selectedMosque?.id) { _, newId in
+                    guard let newId else { return }
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        proxy.scrollTo(newId, anchor: .center)
+                    }
+                }
+            }
+            if !availableMosqueTabs.isEmpty {
+                Button {
+                    HapticFeedback.buttonTap()
+                    addTabSelectedMosqueId = defaultAddTabMosqueId()
+                    showingAddMosqueTab = true
+                } label: {
+                    Image(systemName: "plus")
+                        .foregroundStyle(currentAppearance.textColor)
+                        .padding(10)
+                        .background(Circle().fill(currentAppearance.textColor.opacity(0.12)))
+                }
+                .buttonStyle(.hapticPlain)
+                .accessibilityLabel("Add mosque tab")
+            }
+        }
+    }
+
+    private func defaultAddTabMosqueId() -> String {
+        let available = availableMosqueTabs
+        guard let current = model.selectedMosque else {
+            return available.first?.id ?? ""
+        }
+        let currentCountry = MosqueDefaults.countryGroupingKey(for: current)
+        if let sameCity = available.first(where: {
+            MosqueDefaults.countryGroupingKey(for: $0) == currentCountry
+                && $0.cityGroupingKey == current.cityGroupingKey
+        }) {
+            return sameCity.id
+        }
+        if let sameCountry = available.first(where: {
+            MosqueDefaults.countryGroupingKey(for: $0) == currentCountry
+        }) {
+            return sameCountry.id
+        }
+        return available.first?.id ?? ""
+    }
+
+    private func activateTab(_ mosque: Mosque) {
+        settings.activeMosqueTabId = mosque.id
+        Task { await model.applySelectionFromSettings() }
+    }
+
+    private func closeTab(_ id: String, in ids: [String]) {
+        let remaining = ids.filter { $0 != id }
+        guard !remaining.isEmpty else { return }
+        settings.openMosqueTabIds = remaining
+        if model.selectedMosque?.id == id,
+           let next = model.mosques.first(where: { $0.id == remaining[0] }) {
+            activateTab(next)
+        }
+    }
+
+    private func homeDaySwipeGesture(maxStartY: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 28, coordinateSpace: .local)
             .onEnded { value in
+                guard value.startLocation.y < maxStartY else { return }
                 let horizontal = value.translation.width
                 let vertical = value.translation.height
                 guard abs(horizontal) > abs(vertical), abs(horizontal) > 56 else { return }
@@ -512,6 +637,57 @@ struct HomeView: View {
                 }
             }
         )
+    }
+
+    @ViewBuilder
+    private var addMosqueTabOverlay: some View {
+        GeometryReader { geo in
+            ZStack {
+                ZStack {
+                    Color.black.opacity(0.4)
+
+                    let sky = currentAppearance.sky
+                    LinearGradient(
+                        colors: sky.baseColors.map { $0.opacity(0.55) },
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+
+                    if let glow = sky.glowColor {
+                        RadialGradient(
+                            colors: [glow.opacity(0.4 * sky.glowBaseAlpha), glow.opacity(0.15 * sky.glowBaseAlpha), .clear],
+                            center: UnitPoint(x: 0.5, y: 0.82),
+                            startRadius: 0,
+                            endRadius: 500
+                        )
+                        .blendMode(.screen)
+                    }
+                }
+                .ignoresSafeArea()
+                .onTapGesture {
+                    HapticFeedback.buttonTap()
+                    showingAddMosqueTab = false
+                }
+
+                MosqueSelectionOnboardingView(
+                    mosques: availableMosqueTabs,
+                    timeTheme: currentTheme,
+                    showsBackdrop: false,
+                    selectedMosqueId: $addTabSelectedMosqueId,
+                    isContinuing: false,
+                    onContinue: { mosque in
+                        settings.openMosqueTabIds = openMosqueTabIds + [mosque.id]
+                        activateTab(mosque)
+                        showingAddMosqueTab = false
+                    }
+                )
+                .padding(.horizontal, 18)
+                .frame(maxWidth: 420)
+                .frame(maxHeight: min(620, geo.size.height - 80))
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .transition(.opacity.animation(.easeInOut(duration: 0.25)))
     }
 
     @ViewBuilder
@@ -1197,6 +1373,13 @@ struct HomeView: View {
     }
 
     private func selectMosque(_ mosque: Mosque) {
+        if settings.openMosqueTabIds.isEmpty, let previous = settings.selectedMosqueId ?? model.selectedMosque?.id {
+            settings.openMosqueTabIds = [previous]
+        }
+        if !settings.openMosqueTabIds.contains(mosque.id) {
+            settings.openMosqueTabIds.append(mosque.id)
+        }
+        settings.activeMosqueTabId = mosque.id
         model.selectedMosque = mosque
         settings.selectedMosqueId = mosque.id
         settings.selectedMosqueSlug = mosque.slug

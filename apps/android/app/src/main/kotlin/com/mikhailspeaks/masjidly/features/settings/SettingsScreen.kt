@@ -8,7 +8,13 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import com.mikhailspeaks.masjidly.ui.haptic.rememberHapticOnClick
@@ -84,6 +90,7 @@ import com.mikhailspeaks.masjidly.domain.localizedLabel
 import com.mikhailspeaks.masjidly.domain.setAdhanEnabled
 import com.mikhailspeaks.masjidly.domain.setIqamahEnabled
 import com.mikhailspeaks.masjidly.domain.syncMasterFlag
+import com.mikhailspeaks.masjidly.features.onboarding.SearchableDropdownPanel
 import com.mikhailspeaks.masjidly.features.home.HomeViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
@@ -911,29 +918,38 @@ private fun PickerRow(
     theme: ResolvedTheme,
     onSelect: (String) -> Unit,
 ) {
-    var sheetOpen by remember { mutableStateOf(false) }
+    var open by remember { mutableStateOf(false) }
     val selectedLabel = options.firstOrNull { it.first == selectedKey }?.second ?: "—"
     val pickerOptions = remember(options) {
         options.map { (key, value) -> SettingsPickerOption(key, value) }
     }
 
-    SettingsMenuPickerRow(
-        label = label,
-        displayValue = selectedLabel,
-        sheetTitle = label,
-        theme = theme,
-        onClick = { sheetOpen = true },
-    )
-    SettingsPickerBottomSheet(
-        visible = sheetOpen,
-        title = label,
-        options = pickerOptions,
-        selectedKey = selectedKey,
-        theme = theme,
-        language = language,
-        onDismiss = { sheetOpen = false },
-        onSelect = onSelect,
-    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SettingsMenuPickerRow(
+            label = label,
+            displayValue = selectedLabel,
+            sheetTitle = label,
+            theme = theme,
+            onClick = { open = !open },
+        )
+        AnimatedVisibility(
+            visible = open,
+            enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(220)),
+            exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(animationSpec = tween(180)),
+        ) {
+            SearchableDropdownPanel(
+                options = pickerOptions,
+                selectedKey = selectedKey,
+                theme = theme,
+                searchPlaceholder = "Search…",
+                onSelect = {
+                    onSelect(it)
+                    open = false
+                },
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+        }
+    }
 }
 
 @Composable
@@ -945,7 +961,7 @@ private fun MosquePickerRow(
     theme: ResolvedTheme,
     onSelect: (Mosque) -> Unit,
 ) {
-    var sheetOpen by remember { mutableStateOf(false) }
+    var open by remember { mutableStateOf(false) }
     val displayName = mosques.firstOrNull { it.id == selectedId }?.name
         ?: mosques.firstOrNull()?.name
         ?: ""
@@ -953,26 +969,33 @@ private fun MosquePickerRow(
         mosques.map { mosque -> SettingsPickerOption(mosque.id, mosque.name) }
     }
 
-    SettingsMenuPickerRow(
-        label = label,
-        displayValue = displayName,
-        sheetTitle = label,
-        theme = theme,
-        multilineValue = true,
-        onClick = { sheetOpen = true },
-    )
-    SettingsPickerBottomSheet(
-        visible = sheetOpen,
-        title = label,
-        options = pickerOptions,
-        selectedKey = selectedId,
-        theme = theme,
-        language = language,
-        onDismiss = { sheetOpen = false },
-        onSelect = { id ->
-            mosques.firstOrNull { it.id == id }?.let(onSelect)
-        },
-    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SettingsMenuPickerRow(
+            label = label,
+            displayValue = displayName,
+            sheetTitle = label,
+            theme = theme,
+            multilineValue = true,
+            onClick = { open = !open },
+        )
+        AnimatedVisibility(
+            visible = open,
+            enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(220)),
+            exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(animationSpec = tween(180)),
+        ) {
+            SearchableDropdownPanel(
+                options = pickerOptions,
+                selectedKey = selectedId,
+                theme = theme,
+                searchPlaceholder = "Search mosques…",
+                onSelect = { id ->
+                    mosques.firstOrNull { it.id == id }?.let(onSelect)
+                    open = false
+                },
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+        }
+    }
 }
 
 @Composable

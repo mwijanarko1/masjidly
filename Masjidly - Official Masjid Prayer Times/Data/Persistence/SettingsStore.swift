@@ -36,6 +36,8 @@ final class SettingsStore: SettingsPersisting {
     private enum Key: String {
         case selectedMosqueId
         case selectedMosqueSlug
+        case openMosqueTabIds
+        case activeMosqueTabId
         case selectedCityGroupingKey
         case selectedCountryGroupingKey
         case uses24HourTime
@@ -65,6 +67,14 @@ final class SettingsStore: SettingsPersisting {
 
     var selectedMosqueSlug: String? {
         didSet { defaults.set(selectedMosqueSlug, forKey: Key.selectedMosqueSlug.rawValue) }
+    }
+
+    var openMosqueTabIds: [String] {
+        didSet { defaults.set(openMosqueTabIds, forKey: Key.openMosqueTabIds.rawValue) }
+    }
+
+    var activeMosqueTabId: String? {
+        didSet { defaults.set(activeMosqueTabId, forKey: Key.activeMosqueTabId.rawValue) }
     }
 
     /// When set, filters the mosque list in settings; when `nil`, the UI derives the city from the selected mosque.
@@ -259,6 +269,8 @@ final class SettingsStore: SettingsPersisting {
         self.defaults = defaults
         selectedMosqueId = defaults.string(forKey: Key.selectedMosqueId.rawValue)
         selectedMosqueSlug = defaults.string(forKey: Key.selectedMosqueSlug.rawValue)
+        openMosqueTabIds = defaults.stringArray(forKey: Key.openMosqueTabIds.rawValue) ?? []
+        activeMosqueTabId = defaults.string(forKey: Key.activeMosqueTabId.rawValue)
         selectedCityGroupingKey = defaults.string(forKey: Key.selectedCityGroupingKey.rawValue)
         selectedCountryGroupingKey = defaults.string(forKey: Key.selectedCountryGroupingKey.rawValue)
         if defaults.object(forKey: Key.uses24HourTime.rawValue) == nil {

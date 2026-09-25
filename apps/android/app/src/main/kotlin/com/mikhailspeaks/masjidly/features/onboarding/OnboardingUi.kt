@@ -75,7 +75,6 @@ import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermi
 import com.mikhailspeaks.masjidly.features.settings.SettingsClosestMosqueLocationProvider
 import com.mikhailspeaks.masjidly.features.settings.OnboardingMenuPickerRow
 import com.mikhailspeaks.masjidly.features.settings.OnboardingReminderMenuPickerRow
-import com.mikhailspeaks.masjidly.features.settings.SettingsPickerBottomSheet
 import com.mikhailspeaks.masjidly.features.settings.SettingsPickerOption
 import com.mikhailspeaks.masjidly.ui.haptic.HapticTextButton
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
@@ -507,6 +506,7 @@ fun MosqueSelectionOnboardingScreen(
     isContinuing: Boolean,
     onSelectedMosqueIdChange: (String) -> Unit,
     onContinue: (Mosque) -> Unit,
+    showShell: Boolean = true,
 ) {
     val visible = remember(mosques) { MosqueSelection.visibleMosques(mosques) }
     val preselected = remember(visible, selectedMosqueId) {
@@ -523,9 +523,7 @@ fun MosqueSelectionOnboardingScreen(
     var mosqueId by remember(selectedMosqueId) {
         mutableStateOf(selectedMosqueId)
     }
-    var countrySheet by remember { mutableStateOf(false) }
-    var citySheet by remember { mutableStateOf(false) }
-    var mosqueSheet by remember { mutableStateOf(false) }
+    var openPicker by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(selectedMosqueId) {
         if (selectedMosqueId != mosqueId) {
@@ -556,124 +554,134 @@ fun MosqueSelectionOnboardingScreen(
         }
     }
 
-    OnboardingFullScreenShell(theme) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 18.dp),
-            contentAlignment = Alignment.Center,
+    val cardTextColor = onboardingCardTextColor(theme)
+    val cardMutedColor = onboardingCardMutedColor(theme)
+    val pickerCard: @Composable () -> Unit = {
+        OnboardingTutorialCard(
+            theme = theme,
+            modifier = Modifier.widthIn(max = 420.dp),
         ) {
-            val cardTextColor = onboardingCardTextColor(theme)
-            val cardMutedColor = onboardingCardMutedColor(theme)
-            OnboardingTutorialCard(
-                theme = theme,
-                modifier = Modifier.widthIn(max = 420.dp),
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = LocaleStrings.t("onboarding.mosque.title", language),
-                            color = cardTextColor,
-                            style = rememberAppTextStyle(23f, FontWeight.SemiBold),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
-                            letterSpacing = (-0.5f).sp,
-                        )
-                        Text(
-                            text = LocaleStrings.t("onboarding.mosque.message", language),
-                            color = cardMutedColor,
-                            style = rememberAppTextStyle(16f),
-                            textAlign = TextAlign.Center,
-                            lineHeight = 22.sp,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    Column {
-                        OnboardingMenuPickerRow(
-                            label = LocaleStrings.t("settings.country.picker", language),
-                            displayValue = countryOptions.firstOrNull { it.first == countryKey }?.second.orEmpty(),
-                            textColor = cardTextColor,
-                            onClick = { countrySheet = true },
-                        )
-                        OnboardingPickerDivider(cardTextColor)
-                        OnboardingMenuPickerRow(
-                            label = LocaleStrings.t("settings.city.picker", language),
-                            displayValue = cityOptions.firstOrNull { it.first == cityKey }?.second.orEmpty(),
-                            textColor = cardTextColor,
-                            onClick = { citySheet = true },
-                        )
-                        OnboardingPickerDivider(cardTextColor)
-                        OnboardingMenuPickerRow(
-                            label = LocaleStrings.t("settings.mosque.picker", language),
-                            displayValue = mosquesInCity.firstOrNull { it.id == mosqueId }?.name.orEmpty(),
-                            textColor = cardTextColor,
-                            onClick = { mosqueSheet = true },
-                            multilineValue = true,
-                        )
-                    }
-                    OnboardingPrimaryButton(
-                        text = LocaleStrings.t("onboarding.continue", language),
-                        theme = theme,
-                        onClick = {
-                            val mosque = mosquesInCity.firstOrNull { it.id == mosqueId }
-                            if (mosque != null) onContinue(mosque)
-                        },
-                        enabled = mosqueId.isNotEmpty() && mosquesInCity.isNotEmpty() && !isContinuing,
-                        loading = isContinuing,
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = LocaleStrings.t("onboarding.mosque.title", language),
+                        color = cardTextColor,
+                        style = rememberAppTextStyle(23f, FontWeight.SemiBold),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                        letterSpacing = (-0.5f).sp,
+                    )
+                    Text(
+                        text = LocaleStrings.t("onboarding.mosque.message", language),
+                        color = cardMutedColor,
+                        style = rememberAppTextStyle(16f),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 22.sp,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
+                Column {
+                    OnboardingMenuPickerRow(
+                        label = LocaleStrings.t("settings.country.picker", language),
+                        displayValue = countryOptions.firstOrNull { it.first == countryKey }?.second.orEmpty(),
+                        textColor = cardTextColor,
+                        onClick = { openPicker = if (openPicker == "country") null else "country" },
+                    )
+                    if (openPicker == "country") {
+                        SearchableDropdownPanel(
+                            options = countryOptions.map { SettingsPickerOption(it.first, it.second) },
+                            selectedKey = countryKey,
+                            theme = theme,
+                            searchPlaceholder = "Search countries…",
+                            onSelect = { key ->
+                                countryKey = key
+                                val inCountryOpts = MosqueSelection.cityOptions(mosques, key)
+                                cityKey = inCountryOpts.firstOrNull()?.first.orEmpty()
+                                syncMosqueToCity(cityKey)
+                                openPicker = null
+                            },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                    OnboardingPickerDivider(cardTextColor)
+                    OnboardingMenuPickerRow(
+                        label = LocaleStrings.t("settings.city.picker", language),
+                        displayValue = cityOptions.firstOrNull { it.first == cityKey }?.second.orEmpty(),
+                        textColor = cardTextColor,
+                        onClick = { openPicker = if (openPicker == "city") null else "city" },
+                    )
+                    if (openPicker == "city") {
+                        SearchableDropdownPanel(
+                            options = cityOptions.map { SettingsPickerOption(it.first, it.second) },
+                            selectedKey = cityKey,
+                            theme = theme,
+                            searchPlaceholder = "Search cities…",
+                            onSelect = { key ->
+                                cityKey = key
+                                syncMosqueToCity(key)
+                                openPicker = null
+                            },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                    OnboardingPickerDivider(cardTextColor)
+                    OnboardingMenuPickerRow(
+                        label = LocaleStrings.t("settings.mosque.picker", language),
+                        displayValue = mosquesInCity.firstOrNull { it.id == mosqueId }?.name.orEmpty(),
+                        textColor = cardTextColor,
+                        onClick = { openPicker = if (openPicker == "mosque") null else "mosque" },
+                        multilineValue = true,
+                    )
+                    if (openPicker == "mosque") {
+                        SearchableDropdownPanel(
+                            options = mosquesInCity.map { SettingsPickerOption(it.id, it.name) },
+                            selectedKey = mosqueId,
+                            theme = theme,
+                            searchPlaceholder = "Search mosques…",
+                            onSelect = { id ->
+                                mosqueId = id
+                                onSelectedMosqueIdChange(id)
+                                mosques.firstOrNull { it.id == id }?.let { mosque ->
+                                    countryKey = MosqueSelection.countryGroupingKey(mosque)
+                                    cityKey = mosque.cityGroupingKey
+                                }
+                                openPicker = null
+                            },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+                OnboardingPrimaryButton(
+                    text = LocaleStrings.t("onboarding.continue", language),
+                    theme = theme,
+                    onClick = {
+                        val mosque = mosquesInCity.firstOrNull { it.id == mosqueId }
+                        if (mosque != null) onContinue(mosque)
+                    },
+                    enabled = mosqueId.isNotEmpty() && mosquesInCity.isNotEmpty() && !isContinuing,
+                    loading = isContinuing,
+                )
             }
         }
     }
 
-    SettingsPickerBottomSheet(
-        visible = countrySheet,
-        title = LocaleStrings.t("settings.country.picker", language),
-        options = countryOptions.map { SettingsPickerOption(it.first, it.second) },
-        selectedKey = countryKey,
-        theme = theme,
-        language = language,
-        onDismiss = { countrySheet = false },
-        onSelect = { key ->
-            countryKey = key
-            val inCountryOpts = MosqueSelection.cityOptions(mosques, key)
-            cityKey = inCountryOpts.firstOrNull()?.first.orEmpty()
-            syncMosqueToCity(cityKey)
-        },
-    )
-    SettingsPickerBottomSheet(
-        visible = citySheet,
-        title = LocaleStrings.t("settings.city.picker", language),
-        options = cityOptions.map { SettingsPickerOption(it.first, it.second) },
-        selectedKey = cityKey,
-        theme = theme,
-        language = language,
-        onDismiss = { citySheet = false },
-        onSelect = { key ->
-            cityKey = key
-            syncMosqueToCity(key)
-        },
-    )
-    SettingsPickerBottomSheet(
-        visible = mosqueSheet,
-        title = LocaleStrings.t("settings.mosque.picker", language),
-        options = mosquesInCity.map { SettingsPickerOption(it.id, it.name) },
-        selectedKey = mosqueId,
-        theme = theme,
-        language = language,
-        onDismiss = { mosqueSheet = false },
-        onSelect = { id ->
-            mosqueId = id
-            onSelectedMosqueIdChange(id)
-            mosques.firstOrNull { it.id == id }?.let { mosque ->
-                countryKey = MosqueSelection.countryGroupingKey(mosque)
-                cityKey = mosque.cityGroupingKey
+    if (showShell) {
+        OnboardingFullScreenShell(theme) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 18.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                pickerCard()
             }
-        },
-    )
+        }
+    } else {
+        pickerCard()
+    }
 }
 
 @Composable

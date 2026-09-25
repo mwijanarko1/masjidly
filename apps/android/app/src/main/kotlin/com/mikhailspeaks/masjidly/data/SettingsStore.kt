@@ -50,6 +50,20 @@ class SettingsStore(context: Context) {
             bump()
         }
 
+    var openMosqueTabIds: List<String>
+        get() = prefs.getString(KEY_OPEN_MOSQUE_TAB_IDS, null)?.let { runCatching { json.decodeFromString<List<String>>(it) }.getOrNull() } ?: emptyList()
+        set(value) {
+            prefs.edit().putString(KEY_OPEN_MOSQUE_TAB_IDS, json.encodeToString(value)).apply()
+            bump()
+        }
+
+    var activeMosqueTabId: String?
+        get() = prefs.getString(KEY_ACTIVE_MOSQUE_TAB_ID, null)
+        set(value) {
+            prefs.edit().putString(KEY_ACTIVE_MOSQUE_TAB_ID, value).apply()
+            bump()
+        }
+
     var selectedCityGroupingKey: String?
         get() = prefs.getString(KEY_SELECTED_CITY_GROUPING, null)
         set(value) {
@@ -321,6 +335,8 @@ class SettingsStore(context: Context) {
         private const val PREFS_NAME = "masjidly_settings"
         private const val KEY_SELECTED_MOSQUE_ID = "selectedMosqueId"
         private const val KEY_SELECTED_MOSQUE_SLUG = "selectedMosqueSlug"
+        private const val KEY_OPEN_MOSQUE_TAB_IDS = "openMosqueTabIds"
+        private const val KEY_ACTIVE_MOSQUE_TAB_ID = "activeMosqueTabId"
         private const val KEY_SELECTED_CITY_GROUPING = "selectedCityGroupingKey"
         private const val KEY_SELECTED_COUNTRY_GROUPING = "selectedCountryGroupingKey"
         private const val KEY_USES_24H = "uses24HourTime"

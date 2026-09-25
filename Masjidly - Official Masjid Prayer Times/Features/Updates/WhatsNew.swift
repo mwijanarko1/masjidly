@@ -23,53 +23,53 @@ struct WhatsNew {
         case "ar":
             return [
                 WhatsNewItem(
-                    title: "تنبيه المسجد الأقرب",
-                    description: "سيخبرك مسجدلي عندما يكون مسجد آخر أقرب إليك، ويمكنك التبديل إليه بنقرة واحدة.",
+                    title: "شرح أقصر",
+                    description: "أصبح شرح البدء أقصر.",
                     icon: "location.fill"
                 ),
                 WhatsNewItem(
-                    title: "إصلاحات الأخطاء",
-                    description: "تم إصلاح مشكلات لتحسين موثوقية التطبيق.",
-                    icon: "wrench.and.screwdriver.fill"
+                    title: "تبويبات المساجد",
+                    description: "افتح عدة مساجد في تبويبات، وانتقل بينها أو أغلقها. يبقى المسجد المحدد في الإعدادات للإشعارات والودجت.",
+                    icon: "rectangle.on.rectangle"
                 ),
             ]
         case "ur":
             return [
                 WhatsNewItem(
-                    title: "قریب ترین مسجد کی اطلاع",
-                    description: "جب کوئی دوسرا مسجد آپ کے زیادہ قریب ہو تو مسجدلی آپ کو بتائے گا، اور آپ ایک ٹیپ سے اسے منتخب کر سکتے ہیں۔",
+                    title: "مختصر رہنمائی",
+                    description: "شروع کرنے کی رہنمائی اب مختصر ہے۔",
                     icon: "location.fill"
                 ),
                 WhatsNewItem(
-                    title: "بگز کی اصلاحات",
-                    description: "ایپ کی بھروسے مندی بہتر بنانے کے لیے مسائل درست کیے گئے۔",
-                    icon: "wrench.and.screwdriver.fill"
+                    title: "مسجد کے ٹیبز",
+                    description: "کئی مساجد کو ٹیبز میں کھولیں، ان کے درمیان جائیں یا بند کریں۔ اطلاعات اور ویجٹ کے لیے ڈیفالٹ مسجد سیٹنگز میں ہی رہے گی۔",
+                    icon: "rectangle.on.rectangle"
                 ),
             ]
         case "id":
             return [
                 WhatsNewItem(
-                    title: "Pemberitahuan masjid terdekat",
-                    description: "Masjidly memberi tahu saat masjid lain lebih dekat dan memungkinkan Anda beralih dengan satu ketukan.",
+                    title: "Tutorial lebih singkat",
+                    description: "Tutorial awal sekarang lebih singkat.",
                     icon: "location.fill"
                 ),
                 WhatsNewItem(
-                    title: "Perbaikan bug",
-                    description: "Memperbaiki masalah untuk meningkatkan keandalan aplikasi.",
-                    icon: "wrench.and.screwdriver.fill"
+                    title: "Tab masjid",
+                    description: "Buka beberapa masjid dalam tab, beralih, atau tutup tab. Masjid untuk notifikasi dan widget tetap dipilih di Pengaturan.",
+                    icon: "rectangle.on.rectangle"
                 ),
             ]
         default:
             return [
                 WhatsNewItem(
-                    title: "Nearest mosque prompt",
-                    description: "Masjidly now lets you know when another mosque is closer and switch with one tap.",
+                    title: "Shortened tutorial",
+                    description: "The getting-started tutorial is now shorter.",
                     icon: "location.fill"
                 ),
                 WhatsNewItem(
-                    title: "Bug fixes",
-                    description: "Fixed issues to improve app reliability.",
-                    icon: "wrench.and.screwdriver.fill"
+                    title: "Mosque tabs",
+                    description: "Open, switch, and close mosque tabs. Your Settings mosque still controls notifications and the widget.",
+                    icon: "rectangle.on.rectangle"
                 ),
             ]
         }

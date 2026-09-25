@@ -168,6 +168,7 @@ struct LocationPermissionOnboardingView: View {
 struct MosqueSelectionOnboardingView: View {
     let mosques: [Mosque]
     let timeTheme: HomeDesign.TimeTheme
+    var showsBackdrop: Bool = true
     @Binding var selectedMosqueId: String
     let isContinuing: Bool
     let onContinue: (Mosque) -> Void
@@ -175,16 +176,30 @@ struct MosqueSelectionOnboardingView: View {
     @State private var countryGroupingKey: String
     @State private var cityGroupingKey: String
     @State private var isSyncing = false
+    @State private var activePicker: ActivePicker?
+
+    private enum ActivePicker: Identifiable {
+        case country, city, mosque
+        var id: String {
+            switch self {
+            case .country: return "country"
+            case .city: return "city"
+            case .mosque: return "mosque"
+            }
+        }
+    }
 
     init(
         mosques: [Mosque],
         timeTheme: HomeDesign.TimeTheme,
+        showsBackdrop: Bool = true,
         selectedMosqueId: Binding<String>,
         isContinuing: Bool,
         onContinue: @escaping (Mosque) -> Void
     ) {
         self.mosques = mosques
         self.timeTheme = timeTheme
+        self.showsBackdrop = showsBackdrop
         self._selectedMosqueId = selectedMosqueId
         self.isContinuing = isContinuing
         self.onContinue = onContinue
@@ -233,86 +248,28 @@ struct MosqueSelectionOnboardingView: View {
     }
 
     var body: some View {
-        ZStack {
-            // Airy, atmospheric background gradient
-            LinearGradient(
-                colors: [
-                    Color.black.opacity(timeTheme.usesLightForeground ? 0.32 : 0.18),
-                    Color.black.opacity(timeTheme.usesLightForeground ? 0.16 : 0.08),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+        Group {
+            if showsBackdrop {
+                ZStack {
+                    LinearGradient(
+                        colors: [
+                            Color.black.opacity(timeTheme.usesLightForeground ? 0.32 : 0.18),
+                            Color.black.opacity(timeTheme.usesLightForeground ? 0.16 : 0.08),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea()
 
-            OnboardingTutorialChrome.card(timeTheme: timeTheme) {
-                VStack(spacing: 20) {
-                    VStack(spacing: 8) {
-                        Text(localized("onboarding.mosque.title"))
-                            .appFont(size: 23, weight: .semibold)
-                            .foregroundStyle(timeTheme.textColor)
-                            .kerning(-0.5)
-                            .multilineTextAlignment(.center)
-
-                        Text(localized("onboarding.mosque.message"))
-                            .appFont(size: 16, weight: .regular)
-                            .foregroundStyle(timeTheme.textColor.opacity(0.8))
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(4)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    VStack(spacing: 0) {
-                        OnboardingMenuPickerRow(
-                            title: localized("settings.country.picker"),
-                            value: countryOptions.first(where: { $0.key == countryGroupingKey })?.label ?? "",
-                            options: countryOptions.map { OnboardingPickerOption(id: $0.key, label: $0.label) },
-                            selection: $countryGroupingKey,
-                            textColor: timeTheme.textColor
-                        )
-                        .accessibilityIdentifier("Onboarding.CountryPicker")
-
-                        OnboardingPickerDivider(timeTheme: timeTheme)
-
-                        OnboardingMenuPickerRow(
-                            title: localized("settings.city.picker"),
-                            value: cityOptions.first(where: { $0.key == cityGroupingKey })?.label ?? "",
-                            options: cityOptions.map { OnboardingPickerOption(id: $0.key, label: $0.label) },
-                            selection: $cityGroupingKey,
-                            textColor: timeTheme.textColor
-                        )
-                        .accessibilityIdentifier("Onboarding.CityPicker")
-
-                        OnboardingPickerDivider(timeTheme: timeTheme)
-
-                        OnboardingMenuPickerRow(
-                            title: localized("settings.mosque.picker"),
-                            value: selectedMosqueDisplayName,
-                            options: mosquesInSelectedCity.map { OnboardingPickerOption(id: $0.id, label: $0.name) },
-                            selection: $selectedMosqueId,
-                            textColor: timeTheme.textColor
-                        )
-                        .accessibilityIdentifier("Onboarding.MosquePicker")
-                    }
-
-                    Button {
-                        guard let mosque = mosquesInSelectedCity.first(where: { $0.id == selectedMosqueId }) else { return }
-                        onContinue(mosque)
-                    } label: {
-                        Text(localized("onboarding.continue"))
-                            .onboardingPrimaryCapsule()
-                    }
-                    .buttonStyle(.hapticPlain)
-                    .disabled(selectedMosqueId.isEmpty || mosquesInSelectedCity.isEmpty || isContinuing)
-                    .opacity(selectedMosqueId.isEmpty || mosquesInSelectedCity.isEmpty || isContinuing ? 0.45 : 1)
-                    .accessibilityIdentifier("Onboarding.MosqueContinue")
+                    pickerCard
+                        .frame(maxWidth: 420)
+                        .padding(.horizontal, 18)
                 }
-                .padding(24)
+            } else {
+                pickerCard
             }
-            .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
-            .frame(maxWidth: 420)
-            .padding(.horizontal, 18)
         }
+        .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
         .onChange(of: countryGroupingKey) { _, newKey in
             guard !isSyncing else { return }
             // Jump directly to the first valid city to avoid "" as an invalid Picker tag.
@@ -348,6 +305,118 @@ struct MosqueSelectionOnboardingView: View {
         }
     }
 
+    private var pickerCard: some View {
+        OnboardingTutorialChrome.card(timeTheme: timeTheme) {
+            VStack(spacing: 20) {
+                VStack(spacing: 8) {
+                    Text(localized("onboarding.mosque.title"))
+                        .appFont(size: 23, weight: .semibold)
+                        .foregroundStyle(timeTheme.textColor)
+                        .kerning(-0.5)
+                        .multilineTextAlignment(.center)
+
+                    Text(localized("onboarding.mosque.message"))
+                        .appFont(size: 16, weight: .regular)
+                        .foregroundStyle(timeTheme.textColor.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                VStack(spacing: 0) {
+                    pickerSection(
+                        kind: .country,
+                        title: localized("settings.country.picker"),
+                        value: countryOptions.first(where: { $0.key == countryGroupingKey })?.label ?? "",
+                        options: countryOptions.map { SearchablePickerOption(id: $0.key, label: $0.label) },
+                        selectedId: countryGroupingKey,
+                        searchPlaceholder: "Search countries…",
+                        accessibilityId: "Onboarding.CountryPicker",
+                        onSelect: { countryGroupingKey = $0 }
+                    )
+
+                    OnboardingPickerDivider(timeTheme: timeTheme)
+
+                    pickerSection(
+                        kind: .city,
+                        title: localized("settings.city.picker"),
+                        value: cityOptions.first(where: { $0.key == cityGroupingKey })?.label ?? "",
+                        options: cityOptions.map { SearchablePickerOption(id: $0.key, label: $0.label) },
+                        selectedId: cityGroupingKey,
+                        searchPlaceholder: "Search cities…",
+                        accessibilityId: "Onboarding.CityPicker",
+                        onSelect: { cityGroupingKey = $0 }
+                    )
+
+                    OnboardingPickerDivider(timeTheme: timeTheme)
+
+                    pickerSection(
+                        kind: .mosque,
+                        title: localized("settings.mosque.picker"),
+                        value: selectedMosqueDisplayName,
+                        options: mosquesInSelectedCity.map { SearchablePickerOption(id: $0.id, label: $0.name) },
+                        selectedId: selectedMosqueId,
+                        searchPlaceholder: "Search mosques…",
+                        accessibilityId: "Onboarding.MosquePicker",
+                        onSelect: { selectedMosqueId = $0 }
+                    )
+                }
+
+                Button {
+                    guard let mosque = mosquesInSelectedCity.first(where: { $0.id == selectedMosqueId }) else { return }
+                    onContinue(mosque)
+                } label: {
+                    Text(localized("onboarding.continue"))
+                        .onboardingPrimaryCapsule()
+                }
+                .buttonStyle(.hapticPlain)
+                .disabled(selectedMosqueId.isEmpty || mosquesInSelectedCity.isEmpty || isContinuing)
+                .opacity(selectedMosqueId.isEmpty || mosquesInSelectedCity.isEmpty || isContinuing ? 0.45 : 1)
+                .accessibilityIdentifier("Onboarding.MosqueContinue")
+            }
+            .padding(24)
+        }
+    }
+
+    private func pickerSection(
+        kind: ActivePicker,
+        title: String,
+        value: String,
+        options: [SearchablePickerOption],
+        selectedId: String,
+        searchPlaceholder: String,
+        accessibilityId: String,
+        onSelect: @escaping (String) -> Void
+    ) -> some View {
+        let isOpen = activePicker == kind
+        return SearchablePickerField(
+            title: title,
+            value: value,
+            options: options,
+            selectedId: selectedId,
+            timeTheme: timeTheme,
+            searchPlaceholder: searchPlaceholder,
+            titleFontSize: 18,
+            valueFontSize: 18,
+            minRowHeight: 52,
+            horizontalPadding: 24,
+            multilineValue: kind == .mosque,
+            isOpen: isOpen,
+            onToggle: {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    activePicker = isOpen ? nil : kind
+                }
+            },
+            onSelect: { id in
+                onSelect(id)
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    activePicker = nil
+                }
+            }
+        )
+        .accessibilityIdentifier(accessibilityId)
+    }
+
     private func syncMosqueToCity(_ key: String) {
         let countryMosques: [Mosque]
         if countryGroupingKey.isEmpty {
@@ -370,74 +439,6 @@ struct MosqueSelectionOnboardingView: View {
 
     private func localized(_ key: String) -> String {
         LocaleBundle.string(forKey: key, locale: locale)
-    }
-}
-
-private struct OnboardingPickerOption: Identifiable, Equatable {
-    let id: String
-    let label: String
-}
-
-private struct OnboardingMenuPickerRow: View, Equatable {
-    let title: String
-    let value: String
-    let options: [OnboardingPickerOption]
-    @Binding var selection: String
-    let textColor: Color
-
-    static func == (lhs: OnboardingMenuPickerRow, rhs: OnboardingMenuPickerRow) -> Bool {
-        lhs.title == rhs.title && lhs.value == rhs.value && lhs.options == rhs.options
-    }
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 14) {
-            Text(title)
-                .appFont(size: 18, weight: .regular)
-                .foregroundStyle(textColor)
-                .multilineTextAlignment(.leading)
-                .lineLimit(1)
-                .layoutPriority(1)
-                .fixedSize(horizontal: true, vertical: false)
-
-            Spacer(minLength: 14)
-
-            Menu {
-                ForEach(options) { option in
-                    Button {
-                        selection = option.id
-                    } label: {
-                        if option.id == selection {
-                            Label(option.label, systemImage: "checkmark")
-                        } else {
-                            Text(option.label)
-                        }
-                    }
-                }
-            } label: {
-                HStack(alignment: .top, spacing: 7) {
-                    Text(value)
-                        .appFont(size: 18, weight: .regular)
-                        .foregroundStyle(textColor)
-                        .lineLimit(nil)
-                        .truncationMode(.tail)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.trailing)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-
-                    Image(systemName: "chevron.down")
-                        .appFont(size: 14, weight: .semibold)
-                        .foregroundStyle(textColor.opacity(0.7))
-                        .padding(.top, 3)
-                }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .contentShape(Rectangle())
-            }
-            .tint(textColor)
-            .layoutPriority(1)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
-        .padding(.horizontal, 24)
     }
 }
 

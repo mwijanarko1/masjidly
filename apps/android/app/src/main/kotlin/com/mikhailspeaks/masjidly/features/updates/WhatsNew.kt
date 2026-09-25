@@ -37,50 +37,50 @@ object WhatsNew {
         return when (code) {
             "ar" -> listOf(
                 WhatsNewItem(
-                    title = "تنبيه المسجد الأقرب",
-                    description = "سيخبرك مسجدلي عندما يكون مسجد آخر أقرب إليك، ويمكنك التبديل إليه بنقرة واحدة.",
+                    title = "شرح أقصر",
+                    description = "أصبح شرح البدء أقصر.",
                     icon = WhatsNewIcon.MAP,
                 ),
                 WhatsNewItem(
-                    title = "اتجاهات إلى أقرب مسجد",
-                    description = "افتح إرشادات خطوة بخطوة إلى أقرب مسجد في تطبيق الخرائط المفضل لديك.",
-                    icon = WhatsNewIcon.MAP,
+                    title = "تبويبات المساجد",
+                    description = "افتح عدة مساجد في تبويبات، وانتقل بينها أو أغلقها. يبقى المسجد المحدد في الإعدادات للإشعارات والودجت.",
+                    icon = WhatsNewIcon.WIDGET,
                 ),
             )
             "ur" -> listOf(
                 WhatsNewItem(
-                    title = "قریب ترین مسجد کی اطلاع",
-                    description = "جب کوئی دوسرا مسجد آپ کے زیادہ قریب ہو تو مسجدلی آپ کو بتائے گا، اور آپ ایک ٹیپ سے اسے منتخب کر سکتے ہیں۔",
+                    title = "مختصر رہنمائی",
+                    description = "شروع کرنے کی رہنمائی اب مختصر ہے۔",
                     icon = WhatsNewIcon.MAP,
                 ),
                 WhatsNewItem(
-                    title = "قریب ترین مسجد کا راستہ",
-                    description = "اپنی پسندیدہ نقشہ ایپ میں قریب ترین مسجد تک مرحلہ وار راستہ کھولیں۔",
-                    icon = WhatsNewIcon.MAP,
+                    title = "مسجد کے ٹیبز",
+                    description = "کئی مساجد کو ٹیبز میں کھولیں، ان کے درمیان جائیں یا بند کریں۔ اطلاعات اور ویجٹ کے لیے ڈیفالٹ مسجد سیٹنگز میں ہی رہے گی۔",
+                    icon = WhatsNewIcon.WIDGET,
                 ),
             )
             "id" -> listOf(
                 WhatsNewItem(
-                    title = "Pemberitahuan masjid terdekat",
-                    description = "Masjidly memberi tahu saat masjid lain lebih dekat dan memungkinkan Anda beralih dengan satu ketukan.",
+                    title = "Tutorial lebih singkat",
+                    description = "Tutorial awal sekarang lebih singkat.",
                     icon = WhatsNewIcon.MAP,
                 ),
                 WhatsNewItem(
-                    title = "Petunjuk ke masjid terdekat",
-                    description = "Buka petunjuk arah langkah demi langkah ke masjid terdekat di aplikasi peta pilihan Anda.",
-                    icon = WhatsNewIcon.MAP,
+                    title = "Tab masjid",
+                    description = "Buka beberapa masjid dalam tab, beralih, atau tutup tab. Masjid untuk notifikasi dan widget tetap dipilih di Pengaturan.",
+                    icon = WhatsNewIcon.WIDGET,
                 ),
             )
             else -> listOf(
                 WhatsNewItem(
-                    title = "Nearest mosque prompt",
-                    description = "Masjidly now lets you know when another mosque is closer and switch with one tap.",
+                    title = "Shortened tutorial",
+                    description = "The getting-started tutorial is now shorter.",
                     icon = WhatsNewIcon.MAP,
                 ),
                 WhatsNewItem(
-                    title = "Directions to your nearest mosque",
-                    description = "Open turn-by-turn directions to the closest mosque in your preferred maps app.",
-                    icon = WhatsNewIcon.MAP,
+                    title = "Mosque tabs",
+                    description = "Open, switch, and close mosque tabs. Your Settings mosque still controls notifications and the widget.",
+                    icon = WhatsNewIcon.WIDGET,
                 ),
             )
         }

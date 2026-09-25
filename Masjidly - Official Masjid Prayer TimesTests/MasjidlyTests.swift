@@ -523,6 +523,7 @@ private final class MockPrayerNotificationScheduler: PrayerNotificationSchedulin
     var authorizationRequestCount = 0
     var rescheduleCount = 0
     var cancelCount = 0
+    var lastScheduledMosqueId: String?
 
     func requestAuthorizationIfNeeded() async throws -> Bool {
         authorizationRequestCount += 1
@@ -537,6 +538,7 @@ private final class MockPrayerNotificationScheduler: PrayerNotificationSchedulin
         asrIqamahPreference: AsrIqamahPreference
     ) async throws {
         rescheduleCount += 1
+        lastScheduledMosqueId = mosque.id
     }
 
     func cancelAllPrayerNotifications() async {
@@ -620,6 +622,46 @@ struct PrayerTimesDiskCacheTests {
 @Suite("Home widget refresh")
 @MainActor
 struct HomeWidgetRefreshTests {
+    @Test func activeTabDoesNotChangeNotificationOrWidgetDefault() async {
+        let suite = "MosqueTabs.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        let mosques = [
+            Mosque(id: "tab-a", name: "A", address: "", lat: 0, lng: 0, slug: "tab-a", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false),
+            Mosque(id: "tab-b", name: "B", address: "", lat: 0, lng: 0, slug: "tab-b", citySlug: nil, cityName: nil, countryCode: nil, countryName: nil, timezone: nil, website: nil, isHidden: false)
+        ]
+        let settings = SettingsStore(defaults: defaults)
+        settings.selectedMosqueId = "tab-a"
+        settings.selectedMosqueSlug = "tab-a"
+        settings.openMosqueTabIds = ["tab-a", "tab-b"]
+        settings.activeMosqueTabId = "tab-b"
+        settings.notifications.masterEnabled = true
+        let cache = PrayerTimesDiskCache()
+        try? cache.saveDataRevision(DataRevision(dataRevision: -1, updatedAt: -1))
+        let writer = WidgetSnapshotWriterSpy()
+        let scheduler = MockPrayerNotificationScheduler()
+        let model = HomeViewModel(repository: MockPrayerRepository(mosques: mosques), settings: settings,
+                                  notificationScheduler: scheduler, widgetSnapshotWriter: writer, diskCache: cache)
+
+        await model.load()
+        await model.resyncNotificationsIfNeeded()
+
+        #expect(model.selectedMosque?.id == "tab-b")
+        #expect(settings.selectedMosqueId == "tab-a")
+        #expect(scheduler.lastScheduledMosqueId == "tab-a")
+        #expect(writer.lastDefaultMosqueId == "tab-a")
+        #expect(SettingsStore(defaults: defaults).activeMosqueTabId == "tab-b")
+        #expect(SettingsStore(defaults: defaults).openMosqueTabIds == ["tab-a", "tab-b"])
+
+        settings.activeMosqueTabId = "tab-a"
+        await model.applySelectionFromSettings()
+        #expect(model.selectedMosque?.id == "tab-a")
+        settings.activeMosqueTabId = "tab-b"
+        await model.applySelectionFromSettings()
+        #expect(model.selectedMosque?.id == "tab-b")
+        #expect(settings.selectedMosqueId == "tab-a")
+    }
+
     @Test func homeNetworkRefreshRefreshesWidgetsOnceForSelectedMosque() async {
         let suiteName = "HomeWidgetRefresh.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -658,6 +700,7 @@ struct HomeWidgetRefreshTests {
 private final class WidgetSnapshotWriterSpy: WidgetPrayerSnapshotWriting {
     private(set) var snapshotRefreshCount = 0
     private(set) var directoryRefreshCount = 0
+    private(set) var lastDefaultMosqueId: String?
 
     func refreshSnapshot(for mosque: Mosque, days: Int) async {
         snapshotRefreshCount += 1
@@ -665,6 +708,7 @@ private final class WidgetSnapshotWriterSpy: WidgetPrayerSnapshotWriting {
 
     func refreshSnapshots(for mosques: [Mosque], selectedMosque: Mosque?, days: Int) async {
         directoryRefreshCount += 1
+        lastDefaultMosqueId = selectedMosque?.id
     }
 }
 

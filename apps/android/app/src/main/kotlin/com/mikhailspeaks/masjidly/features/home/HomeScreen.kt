@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,6 +38,8 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -69,6 +72,7 @@ import com.mikhailspeaks.masjidly.ui.home.rememberHomeThemeAnimation
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mikhailspeaks.masjidly.data.SettingsStore
@@ -85,8 +89,10 @@ import com.mikhailspeaks.masjidly.features.settings.AppReviewPromptCoordinator
 import com.mikhailspeaks.masjidly.features.settings.MasjidlySupportMail
 import com.mikhailspeaks.masjidly.features.settings.SettingsClosestMosqueLocationProvider
 import com.mikhailspeaks.masjidly.features.onboarding.HomeOnboardingOverlay
+import com.mikhailspeaks.masjidly.features.onboarding.MosqueSelectionOnboardingScreen
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
+import com.mikhailspeaks.masjidly.features.onboarding.OnboardingScrim
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingStep
 import com.mikhailspeaks.masjidly.features.qibla.rememberQiblaRotation
 import com.mikhailspeaks.masjidly.ui.home.HomeDateFormatting
@@ -106,6 +112,18 @@ private fun Context.hasLocationPermission(): Boolean {
     val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
     val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
     return fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED
+}
+
+private fun defaultAddTabMosqueId(available: List<Mosque>, current: Mosque?): String {
+    if (current == null) return available.firstOrNull()?.id.orEmpty()
+    val currentCountry = MosqueSelection.countryGroupingKey(current)
+    available.firstOrNull {
+        MosqueSelection.countryGroupingKey(it) == currentCountry && it.cityGroupingKey == current.cityGroupingKey
+    }?.let { return it.id }
+    available.firstOrNull {
+        MosqueSelection.countryGroupingKey(it) == currentCountry
+    }?.let { return it.id }
+    return available.firstOrNull()?.id.orEmpty()
 }
 
 @Composable
@@ -136,6 +154,8 @@ fun HomeScreen(
     var pendingClosestMosque by remember { mutableStateOf<Mosque?>(null) }
     var forceClosestMosquePrompt by remember { mutableStateOf(false) }
     var closestMosqueCheckTrigger by remember { mutableIntStateOf(0) }
+    var showAddMosqueTab by remember { mutableStateOf(false) }
+    var addTabSelectedMosqueId by remember { mutableStateOf("") }
     LaunchedEffect(state.mosques) {
         onboardingViewModel.startIfNeeded(state.mosques)
     }
@@ -296,6 +316,108 @@ fun HomeScreen(
             onGoToToday = viewModel::goToToday,
         )
 
+        if (onboardingStep == null && state.mosques.isNotEmpty()) {
+            val ids = settingsStore.openMosqueTabIds.ifEmpty {
+                listOfNotNull(settingsStore.selectedMosqueId ?: state.selectedMosque?.id)
+            }
+            val available = state.mosques.filter { it.id !in ids }
+            Row(
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                    .navigationBarsPadding().padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                LazyRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    itemsIndexed(ids) { _, id ->
+                        state.mosques.firstOrNull { it.id == id }?.let { mosque ->
+                            val isSelected = state.selectedMosque?.id == id
+                            Row(
+                                modifier = Modifier
+                                    .widthIn(max = if (isSelected) 188.dp else 108.dp)
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(textColor.copy(alpha = if (isSelected) 0.3f else 0.12f))
+                                    .padding(horizontal = if (isSelected) 12.dp else 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                TextButton(onClick = {
+                                    settingsStore.activeMosqueTabId = id
+                                    viewModel.applySelectionFromSettings()
+                                }) {
+                                    Text(
+                                        mosque.name,
+                                        color = textColor,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                if (ids.size > 1) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Close ${mosque.name} tab",
+                                        tint = textColor,
+                                        modifier = Modifier.size(28.dp).hapticClickable {
+                                            val remaining = ids.filter { it != id }
+                                            settingsStore.openMosqueTabIds = remaining
+                                            if (state.selectedMosque?.id == id) {
+                                                settingsStore.activeMosqueTabId = remaining.first()
+                                                viewModel.applySelectionFromSettings()
+                                            }
+                                        }.padding(5.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                if (available.isNotEmpty()) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add mosque tab",
+                        tint = textColor,
+                        modifier = Modifier.size(40.dp).clip(CircleShape)
+                            .background(textColor.copy(alpha = 0.12f))
+                            .hapticClickable {
+                                addTabSelectedMosqueId = defaultAddTabMosqueId(
+                                    available = available,
+                                    current = state.selectedMosque,
+                                )
+                                showAddMosqueTab = true
+                            }.padding(8.dp),
+                    )
+                }
+            }
+            if (showAddMosqueTab) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    OnboardingScrim(
+                        theme = theme,
+                        modifier = Modifier.hapticClickable { showAddMosqueTab = false },
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 18.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        MosqueSelectionOnboardingScreen(
+                            mosques = available,
+                            theme = theme,
+                            language = language,
+                            selectedMosqueId = addTabSelectedMosqueId,
+                            isContinuing = false,
+                            onSelectedMosqueIdChange = { addTabSelectedMosqueId = it },
+                            onContinue = { mosque ->
+                                showAddMosqueTab = false
+                                settingsStore.openMosqueTabIds = ids + mosque.id
+                                settingsStore.activeMosqueTabId = mosque.id
+                                viewModel.applySelectionFromSettings()
+                            },
+                            showShell = false,
+                        )
+                    }
+                }
+            }
+        }
+
         onboardingStep?.let { step ->
             Box(modifier = Modifier.fillMaxSize()) {
                 HomeOnboardingOverlay(
@@ -320,8 +442,15 @@ fun HomeScreen(
                 onUseClosest = {
                     forceClosestMosquePrompt = false
                     settingsStore.dismissedClosestMosqueId = closest.id
+                    if (settingsStore.openMosqueTabIds.isEmpty) {
+                        settingsStore.openMosqueTabIds = listOfNotNull(settingsStore.selectedMosqueId ?: state.selectedMosque?.id)
+                    }
                     settingsStore.selectedMosqueId = closest.id
                     settingsStore.selectedMosqueSlug = closest.slug
+                    if (closest.id !in settingsStore.openMosqueTabIds) {
+                        settingsStore.openMosqueTabIds = settingsStore.openMosqueTabIds + closest.id
+                    }
+                    settingsStore.activeMosqueTabId = closest.id
                     settingsStore.selectedCityGroupingKey = closest.cityGroupingKey
                     settingsStore.selectedCountryGroupingKey = MosqueSelection.countryGroupingKey(closest)
                     pendingClosestMosque = null

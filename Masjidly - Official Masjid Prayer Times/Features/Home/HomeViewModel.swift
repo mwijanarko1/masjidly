@@ -12,6 +12,15 @@ final class HomeViewModel {
 
     var mosques: [Mosque] = []
     var selectedMosque: Mosque?
+    private var defaultMosque: Mosque? {
+        MosqueDefaults.resolveSelectedMosque(mosques: mosques, selectedId: settings.selectedMosqueId, selectedSlug: settings.selectedMosqueSlug)
+    }
+
+    private func displayedMosque(in mosques: [Mosque]) -> Mosque? {
+        if let id = settings.activeMosqueTabId, settings.openMosqueTabIds.contains(id),
+           let mosque = mosques.first(where: { $0.id == id }) { return mosque }
+        return MosqueDefaults.resolveSelectedMosque(mosques: mosques, selectedId: settings.selectedMosqueId, selectedSlug: settings.selectedMosqueSlug)
+    }
     var monthData: MonthPrayerData?
     var ramadanData: RamadanPrayerData?
     var ukDst: [UkDstYear] = []
@@ -73,11 +82,7 @@ final class HomeViewModel {
         let cachedMosques = diskCache.loadMosques()
         if let cachedMosques {
             mosques = cachedMosques
-            selectedMosque = MosqueDefaults.resolveSelectedMosque(
-                mosques: cachedMosques,
-                selectedId: settings.selectedMosqueId,
-                selectedSlug: settings.selectedMosqueSlug
-            )
+            selectedMosque = displayedMosque(in: cachedMosques)
             if let m = selectedMosque {
                 hydrateFromCache(for: m)
             }
@@ -100,6 +105,7 @@ final class HomeViewModel {
         let cachedVersions = diskCache.loadVersions(slug: mosque.slug, month: monthName.rawValue, year: sh.year)
 
         if !checkVersions, let cachedMonthly {
+            guard selectedMosque?.id == mosque.id else { return }
             monthData = cachedMonthly
             ramadanData = cachedRamadan
             ukDst = cachedDst?.ukDstDates ?? []
@@ -112,6 +118,7 @@ final class HomeViewModel {
 
         let versions = try? await repository.getPrayerDataVersions(mosqueSlug: mosque.slug, month: monthName, year: sh.year)
         if let versions, let cachedVersions, cachedVersions.versions == versions, let cachedMonthly {
+            guard selectedMosque?.id == mosque.id else { return }
             try? diskCache.saveVersions(slug: mosque.slug, month: monthName.rawValue, year: sh.year, versions: versions)
             monthData = cachedMonthly
             ramadanData = cachedRamadan
@@ -130,6 +137,8 @@ final class HomeViewModel {
         let ramadanData = try await ramadan
         let dstCalendar = try await dst
         let ukDst = dstCalendar?.ukDstDates ?? []
+
+        guard selectedMosque?.id == mosque.id else { return }
 
         if let monthData, !monthData.prayerTimes.isEmpty {
             try? diskCache.saveMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year, data: monthData)
@@ -162,7 +171,7 @@ final class HomeViewModel {
         loadState = .loading
         do {
             try await refreshPrayerPayload(for: m)
-            await refreshWidgetSnapshot(for: m)
+            await refreshWidgetSnapshotForCurrentMosque()
             lastError = nil
             loadState = .loaded
         } catch {
@@ -329,6 +338,7 @@ final class HomeViewModel {
             loadedMonthYear = parts.year
             applyPrayerTimes(for: displayedDate, mosque: mosque)
         } catch {
+            guard selectedMosque?.slug == mosque.slug else { return }
             if let cached = diskCache.loadMonthly(slug: mosque.slug, month: monthName.rawValue, year: parts.year) {
                 monthData = cached
                 ramadanData = diskCache.loadRamadan(slug: mosque.slug, date: isoDate)
@@ -341,28 +351,24 @@ final class HomeViewModel {
     }
 
     func applySelectionFromSettings() async {
+        if selectedMosque?.id != displayedMosque(in: mosques)?.id {
+            clearDisplayedPrayerTimes()
+            monthData = nil
+        }
         // Hydrate from cache for the new mosque first.
         if let cachedMosques = diskCache.loadMosques(),
-           let m = MosqueDefaults.resolveSelectedMosque(
-            mosques: cachedMosques,
-            selectedId: settings.selectedMosqueId,
-            selectedSlug: settings.selectedMosqueSlug
-           ) {
+           let m = displayedMosque(in: cachedMosques) {
             selectedMosque = m
             mosques = cachedMosques
             hydrateFromCache(for: m)
         }
 
         // Then network refresh.
-        if let m = MosqueDefaults.resolveSelectedMosque(
-            mosques: mosques,
-            selectedId: settings.selectedMosqueId,
-            selectedSlug: settings.selectedMosqueSlug
-        ) {
+        if let m = displayedMosque(in: mosques) {
             selectedMosque = m
             do {
                 try await refreshPrayerPayload(for: m)
-                await refreshWidgetSnapshot(for: m)
+                await refreshWidgetSnapshotForCurrentMosque()
             } catch {
                 lastError = error.localizedDescription
             }
@@ -401,26 +407,22 @@ final class HomeViewModel {
             mosques = visible
             if !revisionUnchanged { try? diskCache.saveMosques(visible) }
 
-            selectedMosque = MosqueDefaults.resolveSelectedMosque(
-                mosques: list,
-                selectedId: settings.selectedMosqueId,
-                selectedSlug: settings.selectedMosqueSlug
-            )
+            selectedMosque = displayedMosque(in: visible)
             guard let mosque = selectedMosque else {
                 loadState = .empty
                 return
             }
             // Only persist a resolved mosque once the user has finished onboarding.
             // Writing the default (MWHS) here blocked closest-mosque prefill.
-            if settings.hasCompletedOnboarding {
-                settings.selectedMosqueId = mosque.id
-                settings.selectedMosqueSlug = mosque.slug
-                settings.selectedCityGroupingKey = mosque.cityGroupingKey
-                settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: mosque)
+            if settings.hasCompletedOnboarding, let defaultMosque {
+                settings.selectedMosqueId = defaultMosque.id
+                settings.selectedMosqueSlug = defaultMosque.slug
+                settings.selectedCityGroupingKey = defaultMosque.cityGroupingKey
+                settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: defaultMosque)
             }
             try await refreshPrayerPayload(for: mosque, checkVersions: !revisionUnchanged)
             if let revision { try? diskCache.saveDataRevision(revision) }
-            await refreshWidgetSnapshots(selected: mosque)
+            await refreshWidgetSnapshots(selected: defaultMosque ?? mosque)
             loadState = .loaded
         } catch {
             lastError = error.localizedDescription
@@ -455,13 +457,13 @@ final class HomeViewModel {
     }
 
     func refreshWidgetSnapshotForCurrentMosque() async {
-        guard let selectedMosque else { return }
-        await refreshWidgetSnapshot(for: selectedMosque)
+        guard let mosque = defaultMosque else { return }
+        await refreshWidgetSnapshot(for: mosque)
     }
 
     func resyncNotificationsIfNeeded() async {
         let n = settings.notifications
-        guard n.masterEnabled, let mosque = selectedMosque else {
+        guard n.masterEnabled, let mosque = defaultMosque else {
             await notificationScheduler.cancelAllPrayerNotifications()
             return
         }
