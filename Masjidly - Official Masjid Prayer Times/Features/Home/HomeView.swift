@@ -13,6 +13,7 @@ struct HomeView: View {
     @Environment(AppReviewPromptCoordinator.self) private var reviewPrompt
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Derived from the observable store so language changes re-localize the entire home immediately.
     private var locale: Locale { settings.resolvedLocale }
 
@@ -33,6 +34,7 @@ struct HomeView: View {
     @State private var awaitingOnboardingLocationPermission = false
     @State private var showingAddMosqueTab = false
     @State private var addTabSelectedMosqueId = ""
+    @State private var addMosqueTabButtonFrame = CGRect.zero
 
     private var openMosqueTabIds: [String] {
         settings.openMosqueTabIds.isEmpty
@@ -282,7 +284,7 @@ struct HomeView: View {
                 whatsNewOverlay
             } else if showingClosestMosquePrompt, let pendingClosestMosque {
                 closestMosquePromptOverlay(closest: pendingClosestMosque)
-            } else if showingAddMosqueTab {
+            } else {
                 addMosqueTabOverlay
             }
         }
@@ -386,6 +388,7 @@ struct HomeView: View {
                             }
                         }
                     }
+                    .animation(.easeInOut(duration: 0.2), value: model.selectedMosque?.id)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onChange(of: model.selectedMosque?.id) { _, newId in
@@ -399,16 +402,30 @@ struct HomeView: View {
                 Button {
                     HapticFeedback.buttonTap()
                     addTabSelectedMosqueId = defaultAddTabMosqueId()
-                    showingAddMosqueTab = true
+                    setAddMosqueTabVisible(true)
                 } label: {
                     Image(systemName: "plus")
                         .foregroundStyle(currentAppearance.textColor)
                         .padding(10)
                         .background(Circle().fill(currentAppearance.textColor.opacity(0.12)))
+                        .opacity(showingAddMosqueTab ? 0 : 1)
                 }
                 .buttonStyle(.hapticPlain)
+                .onGeometryChange(for: CGRect.self) { proxy in
+                    proxy.frame(in: .global)
+                } action: { frame in
+                    addMosqueTabButtonFrame = frame
+                }
+                .allowsHitTesting(!showingAddMosqueTab)
+                .accessibilityHidden(showingAddMosqueTab)
                 .accessibilityLabel("Add mosque tab")
             }
+        }
+    }
+
+    private func setAddMosqueTabVisible(_ visible: Bool) {
+        withAnimation(reduceMotion ? .easeOut(duration: 0.18) : .spring(response: 0.48, dampingFraction: 0.88)) {
+            showingAddMosqueTab = visible
         }
     }
 
@@ -643,52 +660,68 @@ struct HomeView: View {
     @ViewBuilder
     private var addMosqueTabOverlay: some View {
         GeometryReader { geo in
+            let frame = geo.frame(in: .global)
+            let origin = CGSize(
+                width: addMosqueTabButtonFrame.midX - frame.midX,
+                height: addMosqueTabButtonFrame.midY - frame.midY
+            )
+            let cardTransition: AnyTransition = reduceMotion || addMosqueTabButtonFrame.isEmpty
+                ? .opacity
+                : .scale(scale: 0.08)
+                    .combined(with: .offset(origin))
+                    .combined(with: .opacity)
             ZStack {
-                ZStack {
-                    Color.black.opacity(0.4)
+                if showingAddMosqueTab {
+                    ZStack {
+                        Color.black.opacity(0.4)
 
-                    let sky = currentAppearance.sky
-                    LinearGradient(
-                        colors: sky.baseColors.map { $0.opacity(0.55) },
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-
-                    if let glow = sky.glowColor {
-                        RadialGradient(
-                            colors: [glow.opacity(0.4 * sky.glowBaseAlpha), glow.opacity(0.15 * sky.glowBaseAlpha), .clear],
-                            center: UnitPoint(x: 0.5, y: 0.82),
-                            startRadius: 0,
-                            endRadius: 500
+                        let sky = currentAppearance.sky
+                        LinearGradient(
+                            colors: sky.baseColors.map { $0.opacity(0.55) },
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
-                        .blendMode(.screen)
-                    }
-                }
-                .ignoresSafeArea()
-                .onTapGesture {
-                    HapticFeedback.buttonTap()
-                    showingAddMosqueTab = false
-                }
 
-                MosqueSelectionOnboardingView(
-                    mosques: availableMosqueTabs,
-                    timeTheme: currentTheme,
-                    showsBackdrop: false,
-                    selectedMosqueId: $addTabSelectedMosqueId,
-                    isContinuing: false,
-                    onContinue: { mosque in
-                        settings.openMosqueTabIds = openMosqueTabIds + [mosque.id]
-                        activateTab(mosque)
-                        showingAddMosqueTab = false
+                        if let glow = sky.glowColor {
+                            RadialGradient(
+                                colors: [glow.opacity(0.4 * sky.glowBaseAlpha), glow.opacity(0.15 * sky.glowBaseAlpha), .clear],
+                                center: UnitPoint(x: 0.5, y: 0.82),
+                                startRadius: 0,
+                                endRadius: 500
+                            )
+                            .blendMode(.screen)
+                        }
                     }
-                )
-                .padding(.horizontal, 18)
-                .frame(maxWidth: 420)
-                .frame(maxHeight: min(620, geo.size.height - 80))
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        HapticFeedback.buttonTap()
+                        setAddMosqueTabVisible(false)
+                    }
+                    .transition(.opacity.animation(.easeInOut(duration: 0.24)))
+                    .zIndex(0)
+
+                    MosqueSelectionOnboardingView(
+                        mosques: availableMosqueTabs,
+                        timeTheme: currentTheme,
+                        showsBackdrop: false,
+                        selectedMosqueId: $addTabSelectedMosqueId,
+                        isContinuing: false,
+                        onContinue: { mosque in
+                            settings.openMosqueTabIds = openMosqueTabIds + [mosque.id]
+                            activateTab(mosque)
+                            setAddMosqueTabVisible(false)
+                        }
+                    )
+                    .padding(.horizontal, 18)
+                    .frame(maxWidth: 420)
+                    .frame(maxHeight: min(620, geo.size.height - 80))
+                    .transition(cardTransition)
+                    .zIndex(1)
+                }
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
-        .transition(.opacity.animation(.easeInOut(duration: 0.25)))
+        .allowsHitTesting(showingAddMosqueTab)
     }
 
     @ViewBuilder

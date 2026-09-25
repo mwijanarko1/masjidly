@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -323,30 +325,46 @@ fun HomeScreen(
                 listOfNotNull(settingsStore.selectedMosqueId ?: state.selectedMosque?.id)
             }
             val available = state.mosques.filter { it.id !in ids }
+            val tabListState = rememberLazyListState()
+            LaunchedEffect(state.selectedMosque?.id, ids) {
+                val index = ids.indexOf(state.selectedMosque?.id)
+                if (index >= 0) tabListState.animateScrollToItem(index)
+            }
             Row(
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                     .navigationBarsPadding().padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                LazyRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    itemsIndexed(ids) { _, id ->
+                LazyRow(state = tabListState, modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    itemsIndexed(ids, key = { _, id -> id }) { _, id ->
                         state.mosques.firstOrNull { it.id == id }?.let { mosque ->
                             val isSelected = state.selectedMosque?.id == id
-                            val tabForeground = if (isSelected) {
-                                if (theme.usesLightForeground) Color.Black else Color.White
-                            } else {
-                                textColor.copy(alpha = 0.72f)
-                            }
+                            val tabForeground by animateColorAsState(
+                                if (isSelected) {
+                                    if (theme.usesLightForeground) Color.Black else Color.White
+                                } else textColor.copy(alpha = 0.72f),
+                                animationSpec = tween(200), label = "mosqueTabText",
+                            )
+                            val tabBackground by animateColorAsState(
+                                textColor.copy(alpha = if (isSelected) 0.92f else 0.12f),
+                                animationSpec = tween(200), label = "mosqueTabBackground",
+                            )
+                            val tabWidth by animateDpAsState(
+                                if (isSelected) 188.dp else 108.dp,
+                                animationSpec = tween(200), label = "mosqueTabWidth",
+                            )
+                            val tabPadding by animateDpAsState(
+                                if (isSelected) 12.dp else 10.dp,
+                                animationSpec = tween(200), label = "mosqueTabPadding",
+                            )
                             Row(
                                 modifier = Modifier
-                                    .widthIn(max = if (isSelected) 188.dp else 108.dp)
+                                    .widthIn(max = tabWidth)
                                     .clip(RoundedCornerShape(24.dp))
-                                    .background(
-                                        textColor.copy(alpha = if (isSelected) 0.92f else 0.12f),
-                                    )
+                                    .background(tabBackground)
                                     .semantics { if (isSelected) selected = true }
-                                    .padding(horizontal = if (isSelected) 12.dp else 10.dp),
+                                    .padding(horizontal = tabPadding),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 TextButton(onClick = {
