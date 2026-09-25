@@ -139,7 +139,40 @@ git push origin main
 
 ---
 
-## 3. Releasing a New iOS Version
+## 3. iOS development builds (USB device)
+
+**Default for iOS work:** build and install on the physical iPhone over USB. Do not use the Simulator unless the user asks for it, or the device is unavailable.
+
+```bash
+# Resolve the connected device (prefer USB "Top M2" / iPhone XS)
+xcrun devicectl list devices
+
+DEVICE_UDID=00008020-000E0D8A1ED8002E   # Top M2 (xcodebuild id)
+DEVICE_CORE=345910DF-F6D5-5F02-B28A-DFD703DDA290  # Top M2 (devicectl id)
+
+cd "<repo-root>"
+xcodebuild \
+  -project "Masjidly - Official Masjid Prayer Times.xcodeproj" \
+  -scheme "Masjidly - Official Masjid Prayer Times" \
+  -configuration Debug \
+  -destination "platform=iOS,id=$DEVICE_UDID" \
+  -derivedDataPath ".derivedData-usb" \
+  CODE_SIGN_STYLE=Automatic \
+  build
+
+APP=".derivedData-usb/Build/Products/Debug-iphoneos/Masjidly - Official Masjid Prayer Times.app"
+xcrun devicectl device install app --device "$DEVICE_CORE" "$APP"
+xcrun devicectl device process launch --device "$DEVICE_CORE" "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times"
+```
+
+Notes:
+- Keep using `.derivedData-usb` so device builds stay separate from simulator DerivedData.
+- If the device is locked or untrusted, unlock it and accept the trust prompt, then retry.
+- Re-check `devicectl list devices` / `xcodebuild -showdestinations` if IDs change after reconnecting.
+
+---
+
+## 4. Releasing a New iOS Version
 
 1. Bump `MARKETING_VERSION` in Xcode project settings
 2. Submit to App Store Connect
@@ -150,7 +183,7 @@ git push origin main
 
 ---
 
-## 4. In-App Update Infrastructure
+## 5. In-App Update Infrastructure
 
 ### iOS (`MasjidlyRootView.swift`)
 - On launch, calls `AppUpdateChecker.checkForUpdate()`
@@ -172,7 +205,7 @@ Both trigger a live check against `latest.json` (or show a test release if fetch
 
 ---
 
-## 5. Version Bumping Rules
+## 6. Version Bumping Rules
 
 - **Android versionCode**: increment by 1 for every build. Used for update comparison.
 - **Android versionName** (`build.gradle.kts`): bump for meaningful feature releases.
@@ -181,7 +214,7 @@ Both trigger a live check against `latest.json` (or show a test release if fetch
 
 ---
 
-## 6. Important Paths
+## 7. Important Paths
 
 ### App repo (`mwijanarko1/masjidly`)
 ```

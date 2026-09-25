@@ -366,15 +366,22 @@ struct HomeView: View {
                                         .accessibilityLabel("Close \(mosque.name) tab")
                                     }
                                 }
-                                .appFont(size: 13, weight: .semibold)
-                                .foregroundStyle(currentAppearance.textColor)
+                                .appFont(size: 13, weight: isSelected ? .bold : .semibold)
+                                .foregroundStyle(
+                                    isSelected
+                                        ? (currentAppearance.usesLightForeground ? Color.black : Color.white)
+                                        : currentAppearance.textColor.opacity(0.72)
+                                )
                                 .padding(.horizontal, isSelected ? 12 : 10)
                                 .padding(.vertical, 10)
                                 .background(
                                     Capsule().fill(
-                                        currentAppearance.textColor.opacity(isSelected ? 0.3 : 0.12)
+                                        isSelected
+                                            ? currentAppearance.textColor.opacity(0.92)
+                                            : currentAppearance.textColor.opacity(0.12)
                                     )
                                 )
+                                .accessibilityAddTraits(isSelected ? .isSelected : [])
                                 .id(id)
                             }
                         }
@@ -616,6 +623,7 @@ struct HomeView: View {
                 asrIqamahPreference: settings.asrIqamahPreference,
                 prayerLabels: labels,
                 selectedIndex: model.selectedPrayerIndex,
+                currentPrayerIndex: model.currentPrayerIndex,
                 totalCount: prayers.count,
                 onSelectPrayer: { model.selectedPrayerIndex = $0 },
                 highlightedShortcutIndex: nil,
@@ -627,13 +635,6 @@ struct HomeView: View {
                     qiblaDirectionProvider.stop()
                 } else {
                     qiblaDirectionProvider.start(fallbackMosque: model.selectedMosque, deferAuthorization: deferAuth)
-                }
-                if let nextName = model.nextCountdown?.nextName {
-                    if let index = prayers.firstIndex(where: { $0.canonical == nextName }) {
-                        model.selectedPrayerIndex = index
-                    }
-                } else if isTodayInSheffield(model.displayedDate), let ishaIndex = prayers.firstIndex(where: { $0.canonical == "Isha" }) {
-                    model.selectedPrayerIndex = ishaIndex
                 }
             }
         )

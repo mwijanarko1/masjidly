@@ -1048,6 +1048,30 @@ enum PrayerTimesEngine {
         let h12 = p[0] % 12 == 0 ? 12 : p[0] % 12
         return String(format: "%d:%02d%@", h12, p[1], ampm)
     }
+
+    /// Maps a next-prayer name to the home letter-picker index (F, S, D, A, M, I).
+    /// Jummah shares Dhuhr's slot (index 2).
+    static func homeLetterIndex(forNextName name: String?) -> Int? {
+        guard let name else { return nil }
+        switch name.lowercased() {
+        case "fajr": return 0
+        case "sunrise": return 1
+        case "dhuhr", "jummah": return 2
+        case "asr": return 3
+        case "maghrib": return 4
+        case "isha": return 5
+        default: return nil
+        }
+    }
+
+    /// Letter index to auto-select / mark as current when viewing today.
+    /// `countdownResolved` means today's next-prayer check ran (iqamah available).
+    /// When that check returns no next prayer, fall back to Isha.
+    static func homeCurrentPrayerIndex(nextName: String?, isToday: Bool, countdownResolved: Bool) -> Int? {
+        guard isToday else { return nil }
+        if let index = homeLetterIndex(forNextName: nextName) { return index }
+        return countdownResolved ? 5 : nil
+    }
 }
 
 struct NextPrayerCountdownResult: Equatable, Sendable {

@@ -1115,4 +1115,35 @@ object PrayerTimesEngine {
         val h12 = if (p[0] % 12 == 0) 12 else p[0] % 12
         return String.format(Locale.ROOT, "%d:%02d%s", h12, p[1], ampm)
     }
+
+    /**
+     * Maps a next-prayer name to the home letter-picker index (F, S, D, A, M, I).
+     * Jummah shares Dhuhr's slot (index 2).
+     */
+    fun homeLetterIndex(forNextName: String?): Int? {
+        val name = forNextName?.trim()?.lowercase(Locale.ROOT) ?: return null
+        return when (name) {
+            "fajr" -> 0
+            "sunrise" -> 1
+            "dhuhr", "jummah" -> 2
+            "asr" -> 3
+            "maghrib" -> 4
+            "isha" -> 5
+            else -> null
+        }
+    }
+
+    /**
+     * Letter index to auto-select / mark as current when viewing today.
+     * When today's countdown check ran and found no next prayer, fall back to Isha.
+     */
+    fun homeCurrentPrayerIndex(
+        nextName: String?,
+        isToday: Boolean,
+        countdownResolved: Boolean,
+    ): Int? {
+        if (!isToday) return null
+        homeLetterIndex(nextName)?.let { return it }
+        return if (countdownResolved) 5 else null
+    }
 }

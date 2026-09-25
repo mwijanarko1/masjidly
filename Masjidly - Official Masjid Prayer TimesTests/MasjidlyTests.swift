@@ -57,6 +57,20 @@ struct PrayerEngineTests {
         #expect(d.fajr == "x2")
     }
 
+    @Test func homeLetterIndexMapsJummahToDhuhrSlot() {
+        #expect(PrayerTimesEngine.homeLetterIndex(forNextName: "Jummah") == 2)
+        #expect(PrayerTimesEngine.homeLetterIndex(forNextName: "Dhuhr") == 2)
+        #expect(PrayerTimesEngine.homeLetterIndex(forNextName: "Fajr") == 0)
+        #expect(PrayerTimesEngine.homeLetterIndex(forNextName: "Isha") == 5)
+    }
+
+    @Test func homeCurrentPrayerIndexFallsBackToIshaAfterLastPrayer() {
+        #expect(PrayerTimesEngine.homeCurrentPrayerIndex(nextName: nil, isToday: true, countdownResolved: true) == 5)
+        #expect(PrayerTimesEngine.homeCurrentPrayerIndex(nextName: nil, isToday: true, countdownResolved: false) == nil)
+        #expect(PrayerTimesEngine.homeCurrentPrayerIndex(nextName: "Asr", isToday: true, countdownResolved: true) == 3)
+        #expect(PrayerTimesEngine.homeCurrentPrayerIndex(nextName: "Asr", isToday: false, countdownResolved: true) == nil)
+    }
+
     @Test func jummahFridayUsesJummahString() throws {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = PrayerTimesEngine.sheffieldTimeZone

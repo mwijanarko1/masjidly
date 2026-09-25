@@ -38,6 +38,9 @@ final class HomeViewModel {
     /// Which prayer is shown on the home hero; drives sky / glass theme (shared with chrome like `AdhanMiniPlayerBar`).
     var selectedPrayerIndex: Int = 0
 
+    /// Letter-picker index for the upcoming (or post-Isha) prayer when viewing today; nil otherwise.
+    var currentPrayerIndex: Int?
+
     /// The date currently displayed on the home screen. Changed by left/right arrow navigation.
     var displayedDate: Date = Date()
 
@@ -251,6 +254,7 @@ final class HomeViewModel {
         var sheffieldCal = Calendar(identifier: .gregorian)
         sheffieldCal.timeZone = PrayerTimesEngine.sheffieldTimeZone
         let isToday = sheffieldCal.isDate(date, inSameDayAs: Date())
+        let countdownResolved: Bool
         if isToday, let d = displayedPrayerTimes, let iq = iqamahTimes {
             nextCountdown = PrayerTimesEngine.getNextPrayerAndCountdown(
                 prayerTimes: d,
@@ -260,8 +264,20 @@ final class HomeViewModel {
                 asrIqamahPreference: settings.asrIqamahPreference,
                 includeTomorrowFajr: false
             )
+            countdownResolved = true
         } else {
             nextCountdown = nil
+            countdownResolved = false
+        }
+        let current = PrayerTimesEngine.homeCurrentPrayerIndex(
+            nextName: nextCountdown?.nextName,
+            isToday: isToday,
+            countdownResolved: countdownResolved
+        )
+        let previousCurrent = currentPrayerIndex
+        currentPrayerIndex = current
+        if let current, current != previousCurrent {
+            selectedPrayerIndex = current
         }
     }
 
@@ -304,6 +320,7 @@ final class HomeViewModel {
         displayedPrayerTimes = nil
         iqamahTimes = nil
         nextCountdown = nil
+        currentPrayerIndex = nil
     }
 
     private func loadPrayerPayload(for date: Date, mosque: Mosque) async {

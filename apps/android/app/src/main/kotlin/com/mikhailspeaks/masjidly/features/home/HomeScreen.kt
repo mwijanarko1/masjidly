@@ -65,6 +65,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import com.mikhailspeaks.masjidly.ui.home.AtmosphericSkyBackground
@@ -250,6 +251,7 @@ fun HomeScreen(
                     displayedDate = state.displayedDate,
                     monthData = state.monthData,
                     selectedPrayerIndex = state.selectedPrayerIndex,
+                    currentPrayerIndex = state.currentPrayerIndex,
                     nextCountdown = state.nextCountdown,
                     uses24HourTime = uses24Hour,
                     asrPreference = settingsStore.asrIqamahPreference,
@@ -331,11 +333,19 @@ fun HomeScreen(
                     itemsIndexed(ids) { _, id ->
                         state.mosques.firstOrNull { it.id == id }?.let { mosque ->
                             val isSelected = state.selectedMosque?.id == id
+                            val tabForeground = if (isSelected) {
+                                if (theme.usesLightForeground) Color.Black else Color.White
+                            } else {
+                                textColor.copy(alpha = 0.72f)
+                            }
                             Row(
                                 modifier = Modifier
                                     .widthIn(max = if (isSelected) 188.dp else 108.dp)
                                     .clip(RoundedCornerShape(24.dp))
-                                    .background(textColor.copy(alpha = if (isSelected) 0.3f else 0.12f))
+                                    .background(
+                                        textColor.copy(alpha = if (isSelected) 0.92f else 0.12f),
+                                    )
+                                    .semantics { if (isSelected) selected = true }
                                     .padding(horizontal = if (isSelected) 12.dp else 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
@@ -345,7 +355,11 @@ fun HomeScreen(
                                 }) {
                                     Text(
                                         mosque.name,
-                                        color = textColor,
+                                        color = tabForeground,
+                                        style = rememberAppTextStyle(
+                                            13f,
+                                            if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                        ),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
@@ -354,7 +368,7 @@ fun HomeScreen(
                                     Icon(
                                         Icons.Default.Close,
                                         contentDescription = "Close ${mosque.name} tab",
-                                        tint = textColor,
+                                        tint = tabForeground,
                                         modifier = Modifier.size(28.dp).hapticClickable {
                                             val remaining = ids.filter { it != id }
                                             settingsStore.openMosqueTabIds = remaining
@@ -725,6 +739,7 @@ private fun HomePrayerContent(
     displayedDate: Instant,
     monthData: com.mikhailspeaks.masjidly.domain.MonthPrayerData?,
     selectedPrayerIndex: Int,
+    currentPrayerIndex: Int?,
     nextCountdown: com.mikhailspeaks.masjidly.domain.NextPrayerCountdownResult?,
     uses24HourTime: Boolean,
     asrPreference: com.mikhailspeaks.masjidly.domain.AsrIqamahPreference,
@@ -924,6 +939,7 @@ private fun HomePrayerContent(
         PrayerLetterPicker(
             prayerEntries = prayerEntries,
             selectedIndex = index,
+            currentPrayerIndex = currentPrayerIndex,
             textColor = textColor,
             theme = theme,
             highlightPrayerShortcuts = highlightPrayerShortcuts,
@@ -936,6 +952,7 @@ private fun HomePrayerContent(
 private fun PrayerLetterPicker(
     prayerEntries: List<PrayerEntry>,
     selectedIndex: Int,
+    currentPrayerIndex: Int?,
     textColor: Color,
     theme: ResolvedTheme,
     highlightPrayerShortcuts: Boolean,
@@ -974,23 +991,37 @@ private fun PrayerLetterPicker(
                         stripped.first().toString().uppercase()
                     }
                     val isSelected = i == selectedIndex
-                    Text(
-                        text = letter,
-                        style = rememberAppTextStyle(
-                            20f,
-                            if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        ),
-                        color = if (isSelected) {
-                            textColor
-                        } else {
-                            textColor.copy(alpha = 0.38f)
-                        },
+                    val isCurrent = i == currentPrayerIndex
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .heightIn(min = 36.dp)
                             .widthIn(min = 28.dp)
                             .hapticClickable { onSelectPrayer(i) },
-                        textAlign = TextAlign.Center,
-                    )
+                    ) {
+                        Text(
+                            text = letter,
+                            style = rememberAppTextStyle(
+                                20f,
+                                if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            ),
+                            color = if (isSelected) {
+                                textColor
+                            } else {
+                                textColor.copy(alpha = 0.38f)
+                            },
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(
+                                    color = if (isCurrent) textColor.copy(alpha = 0.9f) else Color.Transparent,
+                                    shape = CircleShape,
+                                ),
+                        )
+                    }
                 }
             }
         }

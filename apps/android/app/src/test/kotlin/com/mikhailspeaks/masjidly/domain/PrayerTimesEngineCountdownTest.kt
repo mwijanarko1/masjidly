@@ -83,6 +83,22 @@ class PrayerTimesEngineCountdownTest {
     }
 
     @Test
+    fun homeLetterIndexMapsJummahToDhuhrSlot() {
+        assertEquals(2, PrayerTimesEngine.homeLetterIndex("Jummah"))
+        assertEquals(2, PrayerTimesEngine.homeLetterIndex("Dhuhr"))
+        assertEquals(0, PrayerTimesEngine.homeLetterIndex("Fajr"))
+        assertEquals(5, PrayerTimesEngine.homeLetterIndex("Isha"))
+    }
+
+    @Test
+    fun homeCurrentPrayerIndexFallsBackToIshaAfterLastPrayer() {
+        assertEquals(5, PrayerTimesEngine.homeCurrentPrayerIndex(null, isToday = true, countdownResolved = true))
+        assertEquals(null, PrayerTimesEngine.homeCurrentPrayerIndex(null, isToday = true, countdownResolved = false))
+        assertEquals(3, PrayerTimesEngine.homeCurrentPrayerIndex("Asr", isToday = true, countdownResolved = true))
+        assertEquals(null, PrayerTimesEngine.homeCurrentPrayerIndex("Asr", isToday = false, countdownResolved = true))
+    }
+
+    @Test
     fun duhaWindowFifteenMinutesAfterSunriseUntilBeforeDhuhr() {
         val window = PrayerTimesEngine.duhaWindow("05:00", "13:00")
         assertNotNull(window)

@@ -56,6 +56,8 @@ class HomeViewModel(
         val iqamahTimes: DailyIqamahTimes? = null,
         val nextCountdown: NextPrayerCountdownResult? = null,
         val selectedPrayerIndex: Int = 0,
+        /** Letter-picker index for the upcoming (or post-Isha) prayer when viewing today; null otherwise. */
+        val currentPrayerIndex: Int? = null,
         val displayedDate: Instant = Instant.now(),
         val lastError: String? = null,
         val hasAvailablePrayerTimesFallback: Boolean = false,
@@ -466,7 +468,9 @@ class HomeViewModel(
 
         val now = Instant.now()
         val isToday = isSameSheffieldDay(date, now)
+        val countdownResolved: Boolean
         val countdown = if (isToday && displayed != null && iqamah != null) {
+            countdownResolved = true
             PrayerTimesEngine.getNextPrayerAndCountdown(
                 prayerTimes = displayed,
                 iqamahTimes = iqamah,
@@ -476,22 +480,29 @@ class HomeViewModel(
                 includeTomorrowFajr = false,
             )
         } else {
+            countdownResolved = false
             null
         }
 
-        val selectedIndex = state.selectedPrayerIndex
-        val autoIndex = countdown?.nextName?.let { name ->
-            HOME_PRAYER_CANONICAL.indexOfFirst { it.equals(name, ignoreCase = true) }
-                .takeIf { it >= 0 }
-        }
+        val currentIndex = PrayerTimesEngine.homeCurrentPrayerIndex(
+            nextName = countdown?.nextName,
+            isToday = isToday,
+            countdownResolved = countdownResolved,
+        )
 
         _uiState.update {
+            val previousCurrent = it.currentPrayerIndex
             it.copy(
                 displayedPrayerTimes = displayed,
                 iqamahTimes = iqamah,
                 nextCountdown = countdown,
                 hasAvailablePrayerTimesFallback = lastAvailablePrayerDate != null,
-                selectedPrayerIndex = autoIndex ?: selectedIndex,
+                currentPrayerIndex = currentIndex,
+                selectedPrayerIndex = if (currentIndex != null && currentIndex != previousCurrent) {
+                    currentIndex
+                } else {
+                    it.selectedPrayerIndex
+                },
             )
         }
     }
@@ -502,6 +513,7 @@ class HomeViewModel(
                 displayedPrayerTimes = null,
                 iqamahTimes = null,
                 nextCountdown = null,
+                currentPrayerIndex = null,
             )
         }
     }
@@ -515,9 +527,5 @@ class HomeViewModel(
         val left = PrayerTimesEngine.getDateInSheffield(a)
         val right = PrayerTimesEngine.getDateInSheffield(b)
         return left.year == right.year && left.month == right.month && left.day == right.day
-    }
-
-    companion object {
-        private val HOME_PRAYER_CANONICAL = listOf("Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah")
     }
 }

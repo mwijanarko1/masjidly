@@ -356,6 +356,8 @@ struct MinimalistPrayerPage: View {
     /// Full prayer names (same order as shortcuts); used for accessibility.
     let prayerLabels: [String]
     let selectedIndex: Int
+    /// Upcoming (or post-Isha) prayer on the letter picker; nil when not viewing today.
+    var currentPrayerIndex: Int? = nil
     let totalCount: Int
     let onSelectPrayer: (Int) -> Void
     var highlightedShortcutIndex: Int? = nil
@@ -543,20 +545,27 @@ struct MinimalistPrayerPage: View {
                                     : String(format: fallbackTemplate, locale: locale, arguments: [index + 1])
                                 let letter = shortcutLetter(for: index)
                                 let isSelected = index == selectedIndex
+                                let isCurrent = index == currentPrayerIndex
                                 Button {
                                     onShortcutTapped?(index)
                                     onSelectPrayer(index)
                                 } label: {
-                                    Text(letter)
-                                        .appFont(size: 20, weight: isSelected ? .semibold : .regular)
-                                        .foregroundColor(appearance.textColor.opacity(isSelected ? 1.0 : 0.38))
-                                        .frame(minWidth: 28, minHeight: 36)
-                                        .contentShape(Rectangle())
+                                    VStack(spacing: 4) {
+                                        Text(letter)
+                                            .appFont(size: 20, weight: isSelected ? .semibold : .regular)
+                                            .foregroundColor(appearance.textColor.opacity(isSelected ? 1.0 : 0.38))
+                                        Circle()
+                                            .fill(appearance.textColor.opacity(isCurrent ? 0.9 : 0))
+                                            .frame(width: 4, height: 4)
+                                    }
+                                    .frame(minWidth: 28, minHeight: 36)
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.hapticPlain)
                                 .id(index)
                                 .accessibilityIdentifier(shortcutAccessibilityIdentifier(for: index))
                                 .accessibilityLabel(carouselA11yLabel(nameLabel: nameLabel, letter: letter, index: index))
+                                .accessibilityAddTraits(isSelected ? .isSelected : [])
                             }
                         }
                         .onboardingHighlight(highlightedShortcutIndex != nil, timeTheme: theme)
