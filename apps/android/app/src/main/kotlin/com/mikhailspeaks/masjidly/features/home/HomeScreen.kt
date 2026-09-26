@@ -67,6 +67,11 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -326,10 +331,18 @@ fun HomeScreen(
                 listOfNotNull(settingsStore.selectedMosqueId ?: state.selectedMosque?.id)
             }
             val available = state.mosques.filter { it.id !in ids }
+            fun selectTab(mosque: Mosque) {
+                settingsStore.activeMosqueTabId = mosque.id
+                settingsStore.selectedMosqueId = mosque.id
+                settingsStore.selectedMosqueSlug = mosque.slug
+                settingsStore.selectedCityGroupingKey = mosque.cityGroupingKey
+                settingsStore.selectedCountryGroupingKey = MosqueSelection.countryGroupingKey(mosque)
+                viewModel.applySelectionFromSettings(tabSwitch = true)
+            }
             val tabListState = rememberLazyListState()
             LaunchedEffect(state.selectedMosque?.id, ids) {
                 val index = ids.indexOf(state.selectedMosque?.id)
-                if (index >= 0) tabListState.animateScrollToItem(index)
+                if (index >= 0) tabListState.scrollToItem(index)
             }
             Row(
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
@@ -339,7 +352,33 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                LazyRow(state = tabListState, modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                LazyRow(
+                    state = tabListState,
+                    modifier = Modifier.weight(1f).graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        .drawWithContent {
+                            drawContent()
+                            val edge = 16.dp.toPx()
+                            if (tabListState.canScrollBackward) {
+                                drawRect(
+                                    Brush.horizontalGradient(
+                                        0f to Color.Transparent, 1f to Color.Black,
+                                        startX = 0f, endX = edge,
+                                    ),
+                                    blendMode = BlendMode.DstIn,
+                                )
+                            }
+                            if (tabListState.canScrollForward) {
+                                drawRect(
+                                    Brush.horizontalGradient(
+                                        0f to Color.Black, 1f to Color.Transparent,
+                                        startX = size.width - edge, endX = size.width,
+                                    ),
+                                    blendMode = BlendMode.DstIn,
+                                )
+                            }
+                        },
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     itemsIndexed(ids, key = { _, id -> id }) { _, id ->
                         state.mosques.firstOrNull { it.id == id }?.let { mosque ->
                             val isSelected = state.selectedMosque?.id == id
@@ -371,8 +410,7 @@ fun HomeScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 val onSelectTab = rememberHapticOnClick {
-                                    settingsStore.activeMosqueTabId = id
-                                    viewModel.applySelectionFromSettings()
+                                    selectTab(mosque)
                                 }
                                 TextButton(onClick = onSelectTab) {
                                     Text(
@@ -394,9 +432,9 @@ fun HomeScreen(
                                         modifier = Modifier.size(28.dp).hapticClickable {
                                             val remaining = ids.filter { it != id }
                                             settingsStore.openMosqueTabIds = remaining
-                                            if (state.selectedMosque?.id == id) {
-                                                settingsStore.activeMosqueTabId = remaining.first()
-                                                viewModel.applySelectionFromSettings()
+                                            if (settingsStore.activeMosqueTabId == id ||
+                                                (settingsStore.activeMosqueTabId == null && state.selectedMosque?.id == id)) {
+                                                state.mosques.firstOrNull { it.id == remaining.first() }?.let(::selectTab)
                                             }
                                         }.padding(5.dp),
                                     )
@@ -404,22 +442,24 @@ fun HomeScreen(
                             }
                         }
                     }
-                }
-                if (available.isNotEmpty()) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add mosque tab",
-                        tint = textColor,
-                        modifier = Modifier.size(40.dp).clip(CircleShape)
-                            .background(textColor.copy(alpha = 0.12f))
-                            .hapticClickable {
-                                addTabSelectedMosqueId = defaultAddTabMosqueId(
-                                    available = available,
-                                    current = state.selectedMosque,
-                                )
-                                showAddMosqueTab = true
-                            }.padding(8.dp),
-                    )
+                    if (available.isNotEmpty()) {
+                        item(key = "add-mosque-tab") {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Add mosque tab",
+                                tint = textColor,
+                                modifier = Modifier.size(40.dp).clip(CircleShape)
+                                    .background(textColor.copy(alpha = 0.12f))
+                                    .hapticClickable {
+                                        addTabSelectedMosqueId = defaultAddTabMosqueId(
+                                            available = available,
+                                            current = state.selectedMosque,
+                                        )
+                                        showAddMosqueTab = true
+                                    }.padding(8.dp),
+                            )
+                        }
+                    }
                 }
             }
             if (showAddMosqueTab) {
@@ -444,8 +484,7 @@ fun HomeScreen(
                             onContinue = { mosque ->
                                 showAddMosqueTab = false
                                 settingsStore.openMosqueTabIds = ids + mosque.id
-                                settingsStore.activeMosqueTabId = mosque.id
-                                viewModel.applySelectionFromSettings()
+                                selectTab(mosque)
                             },
                             showShell = false,
                         )

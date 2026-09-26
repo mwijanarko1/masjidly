@@ -68,7 +68,7 @@ struct WhatsNew {
                 ),
                 WhatsNewItem(
                     title: "Mosque tabs",
-                    description: "Open, switch, and close mosque tabs. Your Settings mosque still controls notifications and the widget.",
+                    description: "Open, switch, and close mosque tabs. The active mosque controls notifications and the widget.",
                     icon: "rectangle.on.rectangle"
                 ),
             ]

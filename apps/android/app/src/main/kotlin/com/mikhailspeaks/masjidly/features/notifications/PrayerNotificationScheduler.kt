@@ -80,8 +80,8 @@ class PrayerNotificationScheduler(
 
         addBudget = MAX_PENDING_NOTIFICATIONS
 
-        val ukDst = runCatching { repository.getUkDstDates()?.ukDstDates }.getOrNull()
-            ?: diskCache.loadUkDst()?.ukDstDates
+        val ukDst = diskCache.loadUkDst()?.ukDstDates
+            ?: runCatching { repository.getUkDstDates()?.also { diskCache.saveUkDst(it) }?.ukDstDates }.getOrNull()
             ?: emptyList()
         val slug = mosque.slug
         val mosqueName = mosque.name
@@ -103,21 +103,19 @@ class PrayerNotificationScheduler(
             val monthly: MonthPrayerData? = if (monthlyCache.containsKey(monthKey)) {
                 monthlyCache[monthKey]
             } else {
-                val loaded = try {
-                    repository.getMonthlyPrayerTimes(slug, monthName, comps.year)
-                        ?: diskCache.loadMonthly(slug, monthName.rawValue, comps.year)
-                } catch (_: Exception) {
-                    diskCache.loadMonthly(slug, monthName.rawValue, comps.year)
-                }
+                val loaded = diskCache.loadMonthly(slug, monthName.rawValue, comps.year)
+                    ?: runCatching {
+                        repository.getMonthlyPrayerTimes(slug, monthName, comps.year)
+                            ?.also { diskCache.saveMonthly(slug, monthName.rawValue, comps.year, it) }
+                    }.getOrNull()
                 monthlyCache[monthKey] = loaded
                 loaded
             }
-            val ramadan = try {
-                repository.getRamadanTimetable(slug, iso)
-                    ?: diskCache.loadRamadan(slug, iso)
-            } catch (_: Exception) {
-                diskCache.loadRamadan(slug, iso)
-            }
+            val ramadan = diskCache.loadRamadan(slug, iso)
+                ?: runCatching {
+                    repository.getRamadanTimetable(slug, iso)
+                        ?.also { diskCache.saveRamadan(slug, iso, it) }
+                }.getOrNull()
 
             val displayed = try {
                 val raw = PrayerTimesEngine.resolvePrayerTimes(

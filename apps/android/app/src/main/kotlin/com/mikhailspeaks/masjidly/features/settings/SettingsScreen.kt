@@ -1493,6 +1493,10 @@ private fun selectMosque(
     homeViewModel: HomeViewModel,
     settingsViewModel: SettingsViewModel,
 ) {
+    if (mosque.id !in settingsStore.openMosqueTabIds) {
+        settingsStore.openMosqueTabIds = settingsStore.openMosqueTabIds + mosque.id
+    }
+    settingsStore.activeMosqueTabId = mosque.id
     settingsStore.selectedMosqueId = mosque.id
     settingsStore.selectedMosqueSlug = mosque.slug
     settingsStore.selectedCityGroupingKey = mosque.cityGroupingKey

@@ -115,25 +115,28 @@ class HomeViewModel(
         }
     }
 
-    fun applySelectionFromSettings() {
+    fun applySelectionFromSettings(tabSwitch: Boolean = false) {
         viewModelScope.launch {
-            if (_uiState.value.selectedMosque?.id != displayedMosque(_uiState.value.mosques)?.id) {
+            val mosque = displayedMosque(_uiState.value.mosques) ?: return@launch
+            if (_uiState.value.selectedMosque?.id != mosque.id) {
                 clearDisplayedPrayerTimes()
                 _uiState.update { it.copy(monthData = null) }
             }
-            diskCache.loadMosques()?.let { cached ->
-                val mosque = displayedMosque(cached)
-                _uiState.update { it.copy(mosques = cached, selectedMosque = mosque) }
-                mosque?.let { hydrateFromCache(it) }
-            }
-
-            val mosque = displayedMosque(_uiState.value.mosques) ?: return@launch
-
             _uiState.update { it.copy(selectedMosque = mosque) }
-            try {
-                refreshPrayerPayload(mosque)
-            } catch (e: Exception) {
-                _uiState.update { it.copy(lastError = e.localizedMessage) }
+            val hasCachedTimes = hydrateFromCache(mosque)
+            if (tabSwitch && hasCachedTimes) {
+                _uiState.update { it.copy(lastPrayerPayloadRefreshAt = null) }
+            }
+            if (!tabSwitch || !hasCachedTimes) {
+                try {
+                    refreshPrayerPayload(mosque, updateWidget = false)
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(lastError = e.localizedMessage) }
+                }
+            }
+            if (settings.activeMosqueTabId == mosque.id) {
+                resyncNotificationsIfNeeded()
+                if (settings.activeMosqueTabId == mosque.id) widgetSnapshotService.refreshSnapshot(mosque)
             }
         }
     }
@@ -269,7 +272,11 @@ class HomeViewModel(
         )
     }
 
-    private suspend fun refreshPrayerPayload(mosque: Mosque, checkVersions: Boolean = true) {
+    private suspend fun refreshPrayerPayload(
+        mosque: Mosque,
+        checkVersions: Boolean = true,
+        updateWidget: Boolean = true,
+    ) {
         val now = Instant.now()
         val sh = PrayerTimesEngine.getDateInSheffield(now)
         val monthName = MonthName.from(sh.month) ?: return
@@ -292,11 +299,13 @@ class HomeViewModel(
             loadedMonthNumber = sh.month
             loadedMonthYear = sh.year
             applyPrayerTimes(_uiState.value.displayedDate, mosque)
-            defaultMosque()?.let { widgetSnapshotService.refreshSnapshot(it) }
+            if (updateWidget) defaultMosque()?.let { widgetSnapshotService.refreshSnapshot(it) }
             return
         }
 
-        val versions = runCatching { repository.getPrayerDataVersions(mosque.slug, monthName, sh.year) }.getOrNull()
+        val versions = if (cachedMonthly != null) {
+            runCatching { repository.getPrayerDataVersions(mosque.slug, monthName, sh.year) }.getOrNull()
+        } else null
         if (versions != null && cachedVersions?.versions == versions && cachedMonthly != null) {
             if (_uiState.value.selectedMosque?.id != mosque.id) return
             diskCache.saveVersions(mosque.slug, monthName.rawValue, sh.year, versions)
@@ -311,7 +320,7 @@ class HomeViewModel(
             loadedMonthNumber = sh.month
             loadedMonthYear = sh.year
             applyPrayerTimes(_uiState.value.displayedDate, mosque)
-            defaultMosque()?.let { widgetSnapshotService.refreshSnapshot(it) }
+            if (updateWidget) defaultMosque()?.let { widgetSnapshotService.refreshSnapshot(it) }
             return
         }
 
@@ -341,16 +350,18 @@ class HomeViewModel(
         loadedMonthNumber = sh.month
         loadedMonthYear = sh.year
         applyPrayerTimes(_uiState.value.displayedDate, mosque)
-        resyncNotificationsIfNeeded()
-        defaultMosque()?.let { widgetSnapshotService.refreshSnapshot(it) }
+        if (updateWidget) {
+            resyncNotificationsIfNeeded()
+            defaultMosque()?.let { widgetSnapshotService.refreshSnapshot(it) }
+        }
     }
 
-    private fun hydrateFromCache(mosque: Mosque) {
+    private fun hydrateFromCache(mosque: Mosque): Boolean {
         val date = _uiState.value.displayedDate
         val sh = PrayerTimesEngine.getDateInSheffield(date)
-        val monthName = MonthName.from(sh.month) ?: return
+        val monthName = MonthName.from(sh.month) ?: return false
         val isoDate = PrayerTimesEngine.isoDateString(sh.year, sh.month, sh.day)
-        val monthly = diskCache.loadMonthly(mosque.slug, monthName.rawValue, sh.year) ?: return
+        val monthly = diskCache.loadMonthly(mosque.slug, monthName.rawValue, sh.year) ?: return false
 
         _uiState.update {
             it.copy(
@@ -363,6 +374,7 @@ class HomeViewModel(
         loadedMonthNumber = sh.month
         loadedMonthYear = sh.year
         applyPrayerTimes(date, mosque)
+        return _uiState.value.displayedPrayerTimes != null
     }
 
     private fun loadOrApplyPrayerTimesForDisplayedDate() {

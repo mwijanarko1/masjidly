@@ -28,6 +28,7 @@ class WidgetPrayerSnapshotService(
         if (days <= 0) return
         runCatching {
             val snapshot = buildSnapshot(mosque, days)
+            if (settings.selectedMosqueId != null && settings.selectedMosqueId != mosque.id) return@runCatching
             store.writeSnapshot(snapshot)
             updateAllMasjidlyWidgets(context)
         }
@@ -53,14 +54,6 @@ class WidgetPrayerSnapshotService(
         }
 
         selectedMosque?.let { refreshSnapshot(it, days) }
-
-        for (mosque in visible) {
-            if (mosque.id == selectedMosque?.id) continue
-            runCatching {
-                val snapshot = buildSnapshot(mosque, days)
-                store.writeSnapshot(snapshot, updateDefault = false)
-            }
-        }
 
         updateAllMasjidlyWidgets(context)
     }
@@ -144,7 +137,7 @@ class WidgetPrayerSnapshotService(
         }
     }.getOrNull()
 
-    private suspend fun fetchRamadan(mosqueSlug: String, date: String) = runCatching {
+    private suspend fun fetchRamadan(mosqueSlug: String, date: String) = diskCache.loadRamadan(mosqueSlug, date) ?: runCatching {
         repository.getRamadanTimetable(mosqueSlug, date)?.also {
             diskCache.saveRamadan(mosqueSlug, date, it)
         }

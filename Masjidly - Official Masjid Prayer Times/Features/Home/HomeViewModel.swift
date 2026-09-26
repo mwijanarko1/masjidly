@@ -119,7 +119,9 @@ final class HomeViewModel {
             return
         }
 
-        let versions = try? await repository.getPrayerDataVersions(mosqueSlug: mosque.slug, month: monthName, year: sh.year)
+        let versions = cachedMonthly == nil
+            ? nil
+            : try? await repository.getPrayerDataVersions(mosqueSlug: mosque.slug, month: monthName, year: sh.year)
         if let versions, let cachedVersions, cachedVersions.versions == versions, let cachedMonthly {
             guard selectedMosque?.id == mosque.id else { return }
             try? diskCache.saveVersions(slug: mosque.slug, month: monthName.rawValue, year: sh.year, versions: versions)
@@ -367,28 +369,25 @@ final class HomeViewModel {
         }
     }
 
-    func applySelectionFromSettings() async {
-        if selectedMosque?.id != displayedMosque(in: mosques)?.id {
+    func applySelectionFromSettings(tabSwitch: Bool = false) async {
+        guard let mosque = displayedMosque(in: mosques) else { return }
+        if selectedMosque?.id != mosque.id {
             clearDisplayedPrayerTimes()
             monthData = nil
         }
-        // Hydrate from cache for the new mosque first.
-        if let cachedMosques = diskCache.loadMosques(),
-           let m = displayedMosque(in: cachedMosques) {
-            selectedMosque = m
-            mosques = cachedMosques
-            hydrateFromCache(for: m)
+        selectedMosque = mosque
+        let hasCachedTimes = hydrateMonthFromCache(for: displayedDate, mosque: mosque)
+        if hasCachedTimes { loadState = .loaded }
+        if tabSwitch && hasCachedTimes {
+            lastPrayerPayloadRefreshAt = nil
+            return
         }
 
-        // Then network refresh.
-        if let m = displayedMosque(in: mosques) {
-            selectedMosque = m
-            do {
-                try await refreshPrayerPayload(for: m)
-                await refreshWidgetSnapshotForCurrentMosque()
-            } catch {
-                lastError = error.localizedDescription
-            }
+        do {
+            try await refreshPrayerPayload(for: mosque)
+            if !tabSwitch { await refreshWidgetSnapshotForCurrentMosque() }
+        } catch {
+            lastError = error.localizedDescription
         }
     }
 

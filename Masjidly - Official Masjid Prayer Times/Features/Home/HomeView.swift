@@ -168,10 +168,10 @@ struct HomeView: View {
             .onChange(of: settings.uses24HourTime) { _, _ in
                 Task { await model.refreshWidgetSnapshotForCurrentMosque() }
             }
-            .onChange(of: settings.selectedMosqueId) { _, _ in
-                Task { await model.applySelectionFromSettings() }
-            }
-            .onChange(of: settings.selectedMosqueSlug) { _, _ in
+            .onChange(of: settings.selectedMosqueId) { _, newId in
+                guard let newId, settings.activeMosqueTabId != newId else { return }
+                if !settings.openMosqueTabIds.contains(newId) { settings.openMosqueTabIds.append(newId) }
+                settings.activeMosqueTabId = newId
                 Task { await model.applySelectionFromSettings() }
             }
             .onChange(of: model.selectedMosque) { _, newValue in
@@ -388,38 +388,48 @@ struct HomeView: View {
                                 .id(id)
                             }
                         }
+                        if !availableMosqueTabs.isEmpty {
+                            Button {
+                                HapticFeedback.buttonTap()
+                                addTabSelectedMosqueId = defaultAddTabMosqueId()
+                                setAddMosqueTabVisible(true)
+                            } label: {
+                                Image(systemName: "plus")
+                                    .foregroundStyle(currentAppearance.textColor)
+                                    .padding(10)
+                                    .background(Circle().fill(currentAppearance.textColor.opacity(0.12)))
+                                    .opacity(showingAddMosqueTab ? 0 : 1)
+                            }
+                            .buttonStyle(.hapticPlain)
+                            .onGeometryChange(for: CGRect.self) { proxy in
+                                proxy.frame(in: .global)
+                            } action: { frame in
+                                addMosqueTabButtonFrame = frame
+                            }
+                            .allowsHitTesting(!showingAddMosqueTab)
+                            .accessibilityHidden(showingAddMosqueTab)
+                            .accessibilityLabel("Add mosque tab")
+                        }
                     }
                     .animation(.easeInOut(duration: 0.2), value: model.selectedMosque?.id)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.25), location: 0),
+                            .init(color: .white, location: 0.04),
+                            .init(color: .white, location: 0.96),
+                            .init(color: .white.opacity(0.25), location: 1)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
                 .onChange(of: model.selectedMosque?.id) { _, newId in
                     guard let newId else { return }
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        proxy.scrollTo(newId, anchor: .center)
-                    }
+                    proxy.scrollTo(newId, anchor: .center)
                 }
-            }
-            if !availableMosqueTabs.isEmpty {
-                Button {
-                    HapticFeedback.buttonTap()
-                    addTabSelectedMosqueId = defaultAddTabMosqueId()
-                    setAddMosqueTabVisible(true)
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundStyle(currentAppearance.textColor)
-                        .padding(10)
-                        .background(Circle().fill(currentAppearance.textColor.opacity(0.12)))
-                        .opacity(showingAddMosqueTab ? 0 : 1)
-                }
-                .buttonStyle(.hapticPlain)
-                .onGeometryChange(for: CGRect.self) { proxy in
-                    proxy.frame(in: .global)
-                } action: { frame in
-                    addMosqueTabButtonFrame = frame
-                }
-                .allowsHitTesting(!showingAddMosqueTab)
-                .accessibilityHidden(showingAddMosqueTab)
-                .accessibilityLabel("Add mosque tab")
             }
         }
     }
@@ -457,14 +467,24 @@ struct HomeView: View {
 
     private func activateTab(_ mosque: Mosque) {
         settings.activeMosqueTabId = mosque.id
-        Task { await model.applySelectionFromSettings() }
+        settings.selectedMosqueId = mosque.id
+        settings.selectedMosqueSlug = mosque.slug
+        settings.selectedCityGroupingKey = mosque.cityGroupingKey
+        settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: mosque)
+        Task {
+            await model.applySelectionFromSettings(tabSwitch: true)
+            guard settings.activeMosqueTabId == mosque.id else { return }
+            await model.resyncNotificationsIfNeeded()
+            guard settings.activeMosqueTabId == mosque.id else { return }
+            await model.refreshWidgetSnapshotForCurrentMosque()
+        }
     }
 
     private func closeTab(_ id: String, in ids: [String]) {
         let remaining = ids.filter { $0 != id }
         guard !remaining.isEmpty else { return }
         settings.openMosqueTabIds = remaining
-        if model.selectedMosque?.id == id,
+        if settings.activeMosqueTabId == id || (settings.activeMosqueTabId == nil && model.selectedMosque?.id == id),
            let next = model.mosques.first(where: { $0.id == remaining[0] }) {
             activateTab(next)
         }

@@ -29,6 +29,7 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
         guard days > 0 else { return }
         do {
             let snapshot = try await buildSnapshot(for: mosque, days: days)
+            if let selectedId = settings.selectedMosqueId, selectedId != mosque.id { return }
             try store.writeSnapshot(snapshot)
             // Sync the app's selected mosque ID to the shared App Group so the widget
             // can use it as the default mosque in its configuration intent.
@@ -149,6 +150,7 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
     }
 
     private func fetchRamadan(mosqueSlug: String, date: String) async throws -> RamadanPrayerData? {
+        if let cached = diskCache.loadRamadan(slug: mosqueSlug, date: date) { return cached }
         do {
             let ramadan = try await repository.getRamadanTimetable(mosqueSlug: mosqueSlug, date: date)
             if let ramadan { try? diskCache.saveRamadan(slug: mosqueSlug, date: date, data: ramadan) }

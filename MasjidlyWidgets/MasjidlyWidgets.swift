@@ -75,7 +75,15 @@ struct MasjidlyPrayerTimelineProvider: TimelineProvider {
         }
 
         let entry = MasjidlyPrayerEntry(date: now, state: state, locale: locale)
-        let refresh = min(max(now.addingTimeInterval(1_800), target.addingTimeInterval(30)), now.addingTimeInterval(3_600))
+        var refresh = min(max(now.addingTimeInterval(1_800), target.addingTimeInterval(30)), now.addingTimeInterval(3_600))
+        // Far path is only used while remaining >= 2h, so 1h/10m glyph boundaries never fire here.
+        // iOS 17 still needs the 10h hour-tens prefix flip; iOS 18 padded path does not care.
+        if #unavailable(iOS 18.0) {
+            let tenHourBoundary = target.addingTimeInterval(-WidgetLiveCountdown.hourTensPadThreshold)
+            if tenHourBoundary > now {
+                refresh = min(refresh, tenHourBoundary)
+            }
+        }
         completion(Timeline(entries: [entry], policy: .after(refresh)))
     }
 
@@ -471,6 +479,7 @@ struct MasjidlyPrayerWidgetView: View {
                     .foregroundStyle(textColor.opacity(0.5))
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
+                    .layoutPriority(1)
             }
 
             largeHeroCountdownView(textColor: textColor)
@@ -579,8 +588,9 @@ struct MasjidlyPrayerWidgetView: View {
         let underOneHour = remaining < 3_600
         let font = widgetUIFont(size: 14, weight: .bold)
         let timerLocale = Locale(identifier: "en_GB")
+        let hourDigits = max(1, String(max(1, Int(remaining) / 3_600)).count)
         let timerWidth = min(
-            underOneHour ? widgetCountdownMMSSWidth(font: font) : widgetCountdownHMSWidth(font: font),
+            underOneHour ? widgetCountdownMMSSWidth(font: font) : widgetCountdownHMSWidth(font: font, hourDigits: hourDigits),
             48
         )
 
@@ -738,43 +748,16 @@ struct MasjidlyPrayerWidgetView: View {
         .padding(.vertical, 12)
     }
 
-    /// Native WidgetKit countdown — `Text(timerInterval:)` ticks every second without per-second timeline entries.
+    /// Native WidgetKit timer with a prefix matching its current hour/minute glyph shape.
     private func largeHeroCountdownClock(target: Date, textColor: Color) -> some View {
-        let remaining = max(0, target.timeIntervalSince(entry.date))
-        let underOneHour = remaining < 3_600
-        let underTenMinutes = remaining < 600
         let fontSize: CGFloat = 36
         let font = widgetUIFont(size: fontSize, weight: .medium)
         let timerLocale = Locale(identifier: "en_GB")
 
         return HStack(spacing: 0) {
             Spacer(minLength: 0)
-            HStack(spacing: 0) {
-                if underOneHour {
-                    Text(underTenMinutes ? "-00:0" : "-00:")
-                        .font(Font(font))
-                        .foregroundStyle(textColor)
-                    Text(timerInterval: entry.date...target, countsDown: true, showsHours: false)
-                        .font(Font(font))
-                        .foregroundStyle(textColor)
-                        .monospacedDigit()
-                        .multilineTextAlignment(.leading)
-                        .frame(width: widgetCountdownMMSSWidth(font: font), alignment: .leading)
-                        .environment(\.locale, timerLocale)
-                } else {
-                    Text("-")
-                        .font(Font(font))
-                        .foregroundStyle(textColor)
-                    Text(timerInterval: entry.date...target, countsDown: true, showsHours: true)
-                        .font(Font(font))
-                        .foregroundStyle(textColor)
-                        .monospacedDigit()
-                        .multilineTextAlignment(.leading)
-                        .frame(width: widgetCountdownHMSWidth(font: font), alignment: .leading)
-                        .environment(\.locale, timerLocale)
-                }
-            }
-            .fixedSize(horizontal: true, vertical: false)
+            largeHeroCountdownClockLegacyTimer(target: target, font: font, textColor: textColor, locale: timerLocale)
+                .fixedSize(horizontal: true, vertical: false)
             Spacer(minLength: 0)
         }
         .lineLimit(1)
@@ -782,13 +765,42 @@ struct MasjidlyPrayerWidgetView: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// Live `Text(timerInterval:)` + prefixes matched to snapshot-verified system glyphs.
+    private func largeHeroCountdownClockLegacyTimer(
+        target: Date,
+        font: UIFont,
+        textColor: Color,
+        locale: Locale
+    ) -> some View {
+        let remaining = max(0, target.timeIntervalSince(entry.date))
+        let legacy = WidgetLiveCountdown.legacyTimerPrefix(remaining: remaining)
+        let timerWidth = legacy.showsHours
+            ? widgetCountdownHMSWidth(font: font, hourDigits: legacy.hourDigits)
+            : widgetCountdownMMSSWidth(font: font)
+
+        return HStack(spacing: 0) {
+            Text(legacy.prefix)
+                .font(Font(font))
+                .foregroundStyle(textColor)
+            Text(timerInterval: entry.date...target, countsDown: true, showsHours: legacy.showsHours)
+                .font(Font(font))
+                .foregroundStyle(textColor)
+                .monospacedDigit()
+                .multilineTextAlignment(.leading)
+                .frame(width: timerWidth, alignment: .leading)
+                .environment(\.locale, locale)
+        }
+    }
+
     private func widgetCountdownMMSSWidth(font: UIFont) -> CGFloat {
         let sample = "09:59" as NSString
         return ceil(sample.size(withAttributes: [.font: font]).width) + 2
     }
 
-    private func widgetCountdownHMSWidth(font: UIFont) -> CGFloat {
-        let sample = "9:59:59" as NSString
+    private func widgetCountdownHMSWidth(font: UIFont, hourDigits: Int) -> CGFloat {
+        // Legacy timer hour field is unpadded; size from actual digit count (10h+ needs two hour digits).
+        let hours = String(repeating: "9", count: max(1, hourDigits))
+        let sample = "\(hours):59:59" as NSString
         return ceil(sample.size(withAttributes: [.font: font]).width) + 2
     }
 

@@ -468,7 +468,6 @@ extension HomeDesign.TimeTheme {
 
     /// Sky / glass theme for the home prayer hero (matches `HomeView` carousel selection).
     static func homeHeroTheme(displayedPrayerTimes: DailyPrayerTimes?, selectedPrayerIndex: Int) -> Self {
-        guard displayedPrayerTimes != nil else { return .fajr }
         let prayers: [Self] = [.fajr, .sunrise, .dhuhr, .asr, .maghrib, .isha]
         guard selectedPrayerIndex >= 0, selectedPrayerIndex < prayers.count else { return .fajr }
         return prayers[selectedPrayerIndex]

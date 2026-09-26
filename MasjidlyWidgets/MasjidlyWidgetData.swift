@@ -1,5 +1,28 @@
 import Foundation
 
+/// iOS 17 large-widget live countdown helpers for `Text(timerInterval:)` glyph-matched prefixes.
+/// iOS 18 padded path lives in `WidgetPaddedCountdownFormat.swift` (shared app + widget source).
+enum WidgetLiveCountdown {
+    /// iOS 17 hour-tens prefix boundary (10 hours).
+    static let hourTensPadThreshold: TimeInterval = 36_000
+
+    /// iOS 17 prefix chosen from remaining-at-entry for the live timer glyph shape.
+    static func legacyTimerPrefix(remaining: TimeInterval) -> (prefix: String, showsHours: Bool, hourDigits: Int) {
+        let seconds = max(0, remaining)
+        // Include exact 3600s so the system still emits `1:00:00` rather than a 60-minute `MM:SS` field.
+        if seconds >= 3_600 {
+            let hours = max(1, Int(seconds) / 3_600)
+            let hourDigits = String(hours).count
+            return (hours < 10 ? "-0" : "-", true, hourDigits)
+        }
+        // Under 1h the system drops hours entirely; under 10m minutes lose the tens digit.
+        if seconds < 600 {
+            return ("-00:0", false, 0)
+        }
+        return ("-00:", false, 0)
+    }
+}
+
 /// Persisted in-app language selection shared by Settings, formatters, widgets, and notifications.
 enum AppLanguage: String, CaseIterable, Codable, Sendable, Identifiable {
     case english

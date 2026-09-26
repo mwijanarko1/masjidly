@@ -255,7 +255,6 @@ enum class TimeTheme(val wireValue: String) {
             displayedPrayerTimes: DailyPrayerTimes?,
             selectedPrayerIndex: Int,
         ): TimeTheme {
-            if (displayedPrayerTimes == null) return FAJR
             return homePrayerThemes.getOrElse(selectedPrayerIndex.coerceIn(0, homePrayerThemes.lastIndex)) { FAJR }
         }
     }

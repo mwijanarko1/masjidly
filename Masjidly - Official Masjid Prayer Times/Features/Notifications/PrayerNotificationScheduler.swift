@@ -77,15 +77,17 @@ private actor PrayerNotificationRunGate {
 
 final class PrayerNotificationScheduler: PrayerNotificationScheduling {
     private let repository: any PrayerRepository
+    private let diskCache: PrayerTimesDiskCache?
     private let center: any PrayerNotificationCenter
     private let runLock = PrayerNotificationRunLock()
     private let runGate = PrayerNotificationRunGate()
     /// iOS keeps at most 64 pending local notifications; stop submitting beyond that in deterministic loop order.
     private var prayerNotificationAddBudget: Int = 0
 
-    init(repository: any PrayerRepository, center: any PrayerNotificationCenter = UNUserNotificationCenter.current()) {
+    init(repository: any PrayerRepository, center: any PrayerNotificationCenter = UNUserNotificationCenter.current(), diskCache: PrayerTimesDiskCache? = nil) {
         self.repository = repository
         self.center = center
+        self.diskCache = diskCache
     }
 
     func requestAuthorizationIfNeeded() async throws -> Bool {
@@ -148,7 +150,14 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
 
         prayerNotificationAddBudget = 64
 
-        let ukDst = (try? await repository.getUkDstDates())?.ukDstDates ?? []
+        let ukDst: [UkDstYear]
+        if let cached = diskCache?.loadUkDst() {
+            ukDst = cached.ukDstDates
+        } else {
+            let calendar = try? await repository.getUkDstDates()
+            if let calendar { try? diskCache?.saveUkDst(calendar) }
+            ukDst = calendar?.ukDstDates ?? []
+        }
         let slug = mosque.slug
         let mosqueName = mosque.name
         var cal = Calendar(identifier: .gregorian)
@@ -167,11 +176,23 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             if let cached = monthlyCache[monthKey] {
                 monthly = cached
             } else {
-                let fetched = try await repository.getMonthlyPrayerTimes(mosqueSlug: slug, month: monthName, year: comps.year)
+                let fetched: MonthPrayerData?
+                if let cached = diskCache?.loadMonthly(slug: slug, month: monthName.rawValue, year: comps.year) {
+                    fetched = cached
+                } else {
+                    fetched = try await repository.getMonthlyPrayerTimes(mosqueSlug: slug, month: monthName, year: comps.year)
+                    if let fetched { try? diskCache?.saveMonthly(slug: slug, month: monthName.rawValue, year: comps.year, data: fetched) }
+                }
                 monthlyCache.updateValue(fetched, forKey: monthKey)
                 monthly = fetched
             }
-            let ramadan = try await repository.getRamadanTimetable(mosqueSlug: slug, date: iso)
+            let ramadan: RamadanPrayerData?
+            if let cached = diskCache?.loadRamadan(slug: slug, date: iso) {
+                ramadan = cached
+            } else {
+                ramadan = try await repository.getRamadanTimetable(mosqueSlug: slug, date: iso)
+                if let ramadan { try? diskCache?.saveRamadan(slug: slug, date: iso, data: ramadan) }
+            }
 
             let displayed: DailyPrayerTimes
             let iq: DailyIqamahTimes
