@@ -2,9 +2,8 @@ package com.mikhailspeaks.masjidly.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
+import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
@@ -16,40 +15,31 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-/** Android cell sizes: 2×2, 4×2, 4×4. */
-object WidgetSizes {
-    val SMALL = DpSize(110.dp, 110.dp)
-    val SMALL_TALL = DpSize(110.dp, 140.dp)
-    val SMALL_EXTRA_TALL = DpSize(110.dp, 170.dp)
-    val MEDIUM = DpSize(250.dp, 110.dp)
-    val MEDIUM_TALL = DpSize(250.dp, 140.dp)
-    val MEDIUM_EXTRA_TALL = DpSize(250.dp, 170.dp)
-    val LARGE = DpSize(250.dp, 250.dp)
-}
-
 enum class MasjidlyWidgetFamily { SMALL, MEDIUM, LARGE }
 
 abstract class MasjidlyPrayerWidget(
     private val family: MasjidlyWidgetFamily,
-    sizes: Set<DpSize>,
 ) : GlanceAppWidget() {
-    override val sizeMode: SizeMode = SizeMode.Responsive(sizes)
+    // Fixed S/M/L providers; Exact matches the launcher cell size.
+    override val sizeMode: SizeMode = SizeMode.Exact
 
     protected open val includeTomorrowFajr: Boolean = family != MasjidlyWidgetFamily.LARGE
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            val now = Instant.now()
-            val snapshot = WidgetSnapshotStore(context).readSnapshot()
-            val state = snapshot?.let {
-                WidgetResolver.resolve(
-                    snapshot = it,
-                    now = now,
-                    includeTomorrowFajr = includeTomorrowFajr,
-                )
-            } ?: WidgetPrayerState.missing
-            val language = snapshot?.let { AppLanguage.fromWire(it.appLanguageRawValue) } ?: AppLanguage.ENGLISH
-            PrayerWidgetContent(state = state, language = language, family = family, now = now)
+            GlanceTheme {
+                val now = Instant.now()
+                val snapshot = WidgetSnapshotStore(context).readSnapshot()
+                val state = snapshot?.let {
+                    WidgetResolver.resolve(
+                        snapshot = it,
+                        now = now,
+                        includeTomorrowFajr = includeTomorrowFajr,
+                    )
+                } ?: WidgetPrayerState.missing
+                val language = snapshot?.let { AppLanguage.fromWire(it.appLanguageRawValue) } ?: AppLanguage.ENGLISH
+                PrayerWidgetContent(state = state, language = language, family = family, now = now)
+            }
         }
         val snapshot = WidgetSnapshotStore(context).readSnapshot()
         val scheduleState = snapshot?.let {
@@ -65,15 +55,9 @@ abstract class MasjidlyPrayerWidget(
     }
 }
 
-class MasjidlyPrayerSmallWidget : MasjidlyPrayerWidget(
-    MasjidlyWidgetFamily.SMALL,
-    setOf(WidgetSizes.SMALL, WidgetSizes.SMALL_TALL, WidgetSizes.SMALL_EXTRA_TALL),
-)
-class MasjidlyPrayerMediumWidget : MasjidlyPrayerWidget(
-    MasjidlyWidgetFamily.MEDIUM,
-    setOf(WidgetSizes.MEDIUM, WidgetSizes.MEDIUM_TALL, WidgetSizes.MEDIUM_EXTRA_TALL),
-)
-class MasjidlyPrayerLargeWidget : MasjidlyPrayerWidget(MasjidlyWidgetFamily.LARGE, setOf(WidgetSizes.LARGE))
+class MasjidlyPrayerSmallWidget : MasjidlyPrayerWidget(MasjidlyWidgetFamily.SMALL)
+class MasjidlyPrayerMediumWidget : MasjidlyPrayerWidget(MasjidlyWidgetFamily.MEDIUM)
+class MasjidlyPrayerLargeWidget : MasjidlyPrayerWidget(MasjidlyWidgetFamily.LARGE)
 
 abstract class MasjidlyPrayerWidgetReceiver(
     widget: GlanceAppWidget,

@@ -417,8 +417,7 @@ struct HomeView: View {
                 .mask(
                     LinearGradient(
                         stops: [
-                            .init(color: .white.opacity(0.25), location: 0),
-                            .init(color: .white, location: 0.04),
+                            .init(color: .white, location: 0),
                             .init(color: .white, location: 0.96),
                             .init(color: .white.opacity(0.25), location: 1)
                         ],

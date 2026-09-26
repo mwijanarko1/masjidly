@@ -19,7 +19,8 @@ internal fun skyBackgroundImageProvider(appearance: ResolvedTheme): androidx.gla
     return androidx.glance.ImageProvider(skyDrawableFor(appearance))
 }
 
-private fun createVerticalGradientBitmap(top: Color, bottom: Color, width: Int = 512, height: Int = 512): Bitmap {
+// Tiny bitmap: RemoteViews has a tight image budget; 512² can blank widgets.
+private fun createVerticalGradientBitmap(top: Color, bottom: Color, width: Int = 2, height: Int = 64): Bitmap {
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {

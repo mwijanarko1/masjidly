@@ -4,8 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,7 +12,6 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.background
 import com.mikhailspeaks.masjidly.ui.haptic.HapticTextButton
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
-import com.mikhailspeaks.masjidly.ui.haptic.rememberHapticOnClick
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,8 +38,6 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -67,13 +62,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import com.mikhailspeaks.masjidly.ui.home.AtmosphericSkyBackground
@@ -332,136 +321,44 @@ fun HomeScreen(
             }
             val available = state.mosques.filter { it.id !in ids }
             fun selectTab(mosque: Mosque) {
-                settingsStore.activeMosqueTabId = mosque.id
-                settingsStore.selectedMosqueId = mosque.id
-                settingsStore.selectedMosqueSlug = mosque.slug
-                settingsStore.selectedCityGroupingKey = mosque.cityGroupingKey
-                settingsStore.selectedCountryGroupingKey = MosqueSelection.countryGroupingKey(mosque)
+                settingsStore.activateMosqueSelection(
+                    id = mosque.id,
+                    slug = mosque.slug,
+                    cityGroupingKey = mosque.cityGroupingKey,
+                    countryGroupingKey = MosqueSelection.countryGroupingKey(mosque),
+                )
                 viewModel.applySelectionFromSettings(tabSwitch = true)
             }
-            val tabListState = rememberLazyListState()
-            LaunchedEffect(state.selectedMosque?.id, ids) {
-                val index = ids.indexOf(state.selectedMosque?.id)
-                if (index >= 0) tabListState.scrollToItem(index)
-            }
-            Row(
-                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                    // Extra lift above gesture/nav bar so tab taps do not fight system gestures.
+            MosqueTabsBar(
+                openMosqueIds = ids,
+                mosques = state.mosques,
+                selectedMosqueId = state.selectedMosque?.id,
+                textColor = textColor,
+                usesLightForeground = theme.usesLightForeground,
+                showAdd = available.isNotEmpty(),
+                onSelect = ::selectTab,
+                onClose = { id ->
+                    val remaining = ids.filter { it != id }
+                    settingsStore.openMosqueTabIds = remaining
+                    if (settingsStore.activeMosqueTabId == id ||
+                        (settingsStore.activeMosqueTabId == null && state.selectedMosque?.id == id)
+                    ) {
+                        state.mosques.firstOrNull { it.id == remaining.firstOrNull() }?.let(::selectTab)
+                    }
+                },
+                onAdd = {
+                    addTabSelectedMosqueId = defaultAddTabMosqueId(
+                        available = available,
+                        current = state.selectedMosque,
+                    )
+                    showAddMosqueTab = true
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                LazyRow(
-                    state = tabListState,
-                    modifier = Modifier.weight(1f).graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                        .drawWithContent {
-                            drawContent()
-                            val edge = 16.dp.toPx()
-                            if (tabListState.canScrollBackward) {
-                                drawRect(
-                                    Brush.horizontalGradient(
-                                        0f to Color.Transparent, 1f to Color.Black,
-                                        startX = 0f, endX = edge,
-                                    ),
-                                    blendMode = BlendMode.DstIn,
-                                )
-                            }
-                            if (tabListState.canScrollForward) {
-                                drawRect(
-                                    Brush.horizontalGradient(
-                                        0f to Color.Black, 1f to Color.Transparent,
-                                        startX = size.width - edge, endX = size.width,
-                                    ),
-                                    blendMode = BlendMode.DstIn,
-                                )
-                            }
-                        },
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    itemsIndexed(ids, key = { _, id -> id }) { _, id ->
-                        state.mosques.firstOrNull { it.id == id }?.let { mosque ->
-                            val isSelected = state.selectedMosque?.id == id
-                            val tabForeground by animateColorAsState(
-                                if (isSelected) {
-                                    if (theme.usesLightForeground) Color.Black else Color.White
-                                } else textColor.copy(alpha = 0.72f),
-                                animationSpec = tween(200), label = "mosqueTabText",
-                            )
-                            val tabBackground by animateColorAsState(
-                                textColor.copy(alpha = if (isSelected) 0.92f else 0.12f),
-                                animationSpec = tween(200), label = "mosqueTabBackground",
-                            )
-                            val tabWidth by animateDpAsState(
-                                if (isSelected) 188.dp else 108.dp,
-                                animationSpec = tween(200), label = "mosqueTabWidth",
-                            )
-                            val tabPadding by animateDpAsState(
-                                if (isSelected) 12.dp else 10.dp,
-                                animationSpec = tween(200), label = "mosqueTabPadding",
-                            )
-                            Row(
-                                modifier = Modifier
-                                    .widthIn(max = tabWidth)
-                                    .clip(RoundedCornerShape(24.dp))
-                                    .background(tabBackground)
-                                    .semantics { if (isSelected) selected = true }
-                                    .padding(horizontal = tabPadding),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                val onSelectTab = rememberHapticOnClick {
-                                    selectTab(mosque)
-                                }
-                                TextButton(onClick = onSelectTab) {
-                                    Text(
-                                        mosque.name,
-                                        color = tabForeground,
-                                        style = rememberAppTextStyle(
-                                            13f,
-                                            if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                        ),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                                if (ids.size > 1) {
-                                    Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = "Close ${mosque.name} tab",
-                                        tint = tabForeground,
-                                        modifier = Modifier.size(28.dp).hapticClickable {
-                                            val remaining = ids.filter { it != id }
-                                            settingsStore.openMosqueTabIds = remaining
-                                            if (settingsStore.activeMosqueTabId == id ||
-                                                (settingsStore.activeMosqueTabId == null && state.selectedMosque?.id == id)) {
-                                                state.mosques.firstOrNull { it.id == remaining.first() }?.let(::selectTab)
-                                            }
-                                        }.padding(5.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    if (available.isNotEmpty()) {
-                        item(key = "add-mosque-tab") {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Add mosque tab",
-                                tint = textColor,
-                                modifier = Modifier.size(40.dp).clip(CircleShape)
-                                    .background(textColor.copy(alpha = 0.12f))
-                                    .hapticClickable {
-                                        addTabSelectedMosqueId = defaultAddTabMosqueId(
-                                            available = available,
-                                            current = state.selectedMosque,
-                                        )
-                                        showAddMosqueTab = true
-                                    }.padding(8.dp),
-                            )
-                        }
-                    }
-                }
-            }
+            )
             if (showAddMosqueTab) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     OnboardingScrim(
@@ -517,17 +414,18 @@ fun HomeScreen(
                 onUseClosest = {
                     forceClosestMosquePrompt = false
                     settingsStore.dismissedClosestMosqueId = closest.id
-                    if (settingsStore.openMosqueTabIds.isEmpty) {
+                    if (settingsStore.openMosqueTabIds.isEmpty()) {
                         settingsStore.openMosqueTabIds = listOfNotNull(settingsStore.selectedMosqueId ?: state.selectedMosque?.id)
                     }
-                    settingsStore.selectedMosqueId = closest.id
-                    settingsStore.selectedMosqueSlug = closest.slug
                     if (closest.id !in settingsStore.openMosqueTabIds) {
                         settingsStore.openMosqueTabIds = settingsStore.openMosqueTabIds + closest.id
                     }
-                    settingsStore.activeMosqueTabId = closest.id
-                    settingsStore.selectedCityGroupingKey = closest.cityGroupingKey
-                    settingsStore.selectedCountryGroupingKey = MosqueSelection.countryGroupingKey(closest)
+                    settingsStore.activateMosqueSelection(
+                        id = closest.id,
+                        slug = closest.slug,
+                        cityGroupingKey = closest.cityGroupingKey,
+                        countryGroupingKey = MosqueSelection.countryGroupingKey(closest),
+                    )
                     pendingClosestMosque = null
                     scope.launch {
                         runCatching { viewModel.switchToMosque(closest) }

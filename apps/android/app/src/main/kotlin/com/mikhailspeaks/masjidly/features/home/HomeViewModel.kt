@@ -71,6 +71,7 @@ class HomeViewModel(
     private var loadedMonthYear: Int? = null
     private var lastAvailablePrayerDate: Instant? = null
     private var refreshTask: Job? = null
+    private var selectionJob: Job? = null
 
     private fun defaultMosque(mosques: List<Mosque> = _uiState.value.mosques): Mosque? =
         MosqueSelection.resolveSelectedMosque(mosques, settings.selectedMosqueId, settings.selectedMosqueSlug)
@@ -116,18 +117,20 @@ class HomeViewModel(
     }
 
     fun applySelectionFromSettings(tabSwitch: Boolean = false) {
-        viewModelScope.launch {
+        selectionJob?.cancel()
+        selectionJob = viewModelScope.launch {
             val mosque = displayedMosque(_uiState.value.mosques) ?: return@launch
-            if (_uiState.value.selectedMosque?.id != mosque.id) {
-                clearDisplayedPrayerTimes()
-                _uiState.update { it.copy(monthData = null) }
-            }
-            _uiState.update { it.copy(selectedMosque = mosque) }
+            val switching = _uiState.value.selectedMosque?.id != mosque.id
+            // Select + hydrate before clearing so cache hits never flash empty prayer content.
+            _uiState.update { it.copy(selectedMosque = mosque, lastError = null) }
             val hasCachedTimes = hydrateFromCache(mosque)
             if (tabSwitch && hasCachedTimes) {
                 _uiState.update { it.copy(lastPrayerPayloadRefreshAt = null) }
-            }
-            if (!tabSwitch || !hasCachedTimes) {
+            } else {
+                if (switching && !hasCachedTimes) {
+                    clearDisplayedPrayerTimes()
+                    _uiState.update { it.copy(monthData = null) }
+                }
                 try {
                     refreshPrayerPayload(mosque, updateWidget = false)
                 } catch (e: Exception) {
@@ -365,6 +368,7 @@ class HomeViewModel(
 
         _uiState.update {
             it.copy(
+                selectedMosque = mosque,
                 monthData = monthly,
                 ramadanData = diskCache.loadRamadan(mosque.slug, isoDate),
                 ukDst = diskCache.loadUkDst()?.ukDstDates ?: emptyList(),

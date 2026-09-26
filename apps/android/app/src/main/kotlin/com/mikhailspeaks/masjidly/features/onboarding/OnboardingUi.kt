@@ -45,6 +45,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Alignment
@@ -75,6 +76,7 @@ import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermi
 import com.mikhailspeaks.masjidly.features.settings.SettingsClosestMosqueLocationProvider
 import com.mikhailspeaks.masjidly.features.settings.OnboardingMenuPickerRow
 import com.mikhailspeaks.masjidly.features.settings.OnboardingReminderMenuPickerRow
+import com.mikhailspeaks.masjidly.features.settings.SettingsPickerBottomSheet
 import com.mikhailspeaks.masjidly.features.settings.SettingsPickerOption
 import com.mikhailspeaks.masjidly.ui.haptic.HapticTextButton
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
@@ -513,11 +515,11 @@ fun MosqueSelectionOnboardingScreen(
         visible.firstOrNull { it.id == selectedMosqueId }
     }
     var countryKey by remember(preselected, mosques) {
-        val firstCountry = MosqueSelection.countryOptions(mosques).firstOrNull()?.key.orEmpty()
+        val firstCountry = MosqueSelection.countryOptions(mosques).firstOrNull()?.first.orEmpty()
         mutableStateOf(preselected?.let { MosqueSelection.countryGroupingKey(it) } ?: firstCountry)
     }
     var cityKey by remember(preselected, mosques, countryKey) {
-        val firstCity = MosqueSelection.cityOptions(mosques, countryKey).firstOrNull()?.key.orEmpty()
+        val firstCity = MosqueSelection.cityOptions(mosques, countryKey).firstOrNull()?.first.orEmpty()
         mutableStateOf(preselected?.cityGroupingKey ?: firstCity)
     }
     var mosqueId by remember(selectedMosqueId) {

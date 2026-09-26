@@ -1496,11 +1496,12 @@ private fun selectMosque(
     if (mosque.id !in settingsStore.openMosqueTabIds) {
         settingsStore.openMosqueTabIds = settingsStore.openMosqueTabIds + mosque.id
     }
-    settingsStore.activeMosqueTabId = mosque.id
-    settingsStore.selectedMosqueId = mosque.id
-    settingsStore.selectedMosqueSlug = mosque.slug
-    settingsStore.selectedCityGroupingKey = mosque.cityGroupingKey
-    settingsStore.selectedCountryGroupingKey = MosqueSelection.countryGroupingKey(mosque)
+    settingsStore.activateMosqueSelection(
+        id = mosque.id,
+        slug = mosque.slug,
+        cityGroupingKey = mosque.cityGroupingKey,
+        countryGroupingKey = MosqueSelection.countryGroupingKey(mosque),
+    )
     homeViewModel.applySelectionFromSettings()
     settingsViewModel.refreshAsrAdhanSupport()
 }

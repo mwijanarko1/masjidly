@@ -64,6 +64,23 @@ class SettingsStore(context: Context) {
             bump()
         }
 
+    /** One prefs write + one revision bump for tab/mosque activation (avoids 5 recompositions). */
+    fun activateMosqueSelection(
+        id: String,
+        slug: String,
+        cityGroupingKey: String,
+        countryGroupingKey: String,
+    ) {
+        prefs.edit()
+            .putString(KEY_ACTIVE_MOSQUE_TAB_ID, id)
+            .putString(KEY_SELECTED_MOSQUE_ID, id)
+            .putString(KEY_SELECTED_MOSQUE_SLUG, slug)
+            .putString(KEY_SELECTED_CITY_GROUPING, cityGroupingKey)
+            .putString(KEY_SELECTED_COUNTRY_GROUPING, countryGroupingKey)
+            .apply()
+        bump()
+    }
+
     var selectedCityGroupingKey: String?
         get() = prefs.getString(KEY_SELECTED_CITY_GROUPING, null)
         set(value) {
