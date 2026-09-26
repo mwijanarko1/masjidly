@@ -125,6 +125,8 @@ class HomeViewModel(
             _uiState.update { it.copy(selectedMosque = mosque, lastError = null) }
             val hasCachedTimes = hydrateFromCache(mosque)
             if (tabSwitch && hasCachedTimes) {
+                // Match iOS `applySelectionFromSettings(tabSwitch:)` cache-hit early path —
+                // widget/notifications are refreshed below (HomeView.activateTab does the same).
                 _uiState.update { it.copy(lastPrayerPayloadRefreshAt = null) }
             } else {
                 if (switching && !hasCachedTimes) {
@@ -137,17 +139,22 @@ class HomeViewModel(
                     _uiState.update { it.copy(lastError = e.localizedMessage) }
                 }
             }
-            if (settings.activeMosqueTabId == mosque.id) {
-                resyncNotificationsIfNeeded()
-                if (settings.activeMosqueTabId == mosque.id) widgetSnapshotService.refreshSnapshot(mosque)
+            // Still the active/default mosque? (rapid tab switches cancel prior jobs)
+            if (settings.activeMosqueTabId != mosque.id && settings.selectedMosqueId != mosque.id) {
+                return@launch
             }
+            // Widget first so a notification reschedule failure cannot block the home-screen chrome.
+            refreshWidgetSnapshotForCurrentMosque()
+            runCatching { resyncNotificationsIfNeeded() }
         }
     }
 
     /** Used by onboarding mosque selection — mirrors iOS `selectMosque`. */
     suspend fun switchToMosque(mosque: Mosque) {
         _uiState.update { it.copy(selectedMosque = mosque, lastError = null) }
-        refreshPrayerPayload(mosque, checkVersions = true)
+        refreshPrayerPayload(mosque, checkVersions = true, updateWidget = false)
+        refreshWidgetSnapshotForCurrentMosque()
+        runCatching { resyncNotificationsIfNeeded() }
         _uiState.update { it.copy(loadState = LoadState.LOADED) }
     }
 
@@ -259,6 +266,12 @@ class HomeViewModel(
         }
     }
 
+    /** Mirrors iOS `refreshWidgetSnapshotForCurrentMosque` — always the settings default mosque. */
+    suspend fun refreshWidgetSnapshotForCurrentMosque() {
+        val mosque = defaultMosque() ?: return
+        widgetSnapshotService.refreshSnapshot(mosque)
+    }
+
     suspend fun resyncNotificationsIfNeeded() {
         val n = settings.notifications
         val mosque = defaultMosque()
@@ -302,7 +315,10 @@ class HomeViewModel(
             loadedMonthNumber = sh.month
             loadedMonthYear = sh.year
             applyPrayerTimes(_uiState.value.displayedDate, mosque)
-            if (updateWidget) defaultMosque()?.let { widgetSnapshotService.refreshSnapshot(it) }
+            if (updateWidget) {
+                refreshWidgetSnapshotForCurrentMosque()
+                runCatching { resyncNotificationsIfNeeded() }
+            }
             return
         }
 
@@ -323,7 +339,10 @@ class HomeViewModel(
             loadedMonthNumber = sh.month
             loadedMonthYear = sh.year
             applyPrayerTimes(_uiState.value.displayedDate, mosque)
-            if (updateWidget) defaultMosque()?.let { widgetSnapshotService.refreshSnapshot(it) }
+            if (updateWidget) {
+                refreshWidgetSnapshotForCurrentMosque()
+                runCatching { resyncNotificationsIfNeeded() }
+            }
             return
         }
 
@@ -354,8 +373,8 @@ class HomeViewModel(
         loadedMonthYear = sh.year
         applyPrayerTimes(_uiState.value.displayedDate, mosque)
         if (updateWidget) {
-            resyncNotificationsIfNeeded()
-            defaultMosque()?.let { widgetSnapshotService.refreshSnapshot(it) }
+            refreshWidgetSnapshotForCurrentMosque()
+            runCatching { resyncNotificationsIfNeeded() }
         }
     }
 

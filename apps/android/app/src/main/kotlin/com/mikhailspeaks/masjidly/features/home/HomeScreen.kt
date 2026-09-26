@@ -62,15 +62,18 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import com.mikhailspeaks.masjidly.ui.home.AtmosphericSkyBackground
 import com.mikhailspeaks.masjidly.ui.home.rememberHomeThemeAnimation
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mikhailspeaks.masjidly.data.SettingsStore
@@ -427,10 +430,8 @@ fun HomeScreen(
                         countryGroupingKey = MosqueSelection.countryGroupingKey(closest),
                     )
                     pendingClosestMosque = null
-                    scope.launch {
-                        runCatching { viewModel.switchToMosque(closest) }
-                            .onFailure { viewModel.setLastError(it.localizedMessage) }
-                    }
+                    // Same path as tab/settings activation — refreshes home, widget, and notifications.
+                    viewModel.applySelectionFromSettings()
                 },
                 onKeepSelected = {
                     forceClosestMosquePrompt = false
@@ -584,26 +585,29 @@ private fun HomeTopChrome(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center,
                 ) {
+                    // Constrain + auto-shrink like iOS `dateDisplay` (minWidth:0 + minimumScaleFactor 0.5)
                     Column(
-                        modifier = Modifier.padding(end = if (isToday) 0.dp else 36.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = if (isToday) 0.dp else 36.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        Text(
+                        AutoSizingText(
                             text = gregorian,
                             color = textColor.copy(alpha = 0.6f),
                             style = rememberAppTextStyle(13f, FontWeight.SemiBold),
                             textAlign = TextAlign.Center,
                             letterSpacing = 1.sp,
-                            maxLines = 1,
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                        Text(
+                        AutoSizingText(
                             text = hijrah,
                             color = textColor.copy(alpha = 0.4f),
-                            textAlign = TextAlign.Center,
                             style = rememberAppTextStyle(10f, FontWeight.Medium),
+                            textAlign = TextAlign.Center,
                             letterSpacing = 0.8.sp,
-                            maxLines = 1,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
 
@@ -688,6 +692,45 @@ private fun DateChevronButton(
     ) {
         icon()
     }
+}
+
+/** Single-line text that shrinks down to [minScale] of the style size when it would overflow. */
+@Composable
+private fun AutoSizingText(
+    text: String,
+    color: Color,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Unspecified,
+    letterSpacing: TextUnit = TextUnit.Unspecified,
+    maxLines: Int = 1,
+    minScale: Float = 0.5f,
+) {
+    val baseSize = style.fontSize
+    var fontSize by remember(text, baseSize) { mutableStateOf(baseSize) }
+    var readyToDraw by remember(text, baseSize) { mutableStateOf(false) }
+
+    Text(
+        text = text,
+        color = color,
+        style = style.copy(fontSize = fontSize),
+        modifier = modifier.drawWithContent {
+            if (readyToDraw) drawContent()
+        },
+        textAlign = textAlign,
+        letterSpacing = letterSpacing,
+        maxLines = maxLines,
+        softWrap = false,
+        overflow = TextOverflow.Clip,
+        onTextLayout = { result ->
+            val minSize = baseSize.value * minScale
+            if (result.hasVisualOverflow && fontSize.value > minSize + 0.01f) {
+                fontSize = (fontSize.value * 0.9f).coerceAtLeast(minSize).sp
+            } else {
+                readyToDraw = true
+            }
+        },
+    )
 }
 
 @Composable

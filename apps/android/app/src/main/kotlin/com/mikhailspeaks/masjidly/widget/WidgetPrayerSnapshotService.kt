@@ -26,11 +26,16 @@ class WidgetPrayerSnapshotService(
 ) {
     suspend fun refreshSnapshot(mosque: Mosque, days: Int = 7) {
         if (days <= 0) return
-        runCatching {
+        try {
             val snapshot = buildSnapshot(mosque, days)
-            if (settings.selectedMosqueId != null && settings.selectedMosqueId != mosque.id) return@runCatching
+            // Drop stale work if the user already switched to another default mosque.
+            if (settings.selectedMosqueId != null && settings.selectedMosqueId != mosque.id) return
             store.writeSnapshot(snapshot)
             updateAllMasjidlyWidgets(context)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            // Widgets keep rendering their last valid snapshot if a refresh fails (iOS parity).
         }
     }
 
