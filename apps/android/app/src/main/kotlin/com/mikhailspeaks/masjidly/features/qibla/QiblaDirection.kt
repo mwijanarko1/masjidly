@@ -8,15 +8,19 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import com.mikhailspeaks.masjidly.domain.Mosque
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -199,15 +203,21 @@ class QiblaDirectionProvider(context: Context) : LocationListener {
     }
 }
 
+/**
+ * Returns a reader for the animated pointer rotation, or null while there is no rotation yet.
+ * Read it in the draw phase so compass updates redraw only the pointer, not the caller.
+ */
 @Composable
 fun rememberQiblaRotation(
     context: Context,
     mosque: Mosque?,
     enabled: Boolean,
     locationPermissionGranted: Boolean = false,
-): Float? {
+): (() -> Float)? {
     val provider = remember { QiblaDirectionProvider(context) }
-    var rotation by remember { mutableFloatStateOf(0f) }
+    val rotation = remember { Animatable(0f) }
+    val readRotation = remember(rotation) { { rotation.value } }
+    val scope = rememberCoroutineScope()
     var hasRotation by remember { mutableStateOf(false) }
 
     DisposableEffect(enabled, mosque?.id, locationPermissionGranted) {
@@ -218,7 +228,13 @@ fun rememberQiblaRotation(
         } else {
             provider.onDisplayedRotationChanged = { value ->
                 if (value != null) {
-                    rotation = value.toFloat()
+                    val target = value.toFloat()
+                    val animate = hasRotation
+                    // Ease toward each reading like iOS `.animation(.easeOut(duration: 0.2))`.
+                    // Values are already unwrapped, so the pointer always takes the short way round.
+                    scope.launch {
+                        if (animate) rotation.animateTo(target, POINTER_SPRING) else rotation.snapTo(target)
+                    }
                     hasRotation = true
                 } else {
                     hasRotation = false
@@ -234,6 +250,11 @@ fun rememberQiblaRotation(
         }
     }
 
-    // No Compose animation — native compass low-pass + throttling handles smoothness.
-    return if (enabled && hasRotation) rotation else null
+    return if (enabled && hasRotation) readRotation else null
 }
+
+/** Critically damped, ~0.2s settle; keeps velocity when retargeted every sensor tick. */
+private val POINTER_SPRING = spring<Float>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMediumLow,
+)

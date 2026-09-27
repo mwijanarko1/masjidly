@@ -16,14 +16,14 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.mikhailspeaks.masjidly"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.mikhailspeaks.masjidly"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 13
-        versionName = "1.4"
+        targetSdk = 36
+        versionCode = 15
+        versionName = "1.4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -49,7 +49,13 @@ android {
         }
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
+            // Required for Google Play DEX optimization / obfuscation thresholds.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            // Bundle native debug symbols into the AAB for Play Console crash analysis.
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

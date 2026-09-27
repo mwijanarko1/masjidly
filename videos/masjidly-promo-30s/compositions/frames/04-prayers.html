@@ -1,0 +1,156 @@
+<template>
+  <style>
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Light.woff2") format("woff2"); font-weight: 300; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans.woff2") format("woff2"); font-weight: 400; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-SemiBold.woff2") format("woff2"); font-weight: 600; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Bold.woff2") format("woff2"); font-weight: 700; }
+    #root { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; font-family: "HF Gill", sans-serif; color: #fff; }
+    .p04-bg { position: absolute; inset: 0; background: #0B1233; }
+    .p04-halo { position: absolute; left: 40px; top: 420px; width: 1000px; height: 1100px; border-radius: 50%; filter: blur(60px); opacity: 0.55; }
+    .p04-head { position: absolute; left: 0; right: 0; top: 180px; text-align: center; font-weight: 600; font-size: 118px; letter-spacing: -0.02em; line-height: 1; }
+    .p04-sub { position: absolute; left: 0; right: 0; top: 312px; text-align: center; font-weight: 400; font-size: 40px; color: #C9D2F2; }
+    .p04-phone { position: absolute; left: 260px; top: 400px; width: 560px; height: 1188px; border-radius: 86px; background: #0A0C18; padding: 14px; box-shadow: 0 50px 120px rgba(0,0,0,0.55), inset 0 0 0 3px #2A2F45; }
+    .p04-screen { position: relative; width: 532px; height: 1160px; border-radius: 72px; overflow: hidden; }
+    .p04-sky { position: absolute; inset: 0; }
+    .p04-ui { position: absolute; inset: 0; color: #fff; }
+    .p04-status { position: absolute; left: 62px; top: 24px; font-weight: 600; font-size: 26px; }
+    .p04-island { position: absolute; left: 191px; top: 16px; width: 150px; height: 44px; border-radius: 22px; background: #000; }
+    .p04-btn { position: absolute; top: 92px; width: 56px; height: 56px; border-radius: 50%; }
+    .p04-btn::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: currentColor; opacity: 0.16; }
+    .p04-btn i { position: absolute; left: 19px; top: 19px; width: 18px; height: 18px; border-radius: 4px; border: 3px solid currentColor; opacity: 0.9; }
+    .p04-pill { position: absolute; left: 168px; top: 88px; width: 196px; height: 64px; border-radius: 32px; text-align: center; }
+    .p04-pill::before { content: ""; position: absolute; inset: 0; border-radius: 32px; background: currentColor; opacity: 0.16; }
+    .p04-pill .p04-d1 { position: relative; display: block; margin-top: 9px; font-weight: 600; font-size: 21px; }
+    .p04-pill .p04-d2 { position: relative; display: block; margin-top: 2px; font-weight: 400; font-size: 15px; opacity: 0.8; }
+    .p04-compass { position: absolute; left: 191px; top: 188px; width: 150px; height: 150px; border-radius: 50%; border: 2px solid currentColor; opacity: 0.35; }
+    .p04-kaaba { position: absolute; left: 248px; top: 244px; width: 36px; height: 36px; }
+    .p04-kaaba::before { content: ""; position: absolute; left: 9px; top: 2px; width: 16px; height: 16px; border: 3px solid currentColor; transform: rotate(45deg); }
+    .p04-kaaba::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: currentColor; }
+    .p04-roll { position: absolute; left: 0; right: 0; overflow: hidden; text-align: center; }
+    .p04-roll .p04-stack > div { white-space: nowrap; }
+    .p04-time { top: 402px; height: 128px; }
+    .p04-time .p04-stack > div { height: 128px; line-height: 128px; font-weight: 300; font-size: 112px; letter-spacing: -0.01em; }
+    .p04-iq { top: 544px; height: 56px; }
+    .p04-iq .p04-stack > div { height: 56px; line-height: 56px; font-weight: 400; font-size: 36px; opacity: 0.85; }
+    .p04-name { top: 772px; height: 84px; }
+    .p04-name .p04-stack > div { height: 84px; line-height: 84px; font-weight: 400; font-size: 50px; }
+    .p04-initials { position: absolute; left: 110px; right: 110px; top: 880px; display: flex; justify-content: space-between; font-weight: 400; font-size: 30px; }
+    .p04-initials span { opacity: 0.4; }
+    .p04-tabs { position: absolute; left: 30px; top: 1050px; display: flex; gap: 8px; align-items: center; }
+    .p04-tab { position: relative; padding: 11px 16px; border-radius: 100px; font-weight: 700; font-size: 17px; }
+    .p04-tab::before { content: ""; position: absolute; inset: 0; border-radius: 100px; background: currentColor; opacity: 0.92; }
+    .p04-tab span { position: relative; color: var(--p04-inv, #111); }
+    .p04-plus { position: relative; width: 42px; height: 42px; border-radius: 50%; }
+    .p04-plus::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: currentColor; opacity: 0.14; }
+    .p04-plus::after { content: "+"; position: absolute; inset: 0; text-align: center; line-height: 40px; font-size: 30px; font-weight: 400; }
+    .p04-sheet { position: absolute; inset: 0; background: linear-gradient(180deg, #103783 0%, #8752A3 100%); color: #fff; }
+    .p04-sh-h1 { position: absolute; left: 36px; top: 96px; font-weight: 300; font-size: 30px; }
+    .p04-sh-h2 { position: absolute; left: 36px; top: 138px; font-weight: 400; font-size: 22px; opacity: 0.85; }
+    .p04-sh-x { position: absolute; right: 36px; top: 104px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.18); text-align: center; line-height: 50px; font-size: 26px; }
+    .p04-sh-month { position: absolute; left: 0; right: 0; top: 214px; text-align: center; font-weight: 600; font-size: 28px; }
+    .p04-week { position: absolute; left: 20px; right: 20px; top: 270px; display: flex; justify-content: space-between; }
+    .p04-day { width: 64px; height: 96px; border-radius: 18px; text-align: center; }
+    .p04-day b { display: block; margin-top: 14px; font-weight: 600; font-size: 15px; opacity: 0.6; }
+    .p04-day em { display: block; font-style: normal; font-weight: 400; font-size: 32px; opacity: 0.75; }
+    .p04-day.p04-on { background: rgba(255,255,255,0.18); }
+    .p04-day.p04-on b, .p04-day.p04-on em { opacity: 1; }
+    .p04-table { position: absolute; left: 20px; right: 20px; top: 410px; }
+    .p04-tr { position: relative; display: grid; grid-template-columns: 1fr 150px 150px; align-items: center; height: 80px; padding: 0 30px; font-size: 27px; }
+    .p04-tr.p04-th { height: 56px; font-weight: 600; font-size: 20px; opacity: 0.75; }
+    .p04-tr > div:nth-child(2), .p04-tr > div:nth-child(3) { text-align: right; }
+    .p04-tr > div:nth-child(3) { font-weight: 600; }
+    .p04-tr.p04-hi { background: rgba(255,255,255,0.16); border-radius: 22px; }
+    .p04-chip { position: absolute; top: 1384px; padding: 10px 22px; border-radius: 100px; background: #47A6FF; color: #0B1233; font-weight: 700; font-size: 30px; box-shadow: 0 16px 40px rgba(71,166,255,0.45); }
+    .p04-chip::after { content: ""; position: absolute; left: 50%; top: -12px; margin-left: -12px; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 14px solid #47A6FF; }
+  </style>
+
+  <div id="root" data-composition-id="04-prayers" data-width="1080" data-height="1920" data-start="0" data-duration="4.6">
+    <div id="p04-bg" class="p04-bg clip" data-start="0" data-duration="4.6" data-track-index="0"></div>
+    <div class="p04-halo" id="p04-halo" style="background: #5B4AA6;"></div>
+    <div class="p04-head" id="p04-head">Every salah.</div>
+    <div class="p04-sub" id="p04-sub">Its own sky.&ensp;Your masjid's times.</div>
+
+    <div class="p04-phone" id="p04-phone">
+      <div class="p04-screen">
+        <div class="p04-sky" id="p04-sky0" style="background: linear-gradient(180deg, #103783, #8752A3);"></div>
+        <div class="p04-sky" id="p04-sky1" style="background: linear-gradient(180deg, #EBF4F5, #60EFFF);"></div>
+        <div class="p04-sky" id="p04-sky2" style="background: linear-gradient(180deg, #60EFFF, #F3F98A);"></div>
+        <div class="p04-sky" id="p04-sky3" style="background: linear-gradient(180deg, #F2D7D9, #E786A7);"></div>
+        <div class="p04-sky" id="p04-sky4" style="background: linear-gradient(180deg, #000328, #00458E);"></div>
+        <div class="p04-ui" id="p04-ui">
+          <div class="p04-status">9:41</div>
+          <div class="p04-island"></div>
+          <div class="p04-btn" style="left: 26px;"><i></i></div>
+          <div class="p04-btn" style="left: 100px;"><i style="border-radius: 50%; width: 14px; height: 14px; left: 21px; top: 21px;"></i></div>
+          <div class="p04-pill"><span class="p04-d1">Sunday, 27 Sep</span><span class="p04-d2">16 Rabiʻ II 1448</span></div>
+          <div class="p04-btn" style="left: 376px;"><i style="border-radius: 50%; width: 14px; height: 14px; left: 21px; top: 21px;"></i></div>
+          <div class="p04-btn" style="left: 450px;"><i style="border-radius: 50%;"></i></div>
+          <div class="p04-compass"></div>
+          <div class="p04-kaaba"></div>
+          <div class="p04-roll p04-time"><div class="p04-stack" id="p04-time-stack"><div>5:26AM</div><div>1:02PM</div><div>4:57PM</div><div>6:54PM</div><div>8:16PM</div></div></div>
+          <div class="p04-roll p04-iq"><div class="p04-stack" id="p04-iq-stack"><div>Iqamah: 6:20AM</div><div>Iqamah: 2:00PM</div><div>Iqamah: 5:45PM</div><div>Iqamah: 6:57PM</div><div>Iqamah: 8:30PM</div></div></div>
+          <div class="p04-roll p04-name"><div class="p04-stack" id="p04-name-stack"><div>Fajr</div><div>Dhuhr</div><div>Asr</div><div>Maghrib</div><div>Isha</div></div></div>
+          <div class="p04-initials" id="p04-initials"><span style="opacity: 1;">F</span><span>S</span><span>D</span><span>A</span><span>M</span><span>I</span></div>
+          <div class="p04-tabs"><div class="p04-tab" id="p04-tab" style="--p04-inv: #111111;"><span>Masjid Faizul Islam</span></div><div class="p04-plus"></div></div>
+        </div>
+        <div class="p04-sheet" id="p04-sheet">
+          <div class="p04-sh-h1">Sunday · 27 September</div>
+          <div class="p04-sh-h2">Masjid Faizul Islam</div>
+          <div class="p04-sh-x">✕</div>
+          <div class="p04-sh-month">Sep 2026</div>
+          <div class="p04-week">
+            <div class="p04-day"><b>THU</b><em>24</em></div><div class="p04-day"><b>FRI</b><em>25</em></div><div class="p04-day"><b>SAT</b><em>26</em></div><div class="p04-day p04-on"><b>SUN</b><em>27</em></div><div class="p04-day"><b>MON</b><em>28</em></div><div class="p04-day"><b>TUE</b><em>29</em></div><div class="p04-day"><b>WED</b><em>30</em></div>
+          </div>
+          <div class="p04-table">
+            <div class="p04-tr p04-th"><div>Prayer</div><div>Adhan</div><div>Iqamah</div></div>
+            <div class="p04-tr"><div>Fajr</div><div>5:26AM</div><div>6:20AM</div></div>
+            <div class="p04-tr"><div>Sunrise</div><div>7:02AM</div><div>-</div></div>
+            <div class="p04-tr"><div>Dhuhr</div><div>1:02PM</div><div>2:00PM</div></div>
+            <div class="p04-tr p04-hi"><div>Asr</div><div>4:57PM</div><div>5:45PM</div></div>
+            <div class="p04-tr"><div>Maghrib</div><div>6:54PM</div><div>6:57PM</div></div>
+            <div class="p04-tr"><div>Isha</div><div>8:16PM</div><div>8:30PM</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="p04-chip" id="p04-chip-a" style="left: 486px;">Adhan</div>
+    <div class="p04-chip" id="p04-chip-i" style="left: 628px;">Iqamah</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const ink = ["#FFFFFF", "#111111", "#111111", "#111111", "#FFFFFF"];
+      const inv = ["#111111", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#111111"];
+      const halo = ["#5B4AA6", "#3FC6E0", "#B8E68A", "#E786A7", "#1F4FA0"];
+      const initialIdx = [0, 2, 3, 4, 5];
+      const times = [0.9, 1.5, 2.1, 2.7];
+
+
+      tl.fromTo("#p04-head", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 0.0);
+      tl.fromTo("#p04-sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.25);
+      tl.fromTo("#p04-phone", { y: 420, rotationX: 22, transformPerspective: 1600, opacity: 0 }, { y: 0, rotationX: 0, opacity: 1, duration: 0.8, ease: "expo.out" }, 0.05);
+
+      times.forEach(function (t, k) {
+        const i = k + 1;
+        tl.fromTo("#p04-sky" + i, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.inOut" }, t);
+        tl.to("#p04-ui", { color: ink[i], duration: 0.35, ease: "power2.inOut" }, t);
+        tl.to("#p04-tab", { "--p04-inv": inv[i], duration: 0.35 }, t);
+        tl.to("#p04-halo", { backgroundColor: halo[i], duration: 0.4, ease: "power2.inOut" }, t);
+        tl.to("#p04-time-stack", { y: -128 * i, duration: 0.42, ease: "power3.inOut" }, t);
+        tl.to("#p04-iq-stack", { y: -56 * i, duration: 0.42, ease: "power3.inOut" }, t + 0.04);
+        tl.to("#p04-name-stack", { y: -84 * i, duration: 0.42, ease: "power3.inOut" }, t + 0.08);
+        tl.to("#p04-initials span:nth-child(" + (initialIdx[k] + 1) + ")", { opacity: 0.4, duration: 0.25 }, t);
+        tl.to("#p04-initials span:nth-child(" + (initialIdx[i] + 1) + ")", { opacity: 1, duration: 0.25 }, t + 0.05);
+      });
+
+      tl.fromTo("#p04-sheet", { yPercent: 100 }, { yPercent: 0, duration: 0.5, ease: "expo.out" }, 3.25);
+      tl.fromTo("#p04-ui", { opacity: 1 }, { opacity: 0, duration: 0.2, ease: "power1.in" }, 3.25);
+      tl.to("#p04-halo", { backgroundColor: "#5B4AA6", duration: 0.4 }, 3.25);
+      tl.fromTo("#p04-chip-a", { opacity: 0, scale: 0.3, y: -20 }, { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: "back.out(2.4)" }, 3.7);
+      tl.fromTo("#p04-chip-i", { opacity: 0, scale: 0.3, y: -20 }, { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: "back.out(2.4)" }, 3.85);
+      window.__timelines["04-prayers"] = tl;
+    })();
+  </script>
+</template>

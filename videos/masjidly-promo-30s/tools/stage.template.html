@@ -1,0 +1,336 @@
+<template>
+  <style>
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Light.woff2") format("woff2"); font-weight: 300; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans.woff2") format("woff2"); font-weight: 400; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-SemiBold.woff2") format("woff2"); font-weight: 600; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Bold.woff2") format("woff2"); font-weight: 700; }
+    @font-face { font-family: "HF Arabic"; src: url("assets/fonts/SFArabic-sub.woff2") format("woff2"); }
+    @font-face { font-family: "HF Urdu"; src: url("assets/fonts/NotoNastaliqUrdu-sub.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; font-family: "HF Gill", sans-serif; color: #fff; }
+    .s-hold { position: absolute; inset: 0; }
+    .s-full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+    .s-icon { position: absolute; border-radius: 22%; overflow: hidden; box-shadow: 0 36px 90px rgba(5,8,30,0.45); background: url("assets/app-icon.png") center / cover no-repeat; }
+    .s-word { position: absolute; left: 0; right: 0; text-align: center; font-weight: 600; letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
+    .tap { position: absolute; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; background: rgba(255,255,255,0.55); border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 2px rgba(0,0,0,0.12); opacity: 0; pointer-events: none; }
+
+    /* ===== Home screen: MinimalistPrayerPage + HomeView at 2.2x (874pt tall -> 1920px), real vertical rhythm ===== */
+    .h { color: #FFFFFF; }
+    .h-circ { position: absolute; top: 163px; width: 97px; height: 97px; border-radius: 50%; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; }
+    .h-circ svg { overflow: visible; }
+    .h-cap { position: absolute; left: 373px; top: 161px; width: 334px; height: 100px; border-radius: 50px; background: rgba(255,255,255,0.18); text-align: center; }
+    .h-cap::after { content: ""; position: absolute; inset: 0; border-radius: 50px; border: 1.1px solid currentColor; opacity: 0.12; }
+    .h-cap b { display: block; margin-top: 18px; font-weight: 600; font-size: 29px; opacity: 0.88; white-space: nowrap; }
+    .h-cap span { display: block; margin-top: 3px; font-weight: 400; font-size: 22px; opacity: 0.55; white-space: nowrap; }
+    .h-orb { position: absolute; left: 408px; top: 308px; width: 264px; height: 264px; }
+    .h-ring1 { position: absolute; left: 9px; top: 9px; width: 246px; height: 246px; border-radius: 50%; border: 2.2px solid currentColor; opacity: 0.24; box-sizing: border-box; }
+    .h-ring2 { position: absolute; left: 15.5px; top: 15.5px; width: 233px; height: 233px; border-radius: 50%; border: 1.8px solid currentColor; opacity: 0.08; box-sizing: border-box; }
+    .h-sun { position: absolute; left: 22px; top: 35px; width: 220px; height: 194px; }
+    .h-qibla { position: absolute; inset: 0; }
+    .h-page { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; opacity: 0; }
+    .h-time { position: absolute; left: 0; right: 0; top: 704px; height: 232px; line-height: 232px; text-align: center; font-weight: 300; font-size: 194px; letter-spacing: -3.9px; white-space: nowrap; text-shadow: 0 11px 22px rgba(0,0,0,0.08); }
+    .h-iq { position: absolute; left: 0; right: 0; top: 949px; height: 68px; line-height: 68px; text-align: center; font-weight: 400; font-size: 57px; letter-spacing: 1.3px; opacity: 0.78; white-space: nowrap; }
+    .h-name { position: absolute; left: 0; right: 0; top: 1314px; height: 95px; line-height: 95px; text-align: center; font-weight: 400; font-size: 79px; letter-spacing: -0.8px; white-space: nowrap; }
+    .h-name-svg { position: absolute; left: 0; top: 1290px; width: 1080px; height: 150px; overflow: visible; }
+    .h-rtl .h-iq { letter-spacing: 0; }
+    .h-letters { position: absolute; left: 0; top: 1475px; width: 1080px; height: 79px; }
+    .h-l { position: absolute; top: 0; width: 62px; margin-left: -31px; height: 79px; text-align: center; }
+    .h-l i { position: absolute; left: 0; right: 0; top: 6px; font-style: normal; font-size: 44px; line-height: 53px; }
+    .h-l .lr { font-weight: 400; opacity: 0.38; }
+    .h-l .ls { font-weight: 600; opacity: 0; }
+    .h-l .dot { position: absolute; left: 26.5px; top: 68px; width: 9px; height: 9px; border-radius: 50%; background: currentColor; opacity: 0; }
+    .h-tabs { position: absolute; left: 0; top: 1722px; width: 1080px; height: 81px; overflow: hidden; }
+    .h-track { position: absolute; left: 26px; top: 0; height: 81px; display: flex; gap: 13px; align-items: center; }
+    .h-tab { position: relative; height: 79px; border-radius: 40px; overflow: hidden; flex: none; }
+    .h-tab .f { position: absolute; inset: 0; background: currentColor; }
+    .h-tab .t { position: relative; display: block; line-height: 79px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 29px; }
+    .h-tab .t.sel { font-weight: 700; padding: 0 26px; color: var(--inv); }
+    .h-tab .t.uns { position: absolute; left: 0; top: 0; right: 0; font-weight: 600; padding: 0 22px; opacity: 0; }
+    .h-plus { position: relative; flex: none; width: 81px; height: 81px; border-radius: 50%; }
+    .h-plus::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: currentColor; opacity: 0.12; }
+    .h-plus svg { position: absolute; left: 21px; top: 21px; }
+
+    /* hook pills (in the app world) */
+    .hk-pill { position: absolute; left: 0; right: 0; top: 606px; text-align: center; }
+    .hk-pill span { display: inline-block; padding: 12px 30px; border-radius: 100px; font-weight: 600; font-size: 30px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hk-calc span { background: rgba(10,14,40,0.35); color: #C9D2F2; border: 2px solid rgba(255,255,255,0.25); }
+    .hk-mine span { background: #FFD27A; color: #10214F; box-shadow: 0 16px 44px rgba(255,210,122,0.4); }
+    .hk-badge { position: absolute; left: 700px; top: 604px; padding: 12px 22px; border-radius: 100px; background: #FFD27A; color: #10214F; font-weight: 700; font-size: 34px; box-shadow: 0 16px 44px rgba(255,210,122,0.4); white-space: nowrap; }
+
+    /* language picker (onboarding card, as a sheet) */
+    .lg { position: absolute; left: 40px; top: 1440px; width: 1000px; height: 560px; border-radius: 52px; background: rgba(255,255,255,0.92); border: 2px solid rgba(255,255,255,0.7); box-shadow: 0 -20px 80px rgba(15,27,51,0.18); color: #111; }
+    .lg h4 { position: absolute; left: 44px; top: 30px; margin: 0; font-weight: 600; font-size: 44px; }
+    .lg-row { position: absolute; left: 30px; right: 30px; height: 80px; border-radius: 35px; background: rgba(17,17,17,0.07); line-height: 80px; padding: 0 34px; font-weight: 600; font-size: 36px; }
+    .lg-hl { position: absolute; left: 30px; right: 30px; top: 112px; height: 80px; border-radius: 35px; background: rgba(17,17,17,0.12); }
+    .lg-check { position: absolute; right: 60px; top: 132px; width: 42px; height: 42px; border-radius: 50%; background: #111; }
+    .lg-check svg { position: absolute; left: 9px; top: 11px; }
+
+    /* add-a-masjid card */
+    .am-dim { position: absolute; left: 0; top: -200px; width: 1080px; height: 2400px; background: rgba(0,0,0,0.28); opacity: 0; }
+    .am { position: absolute; left: 180px; top: 330px; width: 720px; border-radius: 52px; background: rgba(255,255,255,0.96); box-shadow: 0 40px 90px rgba(15,27,51,0.3); padding: 30px 0 16px; color: #111; opacity: 0; }
+    .am h4 { margin: 0 40px 12px; font-weight: 600; font-size: 30px; letter-spacing: 0.04em; opacity: 0.55; }
+    .am-row { position: relative; height: 96px; line-height: 96px; padding: 0 40px; font-weight: 400; font-size: 38px; overflow: hidden; white-space: nowrap; }
+    .am-row small { float: right; font-weight: 400; font-size: 28px; opacity: 0.55; }
+    .am-row .am-hl { position: absolute; inset: 0; background: rgba(17,17,17,0.09); opacity: 0; }
+
+    /* theme cards */
+    .t-card { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; border-radius: 150px; overflow: hidden; box-shadow: 0 60px 160px rgba(15,27,51,0.35); color: #111; }
+    .t-lab { position: absolute; top: 420px; width: 440px; text-align: center; font-weight: 600; font-size: 44px; color: #111; }
+    .t-sw { position: absolute; left: 640px; top: 1480px; font-weight: 400; font-size: 32px; color: #111; }
+    .t-sw div { margin-top: 14px; position: relative; }
+    .t-sw i { display: inline-block; width: 52px; height: 52px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 8px 20px rgba(15,27,51,0.25); vertical-align: middle; margin-right: 14px; }
+
+    /* iOS lock screen (Maghrib) */
+    .k-date { position: absolute; left: 0; right: 0; top: 300px; text-align: center; font-weight: 600; font-size: 46px; color: #111; opacity: 0.75; }
+    .k-clock { position: absolute; left: 0; right: 0; top: 350px; height: 320px; overflow: hidden; text-align: center; color: #111; }
+    .k-clock div { height: 320px; line-height: 320px; font-weight: 600; font-size: 290px; letter-spacing: -0.02em; }
+    .s-noti { position: absolute; left: 44px; top: 780px; width: 992px; border-radius: 56px; background: rgba(250,248,252,0.9); box-shadow: 0 24px 70px rgba(43,18,54,0.22); color: #111; padding: 30px 40px 34px 150px; }
+    .s-noti .ni { position: absolute; left: 34px; top: 36px; width: 92px; height: 92px; border-radius: 22px; background: url("assets/app-icon.png") center / cover no-repeat; }
+    .s-noti .nt { font-weight: 600; font-size: 44px; }
+    .s-noti .nbody { margin-top: 4px; font-weight: 400; font-size: 38px; line-height: 1.25; opacity: 0.85; }
+    .s-noti em { position: absolute; right: 40px; top: 34px; font-style: normal; font-weight: 400; font-size: 30px; opacity: 0.45; }
+
+    /* iOS home screen widgets (MasjidlyWidgets: small + large), Isha is next at 8:02 PM */
+    .w-s { position: absolute; left: 90px; top: 330px; width: 420px; height: 420px; border-radius: 96px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.35); padding: 40px; background: linear-gradient(180deg, #000328, #00458E); color: #fff; }
+    .w-s .wh { display: flex; align-items: center; gap: 15px; }
+    .w-s .wn { font-weight: 400; font-size: 37px; opacity: 0.75; }
+    .w-s .wt { margin-top: 20px; font-weight: 300; font-size: 89px; line-height: 1.05; white-space: nowrap; }
+    .w-s .wi { margin-top: 10px; font-weight: 400; font-size: 35px; opacity: 0.6; }
+    .w-app { position: absolute; left: 640px; top: 360px; width: 200px; text-align: center; color: #fff; font-weight: 400; font-size: 30px; }
+    .w-app i { display: block; width: 200px; height: 200px; border-radius: 46px; margin-bottom: 14px; background: url("assets/app-icon.png") center / cover no-repeat; box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+    .w-l { position: absolute; left: 90px; top: 800px; width: 900px; height: 900px; border-radius: 110px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.4); padding: 50px 53px; background: linear-gradient(180deg, #000328, #00458E); color: #fff; }
+    .w-l .lh { display: flex; justify-content: space-between; align-items: baseline; }
+    .w-l .lh b { font-weight: 600; font-size: 42px; opacity: 0.7; }
+    .w-l .lh span { font-weight: 600; font-size: 33px; letter-spacing: 2px; opacity: 0.5; }
+    .w-l .lhead { margin-top: 44px; text-align: center; font-weight: 400; font-size: 37px; opacity: 0.75; }
+    .w-l .lclock { text-align: center; font-weight: 400; font-size: 100px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .w-l .lcols { margin-top: 40px; display: flex; font-weight: 700; font-size: 31px; letter-spacing: 1px; opacity: 0.35; }
+    .w-l .lcols span, .w-l .lrow span { flex: 1; }
+    .w-l .lrow { margin-top: 26px; display: flex; font-size: 58px; line-height: 1.1; }
+    .w-l .lrow span:nth-child(2), .w-l .lcols span:nth-child(2) { text-align: center; }
+    .w-l .lrow span:nth-child(3), .w-l .lcols span:nth-child(3) { text-align: right; }
+    .w-l .lrow span:nth-child(2) { font-weight: 600; }
+    .w-l .lrow span:nth-child(3) { opacity: 0.6; }
+    .w-l .lrow.past { opacity: 0.35; }
+    .w-l .lrow.next span:nth-child(1), .w-l .lrow.next span:nth-child(2) { font-weight: 700; }
+
+    /* iOS lock screen widgets (inline, circular, rectangular) at 8:02 PM */
+    .lw-date { position: absolute; left: 0; right: 0; top: 272px; text-align: center; font-weight: 600; font-size: 38px; color: rgba(255,255,255,0.9); white-space: nowrap; }
+    .lw-clock { position: absolute; left: 0; right: 0; top: 342px; text-align: center; font-weight: 600; font-size: 290px; line-height: 320px; color: #fff; letter-spacing: -0.02em; }
+    .lw-circ { position: absolute; left: 90px; top: 700px; width: 250px; height: 250px; border-radius: 50%; background: rgba(255,255,255,0.18); color: #fff; text-align: center; }
+    .lw-circ small { display: block; margin-top: 80px; font-weight: 700; font-size: 21px; letter-spacing: 1px; opacity: 0.7; }
+    .lw-circ b { display: block; margin-top: 4px; font-weight: 700; font-size: 54px; font-variant-numeric: tabular-nums; }
+    .lw-rect { position: absolute; left: 380px; top: 700px; width: 620px; height: 250px; border-radius: 30px; background: rgba(255,255,255,0.0); color: #fff; }
+    .lw-rect .rh { text-align: center; font-weight: 600; font-size: 32px; opacity: 0.65; height: 40px; line-height: 40px; }
+    .lw-rect .rr { display: flex; height: 42px; line-height: 42px; font-size: 35px; }
+    .lw-rect .rr span:nth-child(1) { flex: 1; font-weight: 400; }
+    .lw-rect .rr span:nth-child(2) { width: 160px; text-align: right; font-weight: 600; }
+    .lw-rect .rr span:nth-child(3) { width: 160px; text-align: right; opacity: 0.6; }
+    .lw-rect .rr.past { opacity: 0.4; }
+    .lw-rect .rr.next span { font-weight: 700; opacity: 1; }
+
+    /* Timetable (TimetableView at 2.2x) */
+    .tt { color: #fff; }
+    .tt-h1 { position: absolute; left: 53px; top: 190px; font-weight: 300; font-size: 40px; white-space: nowrap; }
+    .tt-h2 { position: absolute; left: 53px; top: 248px; font-weight: 400; font-size: 31px; opacity: 0.7; }
+    .tt-x { position: absolute; right: 53px; top: 196px; width: 70px; height: 70px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; }
+    .tt-month { position: absolute; left: 0; right: 0; top: 320px; height: 97px; line-height: 97px; text-align: center; font-weight: 400; font-size: 40px; }
+    .tt-mbtn { position: absolute; top: 320px; width: 97px; height: 97px; display: flex; align-items: center; justify-content: center; }
+    .tt-week { position: absolute; left: 115px; top: 450px; display: flex; gap: 18px; }
+    .tt-day { position: relative; width: 106px; height: 154px; border-radius: 31px; text-align: center; }
+    .tt-day b { display: block; margin-top: 22px; font-weight: 600; font-size: 22px; opacity: 0.4; }
+    .tt-day em { display: block; margin-top: 4px; font-style: normal; font-weight: 400; font-size: 44px; opacity: 0.5; }
+    .tt-day.on { background: rgba(255,255,255,0.12); }
+    .tt-day.on b, .tt-day.on em { opacity: 1; }
+    .tt-day.on i { position: absolute; left: 49px; top: 132px; width: 9px; height: 9px; border-radius: 50%; background: #fff; }
+    .tt-head { position: absolute; left: 88px; right: 88px; top: 650px; display: flex; font-weight: 400; font-size: 29px; opacity: 0.5; }
+    .tt-row { position: absolute; left: 35px; right: 35px; height: 118px; border-radius: 35px; display: flex; align-items: center; padding: 0 53px; font-size: 40px; }
+    .tt-row .n { flex: 1; font-weight: 400; }
+    .tt-row .a { width: 231px; text-align: right; font-weight: 400; opacity: 0.75; margin-right: 26px; }
+    .tt-row .q { width: 231px; text-align: right; font-weight: 400; }
+    .tt-row.past { opacity: 0.35; }
+    .nb { position: absolute; left: 90px; right: 90px; top: 1400px; height: 220px; }
+    .nb-line { position: absolute; left: 0; right: 0; top: 100px; height: 3px; background: rgba(255,255,255,0.85); transform-origin: left center; }
+    .nb-end { position: absolute; top: 132px; font-weight: 400; font-size: 32px; opacity: 0.7; white-space: nowrap; }
+    .nb-cap { position: absolute; top: 86px; width: 3px; height: 31px; background: rgba(255,255,255,0.85); }
+    .nb-tick { position: absolute; top: 0; width: 0; }
+    .nb-tick i { position: absolute; left: -12px; top: 89px; width: 24px; height: 24px; border-radius: 50%; background: #fff; }
+    .nb-tick span { position: absolute; top: 30px; width: 340px; font-weight: 600; font-size: 34px; white-space: nowrap; }
+
+    /* globe */
+    .g-num { position: absolute; left: 0; right: 0; top: 190px; text-align: center; font-weight: 400; font-size: 250px; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .g-num b { font-weight: 400; color: #FFD27A; display: inline-block; }
+
+    /* cta */
+    .s-stores { position: absolute; left: 0; right: 0; top: 1110px; display: flex; justify-content: center; gap: 30px; }
+    .s-store { display: flex; align-items: center; gap: 18px; height: 128px; padding: 0 40px; border-radius: 30px; background: #111111; color: #fff; box-shadow: 0 24px 60px rgba(5,8,30,0.4); border: 2px solid rgba(255,255,255,0.18); }
+    .s-store svg { width: 56px; height: 56px; flex: none; }
+    .s-store small { display: block; font-weight: 400; font-size: 24px; letter-spacing: 0.04em; opacity: 0.85; }
+    .s-store b { display: block; font-weight: 600; font-size: 44px; line-height: 1.05; letter-spacing: -0.01em; white-space: nowrap; }
+  </style>
+
+  <div id="root" data-composition-id="stage" data-width="1080" data-height="1920" data-start="0" data-duration="55">
+    <div id="s-hold" class="s-hold clip" data-start="0" data-duration="55" data-track-index="0">
+
+      <div id="s-intro" class="s-full">
+        <div class="s-icon" id="s-intro-icon" style="left: 400px; top: 640px; width: 280px; height: 280px;"></div>
+        <div class="s-word" id="s-intro-word" style="top: 980px; font-size: 160px;">Masjidly</div>
+      </div>
+
+      <!-- ===== The app (camera = #s-cam) ===== -->
+      <div id="s-cam" class="s-full">
+        <div id="h-ui" class="s-full h" style="--inv: #111111;">
+          <div id="h-chrome" class="s-full">
+            <div class="h-circ" style="left: 44px;"><svg width="42" height="40" viewBox="0 0 42 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><rect x="3" y="5" width="36" height="32" rx="7"/><line x1="3" y1="13" x2="39" y2="13"/><g fill="currentColor" stroke="none"><circle cx="11" cy="20" r="2"/><circle cx="18" cy="20" r="2"/><circle cx="25" cy="20" r="2"/><circle cx="32" cy="20" r="2"/><circle cx="11" cy="28" r="2"/><circle cx="18" cy="28" r="2"/><circle cx="25" cy="28" r="2"/></g></svg></div>
+            <div class="h-circ" style="left: 263px;"><svg width="20" height="34" viewBox="0 0 20 34" fill="none" stroke="currentColor" stroke-opacity="0.72" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="16,3 3,17 16,31"/></svg></div>
+            <div class="h-cap"><b>Sunday, 27 September</b><span>16 Rabiʻ II 1448</span></div>
+            <div class="h-circ" style="left: 720px;"><svg width="20" height="34" viewBox="0 0 20 34" fill="none" stroke="currentColor" stroke-opacity="0.72" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,3 17,17 4,31"/></svg></div>
+            <div class="h-circ" style="left: 939px;"><svg width="44" height="44" viewBox="-22 -22 44 44"><path class="h-gear" fill="currentColor" fill-rule="evenodd" d=""/></svg></div>
+          </div>
+          <div class="h-orb" id="h-orb">
+            <div class="h-ring1"></div>
+            <div class="h-ring2"></div>
+            <div id="h-suns"></div>
+            <div class="h-qibla" style="transform: rotate(22deg);"><svg width="26" height="26" viewBox="0 0 12 12" style="position: absolute; left: 119px; top: -22px;"><path d="M6 0 L12 12 L0 12 Z" fill="currentColor"/></svg></div>
+          </div>
+          <div id="h-pages"></div>
+          <div id="h-letters-wrap"></div>
+          <div class="h-tabs" id="h-tabs"><div class="h-track" id="h-track"></div></div>
+
+          <div class="hk-pill hk-calc" id="hk-calc"><span>Calculated</span></div>
+          <div class="hk-pill hk-mine" id="hk-mine"><span>Your masjid</span></div>
+          <div class="hk-badge" id="hk-badge">+20 min</div>
+
+          <div class="lg" id="lg">
+            <h4>Choose your language</h4>
+            <div class="lg-hl" id="lg-hl"></div>
+            <div class="lg-row" style="top: 112px;">English</div>
+            <div class="lg-row" style="top: 212px; font-family: 'HF Arabic', 'HF Gill', sans-serif;">العربية</div>
+            <div class="lg-row" style="top: 312px; font-family: 'HF Urdu', 'HF Gill', sans-serif;">اردو</div>
+            <div class="lg-row" style="top: 412px;">Bahasa Indonesia</div>
+            <div class="lg-check" id="lg-check"><svg width="24" height="20" viewBox="0 0 24 20" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,10 9,16 21,3"/></svg></div>
+          </div>
+
+          <div class="am-dim" id="am-dim"></div>
+          <div class="am" id="am">
+            <h4>Add a masjid</h4>
+            <div class="am-row" id="am-r1">Masjid Risalah <small>Sheffield</small><div class="am-hl" id="am-h1"></div></div>
+            <div class="am-row" id="am-r2">Sheffield Grand Mosque <small>Sheffield</small><div class="am-hl" id="am-h2"></div></div>
+            <div class="am-row" id="am-r3">Masjid Umar (YMA) <small>Sheffield</small><div class="am-hl" id="am-h3"></div></div>
+            <div class="am-row" id="am-r4">Madina Masjid Sheffield <small>Sheffield</small><div class="am-hl" id="am-h4"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tap" id="tap"></div>
+
+      <!-- theme cards -->
+      <div id="s-themes" class="s-full">
+        <div class="t-card" id="t-orig" style="background: radial-gradient(circle 1344px at 50% 82%, rgba(214,179,138,0.6) 0%, rgba(214,179,138,0.3) 50%, rgba(214,179,138,0) 100%), linear-gradient(180deg, #93C5FD 0%, #FDE68A 50%, #FDBA74 100%); background-blend-mode: screen, normal;"></div>
+        <div class="t-card" id="t-cust" style="background: linear-gradient(180deg, #FFD6E8 0%, #B4A7FF 100%);"></div>
+        <div class="t-card" id="t-mod" style="background: linear-gradient(180deg, #60EFFF 0%, #F3F98A 100%); border-radius: 0px;"></div>
+        <div class="t-lab" id="t-lab-o" style="left: -40px;">Original</div>
+        <div class="t-lab" id="t-lab-m" style="left: 320px;">Modern</div>
+        <div class="t-lab" id="t-lab-c" style="left: 680px;">Custom</div>
+        <div class="t-sw" id="t-sw">
+          <div><i style="background: #FFD6E8;"></i><i id="t-sw-top2" style="background: #FFE3B3; position: absolute; left: 0; top: 0; opacity: 0;"></i>Top color</div>
+          <div><i style="background: #B4A7FF;"></i><i id="t-sw-bot2" style="background: #F7A1C4; position: absolute; left: 0; top: 0; opacity: 0;"></i>Bottom color</div>
+        </div>
+      </div>
+
+      <!-- iOS lock screen at Maghrib -->
+      <div id="s-lock" class="s-full">
+        <div class="k-date">Sunday 27 September</div>
+        <div class="k-clock" data-layout-allow-overflow data-layout-allow-overlap><div id="k-stack" data-layout-allow-overlap><div data-layout-allow-overlap>6:47</div><div data-layout-allow-overlap>6:54</div></div></div>
+        <div class="s-noti" id="s-n1"><div class="ni"></div><em id="s-n1-now">now</em><em id="s-n1-ago" style="opacity: 0;">7m ago</em><div class="nt">Maghrib Iqamah soon</div><div class="nbody">Iqamah in 10 min in Masjid Faizul Islam.</div></div>
+        <div class="s-noti" id="s-n2"><div class="ni"></div><em>now</em><div class="nt">Maghrib Adhan</div><div class="nbody">Adhan is now in Masjid Faizul Islam. Tap to hear adhan.</div></div>
+      </div>
+
+      <!-- iOS home screen: small + large widgets -->
+      <div id="s-whome" class="s-full">
+        <div class="w-s" id="w-small">
+          <div class="wh"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-opacity="0.8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 8 A13 13 0 1 0 33 27 A11 11 0 0 1 22 8 Z"/><path d="M30 5 V11 M27 8 H33"/><path d="M34 15 V19 M32 17 H36"/></svg><span class="wn">Isha</span></div>
+          <div class="wt">8:16PM</div><div class="wi">Iqamah: 8:30PM</div>
+        </div>
+        <div class="w-app" id="w-app"><i></i>Masjidly</div>
+        <div class="w-l" id="w-large">
+          <div class="lh"><b>Masjid Faizul Islam</b><span>SEPTEMBER, SUNDAY 27</span></div>
+          <div class="lhead">The Adhan of Isha is in</div>
+          <div class="lclock" id="w-clock">14:32</div>
+          <div class="lcols"><span>PRAYER</span><span>ADHAN</span><span>IQAMAH</span></div>
+          <div class="lrow past"><span>Fajr</span><span>5:26AM</span><span>6:20AM</span></div>
+          <div class="lrow past"><span>Dhuhr</span><span>1:02PM</span><span>2:00PM</span></div>
+          <div class="lrow past"><span>Asr</span><span>4:57PM</span><span>5:45PM</span></div>
+          <div class="lrow past"><span>Maghrib</span><span>6:54PM</span><span>6:57PM</span></div>
+          <div class="lrow next"><span>Isha</span><span>8:16PM</span><span>8:30PM</span></div>
+        </div>
+      </div>
+
+      <!-- iOS lock screen widgets -->
+      <div id="s-wlock" class="s-full">
+        <div class="lw-date">Sun 27&nbsp;&nbsp;Masjid Faizul Islam · Isha 14m</div>
+        <div class="lw-clock">8:02</div>
+        <div class="lw-circ" id="lw-circ"><small>ISHA · ADHAN IN</small><b id="lw-cclock">14:08</b></div>
+        <div class="lw-rect" id="lw-rect">
+          <div class="rh">Masjid Faizul Islam</div>
+          <div class="rr past"><span>Fajr</span><span>5:26AM</span><span>6:20AM</span></div>
+          <div class="rr past"><span>Dhuhr</span><span>1:02PM</span><span>2:00PM</span></div>
+          <div class="rr past"><span>Asr</span><span>4:57PM</span><span>5:45PM</span></div>
+          <div class="rr past"><span>Maghrib</span><span>6:54PM</span><span>6:57PM</span></div>
+          <div class="rr next"><span>Isha</span><span>8:16PM</span><span>8:30PM</span></div>
+        </div>
+        <div class="tap" id="tap-lw" style="left: 690px; top: 825px;"></div>
+      </div>
+
+      <!-- Timetable at night -->
+      <div id="s-tt" class="s-full tt">
+        <div id="tt-sheet" class="s-full">
+          <div class="tt-up">
+            <div class="tt-h1">Sunday · 27 September · 16 Rabiʻ II 1448</div>
+            <div class="tt-h2">Masjid Faizul Islam</div>
+            <div class="tt-x"><svg width="30" height="30" viewBox="0 0 30 30" stroke="#fff" stroke-width="4.4" stroke-linecap="round"><line x1="5" y1="5" x2="25" y2="25"/><line x1="25" y1="5" x2="5" y2="25"/></svg></div>
+            <div class="tt-mbtn" style="left: 53px;"><svg width="20" height="34" viewBox="0 0 20 34" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="16,3 3,17 16,31"/></svg></div>
+            <div class="tt-month">Sep 2026</div>
+            <div class="tt-mbtn" style="right: 53px;"><svg width="20" height="34" viewBox="0 0 20 34" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,3 17,17 4,31"/></svg></div>
+            <div class="tt-week">
+              <div class="tt-day"><b>THU</b><em>24</em></div><div class="tt-day"><b>FRI</b><em>25</em></div><div class="tt-day"><b>SAT</b><em>26</em></div><div class="tt-day on"><b>SUN</b><em>27</em><i></i></div><div class="tt-day"><b>MON</b><em>28</em></div><div class="tt-day"><b>TUE</b><em>29</em></div><div class="tt-day"><b>WED</b><em>30</em></div>
+            </div>
+            <div class="tt-head"><span style="flex: 1;">Prayer</span><span style="width: 231px; text-align: right; margin-right: 26px;">Adhan</span><span style="width: 231px; text-align: right;">Iqamah</span></div>
+          </div>
+          <div id="tt-rows"></div>
+        </div>
+        <div class="nb" id="s-nb">
+          <div class="nb-line" id="nb-line"></div>
+          <div class="nb-cap" style="left: 0;"></div><div class="nb-cap" style="right: 0;"></div>
+          <div class="nb-end" style="left: 0;">Maghrib 6:54PM</div>
+          <div class="nb-end" style="right: 0;">Fajr 5:28AM</div>
+          <div class="nb-tick" id="nb-mid" style="left: 50%;"><span style="left: -352px; text-align: right;">Midnight 12:11AM</span><i></i></div>
+          <div class="nb-tick" id="nb-lt" style="left: 66.7%;"><span style="left: 12px; text-align: left;">Last Third 1:56AM</span><i></i></div>
+        </div>
+      </div>
+
+      <!-- globe -->
+      <div id="s-globe" class="s-full">
+        <div class="g-num" id="g-num"><span id="g-digits">0</span><b id="g-plus">+</b></div>
+        <svg id="g-svg" width="1080" height="1920" viewBox="0 0 1080 1920" style="position: absolute; left: 0; top: 0;"></svg>
+      </div>
+
+      <!-- cta -->
+      <div id="s-cta" class="s-full">
+        <div class="s-icon" id="s-cta-icon" style="left: 390px; top: 400px; width: 300px; height: 300px;"></div>
+        <div class="s-word" id="s-cta-word" style="top: 770px; font-size: 156px;">Masjidly</div>
+        <div class="s-stores">
+          <div class="s-store" id="s-store-ios">
+            <svg viewBox="0 0 24 24" fill="#FFFFFF"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            <div><small>Download on the</small><b>App Store</b></div>
+          </div>
+          <div class="s-store" id="s-store-play">
+            <svg viewBox="0 0 24 24" fill="#3DDC84"><path d="M17.523 15.3414C17.523 15.6414 17.2805 15.8839 16.9805 15.8839H16.3992V18.1402C16.3992 18.8077 15.8555 19.3514 15.188 19.3514C14.5205 19.3514 13.9767 18.8077 13.9767 18.1402V15.8839H9.99924V18.1402C9.99924 18.8077 9.45549 19.3514 8.78799 19.3514C8.12049 19.3514 7.57674 18.8077 7.57674 18.1402V15.8839H6.99549C6.69549 15.8839 6.45299 15.6414 6.45299 15.3414V8.23267H17.523V15.3414ZM4.99924 8.23267C4.33174 8.23267 3.78799 8.77642 3.78799 9.44392V14.1302C3.78799 14.7977 4.33174 15.3414 4.99924 15.3414C5.66674 15.3414 6.21049 14.7977 6.21049 14.1302V9.44392C6.21049 8.77642 5.66674 8.23267 4.99924 8.23267ZM19.0267 8.23267C18.3592 8.23267 17.8155 8.77642 17.8155 9.44392V14.1302C17.8155 14.7977 18.3592 15.3414 19.0267 15.3414C19.6942 15.3414 20.238 14.7977 20.238 14.1302V9.44392C20.238 8.77642 19.6942 8.23267 19.0267 8.23267ZM15.3042 4.52392L16.3517 2.72642C16.4292 2.59142 16.3867 2.42017 16.2517 2.34267C16.1167 2.26517 15.9455 2.30767 15.868 2.44267L14.8017 4.27267C13.9992 3.94767 13.118 3.76642 12.188 3.76642C11.258 3.76642 10.3767 3.94767 9.57424 4.27267L8.50799 2.44267C8.43049 2.30767 8.25924 2.26517 8.12424 2.34267C7.98924 2.42017 7.94674 2.59142 8.02424 2.72642L9.07174 4.52392C7.29399 5.42392 6.11674 7.23642 6.11674 9.31892H18.2592C18.2592 7.23642 17.082 5.42392 15.3042 4.52392ZM9.47674 7.17892C9.17174 7.17892 8.92399 6.93117 8.92399 6.62617C8.92399 6.32117 9.17174 6.07342 9.47674 6.07342C9.78174 6.07342 10.0295 6.32117 10.0295 6.62617C10.0295 6.93117 9.78174 7.17892 9.47674 7.17892ZM14.8992 7.17892C14.5942 7.17892 14.3465 6.93117 14.3465 6.62617C14.3465 6.32117 14.5942 6.07342 14.8992 6.07342C15.2042 6.07342 15.452 6.32117 15.452 6.62617C15.452 6.93117 15.2042 7.17892 14.8992 7.17892Z"/></svg>
+            <div><small>Get it on</small><b>Google Play</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>/*STAGE_JS*/</script>
+</template>

@@ -1,0 +1,72 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+    .sky-base { position: absolute; inset: 0; }
+    .sky-layer { position: absolute; inset: 0; opacity: 0; }
+    .sky-sheen { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%); mix-blend-mode: plus-lighter; }
+    .sky-stars { position: absolute; inset: 0; opacity: 0; }
+    .sky-star { position: absolute; border-radius: 50%; background: #FFFFFF; }
+  </style>
+
+  <div id="root" data-composition-id="sky" data-width="1080" data-height="1920" data-start="0" data-duration="55">
+    <!-- The app's own skies (HomeDesign.swift): Modern (set2) by default; Dhuhr and Tahajjud default to Original (classic). -->
+    <div id="sky-base" class="sky-base clip" data-start="0" data-duration="55" data-track-index="0" style="background: linear-gradient(180deg, #103783 0%, #8752A3 100%);"></div>
+    <div id="sky-wrap" style="position: absolute; inset: 0;"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      const root = document.getElementById("sky-wrap");
+      const DHUHR = "radial-gradient(circle 1344px at 50% 82%, rgba(56,189,248,0.12) 0%, rgba(56,189,248,0.06) 50%, rgba(56,189,248,0) 100%), linear-gradient(180deg, #E0F2FE 0%, #7DD3FC 50%, #38BDF8 100%)";
+      const SKY = {
+        sunrise: "linear-gradient(180deg, #07C8F9 0%, #B597F6 100%)",
+        dhuhr: DHUHR,
+        asr: "linear-gradient(180deg, #60EFFF 0%, #F3F98A 100%)",
+        maghrib: "linear-gradient(180deg, #F2D7D9 0%, #E786A7 100%)",
+        isha: "linear-gradient(180deg, #000328 0%, #00458E 100%)",
+        original: "radial-gradient(circle 1344px at 50% 82%, rgba(214,179,138,0.6) 0%, rgba(214,179,138,0.3) 50%, rgba(214,179,138,0) 100%), linear-gradient(180deg, #93C5FD 0%, #FDE68A 50%, #FDBA74 100%)",
+        custom: "linear-gradient(180deg, #FFD6E8 0%, #B4A7FF 100%)",
+        custom2: "linear-gradient(180deg, #FFE3B3 0%, #F7A1C4 100%)",
+        tahajjud: "linear-gradient(180deg, #000000 0%, #01030A 50%, #020617 100%)",
+        fajr: "linear-gradient(180deg, #103783 0%, #8752A3 100%)"
+      };
+      // [theme, start, duration] in the order the video visits them; each layer fades over the previous one.
+      const SEQ = [
+        ["sunrise", 9.2, 0.8], ["dhuhr", 10.0, 0.8], ["asr", 10.8, 0.8], ["maghrib", 11.6, 0.8], ["isha", 12.4, 0.8],
+        ["dhuhr", 13.8, 0.8], ["asr", 20.0, 0.8],
+        ["original", 27.8, 0.6], ["custom", 29.0, 0.6], ["custom2", 29.9, 0.6], ["asr", 30.7, 0.6],
+        ["maghrib", 31.5, 0.7], ["isha", 36.4, 0.7], ["tahajjud", 43.1, 0.6], ["fajr", 51.5, 2.2]
+      ];
+      const tl = gsap.timeline({ paused: true });
+      SEQ.forEach(function (s, i) {
+        const d = document.createElement("div");
+        d.className = "sky-layer";
+        d.id = "sky-" + i;
+        d.style.background = SKY[s[0]];
+        if (SKY[s[0]].indexOf("radial") === 0) { d.style.backgroundBlendMode = "screen, normal"; }
+        root.appendChild(d);
+        tl.fromTo(d, { opacity: 0 }, { opacity: 1, duration: s[2], ease: "power1.inOut" }, s[1]);
+      });
+      const sheen = document.createElement("div"); sheen.className = "sky-sheen"; root.appendChild(sheen);
+      const stars = document.createElement("div"); stars.className = "sky-stars"; stars.id = "sky-stars"; root.appendChild(stars);
+      let seed = 1447;
+      const rnd = function () { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+      for (let i = 0; i < 160; i++) {
+        const st = document.createElement("div");
+        st.className = "sky-star";
+        const size = 2 + Math.floor(rnd() * 3);
+        st.style.width = size + "px"; st.style.height = size + "px";
+        st.style.left = Math.floor(rnd() * 1080) + "px"; st.style.top = Math.floor(rnd() * 1920) + "px";
+        st.style.opacity = (0.3 + rnd() * 0.6).toFixed(2);
+        stars.appendChild(st);
+      }
+      // Stars only for the non-app globe and closing screens.
+      tl.fromTo("#sky-stars", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power1.out" }, 47.2);
+      tl.to("#sky-stars", { scale: 1.15, duration: 4.4, ease: "power1.inOut" }, 47.2);
+      tl.to("#sky-stars", { opacity: 0.35, duration: 2.0, ease: "power1.inOut" }, 51.7);
+
+      window.__timelines["sky"] = tl;
+    })();
+  </script>
+</template>

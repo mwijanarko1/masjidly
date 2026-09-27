@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import com.mikhailspeaks.masjidly.ui.haptic.HapticTextButton
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,8 +28,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.unit.max
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -40,10 +45,14 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -103,7 +112,9 @@ import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import com.mikhailspeaks.masjidly.ui.home.heroCountdownLabel
 import com.mikhailspeaks.masjidly.ui.theme.rememberAppTextStyle
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
 import java.util.Locale
@@ -316,6 +327,7 @@ fun HomeScreen(
             onPreviousDay = viewModel::goToPreviousDay,
             onNextDay = viewModel::goToNextDay,
             onGoToToday = viewModel::goToToday,
+            onGoToDate = viewModel::goToDate,
         )
 
         if (onboardingStep == null && state.mosques.isNotEmpty()) {
@@ -503,6 +515,7 @@ private data class ReviewPromptCopy(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeTopChrome(
     theme: ResolvedTheme,
@@ -517,25 +530,43 @@ private fun HomeTopChrome(
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
     onGoToToday: () -> Unit,
+    onGoToDate: (Instant) -> Unit,
 ) {
     val gregorian = HomeDateFormatting.gregorianDateString(displayedDate, locale)
     val hijrah = HomeDateFormatting.hijriDateString(displayedDate, locale)
     val displayedDay = PrayerTimesEngine.getDateInSheffield(displayedDate)
     val today = PrayerTimesEngine.getDateInSheffield(Instant.now())
     val isToday = displayedDay == today
+    var showDatePicker by remember { mutableStateOf(false) }
+    // iOS `HomeViewportMetrics.topChromeInset` = max(safeTop, 56) + 12
+    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topChromeInset = max(statusBarTop, 56.dp) + 12.dp
+    val chromeInset = 20.dp
+
+    if (showDatePicker) {
+        HomeDatePickerDialog(
+            initialDate = displayedDate,
+            language = language,
+            onDismiss = { showDatePicker = false },
+            onConfirm = { picked ->
+                onGoToDate(picked)
+                showDatePicker = false
+            },
+        )
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(top = 12.dp),
+            .padding(top = topChromeInset),
     ) {
+        // iOS chrome HStack(spacing: 8) — calendar | dateDisplay | settings
         Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Calendar button (leading) — mirrors iOS `calendarButton` + `leadingChromeInset`
-            Box(modifier = Modifier.padding(start = 20.dp)) {
+            Box(modifier = Modifier.padding(start = chromeInset)) {
                 OnboardingHighlight(
                     highlighted = highlightTimetable,
                     theme = theme,
@@ -559,12 +590,10 @@ private fun HomeTopChrome(
                 }
             }
 
-            // Date navigator (center) — mirrors iOS `dateDisplay` HStack spacing 12
+            // iOS `dateDisplay` HStack(spacing: 6)
             Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 DateChevronButton(
@@ -574,28 +603,39 @@ private fun HomeTopChrome(
                     Icon(
                         Icons.Default.ChevronLeft,
                         contentDescription = null,
-                        tint = textColor.copy(alpha = 0.5f),
-                        modifier = Modifier.size(18.dp),
+                        tint = textColor.copy(alpha = 0.72f),
+                        modifier = Modifier.size(16.dp),
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
-
+                val dateCapsuleShape = RoundedCornerShape(percent = 50)
                 Box(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(dateCapsuleShape)
+                        .background(Color.White.copy(alpha = 0.18f))
+                        .border(0.5.dp, textColor.copy(alpha = 0.12f), dateCapsuleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    // Constrain + auto-shrink like iOS `dateDisplay` (minWidth:0 + minimumScaleFactor 0.5)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = if (isToday) 0.dp else 36.dp),
+                            .padding(
+                                start = 10.dp,
+                                end = if (isToday) 10.dp else 40.dp,
+                                top = 8.dp,
+                                bottom = 8.dp,
+                            )
+                            .hapticClickable(onClick = { showDatePicker = true })
+                            .semantics {
+                                contentDescription = LocaleStrings.t("accessibility.pick_date", language)
+                            },
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         AutoSizingText(
                             text = gregorian,
-                            color = textColor.copy(alpha = 0.6f),
+                            color = textColor.copy(alpha = 0.88f),
                             style = rememberAppTextStyle(13f, FontWeight.SemiBold),
                             textAlign = TextAlign.Center,
                             letterSpacing = 1.sp,
@@ -603,7 +643,7 @@ private fun HomeTopChrome(
                         )
                         AutoSizingText(
                             text = hijrah,
-                            color = textColor.copy(alpha = 0.4f),
+                            color = textColor.copy(alpha = 0.55f),
                             style = rememberAppTextStyle(10f, FontWeight.Medium),
                             textAlign = TextAlign.Center,
                             letterSpacing = 0.8.sp,
@@ -615,26 +655,30 @@ private fun HomeTopChrome(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.18f))
+                                .size(44.dp)
                                 .hapticClickable(onClick = onGoToToday)
                                 .semantics {
                                     contentDescription = LocaleStrings.t("home.return_to_today", language)
                                 },
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = null,
-                                tint = textColor.copy(alpha = 0.9f),
-                                modifier = Modifier.size(16.dp),
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.18f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    tint = textColor.copy(alpha = 0.9f),
+                                    modifier = Modifier.size(13.dp),
+                                )
+                            }
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.width(12.dp))
 
                 DateChevronButton(
                     onClick = onNextDay,
@@ -643,14 +687,13 @@ private fun HomeTopChrome(
                     Icon(
                         Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = textColor.copy(alpha = 0.5f),
-                        modifier = Modifier.size(18.dp),
+                        tint = textColor.copy(alpha = 0.72f),
+                        modifier = Modifier.size(16.dp),
                     )
                 }
             }
 
-            // Settings button (trailing) — mirrors iOS `settingsButton` + `trailingChromeInset`
-            Box(modifier = Modifier.padding(end = 20.dp)) {
+            Box(modifier = Modifier.padding(end = chromeInset)) {
                 OnboardingHighlight(
                     highlighted = highlightSettings,
                     theme = theme,
@@ -683,14 +726,80 @@ private fun DateChevronButton(
     contentDescription: String,
     icon: @Composable () -> Unit,
 ) {
+    // iOS `dateNavStepButton` — 44×44 circle at white 0.18
     Box(
         modifier = Modifier
-            .size(32.dp)
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.18f))
             .semantics { this.contentDescription = contentDescription }
             .hapticClickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         icon()
+    }
+}
+
+/** Mirrors iOS `datePickerSheet` — graphical calendar with Cancel / Done. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeDatePickerDialog(
+    initialDate: Instant,
+    language: AppLanguage,
+    onDismiss: () -> Unit,
+    onConfirm: (Instant) -> Unit,
+) {
+    val sheffield = PrayerTimesEngine.getDateInSheffield(initialDate)
+    val initialMillis = remember(sheffield.year, sheffield.month, sheffield.day) {
+        LocalDate.of(sheffield.year, sheffield.month, sheffield.day)
+            .atStartOfDay(ZoneOffset.UTC)
+            .toInstant()
+            .toEpochMilli()
+    }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val millis = datePickerState.selectedDateMillis ?: return@TextButton
+                    // Material DatePicker uses UTC midnight for the selected civil day.
+                    val picked = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                    onConfirm(
+                        PrayerTimesEngine.sheffieldNoonUTC(
+                            picked.year,
+                            picked.monthValue,
+                            picked.dayOfMonth,
+                        ),
+                    )
+                },
+            ) {
+                Text(
+                    LocaleStrings.t("settings.done", language),
+                    style = rememberAppTextStyle(15f, FontWeight.SemiBold),
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    LocaleStrings.t("action.cancel", language),
+                    style = rememberAppTextStyle(15f),
+                )
+            }
+        },
+    ) {
+        DatePicker(
+            state = datePickerState,
+            title = {
+                Text(
+                    text = LocaleStrings.t("home.pick_date_title", language),
+                    modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp),
+                    style = rememberAppTextStyle(16f, FontWeight.SemiBold),
+                )
+            },
+        )
     }
 }
 
@@ -796,33 +905,15 @@ private fun HomePrayerContent(
     val prayerEntries = buildPrayerEntries(prayerTimes, isFriday, jummahSlots, iqamahTimes?.jummah, language)
 
     val index = selectedPrayerIndex.coerceIn(0, prayerEntries.lastIndex)
-    val entry = prayerEntries[index]
-    val heroParts = PrayerTimesEngine.formatPrayerTimeHeroParts(entry.adhan, uses24HourTime, locale)
-    val iqamahSubtitle = iqamahSubtitleLine(
-        canonical = entry.canonical,
-        adhanRaw = entry.adhan,
-        daily = prayerTimes,
-        iq = iqamahTimes,
-        mosqueSlug = mosqueSlug,
-        displayedDate = displayedDate,
-        uses24Hour = uses24HourTime,
-        asrPreference = asrPreference,
-        locale = locale,
-        jummahSlots = jummahSlots,
-        language = language,
-        showDuhaTime = showDuhaTime,
-        showIqamahTime = showIqamahTime,
-    )
 
-    val quickInfo = computeQuickInfo(prayerTimes, monthData, displayedDate, uses24HourTime, locale)
-
+    // Mirror iOS `MinimalistPrayerPage`: 140 top → orb → 60 → time → flex → name+picker → 160 bottom.
+    // Do NOT add statusBarsPadding here — iOS's 140pt is from the screen top.
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(top = 140.dp, start = 20.dp, end = 20.dp, bottom = 160.dp),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Spacer(modifier = Modifier.height(140.dp))
+
         // Qibla orb always visible; pointer hidden when user deferred location (matches iOS).
         val countdownLabel = heroPresentation?.let { heroCountdownLabel(it.labelKind, language) }.orEmpty()
         val countdownSecs = heroPresentation?.let { PrayerTimesEngine.heroRemainingSeconds(it, now) } ?: 0
@@ -897,7 +988,10 @@ private fun HomePrayerContent(
                 showIqamahTime = showIqamahTime,
             )
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 Text(
                     text = heroParts.meridiem?.let { "${heroParts.clock}\u2009${it}" } ?: heroParts.clock,
                     style = rememberAppTextStyle(88f, FontWeight.Light),
@@ -912,41 +1006,45 @@ private fun HomePrayerContent(
                         text = it,
                         style = rememberAppTextStyle(26f),
                         color = textColor.copy(alpha = 0.78f),
+                        textAlign = TextAlign.Center,
                         maxLines = 2,
                     )
                 }
             }
         }
 
-        // Spacer to push prayer name + letter picker to bottom
         Spacer(modifier = Modifier.weight(1f))
 
-        AnimatedContent(
-            targetState = index,
-            transitionSpec = {
-                fadeIn(animationSpec = tween(250)) togetherWith fadeOut(animationSpec = tween(250))
-            },
-            label = "heroPrayerName",
-        ) { animatedIndex ->
-            Text(
-                text = prayerEntries[animatedIndex].displayName,
-                style = rememberAppTextStyle(36f),
-                color = textColor,
-                letterSpacing = (-0.36f).sp,
+        Column(
+            modifier = Modifier.padding(bottom = 160.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            AnimatedContent(
+                targetState = index,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(250)) togetherWith fadeOut(animationSpec = tween(250))
+                },
+                label = "heroPrayerName",
+            ) { animatedIndex ->
+                Text(
+                    text = prayerEntries[animatedIndex].displayName,
+                    style = rememberAppTextStyle(36f),
+                    color = textColor,
+                    letterSpacing = (-0.36f).sp,
+                )
+            }
+
+            PrayerLetterPicker(
+                prayerEntries = prayerEntries,
+                selectedIndex = index,
+                currentPrayerIndex = currentPrayerIndex,
+                textColor = textColor,
+                theme = theme,
+                highlightPrayerShortcuts = highlightPrayerShortcuts,
+                onSelectPrayer = onSelectPrayer,
             )
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        PrayerLetterPicker(
-            prayerEntries = prayerEntries,
-            selectedIndex = index,
-            currentPrayerIndex = currentPrayerIndex,
-            textColor = textColor,
-            theme = theme,
-            highlightPrayerShortcuts = highlightPrayerShortcuts,
-            onSelectPrayer = onSelectPrayer,
-        )
     }
 }
 

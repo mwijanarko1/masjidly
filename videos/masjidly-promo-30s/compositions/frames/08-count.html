@@ -1,0 +1,61 @@
+<template>
+  <style>
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Light.woff2") format("woff2"); font-weight: 300; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans.woff2") format("woff2"); font-weight: 400; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-SemiBold.woff2") format("woff2"); font-weight: 600; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Bold.woff2") format("woff2"); font-weight: 700; }
+    #root { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; font-family: "HF Gill", sans-serif; color: #fff; }
+    .c08-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 50% at 50% 42%, #2A4FB0 0%, #0B1233 72%); }
+    .c08-glow { position: absolute; left: 90px; top: 380px; width: 900px; height: 700px; border-radius: 50%; background: radial-gradient(closest-side, rgba(71,166,255,0.5), rgba(71,166,255,0)); }
+    .c08-num { position: absolute; left: 0; right: 0; top: 520px; text-align: center; font-weight: 400; font-size: 330px; line-height: 1; letter-spacing: -0.03em; color: #fff; font-variant-numeric: tabular-nums; }
+    .c08-num b { font-weight: 400; color: #47A6FF; display: inline-block; }
+    .c08-label { position: absolute; left: 0; right: 0; top: 880px; text-align: center; font-weight: 600; font-size: 70px; }
+    .c08-label2 { position: absolute; left: 0; right: 0; top: 970px; text-align: center; font-weight: 400; font-size: 46px; color: #C9D2F2; }
+    .c08-city { position: absolute; font-weight: 600; font-size: 34px; padding: 10px 24px; border-radius: 100px; background: rgba(255,255,255,0.10); border: 2px solid rgba(255,255,255,0.22); color: #E6E9FA; white-space: nowrap; }
+    .c08-pill { position: absolute; left: 0; right: 0; top: 1420px; text-align: center; }
+    .c08-pill span { display: inline-block; padding: 18px 44px; border-radius: 100px; background: #47A6FF; color: #0B1233; font-weight: 700; font-size: 44px; box-shadow: 0 20px 50px rgba(71,166,255,0.45); }
+  </style>
+
+  <div id="root" data-composition-id="08-count" data-width="1080" data-height="1920" data-start="0" data-duration="3.2">
+    <div id="c08-bg" class="c08-bg clip" data-start="0" data-duration="3.2" data-track-index="0"></div>
+    <div class="c08-glow" id="c08-glow"></div>
+    <div class="c08-city" style="left: 70px; top: 250px;">London</div>
+    <div class="c08-city" style="left: 400px; top: 200px;">Birmingham</div>
+    <div class="c08-city" style="left: 760px; top: 270px;">Sheffield</div>
+    <div class="c08-city" style="left: 180px; top: 380px;">Makkah</div>
+    <div class="c08-city" style="left: 640px; top: 400px;">Jakarta</div>
+    <div class="c08-city" style="left: 60px; top: 1110px;">Toronto</div>
+    <div class="c08-city" style="left: 330px; top: 1170px;">Manchester</div>
+    <div class="c08-city" style="left: 720px; top: 1110px;">Dubai</div>
+    <div class="c08-city" style="left: 150px; top: 1270px;">Cairo</div>
+    <div class="c08-city" style="left: 430px; top: 1290px;">Madinah</div>
+    <div class="c08-city" style="left: 740px; top: 1240px;">Sydney</div>
+    <div class="c08-num" id="c08-num"><span id="c08-digits">0</span><b id="c08-plus">+</b></div>
+    <div class="c08-label" id="c08-label">masjids</div>
+    <div class="c08-label2" id="c08-label2">across 10 countries</div>
+    <div class="c08-pill" id="c08-pill"><span>More added every week</span></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const digits = document.getElementById("c08-digits");
+      const counter = { v: 0 };
+      tl.fromTo("#c08-glow", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 1.0, ease: "power2.out" }, 0.0);
+      tl.fromTo("#c08-num", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 0.0);
+      tl.fromTo(counter, { v: 0 }, {
+        v: 340, duration: 1.1, ease: "power2.out",
+        onUpdate: function () { digits.textContent = String(Math.round(counter.v)); }
+      }, 0.05);
+      tl.fromTo("#c08-plus", { opacity: 0, scale: 0.2 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2.6)" }, 1.15);
+      tl.to("#c08-num", { scale: 1.06, duration: 0.12, ease: "power2.out" }, 1.15);
+      tl.to("#c08-num", { scale: 1, duration: 0.2, ease: "power2.inOut" }, 1.27);
+      tl.fromTo("#c08-label", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.9);
+      tl.fromTo("#c08-label2", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.1);
+      tl.fromTo(".c08-city", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.35, stagger: 0.07, ease: "back.out(2)" }, 1.0);
+      tl.fromTo("#c08-pill span", { opacity: 0, scale: 0.4, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: "back.out(2)" }, 2.0);
+      window.__timelines["08-count"] = tl;
+    })();
+  </script>
+</template>

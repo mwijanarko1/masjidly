@@ -40,7 +40,8 @@ private const val FRAME_REF = 120f
 @Composable
 fun QiblaPrayerIcon(
     theme: ResolvedTheme,
-    rotationDegrees: Float?,
+    /** Read in the draw phase so heading updates only redraw the pointer. */
+    rotationDegrees: (() -> Float)?,
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
     textColor: Color = theme.textColor,
@@ -132,7 +133,7 @@ fun QiblaPrayerIcon(
                 val strokeScale = scale * density
                 val cx = this.size.width / 2f
                 val cy = this.size.height / 2f
-                rotate(rotationDegrees) {
+                rotate(rotationDegrees()) {
                     val triSize = 12f * strokeScale
                     // Keep the iOS outside-the-ring pointer visible; the main 120dp canvas clips overflow.
                     val tipY = cy - (FRAME_REF / 2f + 10f) * scale * density

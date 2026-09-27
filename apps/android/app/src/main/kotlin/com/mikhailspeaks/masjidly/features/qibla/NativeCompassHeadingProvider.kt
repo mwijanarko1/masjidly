@@ -11,6 +11,7 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.os.SystemClock
 import kotlin.math.abs
+import kotlin.math.atan2
 
 /**
  * Native Android compass pipeline for portrait Qibla.
@@ -29,7 +30,6 @@ internal class NativeCompassHeadingProvider(
     private var sensorHandler: Handler? = null
 
     private val rotationMatrix = FloatArray(9)
-    private val orientation = FloatArray(3)
     private val gravity = FloatArray(3)
     private val geomagnetic = FloatArray(3)
     private var hasGravity = false
@@ -39,6 +39,8 @@ internal class NativeCompassHeadingProvider(
     private var lastEmittedHeading: Double? = null
     private var lastEmitUptimeMs = 0L
     private var activeSensorType: Int? = null
+    private var declinationCoordinates: Pair<Double, Double>? = null
+    private var declinationDegrees = 0f
 
     var onHeadingChanged: ((Double) -> Unit)? = null
 
@@ -145,29 +147,38 @@ internal class NativeCompassHeadingProvider(
 
     private fun headingFromRotationVector(event: SensorEvent): Double? {
         SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-        SensorManager.getOrientation(rotationMatrix, orientation)
-        val magneticAzimuth = normalizeDegrees(Math.toDegrees(orientation[0].toDouble()))
-        return trueHeadingDegrees(magneticAzimuth)
+        return trueHeadingDegrees(headingFromRotationMatrix())
     }
 
     private fun headingFromAccelMagnetometer(): Double? {
         if (!hasGravity || !hasGeomagnetic) return null
         if (!SensorManager.getRotationMatrix(rotationMatrix, null, gravity, geomagnetic)) return null
+        return trueHeadingDegrees(headingFromRotationMatrix())
+    }
 
-        SensorManager.getOrientation(rotationMatrix, orientation)
-        val magneticAzimuth = normalizeDegrees(Math.toDegrees(orientation[0].toDouble()))
-        return trueHeadingDegrees(magneticAzimuth)
+    /**
+     * Magnetic heading of the phone's top edge plus its back (camera side), projected onto the ground.
+     * Stable flat, tilted, or upright; `getOrientation` azimuth gimbal-locks as the phone nears vertical.
+     */
+    private fun headingFromRotationMatrix(): Double {
+        val east = rotationMatrix[1] - rotationMatrix[2]
+        val north = rotationMatrix[4] - rotationMatrix[5]
+        return normalizeDegrees(Math.toDegrees(atan2(east.toDouble(), north.toDouble())))
     }
 
     private fun trueHeadingDegrees(magneticAzimuth: Double): Double {
         val coordinates = coordinatesProvider() ?: return magneticAzimuth
-        val field = GeomagneticField(
-            coordinates.first.toFloat(),
-            coordinates.second.toFloat(),
-            0f,
-            System.currentTimeMillis(),
-        )
-        return normalizeDegrees(magneticAzimuth + field.declination)
+        // Declination only changes with location; recomputing per sensor event (~50 Hz) is wasted work.
+        if (coordinates != declinationCoordinates) {
+            declinationDegrees = GeomagneticField(
+                coordinates.first.toFloat(),
+                coordinates.second.toFloat(),
+                0f,
+                System.currentTimeMillis(),
+            ).declination
+            declinationCoordinates = coordinates
+        }
+        return normalizeDegrees(magneticAzimuth + declinationDegrees)
     }
 
     private fun maybeEmitHeading(heading: Double) {

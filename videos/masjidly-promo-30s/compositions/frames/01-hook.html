@@ -1,0 +1,54 @@
+<template>
+  <style>
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Light.woff2") format("woff2"); font-weight: 300; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans.woff2") format("woff2"); font-weight: 400; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-SemiBold.woff2") format("woff2"); font-weight: 600; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Bold.woff2") format("woff2"); font-weight: 700; }
+    #root { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; font-family: "HF Gill", sans-serif; color: #fff; }
+    .h01-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 90% 60% at 50% 40%, #1E3F8F 0%, #0B1233 70%); }
+    .h01-glow { position: absolute; left: 140px; top: 760px; width: 800px; height: 600px; border-radius: 50%; background: radial-gradient(closest-side, rgba(71,166,255,0.45), rgba(71,166,255,0)); opacity: 0; }
+    .h01-eyebrow { position: absolute; left: 0; right: 0; top: 330px; text-align: center; font-weight: 600; font-size: 44px; letter-spacing: 0.32em; color: #C9D2F2; }
+    .h01-block { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; }
+    .h01-a { top: 560px; }
+    .h01-b { top: 860px; }
+    .h01-tag { font-weight: 600; font-size: 38px; padding: 12px 34px; border-radius: 100px; border: 2px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.10); color: #C9D2F2; }
+    .h01-tag-b { background: #47A6FF; border-color: #47A6FF; color: #0B1233; }
+    .h01-num { position: relative; font-weight: 300; font-size: 250px; line-height: 1; letter-spacing: -0.02em; margin-top: 18px; white-space: nowrap; }
+    .h01-num-b { color: #47A6FF; font-weight: 400; }
+    .h01-strike { position: absolute; left: -20px; right: -20px; top: 52%; height: 14px; border-radius: 7px; background: #FF6B6B; transform-origin: left center; }
+    .h01-line { position: absolute; left: 0; right: 0; top: 1270px; text-align: center; font-weight: 600; font-size: 76px; letter-spacing: -0.01em; }
+    .h01-line span { display: inline-block; }
+  </style>
+
+  <div id="root" data-composition-id="01-hook" data-width="1080" data-height="1920" data-start="0" data-duration="3.2">
+    <div id="h01-bg" class="h01-bg clip" data-start="0" data-duration="3.2" data-track-index="0"></div>
+    <div class="h01-glow" id="h01-glow"></div>
+    <div class="h01-eyebrow" id="h01-eyebrow">ASR · TODAY</div>
+    <div class="h01-block h01-a" id="h01-a">
+      <div class="h01-tag" id="h01-tag-a">Calculated time</div>
+      <div class="h01-num" id="h01-num-a">4:10 PM<div class="h01-strike" id="h01-strike"></div></div>
+    </div>
+    <div class="h01-block h01-b" id="h01-b">
+      <div class="h01-tag h01-tag-b" id="h01-tag-b">Your masjid</div>
+      <div class="h01-num h01-num-b" id="h01-num-b">4:57 PM</div>
+    </div>
+    <div class="h01-line" id="h01-line"><span>47</span> <span>minutes</span> <span>apart.</span></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#h01-eyebrow", { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.0);
+      tl.fromTo("#h01-tag-a", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.2);
+      tl.fromTo("#h01-num-a", { opacity: 0, y: 80 }, { opacity: 1, y: 0, duration: 0.6, ease: "expo.out" }, 0.3);
+      tl.fromTo("#h01-strike", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power2.inOut" }, 1.2);
+      tl.fromTo("#h01-a", { y: 0, scale: 1, opacity: 1 }, { y: -150, scale: 0.62, opacity: 0.45, duration: 0.5, ease: "power3.inOut" }, 1.4);
+      tl.fromTo("#h01-num-b", { opacity: 0, scale: 1.7 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.6)" }, 1.55);
+      tl.fromTo("#h01-glow", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" }, 1.55);
+      tl.fromTo("#h01-tag-b", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2.2)" }, 1.8);
+      tl.fromTo("#h01-line span", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.12, ease: "power3.out" }, 2.2);
+      window.__timelines["01-hook"] = tl;
+    })();
+  </script>
+</template>

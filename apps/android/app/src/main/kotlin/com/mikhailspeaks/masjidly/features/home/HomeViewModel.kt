@@ -21,6 +21,8 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import com.mikhailspeaks.masjidly.widget.WidgetPrayerSnapshotService
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -202,6 +204,15 @@ class HomeViewModel(
         loadOrApplyPrayerTimesForDisplayedDate()
     }
 
+    /** Jump to a specific calendar day (e.g. from the native date picker). Mirrors iOS `goToDate`. */
+    fun goToDate(date: Instant) {
+        val parts = PrayerTimesEngine.getDateInSheffield(date)
+        _uiState.update {
+            it.copy(displayedDate = PrayerTimesEngine.sheffieldNoonUTC(parts.year, parts.month, parts.day))
+        }
+        loadOrApplyPrayerTimesForDisplayedDate()
+    }
+
     fun goToLastAvailablePrayerDate() {
         val last = lastAvailablePrayerDate ?: return
         _uiState.update { it.copy(displayedDate = last) }
@@ -346,9 +357,13 @@ class HomeViewModel(
             return
         }
 
-        val monthly = repository.getMonthlyPrayerTimes(mosque.slug, monthName, sh.year)
-        val ramadan = repository.getRamadanTimetable(mosque.slug, isoDate)
-        val dstCalendar = repository.getUkDstDates()
+        // Parallel like iOS `async let`; sequential round trips made new tabs slow.
+        val (monthly, ramadan, dstCalendar) = coroutineScope {
+            val monthly = async { repository.getMonthlyPrayerTimes(mosque.slug, monthName, sh.year) }
+            val ramadan = async { repository.getRamadanTimetable(mosque.slug, isoDate) }
+            val dst = async { repository.getUkDstDates() }
+            Triple(monthly.await(), ramadan.await(), dst.await())
+        }
 
         if (_uiState.value.selectedMosque?.id != mosque.id) return
 
@@ -420,9 +435,12 @@ class HomeViewModel(
         val isoDate = PrayerTimesEngine.isoDateString(parts.year, parts.month, parts.day)
 
         try {
-            val monthly = repository.getMonthlyPrayerTimes(mosque.slug, monthName, parts.year)
-            val ramadan = repository.getRamadanTimetable(mosque.slug, isoDate)
-            val dst = repository.getUkDstDates()
+            val (monthly, ramadan, dst) = coroutineScope {
+                val monthly = async { repository.getMonthlyPrayerTimes(mosque.slug, monthName, parts.year) }
+                val ramadan = async { repository.getRamadanTimetable(mosque.slug, isoDate) }
+                val dst = async { repository.getUkDstDates() }
+                Triple(monthly.await(), ramadan.await(), dst.await())
+            }
 
             if (monthly != null && monthly.prayerTimes.isNotEmpty()) {
                 diskCache.saveMonthly(mosque.slug, monthName.rawValue, parts.year, monthly)

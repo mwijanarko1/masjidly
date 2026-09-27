@@ -24,7 +24,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "تبويبات المساجد",
-                    description: "اعرض أوقات أكثر من مسجد عبر التبويبات. افتحها، انتقل بينها، أو أغلقها. يبقى المسجد المحدد في الإعدادات للإشعارات والودجت.",
+                    description: "اعرض أوقات أكثر من مسجد عبر التبويبات. افتحها، انتقل بينها، أو أغلقها في أي وقت. المسجد النشط يتحكم في الإشعارات والودجت.",
                     icon: "rectangle.on.rectangle"
                 ),
             ]
@@ -32,7 +32,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "مسجد کے ٹیبز",
-                    description: "ٹیبز سے ایک سے زیادہ مساجد کے اوقات دیکھیں۔ کھولیں، سوئچ کریں، یا بند کریں۔ اطلاعات اور ویجٹ کے لیے ڈیفالٹ مسجد سیٹنگز میں ہی رہے گی۔",
+                    description: "ٹیبز سے ایک سے زیادہ مساجد کے اوقات دیکھیں۔ کسی بھی وقت کھولیں، سوئچ کریں، یا بند کریں۔ فعال مسجد اطلاعات اور ویجٹ کو کنٹرول کرتی ہے۔",
                     icon: "rectangle.on.rectangle"
                 ),
             ]
@@ -40,7 +40,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "Tab masjid",
-                    description: "Lihat jadwal lebih dari satu masjid lewat tab. Buka, beralih, atau tutup tab. Masjid untuk notifikasi dan widget tetap dipilih di Pengaturan.",
+                    description: "Lihat jadwal lebih dari satu masjid lewat tab. Buka, beralih, atau tutup tab kapan saja. Masjid aktif mengontrol notifikasi dan widget.",
                     icon: "rectangle.on.rectangle"
                 ),
             ]

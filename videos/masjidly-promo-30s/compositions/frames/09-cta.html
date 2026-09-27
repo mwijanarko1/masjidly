@@ -1,0 +1,41 @@
+<template>
+  <style>
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans.woff2") format("woff2"); font-weight: 400; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-SemiBold.woff2") format("woff2"); font-weight: 600; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Bold.woff2") format("woff2"); font-weight: 700; }
+    #root { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; font-family: "HF Gill", sans-serif; color: #fff; }
+    .e09-bg { position: absolute; inset: 0; background: linear-gradient(180deg, #1E3F8F 0%, #5A4BA0 55%, #8450A8 100%); }
+    .e09-glow { position: absolute; left: 140px; top: 330px; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,214,170,0.45), rgba(255,214,170,0)); }
+    .e09-icon { position: absolute; left: 380px; top: 470px; width: 320px; height: 320px; border-radius: 74px; overflow: hidden; box-shadow: 0 36px 80px rgba(11,18,51,0.45); }
+    .e09-icon img { width: 100%; height: 100%; display: block; }
+    .e09-word { position: absolute; left: 0; right: 0; top: 840px; text-align: center; font-weight: 600; font-size: 150px; letter-spacing: -0.02em; line-height: 1; }
+    .e09-line { position: absolute; left: 0; right: 0; top: 1030px; text-align: center; font-weight: 400; font-size: 60px; color: #E6E9FA; }
+    .e09-pill { position: absolute; left: 0; right: 0; top: 1200px; text-align: center; }
+    .e09-pill span { display: inline-block; padding: 22px 50px; border-radius: 100px; background: #fff; color: #1E3F8F; font-weight: 700; font-size: 46px; box-shadow: 0 20px 50px rgba(11,18,51,0.35); }
+    .e09-url { position: absolute; left: 0; right: 0; top: 1350px; text-align: center; font-weight: 400; font-size: 36px; color: #C9D2F2; }
+  </style>
+
+  <div id="root" data-composition-id="09-cta" data-width="1080" data-height="1920" data-start="0" data-duration="2.8">
+    <div id="e09-bg" class="e09-bg clip" data-start="0" data-duration="2.8" data-track-index="0"></div>
+    <div class="e09-glow" id="e09-glow"></div>
+    <div class="e09-icon" id="e09-icon"><img src="assets/app-icon.png" alt="" /></div>
+    <div class="e09-word" id="e09-word">Masjidly</div>
+    <div class="e09-line" id="e09-line">Your masjid.&ensp;Your times.</div>
+    <div class="e09-pill" id="e09-pill"><span>Free on iPhone &amp; Android</span></div>
+    <div class="e09-url" id="e09-url">sheffieldmasjids.com/masjidly</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#e09-glow", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.8, ease: "power2.out" }, 0.0);
+      tl.fromTo("#e09-icon", { opacity: 0, scale: 0.6, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "back.out(1.6)" }, 0.0);
+      tl.fromTo("#e09-word", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 0.2);
+      tl.fromTo("#e09-line", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.6);
+      tl.fromTo("#e09-pill span", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(2)" }, 1.1);
+      tl.fromTo("#e09-url", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 1.35);
+      window.__timelines["09-cta"] = tl;
+    })();
+  </script>
+</template>

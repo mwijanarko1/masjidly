@@ -37,30 +37,30 @@ object WhatsNew {
         return when (code) {
             "ar" -> listOf(
                 WhatsNewItem(
-                    title = "تبويبات المساجد",
-                    description = "اعرض أوقات أكثر من مسجد عبر التبويبات. افتحها، انتقل بينها، أو أغلقها. يبقى المسجد المحدد في الإعدادات للإشعارات والودجت.",
-                    icon = WhatsNewIcon.WIDGET,
+                    title = "إصلاحات أخطاء",
+                    description = "تحسينات وإصلاحات لجعل التطبيق أكثر موثوقية.",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
             "ur" -> listOf(
                 WhatsNewItem(
-                    title = "مسجد کے ٹیبز",
-                    description = "ٹیبز سے ایک سے زیادہ مساجد کے اوقات دیکھیں۔ کھولیں، سوئچ کریں، یا بند کریں۔ اطلاعات اور ویجٹ کے لیے ڈیفالٹ مسجد سیٹنگز میں ہی رہے گی۔",
-                    icon = WhatsNewIcon.WIDGET,
+                    title = "بگ فکسز",
+                    description = "ایپ کو زیادہ قابلِ اعتماد بنانے کے لیے اصلاحات اور بہتریاں۔",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
             "id" -> listOf(
                 WhatsNewItem(
-                    title = "Tab masjid",
-                    description = "Lihat jadwal lebih dari satu masjid lewat tab. Buka, beralih, atau tutup tab. Masjid untuk notifikasi dan widget tetap dipilih di Pengaturan.",
-                    icon = WhatsNewIcon.WIDGET,
+                    title = "Perbaikan bug",
+                    description = "Peningkatan dan perbaikan agar aplikasi lebih andal.",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
             else -> listOf(
                 WhatsNewItem(
-                    title = "Mosque tabs",
-                    description = "Mosque tabs let you see times for more than one mosque. Open, switch, or close them anytime. The active mosque controls notifications and the widget.",
-                    icon = WhatsNewIcon.WIDGET,
+                    title = "Bug fixes",
+                    description = "Improvements and fixes to make the app more reliable.",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
         }

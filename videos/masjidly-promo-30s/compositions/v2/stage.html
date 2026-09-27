@@ -1,0 +1,794 @@
+<template>
+  <style>
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Light.woff2") format("woff2"); font-weight: 300; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans.woff2") format("woff2"); font-weight: 400; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-SemiBold.woff2") format("woff2"); font-weight: 600; }
+    @font-face { font-family: "HF Gill"; src: url("assets/fonts/GillSans-Bold.woff2") format("woff2"); font-weight: 700; }
+    @font-face { font-family: "HF Arabic"; src: url("assets/fonts/SFArabic-sub.woff2") format("woff2"); }
+    @font-face { font-family: "HF Urdu"; src: url("assets/fonts/NotoNastaliqUrdu-sub.woff2") format("woff2"); }
+    #root { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; font-family: "HF Gill", sans-serif; color: #fff; }
+    .s-hold { position: absolute; inset: 0; }
+    .s-full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+    .s-icon { position: absolute; border-radius: 22%; overflow: hidden; box-shadow: 0 36px 90px rgba(5,8,30,0.45); background: url("assets/app-icon.png") center / cover no-repeat; }
+    .s-word { position: absolute; left: 0; right: 0; text-align: center; font-weight: 600; letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
+    .tap { position: absolute; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; background: rgba(255,255,255,0.55); border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 2px rgba(0,0,0,0.12); opacity: 0; pointer-events: none; }
+
+    /* ===== Home screen: MinimalistPrayerPage + HomeView at 2.2x (874pt tall -> 1920px), real vertical rhythm ===== */
+    .h { color: #FFFFFF; }
+    .h-circ { position: absolute; top: 163px; width: 97px; height: 97px; border-radius: 50%; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; }
+    .h-circ svg { overflow: visible; }
+    .h-cap { position: absolute; left: 373px; top: 161px; width: 334px; height: 100px; border-radius: 50px; background: rgba(255,255,255,0.18); text-align: center; }
+    .h-cap::after { content: ""; position: absolute; inset: 0; border-radius: 50px; border: 1.1px solid currentColor; opacity: 0.12; }
+    .h-cap b { display: block; margin-top: 18px; font-weight: 600; font-size: 29px; opacity: 0.88; white-space: nowrap; }
+    .h-cap span { display: block; margin-top: 3px; font-weight: 400; font-size: 22px; opacity: 0.55; white-space: nowrap; }
+    .h-orb { position: absolute; left: 408px; top: 308px; width: 264px; height: 264px; }
+    .h-ring1 { position: absolute; left: 9px; top: 9px; width: 246px; height: 246px; border-radius: 50%; border: 2.2px solid currentColor; opacity: 0.24; box-sizing: border-box; }
+    .h-ring2 { position: absolute; left: 15.5px; top: 15.5px; width: 233px; height: 233px; border-radius: 50%; border: 1.8px solid currentColor; opacity: 0.08; box-sizing: border-box; }
+    .h-sun { position: absolute; left: 22px; top: 35px; width: 220px; height: 194px; }
+    .h-qibla { position: absolute; inset: 0; }
+    .h-page { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; opacity: 0; }
+    .h-time { position: absolute; left: 0; right: 0; top: 704px; height: 232px; line-height: 232px; text-align: center; font-weight: 300; font-size: 194px; letter-spacing: -3.9px; white-space: nowrap; text-shadow: 0 11px 22px rgba(0,0,0,0.08); }
+    .h-iq { position: absolute; left: 0; right: 0; top: 949px; height: 68px; line-height: 68px; text-align: center; font-weight: 400; font-size: 57px; letter-spacing: 1.3px; opacity: 0.78; white-space: nowrap; }
+    .h-name { position: absolute; left: 0; right: 0; top: 1314px; height: 95px; line-height: 95px; text-align: center; font-weight: 400; font-size: 79px; letter-spacing: -0.8px; white-space: nowrap; }
+    .h-name-svg { position: absolute; left: 0; top: 1290px; width: 1080px; height: 150px; overflow: visible; }
+    .h-rtl .h-iq { letter-spacing: 0; }
+    .h-letters { position: absolute; left: 0; top: 1475px; width: 1080px; height: 79px; }
+    .h-l { position: absolute; top: 0; width: 62px; margin-left: -31px; height: 79px; text-align: center; }
+    .h-l i { position: absolute; left: 0; right: 0; top: 6px; font-style: normal; font-size: 44px; line-height: 53px; }
+    .h-l .lr { font-weight: 400; opacity: 0.38; }
+    .h-l .ls { font-weight: 600; opacity: 0; }
+    .h-l .dot { position: absolute; left: 26.5px; top: 68px; width: 9px; height: 9px; border-radius: 50%; background: currentColor; opacity: 0; }
+    .h-tabs { position: absolute; left: 0; top: 1722px; width: 1080px; height: 81px; overflow: hidden; }
+    .h-track { position: absolute; left: 26px; top: 0; height: 81px; display: flex; gap: 13px; align-items: center; }
+    .h-tab { position: relative; height: 79px; border-radius: 40px; overflow: hidden; flex: none; }
+    .h-tab .f { position: absolute; inset: 0; background: currentColor; }
+    .h-tab .t { position: relative; display: block; line-height: 79px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 29px; }
+    .h-tab .t.sel { font-weight: 700; padding: 0 26px; color: var(--inv); }
+    .h-tab .t.uns { position: absolute; left: 0; top: 0; right: 0; font-weight: 600; padding: 0 22px; opacity: 0; }
+    .h-plus { position: relative; flex: none; width: 81px; height: 81px; border-radius: 50%; }
+    .h-plus::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: currentColor; opacity: 0.12; }
+    .h-plus svg { position: absolute; left: 21px; top: 21px; }
+
+    /* hook pills (in the app world) */
+    .hk-pill { position: absolute; left: 0; right: 0; top: 606px; text-align: center; }
+    .hk-pill span { display: inline-block; padding: 12px 30px; border-radius: 100px; font-weight: 600; font-size: 30px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hk-calc span { background: rgba(10,14,40,0.35); color: #C9D2F2; border: 2px solid rgba(255,255,255,0.25); }
+    .hk-mine span { background: #FFD27A; color: #10214F; box-shadow: 0 16px 44px rgba(255,210,122,0.4); }
+    .hk-badge { position: absolute; left: 700px; top: 604px; padding: 12px 22px; border-radius: 100px; background: #FFD27A; color: #10214F; font-weight: 700; font-size: 34px; box-shadow: 0 16px 44px rgba(255,210,122,0.4); white-space: nowrap; }
+
+    /* language picker (onboarding card, as a sheet) */
+    .lg { position: absolute; left: 40px; top: 1440px; width: 1000px; height: 560px; border-radius: 52px; background: rgba(255,255,255,0.92); border: 2px solid rgba(255,255,255,0.7); box-shadow: 0 -20px 80px rgba(15,27,51,0.18); color: #111; }
+    .lg h4 { position: absolute; left: 44px; top: 30px; margin: 0; font-weight: 600; font-size: 44px; }
+    .lg-row { position: absolute; left: 30px; right: 30px; height: 80px; border-radius: 35px; background: rgba(17,17,17,0.07); line-height: 80px; padding: 0 34px; font-weight: 600; font-size: 36px; }
+    .lg-hl { position: absolute; left: 30px; right: 30px; top: 112px; height: 80px; border-radius: 35px; background: rgba(17,17,17,0.12); }
+    .lg-check { position: absolute; right: 60px; top: 132px; width: 42px; height: 42px; border-radius: 50%; background: #111; }
+    .lg-check svg { position: absolute; left: 9px; top: 11px; }
+
+    /* add-a-masjid card */
+    .am-dim { position: absolute; left: 0; top: -200px; width: 1080px; height: 2400px; background: rgba(0,0,0,0.28); opacity: 0; }
+    .am { position: absolute; left: 180px; top: 330px; width: 720px; border-radius: 52px; background: rgba(255,255,255,0.96); box-shadow: 0 40px 90px rgba(15,27,51,0.3); padding: 30px 0 16px; color: #111; opacity: 0; }
+    .am h4 { margin: 0 40px 12px; font-weight: 600; font-size: 30px; letter-spacing: 0.04em; opacity: 0.55; }
+    .am-row { position: relative; height: 96px; line-height: 96px; padding: 0 40px; font-weight: 400; font-size: 38px; overflow: hidden; white-space: nowrap; }
+    .am-row small { float: right; font-weight: 400; font-size: 28px; opacity: 0.55; }
+    .am-row .am-hl { position: absolute; inset: 0; background: rgba(17,17,17,0.09); opacity: 0; }
+
+    /* theme cards */
+    .t-card { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; border-radius: 150px; overflow: hidden; box-shadow: 0 60px 160px rgba(15,27,51,0.35); color: #111; }
+    .t-lab { position: absolute; top: 420px; width: 440px; text-align: center; font-weight: 600; font-size: 44px; color: #111; }
+    .t-sw { position: absolute; left: 640px; top: 1480px; font-weight: 400; font-size: 32px; color: #111; }
+    .t-sw div { margin-top: 14px; position: relative; }
+    .t-sw i { display: inline-block; width: 52px; height: 52px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 8px 20px rgba(15,27,51,0.25); vertical-align: middle; margin-right: 14px; }
+
+    /* iOS lock screen (Maghrib) */
+    .k-date { position: absolute; left: 0; right: 0; top: 300px; text-align: center; font-weight: 600; font-size: 46px; color: #111; opacity: 0.75; }
+    .k-clock { position: absolute; left: 0; right: 0; top: 350px; height: 320px; overflow: hidden; text-align: center; color: #111; }
+    .k-clock div { height: 320px; line-height: 320px; font-weight: 600; font-size: 290px; letter-spacing: -0.02em; }
+    .s-noti { position: absolute; left: 44px; top: 780px; width: 992px; border-radius: 56px; background: rgba(250,248,252,0.9); box-shadow: 0 24px 70px rgba(43,18,54,0.22); color: #111; padding: 30px 40px 34px 150px; }
+    .s-noti .ni { position: absolute; left: 34px; top: 36px; width: 92px; height: 92px; border-radius: 22px; background: url("assets/app-icon.png") center / cover no-repeat; }
+    .s-noti .nt { font-weight: 600; font-size: 44px; }
+    .s-noti .nbody { margin-top: 4px; font-weight: 400; font-size: 38px; line-height: 1.25; opacity: 0.85; }
+    .s-noti em { position: absolute; right: 40px; top: 34px; font-style: normal; font-weight: 400; font-size: 30px; opacity: 0.45; }
+
+    /* iOS home screen widgets (MasjidlyWidgets: small + large), Isha is next at 8:02 PM */
+    .w-s { position: absolute; left: 90px; top: 330px; width: 420px; height: 420px; border-radius: 96px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.35); padding: 40px; background: linear-gradient(180deg, #000328, #00458E); color: #fff; }
+    .w-s .wh { display: flex; align-items: center; gap: 15px; }
+    .w-s .wn { font-weight: 400; font-size: 37px; opacity: 0.75; }
+    .w-s .wt { margin-top: 20px; font-weight: 300; font-size: 89px; line-height: 1.05; white-space: nowrap; }
+    .w-s .wi { margin-top: 10px; font-weight: 400; font-size: 35px; opacity: 0.6; }
+    .w-app { position: absolute; left: 640px; top: 360px; width: 200px; text-align: center; color: #fff; font-weight: 400; font-size: 30px; }
+    .w-app i { display: block; width: 200px; height: 200px; border-radius: 46px; margin-bottom: 14px; background: url("assets/app-icon.png") center / cover no-repeat; box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+    .w-l { position: absolute; left: 90px; top: 800px; width: 900px; height: 900px; border-radius: 110px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.4); padding: 50px 53px; background: linear-gradient(180deg, #000328, #00458E); color: #fff; }
+    .w-l .lh { display: flex; justify-content: space-between; align-items: baseline; }
+    .w-l .lh b { font-weight: 600; font-size: 42px; opacity: 0.7; }
+    .w-l .lh span { font-weight: 600; font-size: 33px; letter-spacing: 2px; opacity: 0.5; }
+    .w-l .lhead { margin-top: 44px; text-align: center; font-weight: 400; font-size: 37px; opacity: 0.75; }
+    .w-l .lclock { text-align: center; font-weight: 400; font-size: 100px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .w-l .lcols { margin-top: 40px; display: flex; font-weight: 700; font-size: 31px; letter-spacing: 1px; opacity: 0.35; }
+    .w-l .lcols span, .w-l .lrow span { flex: 1; }
+    .w-l .lrow { margin-top: 26px; display: flex; font-size: 58px; line-height: 1.1; }
+    .w-l .lrow span:nth-child(2), .w-l .lcols span:nth-child(2) { text-align: center; }
+    .w-l .lrow span:nth-child(3), .w-l .lcols span:nth-child(3) { text-align: right; }
+    .w-l .lrow span:nth-child(2) { font-weight: 600; }
+    .w-l .lrow span:nth-child(3) { opacity: 0.6; }
+    .w-l .lrow.past { opacity: 0.35; }
+    .w-l .lrow.next span:nth-child(1), .w-l .lrow.next span:nth-child(2) { font-weight: 700; }
+
+    /* iOS lock screen widgets (inline, circular, rectangular) at 8:02 PM */
+    .lw-date { position: absolute; left: 0; right: 0; top: 272px; text-align: center; font-weight: 600; font-size: 38px; color: rgba(255,255,255,0.9); white-space: nowrap; }
+    .lw-clock { position: absolute; left: 0; right: 0; top: 342px; text-align: center; font-weight: 600; font-size: 290px; line-height: 320px; color: #fff; letter-spacing: -0.02em; }
+    .lw-circ { position: absolute; left: 90px; top: 700px; width: 250px; height: 250px; border-radius: 50%; background: rgba(255,255,255,0.18); color: #fff; text-align: center; }
+    .lw-circ small { display: block; margin-top: 80px; font-weight: 700; font-size: 21px; letter-spacing: 1px; opacity: 0.7; }
+    .lw-circ b { display: block; margin-top: 4px; font-weight: 700; font-size: 54px; font-variant-numeric: tabular-nums; }
+    .lw-rect { position: absolute; left: 380px; top: 700px; width: 620px; height: 250px; border-radius: 30px; background: rgba(255,255,255,0.0); color: #fff; }
+    .lw-rect .rh { text-align: center; font-weight: 600; font-size: 32px; opacity: 0.65; height: 40px; line-height: 40px; }
+    .lw-rect .rr { display: flex; height: 42px; line-height: 42px; font-size: 35px; }
+    .lw-rect .rr span:nth-child(1) { flex: 1; font-weight: 400; }
+    .lw-rect .rr span:nth-child(2) { width: 160px; text-align: right; font-weight: 600; }
+    .lw-rect .rr span:nth-child(3) { width: 160px; text-align: right; opacity: 0.6; }
+    .lw-rect .rr.past { opacity: 0.4; }
+    .lw-rect .rr.next span { font-weight: 700; opacity: 1; }
+
+    /* Timetable (TimetableView at 2.2x) */
+    .tt { color: #fff; }
+    .tt-h1 { position: absolute; left: 53px; top: 190px; font-weight: 300; font-size: 40px; white-space: nowrap; }
+    .tt-h2 { position: absolute; left: 53px; top: 248px; font-weight: 400; font-size: 31px; opacity: 0.7; }
+    .tt-x { position: absolute; right: 53px; top: 196px; width: 70px; height: 70px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; }
+    .tt-month { position: absolute; left: 0; right: 0; top: 320px; height: 97px; line-height: 97px; text-align: center; font-weight: 400; font-size: 40px; }
+    .tt-mbtn { position: absolute; top: 320px; width: 97px; height: 97px; display: flex; align-items: center; justify-content: center; }
+    .tt-week { position: absolute; left: 115px; top: 450px; display: flex; gap: 18px; }
+    .tt-day { position: relative; width: 106px; height: 154px; border-radius: 31px; text-align: center; }
+    .tt-day b { display: block; margin-top: 22px; font-weight: 600; font-size: 22px; opacity: 0.4; }
+    .tt-day em { display: block; margin-top: 4px; font-style: normal; font-weight: 400; font-size: 44px; opacity: 0.5; }
+    .tt-day.on { background: rgba(255,255,255,0.12); }
+    .tt-day.on b, .tt-day.on em { opacity: 1; }
+    .tt-day.on i { position: absolute; left: 49px; top: 132px; width: 9px; height: 9px; border-radius: 50%; background: #fff; }
+    .tt-head { position: absolute; left: 88px; right: 88px; top: 650px; display: flex; font-weight: 400; font-size: 29px; opacity: 0.5; }
+    .tt-row { position: absolute; left: 35px; right: 35px; height: 118px; border-radius: 35px; display: flex; align-items: center; padding: 0 53px; font-size: 40px; }
+    .tt-row .n { flex: 1; font-weight: 400; }
+    .tt-row .a { width: 231px; text-align: right; font-weight: 400; opacity: 0.75; margin-right: 26px; }
+    .tt-row .q { width: 231px; text-align: right; font-weight: 400; }
+    .tt-row.past { opacity: 0.35; }
+    .nb { position: absolute; left: 90px; right: 90px; top: 1400px; height: 220px; }
+    .nb-line { position: absolute; left: 0; right: 0; top: 100px; height: 3px; background: rgba(255,255,255,0.85); transform-origin: left center; }
+    .nb-end { position: absolute; top: 132px; font-weight: 400; font-size: 32px; opacity: 0.7; white-space: nowrap; }
+    .nb-cap { position: absolute; top: 86px; width: 3px; height: 31px; background: rgba(255,255,255,0.85); }
+    .nb-tick { position: absolute; top: 0; width: 0; }
+    .nb-tick i { position: absolute; left: -12px; top: 89px; width: 24px; height: 24px; border-radius: 50%; background: #fff; }
+    .nb-tick span { position: absolute; top: 30px; width: 340px; font-weight: 600; font-size: 34px; white-space: nowrap; }
+
+    /* globe */
+    .g-num { position: absolute; left: 0; right: 0; top: 190px; text-align: center; font-weight: 400; font-size: 250px; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .g-num b { font-weight: 400; color: #FFD27A; display: inline-block; }
+
+    /* cta */
+    .s-stores { position: absolute; left: 0; right: 0; top: 1110px; display: flex; justify-content: center; gap: 30px; }
+    .s-store { display: flex; align-items: center; gap: 18px; height: 128px; padding: 0 40px; border-radius: 30px; background: #111111; color: #fff; box-shadow: 0 24px 60px rgba(5,8,30,0.4); border: 2px solid rgba(255,255,255,0.18); }
+    .s-store svg { width: 56px; height: 56px; flex: none; }
+    .s-store small { display: block; font-weight: 400; font-size: 24px; letter-spacing: 0.04em; opacity: 0.85; }
+    .s-store b { display: block; font-weight: 600; font-size: 44px; line-height: 1.05; letter-spacing: -0.01em; white-space: nowrap; }
+  </style>
+
+  <div id="root" data-composition-id="stage" data-width="1080" data-height="1920" data-start="0" data-duration="55">
+    <div id="s-hold" class="s-hold clip" data-start="0" data-duration="55" data-track-index="0">
+
+      <div id="s-intro" class="s-full">
+        <div class="s-icon" id="s-intro-icon" style="left: 400px; top: 640px; width: 280px; height: 280px;"></div>
+        <div class="s-word" id="s-intro-word" style="top: 980px; font-size: 160px;">Masjidly</div>
+      </div>
+
+      <!-- ===== The app (camera = #s-cam) ===== -->
+      <div id="s-cam" class="s-full">
+        <div id="h-ui" class="s-full h" style="--inv: #111111;">
+          <div id="h-chrome" class="s-full">
+            <div class="h-circ" style="left: 44px;"><svg width="42" height="40" viewBox="0 0 42 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><rect x="3" y="5" width="36" height="32" rx="7"/><line x1="3" y1="13" x2="39" y2="13"/><g fill="currentColor" stroke="none"><circle cx="11" cy="20" r="2"/><circle cx="18" cy="20" r="2"/><circle cx="25" cy="20" r="2"/><circle cx="32" cy="20" r="2"/><circle cx="11" cy="28" r="2"/><circle cx="18" cy="28" r="2"/><circle cx="25" cy="28" r="2"/></g></svg></div>
+            <div class="h-circ" style="left: 263px;"><svg width="20" height="34" viewBox="0 0 20 34" fill="none" stroke="currentColor" stroke-opacity="0.72" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="16,3 3,17 16,31"/></svg></div>
+            <div class="h-cap"><b>Sunday, 27 September</b><span>16 Rabiʻ II 1448</span></div>
+            <div class="h-circ" style="left: 720px;"><svg width="20" height="34" viewBox="0 0 20 34" fill="none" stroke="currentColor" stroke-opacity="0.72" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,3 17,17 4,31"/></svg></div>
+            <div class="h-circ" style="left: 939px;"><svg width="44" height="44" viewBox="-22 -22 44 44"><path class="h-gear" fill="currentColor" fill-rule="evenodd" d=""/></svg></div>
+          </div>
+          <div class="h-orb" id="h-orb">
+            <div class="h-ring1"></div>
+            <div class="h-ring2"></div>
+            <div id="h-suns"></div>
+            <div class="h-qibla" style="transform: rotate(22deg);"><svg width="26" height="26" viewBox="0 0 12 12" style="position: absolute; left: 119px; top: -22px;"><path d="M6 0 L12 12 L0 12 Z" fill="currentColor"/></svg></div>
+          </div>
+          <div id="h-pages"></div>
+          <div id="h-letters-wrap"></div>
+          <div class="h-tabs" id="h-tabs"><div class="h-track" id="h-track"></div></div>
+
+          <div class="hk-pill hk-calc" id="hk-calc"><span>Calculated</span></div>
+          <div class="hk-pill hk-mine" id="hk-mine"><span>Your masjid</span></div>
+          <div class="hk-badge" id="hk-badge">+20 min</div>
+
+          <div class="lg" id="lg">
+            <h4>Choose your language</h4>
+            <div class="lg-hl" id="lg-hl"></div>
+            <div class="lg-row" style="top: 112px;">English</div>
+            <div class="lg-row" style="top: 212px; font-family: 'HF Arabic', 'HF Gill', sans-serif;">العربية</div>
+            <div class="lg-row" style="top: 312px; font-family: 'HF Urdu', 'HF Gill', sans-serif;">اردو</div>
+            <div class="lg-row" style="top: 412px;">Bahasa Indonesia</div>
+            <div class="lg-check" id="lg-check"><svg width="24" height="20" viewBox="0 0 24 20" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,10 9,16 21,3"/></svg></div>
+          </div>
+
+          <div class="am-dim" id="am-dim"></div>
+          <div class="am" id="am">
+            <h4>Add a masjid</h4>
+            <div class="am-row" id="am-r1">Masjid Risalah <small>Sheffield</small><div class="am-hl" id="am-h1"></div></div>
+            <div class="am-row" id="am-r2">Sheffield Grand Mosque <small>Sheffield</small><div class="am-hl" id="am-h2"></div></div>
+            <div class="am-row" id="am-r3">Masjid Umar (YMA) <small>Sheffield</small><div class="am-hl" id="am-h3"></div></div>
+            <div class="am-row" id="am-r4">Madina Masjid Sheffield <small>Sheffield</small><div class="am-hl" id="am-h4"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tap" id="tap"></div>
+
+      <!-- theme cards -->
+      <div id="s-themes" class="s-full">
+        <div class="t-card" id="t-orig" style="background: radial-gradient(circle 1344px at 50% 82%, rgba(214,179,138,0.6) 0%, rgba(214,179,138,0.3) 50%, rgba(214,179,138,0) 100%), linear-gradient(180deg, #93C5FD 0%, #FDE68A 50%, #FDBA74 100%); background-blend-mode: screen, normal;"></div>
+        <div class="t-card" id="t-cust" style="background: linear-gradient(180deg, #FFD6E8 0%, #B4A7FF 100%);"></div>
+        <div class="t-card" id="t-mod" style="background: linear-gradient(180deg, #60EFFF 0%, #F3F98A 100%); border-radius: 0px;"></div>
+        <div class="t-lab" id="t-lab-o" style="left: -40px;">Original</div>
+        <div class="t-lab" id="t-lab-m" style="left: 320px;">Modern</div>
+        <div class="t-lab" id="t-lab-c" style="left: 680px;">Custom</div>
+        <div class="t-sw" id="t-sw">
+          <div><i style="background: #FFD6E8;"></i><i id="t-sw-top2" style="background: #FFE3B3; position: absolute; left: 0; top: 0; opacity: 0;"></i>Top color</div>
+          <div><i style="background: #B4A7FF;"></i><i id="t-sw-bot2" style="background: #F7A1C4; position: absolute; left: 0; top: 0; opacity: 0;"></i>Bottom color</div>
+        </div>
+      </div>
+
+      <!-- iOS lock screen at Maghrib -->
+      <div id="s-lock" class="s-full">
+        <div class="k-date">Sunday 27 September</div>
+        <div class="k-clock" data-layout-allow-overflow data-layout-allow-overlap><div id="k-stack" data-layout-allow-overlap><div data-layout-allow-overlap>6:47</div><div data-layout-allow-overlap>6:54</div></div></div>
+        <div class="s-noti" id="s-n1"><div class="ni"></div><em id="s-n1-now">now</em><em id="s-n1-ago" style="opacity: 0;">7m ago</em><div class="nt">Maghrib Iqamah soon</div><div class="nbody">Iqamah in 10 min in Masjid Faizul Islam.</div></div>
+        <div class="s-noti" id="s-n2"><div class="ni"></div><em>now</em><div class="nt">Maghrib Adhan</div><div class="nbody">Adhan is now in Masjid Faizul Islam. Tap to hear adhan.</div></div>
+      </div>
+
+      <!-- iOS home screen: small + large widgets -->
+      <div id="s-whome" class="s-full">
+        <div class="w-s" id="w-small">
+          <div class="wh"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-opacity="0.8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 8 A13 13 0 1 0 33 27 A11 11 0 0 1 22 8 Z"/><path d="M30 5 V11 M27 8 H33"/><path d="M34 15 V19 M32 17 H36"/></svg><span class="wn">Isha</span></div>
+          <div class="wt">8:16PM</div><div class="wi">Iqamah: 8:30PM</div>
+        </div>
+        <div class="w-app" id="w-app"><i></i>Masjidly</div>
+        <div class="w-l" id="w-large">
+          <div class="lh"><b>Masjid Faizul Islam</b><span>SEPTEMBER, SUNDAY 27</span></div>
+          <div class="lhead">The Adhan of Isha is in</div>
+          <div class="lclock" id="w-clock">14:32</div>
+          <div class="lcols"><span>PRAYER</span><span>ADHAN</span><span>IQAMAH</span></div>
+          <div class="lrow past"><span>Fajr</span><span>5:26AM</span><span>6:20AM</span></div>
+          <div class="lrow past"><span>Dhuhr</span><span>1:02PM</span><span>2:00PM</span></div>
+          <div class="lrow past"><span>Asr</span><span>4:57PM</span><span>5:45PM</span></div>
+          <div class="lrow past"><span>Maghrib</span><span>6:54PM</span><span>6:57PM</span></div>
+          <div class="lrow next"><span>Isha</span><span>8:16PM</span><span>8:30PM</span></div>
+        </div>
+      </div>
+
+      <!-- iOS lock screen widgets -->
+      <div id="s-wlock" class="s-full">
+        <div class="lw-date">Sun 27&nbsp;&nbsp;Masjid Faizul Islam · Isha 14m</div>
+        <div class="lw-clock">8:02</div>
+        <div class="lw-circ" id="lw-circ"><small>ISHA · ADHAN IN</small><b id="lw-cclock">14:08</b></div>
+        <div class="lw-rect" id="lw-rect">
+          <div class="rh">Masjid Faizul Islam</div>
+          <div class="rr past"><span>Fajr</span><span>5:26AM</span><span>6:20AM</span></div>
+          <div class="rr past"><span>Dhuhr</span><span>1:02PM</span><span>2:00PM</span></div>
+          <div class="rr past"><span>Asr</span><span>4:57PM</span><span>5:45PM</span></div>
+          <div class="rr past"><span>Maghrib</span><span>6:54PM</span><span>6:57PM</span></div>
+          <div class="rr next"><span>Isha</span><span>8:16PM</span><span>8:30PM</span></div>
+        </div>
+        <div class="tap" id="tap-lw" style="left: 690px; top: 825px;"></div>
+      </div>
+
+      <!-- Timetable at night -->
+      <div id="s-tt" class="s-full tt">
+        <div id="tt-sheet" class="s-full">
+          <div class="tt-up">
+            <div class="tt-h1">Sunday · 27 September · 16 Rabiʻ II 1448</div>
+            <div class="tt-h2">Masjid Faizul Islam</div>
+            <div class="tt-x"><svg width="30" height="30" viewBox="0 0 30 30" stroke="#fff" stroke-width="4.4" stroke-linecap="round"><line x1="5" y1="5" x2="25" y2="25"/><line x1="25" y1="5" x2="5" y2="25"/></svg></div>
+            <div class="tt-mbtn" style="left: 53px;"><svg width="20" height="34" viewBox="0 0 20 34" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="16,3 3,17 16,31"/></svg></div>
+            <div class="tt-month">Sep 2026</div>
+            <div class="tt-mbtn" style="right: 53px;"><svg width="20" height="34" viewBox="0 0 20 34" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,3 17,17 4,31"/></svg></div>
+            <div class="tt-week">
+              <div class="tt-day"><b>THU</b><em>24</em></div><div class="tt-day"><b>FRI</b><em>25</em></div><div class="tt-day"><b>SAT</b><em>26</em></div><div class="tt-day on"><b>SUN</b><em>27</em><i></i></div><div class="tt-day"><b>MON</b><em>28</em></div><div class="tt-day"><b>TUE</b><em>29</em></div><div class="tt-day"><b>WED</b><em>30</em></div>
+            </div>
+            <div class="tt-head"><span style="flex: 1;">Prayer</span><span style="width: 231px; text-align: right; margin-right: 26px;">Adhan</span><span style="width: 231px; text-align: right;">Iqamah</span></div>
+          </div>
+          <div id="tt-rows"></div>
+        </div>
+        <div class="nb" id="s-nb">
+          <div class="nb-line" id="nb-line"></div>
+          <div class="nb-cap" style="left: 0;"></div><div class="nb-cap" style="right: 0;"></div>
+          <div class="nb-end" style="left: 0;">Maghrib 6:54PM</div>
+          <div class="nb-end" style="right: 0;">Fajr 5:28AM</div>
+          <div class="nb-tick" id="nb-mid" style="left: 50%;"><span style="left: -352px; text-align: right;">Midnight 12:11AM</span><i></i></div>
+          <div class="nb-tick" id="nb-lt" style="left: 66.7%;"><span style="left: 12px; text-align: left;">Last Third 1:56AM</span><i></i></div>
+        </div>
+      </div>
+
+      <!-- globe -->
+      <div id="s-globe" class="s-full">
+        <div class="g-num" id="g-num"><span id="g-digits">0</span><b id="g-plus">+</b></div>
+        <svg id="g-svg" width="1080" height="1920" viewBox="0 0 1080 1920" style="position: absolute; left: 0; top: 0;"></svg>
+      </div>
+
+      <!-- cta -->
+      <div id="s-cta" class="s-full">
+        <div class="s-icon" id="s-cta-icon" style="left: 390px; top: 400px; width: 300px; height: 300px;"></div>
+        <div class="s-word" id="s-cta-word" style="top: 770px; font-size: 156px;">Masjidly</div>
+        <div class="s-stores">
+          <div class="s-store" id="s-store-ios">
+            <svg viewBox="0 0 24 24" fill="#FFFFFF"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            <div><small>Download on the</small><b>App Store</b></div>
+          </div>
+          <div class="s-store" id="s-store-play">
+            <svg viewBox="0 0 24 24" fill="#3DDC84"><path d="M17.523 15.3414C17.523 15.6414 17.2805 15.8839 16.9805 15.8839H16.3992V18.1402C16.3992 18.8077 15.8555 19.3514 15.188 19.3514C14.5205 19.3514 13.9767 18.8077 13.9767 18.1402V15.8839H9.99924V18.1402C9.99924 18.8077 9.45549 19.3514 8.78799 19.3514C8.12049 19.3514 7.57674 18.8077 7.57674 18.1402V15.8839H6.99549C6.69549 15.8839 6.45299 15.6414 6.45299 15.3414V8.23267H17.523V15.3414ZM4.99924 8.23267C4.33174 8.23267 3.78799 8.77642 3.78799 9.44392V14.1302C3.78799 14.7977 4.33174 15.3414 4.99924 15.3414C5.66674 15.3414 6.21049 14.7977 6.21049 14.1302V9.44392C6.21049 8.77642 5.66674 8.23267 4.99924 8.23267ZM19.0267 8.23267C18.3592 8.23267 17.8155 8.77642 17.8155 9.44392V14.1302C17.8155 14.7977 18.3592 15.3414 19.0267 15.3414C19.6942 15.3414 20.238 14.7977 20.238 14.1302V9.44392C20.238 8.77642 19.6942 8.23267 19.0267 8.23267ZM15.3042 4.52392L16.3517 2.72642C16.4292 2.59142 16.3867 2.42017 16.2517 2.34267C16.1167 2.26517 15.9455 2.30767 15.868 2.44267L14.8017 4.27267C13.9992 3.94767 13.118 3.76642 12.188 3.76642C11.258 3.76642 10.3767 3.94767 9.57424 4.27267L8.50799 2.44267C8.43049 2.30767 8.25924 2.26517 8.12424 2.34267C7.98924 2.42017 7.94674 2.59142 8.02424 2.72642L9.07174 4.52392C7.29399 5.42392 6.11674 7.23642 6.11674 9.31892H18.2592C18.2592 7.23642 17.082 5.42392 15.3042 4.52392ZM9.47674 7.17892C9.17174 7.17892 8.92399 6.93117 8.92399 6.62617C8.92399 6.32117 9.17174 6.07342 9.47674 6.07342C9.78174 6.07342 10.0295 6.32117 10.0295 6.62617C10.0295 6.93117 9.78174 7.17892 9.47674 7.17892ZM14.8992 7.17892C14.5942 7.17892 14.3465 6.93117 14.3465 6.62617C14.3465 6.32117 14.5942 6.07342 14.8992 6.07342C15.2042 6.07342 15.452 6.32117 15.452 6.62617C15.452 6.93117 15.2042 7.17892 14.8992 7.17892Z"/></svg>
+            <div><small>Get it on</small><b>Google Play</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+(function () {
+  // ================= builders (the app, from the SwiftUI source) =================
+  const THIN = " ";
+  const $ = function (id) { return document.getElementById(id); };
+
+  // gearshape.fill
+  (function () {
+    let d = "";
+    const R = 19, r = 14.5, teeth = 8;
+    for (let i = 0; i < teeth * 2; i++) {
+      const a0 = (i / (teeth * 2)) * Math.PI * 2 - Math.PI / 2, a1 = ((i + 1) / (teeth * 2)) * Math.PI * 2 - Math.PI / 2, rad = i % 2 === 0 ? R : r;
+      d += (i === 0 ? "M" : "L") + (Math.cos(a0) * rad).toFixed(2) + " " + (Math.sin(a0) * rad).toFixed(2) + " L" + (Math.cos(a1) * rad).toFixed(2) + " " + (Math.sin(a1) * rad).toFixed(2) + " ";
+    }
+    d += "Z M6.5 0 A6.5 6.5 0 1 0 -6.5 0 A6.5 6.5 0 1 0 6.5 0 Z";
+    document.querySelectorAll(".h-gear").forEach(function (g) { g.setAttribute("d", d); });
+  })();
+
+  // PrayerSunPhaseIcon (Canvas 100x88)
+  const star = function (cx, cy, s) { const c = s * 0.25; return "M" + cx + " " + (cy - s) + " Q" + (cx + c) + " " + (cy - c) + " " + (cx + s) + " " + cy + " Q" + (cx + c) + " " + (cy + c) + " " + cx + " " + (cy + s) + " Q" + (cx - c) + " " + (cy + c) + " " + (cx - s) + " " + cy + " Q" + (cx - c) + " " + (cy - c) + " " + cx + " " + (cy - s) + " Z"; };
+  const ray = function (cx, cy, deg, r0, r1) { const a = deg * Math.PI / 180; return "M" + (cx + Math.cos(a) * r0).toFixed(2) + " " + (cy + Math.sin(a) * r0).toFixed(2) + " L" + (cx + Math.cos(a) * r1).toFixed(2) + " " + (cy + Math.sin(a) * r1).toFixed(2); };
+  const T = 'stroke-width="1.8"', M = 'stroke-width="2.2"';
+  const ICONS = {
+    fajr: '<path ' + T + ' d="M34 53.68 L66 53.68"/><path ' + T + ' d="' + star(50, 39.68, 6) + '"/>',
+    sunrise: '<path ' + M + ' d="M18 58.08 L82 58.08"/><path ' + M + ' d="M36 58.08 A14 14 0 0 1 64 58.08"/><path ' + M + ' d="' + ray(50, 58.08, -135, 20, 28) + " " + ray(50, 58.08, -90, 20, 28) + " " + ray(50, 58.08, -45, 20, 28) + '"/>',
+    dhuhr: '<circle ' + M + ' cx="50" cy="44" r="12"/><path ' + M + ' d="' + [0, 45, 90, 135, 180, 225, 270, 315].map(function (g) { return ray(50, 44, g, 18, 26); }).join(" ") + '"/>',
+    asr: '<path ' + M + ' d="M40 32.6 L40 46.6"/><path ' + T + ' d="M40 46.6 L68 54.6"/>',
+    maghrib: '<path ' + M + ' d="M18 57.2 L82 57.2"/><path ' + M + ' d="M36 57.2 A14 14 0 0 1 64 57.2"/><path ' + T + ' d="M50 31.2 L50 39.2 M47 36.2 L50 39.2 L53 36.2"/>',
+    isha: '<path ' + M + ' d="' + star(46, 44, 8) + '"/><path ' + T + ' d="' + star(62, 38, 4) + '"/><path ' + T + ' d="' + star(60, 52, 3) + '"/>'
+  };
+  const iconSvg = function (theme, id) {
+    const dy = (theme === "sunrise" || theme === "maghrib") ? -13 : 0;
+    return '<svg class="h-sun" ' + (id ? 'id="' + id + '" ' : "") + 'viewBox="0 0 100 88" style="top: ' + (35 + dy) + 'px;" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">' + ICONS[theme] + "</svg>";
+  };
+
+  // Pages: Masjid Faizul Islam, Sunday 27 Sep 2026 (production data)
+  const AR = "'HF Arabic', 'HF Gill', sans-serif", UR = "'HF Urdu', 'HF Gill', sans-serif";
+  const PAGES = [
+    { theme: "fajr", time: "5:26" + THIN + "AM", iq: "Iqamah: 6:20AM", name: "Fajr" },
+    { theme: "sunrise", time: "7:02" + THIN + "AM", iq: "Duha: 7:17AM &ndash; 12:47PM", name: "Sunrise" },
+    { theme: "dhuhr", time: "1:02" + THIN + "PM", iq: "Iqamah: 2:00PM", name: "Dhuhr" },
+    { theme: "asr", time: "4:57" + THIN + "PM", iq: "Iqamah: 5:45PM", name: "Asr" },
+    { theme: "maghrib", time: "6:54" + THIN + "PM", iq: "Iqamah: 6:57PM", name: "Maghrib" },
+    { theme: "isha", time: "8:16" + THIN + "PM", iq: "Iqamah: 8:30PM", name: "Isha" },
+    { theme: "asr", time: "4:06" + THIN + "PM", iq: "Iqamah: 4:30PM", name: "Asr" },
+    { theme: "dhuhr", time: "1:02" + THIN + "م", iq: "الإقامة : 2:00م", name: "الظهر", svg: AR, rtl: true },
+    { theme: "dhuhr", time: "1:02" + THIN + "PM", iq: "اقامت : 2:00PM", name: "ظہر", svg: UR, rtl: true, iqFont: UR },
+    { theme: "dhuhr", time: "1:02" + THIN + "PM", iq: "Iqamah: 2:00PM", name: "Dzuhur", svg: "'HF Gill', sans-serif" },
+    { theme: "asr", time: "4:08" + THIN + "PM", iq: "Iqamah: 5:45PM", name: "Asr" },
+    { theme: "asr", time: "4:53" + THIN + "PM", iq: "Iqamah: 5:30PM", name: "Asr" }
+  ];
+  $("h-pages").innerHTML = PAGES.map(function (p, i) {
+    const iqStyle = p.rtl ? ' style="font-family: ' + (p.iqFont || AR) + ';" dir="rtl"' : "";
+    const timeAttr = p.rtl ? ' dir="rtl"' + (p.iqFont ? "" : ' style="font-family: ' + AR + ';"') : "";
+    const name = p.svg
+      ? '<svg class="h-name-svg" viewBox="0 0 1080 150"><text id="h-p' + i + '-svgname" x="540" y="100" text-anchor="middle"' + (p.rtl ? ' direction="rtl"' : "") + ' font-family="' + p.svg.replace(/'/g, "") + '" font-size="79" fill="currentColor" fill-opacity="0" stroke="currentColor" stroke-width="1.6" stroke-dasharray="900" stroke-dashoffset="900">' + p.name + "</text></svg>"
+      : '<div class="h-name" id="h-p' + i + '-name" data-layout-allow-overlap>' + p.name + "</div>";
+    return '<div class="h-page' + (p.rtl ? " h-rtl" : "") + '" id="h-p' + i + '"><div class="h-time" id="h-p' + i + '-time" data-layout-allow-overlap' + timeAttr + ">" + p.time + '</div><div class="h-iq" data-layout-allow-overlap' + iqStyle + ">" + p.iq + "</div>" + name + "</div>";
+  }).join("");
+  $("h-suns").innerHTML = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"].map(function (s) { return iconSvg(s, "h-sun-" + s); }).join("");
+
+  // Letter picker (dot = upcoming prayer: Asr)
+  const LX = [307.5, 400.5, 493.5, 586.5, 679.5, 772.5], LY = 1510;
+  const letterRow = function (id, letters, dotIndex) {
+    let h = '<div class="h-letters" id="' + id + '">';
+    letters.forEach(function (ch, i) {
+      h += '<div class="h-l" style="left: ' + LX[i] + 'px;"><i class="lr" id="' + id + "-r" + i + '" data-layout-allow-overlap>' + ch + '</i><i class="ls" id="' + id + "-s" + i + '" data-layout-allow-overlap>' + ch + '</i><span class="dot"' + (i === dotIndex ? ' style="opacity: 0.9;"' : "") + "></span></div>";
+    });
+    return h + "</div>";
+  };
+  $("h-letters-wrap").innerHTML = letterRow("lt-en", ["F", "S", "D", "A", "M", "I"], 3);
+
+  // Mosque tabs (5 once all are added)
+  const TABS = [
+    { id: "a", name: "Masjid Faizul Islam", sel: 350 },
+    { id: "b", name: "Masjid Risalah", sel: 262 },
+    { id: "c", name: "Sheffield Grand Mosque", sel: 370 },
+    { id: "d", name: "Masjid Umar (YMA)", sel: 330 },
+    { id: "e", name: "Madina Masjid Sheffield", sel: 370 }
+  ];
+  const UNSEL = 194;
+  $("h-track").innerHTML = TABS.map(function (t, i) {
+    return '<div class="h-tab" id="h-tab-' + t.id + '" style="width: ' + (i === 0 ? t.sel : 0) + 'px;' + (i === 0 ? "" : " opacity: 0;") + '"><div class="f" id="h-fill-' + t.id + '" style="opacity: 0.92;"></div><span class="t sel" id="h-sel-' + t.id + '" data-layout-allow-overlap data-layout-allow-overflow style="max-width: 370px;">' + t.name + '</span><span class="t uns" id="h-uns-' + t.id + '" data-layout-allow-overlap data-layout-allow-overflow style="max-width: 194px;">' + t.name + "</span></div>";
+  }).join("") + '<div class="h-plus" id="h-plus"><svg width="39" height="39" viewBox="0 0 39 39" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><line x1="19.5" y1="5" x2="19.5" y2="34"/><line x1="5" y1="19.5" x2="34" y2="19.5"/></svg></div>';
+
+  // Timetable rows at night: today's prayers past; Midnight + Last Third ahead
+  const ROWS = [["Fajr", "5:26AM", "6:20AM", 1], ["Sunrise", "7:02AM", "-", 1], ["Dhuhr", "1:02PM", "2:00PM", 1], ["Asr", "4:57PM", "5:45PM", 1], ["Maghrib", "6:54PM", "6:57PM", 1], ["Isha", "8:16PM", "8:30PM", 1], ["Midnight", "12:11AM", "-", 0], ["Last Third", "1:56AM", "-", 0]];
+  $("tt-rows").innerHTML = ROWS.map(function (r, i) {
+    return '<div class="tt-row' + (r[3] ? " past" : "") + '" id="tt-r' + i + '" style="top: ' + (700 + i * 118) + 'px;"><span class="n">' + r[0] + '</span><span class="a">' + r[1] + '</span><span class="q">' + r[2] + "</span></div>";
+  }).join("");
+
+  // Theme cards: static copies of the Asr home screen
+  const cardHtml = function () {
+    const chrome = $("h-chrome").outerHTML.replace(/ id="[^"]*"/g, "");
+    const letters = letterRow("x", ["F", "S", "D", "A", "M", "I"], 3).replace(/ id="[^"]*"/g, "").replace('<i class="lr" data-layout-allow-overlap>A</i><i class="ls" data-layout-allow-overlap>A</i>', '<i class="lr" data-layout-allow-overlap style="opacity: 0;">A</i><i class="ls" data-layout-allow-overlap style="opacity: 1;">A</i>');
+    return '<div class="s-full" style="color: #111111;">' + chrome + '<div class="h-orb"><div class="h-ring1"></div><div class="h-ring2"></div>' + iconSvg("asr") + '<div class="h-qibla" style="transform: rotate(22deg);"><svg width="26" height="26" viewBox="0 0 12 12" style="position: absolute; left: 119px; top: -22px;"><path d="M6 0 L12 12 L0 12 Z" fill="currentColor"/></svg></div></div><div class="h-page" style="opacity: 1;"><div class="h-time">4:57' + THIN + 'PM</div><div class="h-iq">Iqamah: 5:45PM</div><div class="h-name">Asr</div></div>' + letters + "</div>";
+  };
+  ["t-orig", "t-cust", "t-mod"].forEach(function (id) { $(id).innerHTML = cardHtml(); });
+  $("t-cust").insertAdjacentHTML("afterbegin", '<div id="t-cust2" style="position: absolute; inset: 0; background: linear-gradient(180deg, #FFE3B3 0%, #F7A1C4 100%); opacity: 0;"></div>');
+
+  // ================= globe (orthographic, rotating) =================
+  const G = { cx: 540, cy: 1070, R: 370, lat0: 22 * Math.PI / 180 };
+  const CITIES = [["Sheffield", 53.4, -1.5], ["London", 51.5, -0.1], ["Birmingham", 52.5, -1.9], ["Manchester", 53.5, -2.2], ["Makkah", 21.4, 39.8], ["Madinah", 24.5, 39.6], ["Cairo", 30.0, 31.2], ["Dubai", 25.2, 55.3], ["Jakarta", -6.2, 106.8], ["Toronto", 43.7, -79.4], ["Sydney", -33.9, 151.2]];
+  const LABEL = { Sheffield: [16, -14], London: [16, 34], Birmingham: [-190, 30], Manchester: [-200, -12], Makkah: [16, 46], Madinah: [-50, -30], Cairo: [-110, 12], Dubai: [18, 14], Jakarta: [16, 10], Toronto: [16, 10], Sydney: [16, 10] };
+  const svgNS = "http://www.w3.org/2000/svg";
+  const gsvg = $("g-svg");
+  const mk = function (tag, attrs) { const e = document.createElementNS(svgNS, tag); Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); }); gsvg.appendChild(e); return e; };
+  mk("circle", { cx: G.cx, cy: G.cy, r: G.R + 60, fill: "url(#g-glow)" });
+  const defs = document.createElementNS(svgNS, "defs");
+  defs.innerHTML = '<radialGradient id="g-glow"><stop offset="0.7" stop-color="#47A6FF" stop-opacity="0.18"/><stop offset="1" stop-color="#47A6FF" stop-opacity="0"/></radialGradient><radialGradient id="g-body" cx="0.4" cy="0.35"><stop offset="0" stop-color="#1B3A7A" stop-opacity="0.55"/><stop offset="1" stop-color="#050B24" stop-opacity="0.85"/></radialGradient>';
+  gsvg.insertBefore(defs, gsvg.firstChild);
+  mk("circle", { cx: G.cx, cy: G.cy, r: G.R, fill: "url(#g-body)", stroke: "rgba(160,190,255,0.45)", "stroke-width": 2 });
+  const gridPath = mk("path", { fill: "none", stroke: "rgba(160,190,255,0.22)", "stroke-width": 1.4 });
+  const arcPaths = CITIES.slice(1).map(function () { return mk("path", { fill: "none", stroke: "#FFD27A", "stroke-width": 3, "stroke-linecap": "round", opacity: 0.9 }); });
+  const cityEls = CITIES.map(function (c) {
+    const dot = mk("circle", { r: 9, fill: "#FFD27A" });
+    const halo = mk("circle", { r: 22, fill: "rgba(255,210,122,0.25)" });
+    const lab = mk("text", { "font-family": "HF Gill, sans-serif", "font-size": 32, "font-weight": 600, fill: "#E6E9FA" });
+    lab.textContent = c[0];
+    return { dot: dot, halo: halo, lab: lab };
+  });
+  const vec = function (lat, lon) { const p = lat * Math.PI / 180, l = lon * Math.PI / 180; return [Math.cos(p) * Math.cos(l), Math.cos(p) * Math.sin(l), Math.sin(p)]; };
+  const proj = function (v, lon0, lift) {
+    const l0 = lon0 * Math.PI / 180, c0 = Math.cos(G.lat0), s0 = Math.sin(G.lat0);
+    // rotate so (lat0, lon0) faces the viewer
+    const x1 = v[0] * Math.cos(-l0) - v[1] * Math.sin(-l0), y1 = v[0] * Math.sin(-l0) + v[1] * Math.cos(-l0), z1 = v[2];
+    const depth = x1 * c0 + z1 * s0, up = -x1 * s0 + z1 * c0;
+    const k = G.R * (lift || 1);
+    return { x: G.cx + y1 * k, y: G.cy - up * k, vis: depth > 0 };
+  };
+  function drawGlobe(t) {
+    const lon0 = -18 + 78 * Math.max(0, Math.min(1, (t - 47.3) / 4.4));
+    let d = "";
+    for (let lon = -180; lon < 180; lon += 30) {
+      let pen = false;
+      for (let lat = -90; lat <= 90; lat += 5) {
+        const p = proj(vec(lat, lon), lon0);
+        if (p.vis) { d += (pen ? "L" : "M") + p.x.toFixed(1) + " " + p.y.toFixed(1) + " "; pen = true; } else { pen = false; }
+      }
+    }
+    for (let lat = -60; lat <= 60; lat += 30) {
+      let pen = false;
+      for (let lon = -180; lon <= 180; lon += 5) {
+        const p = proj(vec(lat, lon), lon0);
+        if (p.vis) { d += (pen ? "L" : "M") + p.x.toFixed(1) + " " + p.y.toFixed(1) + " "; pen = true; } else { pen = false; }
+      }
+    }
+    gridPath.setAttribute("d", d);
+    const hub = vec(CITIES[0][1], CITIES[0][2]);
+    CITIES.forEach(function (c, i) {
+      const appear = 48.0 + i * 0.22;
+      const a = Math.max(0, Math.min(1, (t - appear) / 0.35));
+      const p = proj(vec(c[1], c[2]), lon0);
+      const e = cityEls[i];
+      const show = p.vis ? a : 0;
+      [e.dot, e.halo].forEach(function (n) { n.setAttribute("cx", p.x.toFixed(1)); n.setAttribute("cy", p.y.toFixed(1)); n.setAttribute("opacity", String(show)); });
+      e.halo.setAttribute("r", String(14 + 10 * a));
+      e.lab.setAttribute("x", (p.x + LABEL[c[0]][0]).toFixed(1)); e.lab.setAttribute("y", (p.y + LABEL[c[0]][1]).toFixed(1));
+      e.lab.setAttribute("opacity", String(show));
+      if (i === 0) { return; }
+      // great-circle arc from Sheffield, lifted off the surface
+      const to = vec(c[1], c[2]);
+      const dot = hub[0] * to[0] + hub[1] * to[1] + hub[2] * to[2];
+      const om = Math.acos(Math.max(-1, Math.min(1, dot)));
+      const prog = Math.max(0, Math.min(1, (t - appear + 0.1) / 0.6));
+      let ad = "", pen = false;
+      const steps = 40;
+      for (let s = 0; s <= steps * prog; s++) {
+        const f = s / steps;
+        const w1 = Math.sin((1 - f) * om) / Math.sin(om), w2 = Math.sin(f * om) / Math.sin(om);
+        const v = [hub[0] * w1 + to[0] * w2, hub[1] * w1 + to[1] * w2, hub[2] * w1 + to[2] * w2];
+        const q = proj(v, lon0, 1 + 0.16 * Math.sin(Math.PI * f) * Math.min(1, om));
+        if (q.vis) { ad += (pen ? "L" : "M") + q.x.toFixed(1) + " " + q.y.toFixed(1) + " "; pen = true; } else { pen = false; }
+      }
+      arcPaths[i - 1].setAttribute("d", ad);
+    });
+  }
+
+  // ================= per-frame text (seek-safe: pure functions of t) =================
+  const GL = "#%&*+=<>/?$@";
+  const scramble = function (text, p, t, seed) {
+    const step = Math.floor(t * 22);
+    let out = "";
+    for (let i = 0; i < text.length; i++) { out += p >= (i + 1) / text.length ? text[i] : GL[(i * 7919 + step * 104729 + seed) % GL.length]; }
+    return out;
+  };
+  const clamp = function (v) { return Math.max(0, Math.min(1, v)); };
+  const mmss = function (s) { s = Math.max(0, s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  function render(t) {
+    $("s-intro-word").textContent = scramble("Masjidly", clamp((t - 0.25) / 0.9), t, 3);
+    $("s-cta-word").textContent = scramble("Masjidly", clamp((t - 51.9) / 0.7), t, 11);
+    // hook: the calculated 5:06 ticks to your masjid's 5:26
+    const m = t < 3.75 ? 6 : Math.min(26, 6 + Math.floor(clamp((t - 3.75) / 0.7) * 20));
+    $("h-p0-time").textContent = "5:" + String(m).padStart(2, "0") + THIN + "AM";
+    // widgets: live countdown to Isha adhan (8:16 PM) from 8:01:28 PM at 36.6s
+    const left = 14 * 60 + 32 - Math.floor(Math.max(0, t - 36.6));
+    $("w-clock").textContent = mmss(left);
+    $("lw-cclock").textContent = mmss(left);
+    const c = clamp((t - 47.9) / 0.9);
+    $("g-digits").textContent = String(Math.round(340 * (1 - Math.pow(1 - c, 3))));
+    if (t > 47.0 && t < 52.2) { drawGlobe(t); }
+  }
+
+  // ================= timeline =================
+  const tl = gsap.timeline({ paused: true });
+  const clock = { v: 0 };
+  tl.fromTo(clock, { v: 0 }, { v: 55, duration: 55, ease: "none", onUpdate: function () { render(clock.v); } }, 0);
+  render(0);
+
+  const cam = function (px, py, s, qx, qy) { return { scale: s, x: qx - 540 - s * (px - 540), y: qy - 960 - s * (py - 960) }; };
+  const move = function (sel, at, d, vars, ease) { tl.to(sel, Object.assign({ duration: d, ease: ease || "power3.inOut" }, vars), at); };
+  // blur never rides an overshooting ease (a negative blur is invalid CSS)
+  const pop = function (sel, at, from, dur) {
+    const f = Object.assign({}, from || {}); const blur = f.filter; delete f.filter;
+    tl.fromTo(sel, Object.assign({ opacity: 0, scale: 0.35 }, f), { opacity: 1, scale: 1, x: 0, y: 0, rotation: 0, duration: dur || 0.42, ease: "back.out(1.9)" }, at);
+    if (blur) { tl.fromTo(sel, { filter: blur }, { filter: "blur(0px)", duration: 0.35, ease: "power2.out" }, at); }
+  };
+  const tap = function (x, y, at) {
+    tl.set("#tap", { left: x, top: y }, at);
+    tl.fromTo("#tap", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.1, ease: "power2.out", immediateRender: false }, at);
+    tl.to("#tap", { opacity: 0, scale: 1.25, duration: 0.3, ease: "power2.out" }, at + 0.13);
+  };
+  let curPage = 0, curSun = "fajr", curLetter = 0;
+  const INK = { fajr: ["#FFFFFF", "#111111"], sunrise: ["#111111", "#FFFFFF"], dhuhr: ["#111111", "#FFFFFF"], asr: ["#111111", "#FFFFFF"], maghrib: ["#111111", "#FFFFFF"], isha: ["#FFFFFF", "#111111"] };
+  const select = function (page, letter, at) {
+    const p = PAGES[page];
+    if (page !== curPage) {
+      tl.to("#h-p" + curPage, { opacity: 0, duration: 0.2, ease: "power1.out" }, at);
+      tl.fromTo("#h-p" + page, { opacity: 0 }, { opacity: 1, duration: 0.28, ease: "power1.in", immediateRender: false }, at + 0.1);
+    }
+    if (p.theme !== curSun) {
+      tl.to("#h-sun-" + curSun, { opacity: 0, duration: 0.25 }, at);
+      tl.fromTo("#h-sun-" + p.theme, { opacity: 0 }, { opacity: 1, duration: 0.35, immediateRender: false }, at + 0.1);
+      if (INK[p.theme][0] !== INK[curSun][0]) { tl.to("#h-ui", { color: INK[p.theme][0], "--inv": INK[p.theme][1], duration: 0.8, ease: "power1.inOut" }, at); }
+    }
+    if (letter !== null && letter !== curLetter) {
+      tl.to("#lt-en-s" + curLetter, { opacity: 0, duration: 0.2 }, at);
+      tl.to("#lt-en-r" + curLetter, { opacity: 0.38, duration: 0.2 }, at);
+      tl.to("#lt-en-s" + letter, { opacity: 1, duration: 0.2 }, at);
+      tl.to("#lt-en-r" + letter, { opacity: 0, duration: 0.2 }, at);
+      curLetter = letter;
+    }
+    curPage = page; curSun = p.theme;
+  };
+  // Tab bar state: widths, selection and the ScrollViewReader-style centering on the selected tab
+  let tabState = { added: [true, false, false, false, false], sel: 0 }, trackX = 0;
+  const tabLayout = function (st) {
+    const w = TABS.map(function (tb, i) { return st.added[i] ? (i === st.sel ? tb.sel : UNSEL) : 0; });
+    let x = 0; const pos = [];
+    w.forEach(function (wi) { pos.push(x); x += wi + (wi > 0 ? 13 : 0); });
+    const contentW = 26 + x + 81 + 26;
+    const center = 26 + pos[st.sel] + w[st.sel] / 2;
+    const offset = Math.max(0, Math.min(center - 540, Math.max(0, contentW - 1080)));
+    return { w: w, pos: pos, offset: offset, plusX: 26 + x + 40.5 };
+  };
+  const setTabs = function (st, at, noScroll) {
+    const L = tabLayout(st);
+    TABS.forEach(function (tb, i) {
+      const wasAdded = tabState.added[i], isAdded = st.added[i];
+      const on = i === st.sel;
+      if (isAdded && !wasAdded) { tl.fromTo("#h-tab-" + tb.id, { width: 0, opacity: 0 }, { width: L.w[i], opacity: 1, duration: 0.42, ease: "power3.out" }, at); }
+      else if (isAdded) { tl.to("#h-tab-" + tb.id, { width: L.w[i], duration: 0.3, ease: "power2.inOut" }, at); }
+      if (isAdded) {
+        tl.to("#h-fill-" + tb.id, { opacity: on ? 0.92 : 0.12, duration: 0.3 }, at);
+        tl.to("#h-sel-" + tb.id, { opacity: on ? 1 : 0, duration: 0.3 }, at);
+        tl.to("#h-uns-" + tb.id, { opacity: on ? 0 : 0.72, duration: 0.3 }, at);
+      }
+    });
+    if (!noScroll) { tl.to("#h-track", { x: -L.offset, duration: 0.4, ease: "power2.inOut" }, at); trackX = -L.offset; }
+    tabState = { added: st.added.slice(), sel: st.sel };
+  };
+
+  gsap.set(["#hk-calc", "#hk-mine", "#hk-badge", "#lg", "#s-themes", "#s-lock", "#s-whome", "#s-wlock", "#s-tt", "#s-globe", "#s-cta", "#am", "#am-dim"], { opacity: 0 });
+  gsap.set(["#h-sun-sunrise", "#h-sun-dhuhr", "#h-sun-asr", "#h-sun-maghrib", "#h-sun-isha"], { opacity: 0 });
+  gsap.set("#h-p0", { opacity: 1 });
+  gsap.set("#lt-en-s0", { opacity: 1 });
+  gsap.set("#lt-en-r0", { opacity: 0 });
+  gsap.set(["#s-cam", "#tt-sheet"], { transformOrigin: "540px 960px" });
+  gsap.set("#s-cam", { opacity: 0, transformPerspective: 2600 });
+  gsap.set("#lg", { y: 560 });
+
+  // ===== 0-1.9 · logo, zoom through into the app =====
+  tl.fromTo("#s-intro-icon", { opacity: 0, scale: 0.5, rotation: -10 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.7, ease: "back.out(1.7)" }, 0.05);
+  tl.fromTo("#s-intro-word", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.2);
+  tl.to("#s-intro", { scale: 3.4, opacity: 0, filter: "blur(18px)", duration: 0.6, ease: "power3.in", transformOrigin: "540px 780px" }, 1.35);
+  tl.fromTo("#s-cam", { scale: 2.3, x: 0, y: 0, opacity: 0, filter: "blur(22px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "expo.out", immediateRender: false }, 1.6);
+
+  // ===== A 1.9-7.6 · the calculated time ticks to your masjid's time =====
+  tl.fromTo("#hk-calc", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.45);
+  move("#s-cam", 3.55, 0.45, cam(540, 820, 1.2, 540, 800), "expo.out");
+  tl.to("#hk-calc", { opacity: 0, scale: 0.8, duration: 0.2 }, 4.4);
+  pop("#hk-mine", 4.45, { scale: 0.6 });
+  pop("#hk-badge", 4.55, { x: -40, filter: "blur(8px)" });
+  move("#s-cam", 5.4, 0.7, { scale: 1, x: 0, y: 0 }, "power3.inOut");
+  tl.to(["#hk-mine", "#hk-badge"], { opacity: 0, y: -16, duration: 0.3 }, 7.1);
+
+  // ===== B 7.6-13.6 · prayer times, redesigned: tap F S D A M I =====
+  tl.to("#s-cam", { rotationY: -5, duration: 1.2, ease: "power1.inOut" }, 7.7);
+  tl.to("#s-cam", { rotationY: 5, scale: 1.03, duration: 4.4, ease: "power1.inOut" }, 8.9);
+  [[1, 1, 9.2], [2, 2, 10.0], [3, 3, 10.8], [4, 4, 11.6], [5, 5, 12.4]].forEach(function (s) {
+    tap(LX[s[1]], LY - 18, s[2] - 0.05);
+    select(s[0], s[1], s[2]);
+  });
+  tl.to("#s-cam", { rotationY: 0, scale: 1, duration: 0.5, ease: "power2.inOut" }, 13.3);
+
+  // ===== C 13.6-19.8 · in your language (the language picker) =====
+  tap(LX[2], LY - 18, 13.75);
+  select(2, 2, 13.8);
+  tl.to("#lg", { opacity: 1, y: 0, duration: 0.55, ease: "expo.out" }, 14.3);
+  tl.to(["#h-tabs", "#h-letters-wrap"], { opacity: 0, duration: 0.3 }, 14.3);
+  tl.to(["#h-tabs", "#h-letters-wrap"], { opacity: 1, duration: 0.3 }, 19.7);
+  const lgSel = function (row, at) {
+    tl.to("#lg-hl", { y: row * 100, duration: 0.3, ease: "power3.out" }, at);
+    tl.to("#lg-check", { y: row * 100, duration: 0.3, ease: "power3.out" }, at);
+    tl.fromTo("#lg-check", { scale: 0.6 }, { scale: 1, duration: 0.3, ease: "back.out(2.5)", immediateRender: false }, at + 0.05);
+  };
+  const dissolve = function (sel, at) { tl.to(sel, { opacity: 0, scaleX: 1.4, filter: "blur(12px)", duration: 0.3, ease: "power2.in" }, at); };
+  const restore = function (sel, at) { tl.fromTo(sel, { opacity: 0, scaleX: 1.4, filter: "blur(12px)" }, { opacity: 1, scaleX: 1, filter: "blur(0px)", duration: 0.35, ease: "power2.out", immediateRender: false }, at); };
+  const draw = function (page, at) {
+    const txt = "#h-p" + page + "-svgname";
+    tl.fromTo(txt, { attr: { "stroke-dashoffset": 900 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.65, ease: "power1.inOut", immediateRender: false }, at);
+    tl.fromTo(txt, { attr: { "fill-opacity": 0 } }, { attr: { "fill-opacity": 1 }, duration: 0.3, ease: "power1.in", immediateRender: false }, at + 0.5);
+    tl.fromTo(txt, { attr: { "stroke-opacity": 1 } }, { attr: { "stroke-opacity": 0 }, duration: 0.3, immediateRender: false }, at + 0.7);
+  };
+  const pageSwap = function (outPage, inPage, at, outIsText) {
+    if (outIsText) { dissolve("#h-p" + outPage + "-name", at); tl.to("#h-p" + outPage, { opacity: 0, duration: 0.3 }, at + 0.05); }
+    else { tl.to("#h-p" + outPage, { opacity: 0, filter: "blur(10px)", duration: 0.25, ease: "power2.in" }, at); }
+    tl.fromTo("#h-p" + inPage, { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power2.out", immediateRender: false }, at + 0.15);
+  };
+  lgSel(1, 15.3); pageSwap(2, 7, 15.4, true); draw(7, 15.6);
+  tl.fromTo("#s-cam", { scale: 1 }, { scale: 1.05, duration: 0.5, ease: "power2.out", immediateRender: false }, 15.4);
+  lgSel(2, 16.8); pageSwap(7, 8, 16.9, false); draw(8, 17.1);
+  tl.to("#s-cam", { scale: 1.08, duration: 0.5, ease: "power2.out" }, 16.9);
+  lgSel(3, 18.1); pageSwap(8, 9, 18.2, false); draw(9, 18.4);
+  tl.to("#s-cam", { scale: 1.02, duration: 0.5, ease: "power2.out" }, 18.2);
+  lgSel(0, 19.1);
+  tl.to("#h-p9", { opacity: 0, filter: "blur(10px)", duration: 0.25 }, 19.2);
+  tl.fromTo("#h-p2", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, immediateRender: false }, 19.35);
+  restore("#h-p2-name", 19.35);
+  tl.to("#s-cam", { scale: 1, duration: 0.4 }, 19.35);
+  tl.to("#lg", { opacity: 0, y: 560, duration: 0.4, ease: "power3.in" }, 19.45);
+  curPage = 2;
+
+  // ===== D 19.8-26.4 · add 4 masjids, switch in one tap =====
+  tap(LX[3], LY - 18, 19.95);
+  select(3, 3, 20.0);
+  move("#s-cam", 20.3, 0.5, { y: -160 }, "power3.inOut");
+  const TAB_PAGES = [3, 6, 6, 10, 11];
+  [21.2, 22.3, 23.4, 24.5].forEach(function (tp, k) {
+    const idx = k + 1;
+    const L = tabLayout(tabState);
+    tap(L.plusX + trackX, 1762 - 160, tp);
+    tl.fromTo("#am-dim", { opacity: 0 }, { opacity: 1, duration: 0.2, immediateRender: false }, tp + 0.08);
+    tl.fromTo("#am", { opacity: 0, scale: 0.2, transformOrigin: "50% 100%" }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.4)", immediateRender: false }, tp + 0.08);
+    tl.fromTo("#am-h" + idx, { opacity: 0 }, { opacity: 1, duration: 0.12, immediateRender: false }, tp + 0.4);
+    tap(420, 330 + 30 + 42 + 48 - 160, tp + 0.4);
+    tl.to("#am", { opacity: 0, scale: 0.9, duration: 0.18, ease: "power2.in" }, tp + 0.56);
+    tl.to("#am-dim", { opacity: 0, duration: 0.2 }, tp + 0.56);
+    tl.set("#am-r" + idx, { height: 0 }, tp + 0.8);
+    const added = tabState.added.slice(); added[idx] = true;
+    setTabs({ added: added, sel: idx }, tp + 0.62);
+    select(TAB_PAGES[idx], null, tp + 0.72);
+  });
+  // swipe the tab bar back and tap Masjid Faizul Islam
+  tl.to("#h-track", { x: 0, duration: 0.4, ease: "power2.inOut" }, 25.3);
+  trackX = 0;
+  tap(26 + UNSEL / 2, 1762 - 160, 25.7);
+  setTabs({ added: [true, true, true, true, true], sel: 0 }, 25.8, true);
+  select(3, null, 25.85);
+  move("#s-cam", 26.15, 0.4, { y: 0 }, "power3.inOut");
+
+  // ===== E 26.4-31.6 · make it yours: the three theme styles, then your own colours =====
+  tl.fromTo("#s-themes", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 26.45);
+  tl.to("#s-cam", { opacity: 0, duration: 0.01 }, 26.47);
+  tl.fromTo("#t-mod", { scale: 1, borderRadius: 0, y: 0 }, { scale: 0.4, borderRadius: 150, y: 90, duration: 0.65, ease: "expo.inOut" }, 26.47);
+  tl.fromTo("#t-orig", { opacity: 0, scale: 0.36, x: -120, y: 90, rotationY: 30, transformPerspective: 2000 }, { opacity: 1, x: -360, rotationY: 18, duration: 0.45, ease: "expo.out" }, 26.85);
+  tl.fromTo("#t-cust", { opacity: 0, scale: 0.36, x: 120, y: 90, rotationY: -30, transformPerspective: 2000 }, { opacity: 1, x: 360, rotationY: -18, duration: 0.45, ease: "expo.out" }, 26.85);
+  tl.fromTo(["#t-lab-o", "#t-lab-m", "#t-lab-c"], { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.08, ease: "power3.out" }, 27.1);
+  const focus = function (card, lab, at, rot) {
+    tl.to(card, { scale: 0.46, rotationY: 0, duration: 0.4, ease: "power3.out" }, at);
+    tl.to(lab, { scale: 1.15, duration: 0.3, ease: "back.out(2)" }, at);
+    tl.to(card, { scale: 0.36, rotationY: rot, duration: 0.35, ease: "power3.inOut" }, at + 1.05);
+    tl.to(lab, { scale: 1, duration: 0.3 }, at + 1.05);
+  };
+  tap(220, 1000, 27.75); focus("#t-orig", "#t-lab-o", 27.8, 18);
+  tap(900, 1000, 28.95);
+  tl.to("#t-cust", { scale: 0.46, rotationY: 0, duration: 0.4, ease: "power3.out" }, 29.0);
+  tl.to("#t-lab-c", { scale: 1.15, duration: 0.3, ease: "back.out(2)" }, 29.0);
+  tl.fromTo("#t-sw", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3, ease: "back.out(2)" }, 29.2);
+  tl.to(["#t-cust2", "#t-sw-top2", "#t-sw-bot2"], { opacity: 1, duration: 0.6, ease: "power1.inOut" }, 29.9);
+  tl.to("#t-cust", { scale: 0.36, rotationY: -18, duration: 0.35, ease: "power3.inOut" }, 30.6);
+  tl.to("#t-lab-c", { scale: 1, duration: 0.3 }, 30.6);
+  tl.to("#t-sw", { opacity: 0, duration: 0.25 }, 30.6);
+  tl.to("#t-mod", { scale: 0.46, duration: 0.35, ease: "power3.out" }, 30.7);
+  tl.to("#t-lab-m", { scale: 1.15, duration: 0.3, ease: "back.out(2)" }, 30.7);
+  // tilt back in 3D, into the lock screen
+  tl.to("#s-themes", { rotationX: 38, y: 260, scale: 0.72, opacity: 0, filter: "blur(10px)", transformPerspective: 1800, transformOrigin: "540px 1200px", duration: 0.55, ease: "power3.in" }, 31.1);
+
+  // ===== F 31.6-36.6 · lock screen: the iqamah nudge, then the adhan =====
+  tl.fromTo("#s-lock", { opacity: 0, rotationX: -24, y: -220, scale: 1.08, transformPerspective: 2200, transformOrigin: "540px 0px" }, { opacity: 1, rotationX: 7, y: 0, scale: 1, duration: 0.7, ease: "expo.out" }, 31.55);
+  tl.fromTo("#s-lock", { filter: "blur(14px)" }, { filter: "blur(0px)", duration: 0.45, ease: "power2.out" }, 31.55);
+  tl.to("#s-lock", { rotationX: 0, duration: 0.8, ease: "power2.out" }, 32.3);
+  tl.fromTo("#s-n1", { opacity: 0, y: -300, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 32.7);
+  tl.to("#k-stack", { y: -320, duration: 0.4, ease: "power3.inOut" }, 33.9);
+  tl.to("#s-n1-now", { opacity: 0, duration: 0.2 }, 33.95);
+  tl.to("#s-n1-ago", { opacity: 1, duration: 0.2 }, 33.95);
+  tl.to("#s-n1", { y: 280, scale: 0.96, duration: 0.4, ease: "power3.inOut" }, 34.0);
+  tl.fromTo("#s-n2", { opacity: 0, y: -300, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 34.2);
+  tl.to("#s-lock", { scale: 1.03, duration: 1.8, ease: "power1.inOut" }, 34.4);
+  tl.to("#s-lock", { y: -1900, opacity: 0, filter: "blur(12px)", duration: 0.45, ease: "power3.in" }, 36.2);
+
+  // ===== G 36.6-43.2 · home screen widgets, then lock screen widgets =====
+  tl.fromTo("#s-whome", { opacity: 0, rotationX: 30, y: 500, scale: 0.85, transformPerspective: 2200, transformOrigin: "540px 1400px" }, { opacity: 1, rotationX: 14, y: 80, scale: 0.92, duration: 0.7, ease: "expo.out" }, 36.55);
+  pop("#w-small", 36.9, { y: 120, filter: "blur(10px)" });
+  pop("#w-app", 37.1, { y: 80, filter: "blur(8px)" });
+  pop("#w-large", 37.35, { y: 200, filter: "blur(12px)" }, 0.5);
+  tl.to("#s-whome", { rotationX: 0, y: 0, scale: 1, duration: 0.7, ease: "power2.inOut" }, 37.9);
+  tl.to("#s-whome", { scale: 1.04, y: -40, duration: 1.15, ease: "power1.inOut" }, 38.6);
+  tl.to("#s-whome", { opacity: 0, scale: 0.86, y: 200, filter: "blur(12px)", duration: 0.4, ease: "power2.in" }, 39.8);
+  tl.fromTo("#s-wlock", { opacity: 0, y: -600, transformPerspective: 2200, rotationX: -18, transformOrigin: "540px 0px" }, { opacity: 1, y: 0, rotationX: 0, duration: 0.6, ease: "expo.out" }, 39.95);
+  pop("#lw-circ", 40.4, { y: 40 });
+  pop("#lw-rect", 40.6, { y: 40 });
+  tl.to("#s-wlock", { scale: 1.05, duration: 1.6, ease: "power1.inOut", transformOrigin: "540px 820px" }, 40.8);
+  tl.fromTo("#tap-lw", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.1, immediateRender: false }, 42.45);
+  tl.to("#tap-lw", { opacity: 0, scale: 1.25, duration: 0.25 }, 42.58);
+  tl.to(["#lw-circ", ".lw-date", ".lw-clock"], { opacity: 0, filter: "blur(10px)", duration: 0.25 }, 42.6);
+  tl.to("#lw-rect", { scale: 4, x: -120, y: 400, opacity: 0, filter: "blur(16px)", duration: 0.5, ease: "power3.in" }, 42.6);
+
+  // ===== H 43.2-47.4 · the timetable at night: Midnight and Last Third =====
+  tl.fromTo("#s-tt", { opacity: 0, scale: 0.75, filter: "blur(18px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.55, ease: "expo.out", transformOrigin: "540px 900px" }, 43.0);
+  tl.fromTo("#s-nb", { opacity: 0 }, { opacity: 0, duration: 0.01 }, 43.0);
+  move("#tt-sheet", 43.9, 0.6, cam(460, 1585, 1.3, 540, 1100), "expo.inOut");
+  tl.to(["#tt-sheet .tt-up", "#tt-sheet .past"], { opacity: 0.08, filter: "blur(6px)", duration: 0.45 }, 43.9);
+  tl.fromTo(["#tt-r6", "#tt-r7"], { backgroundColor: "rgba(255,255,255,0)" }, { backgroundColor: "rgba(255,255,255,0.08)", duration: 0.35, stagger: 0.4 }, 44.5);
+  move("#tt-sheet", 45.4, 0.55, { scale: 0.66, x: 0, y: -120 }, "expo.inOut");
+  tl.to("#tt-sheet .tt-up", { opacity: 1, filter: "blur(0px)", duration: 0.4 }, 45.45);
+  tl.to("#tt-sheet .past", { opacity: 0.35, filter: "blur(0px)", duration: 0.4 }, 45.45);
+  tl.fromTo("#s-nb", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out", immediateRender: false }, 45.6);
+  tl.fromTo("#nb-line", { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power2.inOut" }, 45.7);
+  tl.fromTo("#nb-mid", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "back.out(2)" }, 46.1);
+  tl.fromTo("#nb-lt", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "back.out(2)" }, 46.3);
+  tl.to("#s-tt", { scale: 0.05, opacity: 0, filter: "blur(6px)", duration: 0.4, ease: "power3.in", transformOrigin: "540px 1070px" }, 47.0);
+
+  // ===== I 47.4-51.6 · 340+ masjids on a turning globe =====
+  tl.fromTo("#s-globe", { opacity: 0, scale: 0.15 }, { opacity: 1, scale: 1, duration: 0.8, ease: "expo.out", transformOrigin: "540px 1070px" }, 47.3);
+  tl.fromTo("#g-plus", { opacity: 0, scale: 0.2 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2.6)" }, 48.8);
+  tl.to("#g-num", { scale: 1.05, duration: 1.2, ease: "power1.inOut" }, 49.0);
+  tl.to("#s-globe", { scale: 0.2, opacity: 0, filter: "blur(8px)", duration: 0.45, ease: "power3.in", transformOrigin: "540px 560px" }, 51.2);
+
+  // ===== J 51.6-55 · Masjidly, the next dawn =====
+  tl.fromTo("#s-cta", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 51.55);
+  tl.fromTo("#s-cta-icon", { opacity: 0, scale: 0.4, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "back.out(1.6)" }, 51.55);
+  tl.fromTo("#s-cta-word", { opacity: 0 }, { opacity: 1, duration: 0.25 }, 51.7);
+  pop("#s-store-ios", 53.2, { y: 40 });
+  pop("#s-store-play", 53.35, { y: 40 });
+
+  window.__timelines["stage"] = tl;
+})();
+</script>
+</template>
