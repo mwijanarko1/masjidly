@@ -166,6 +166,9 @@ fun HomeScreen(
     var pendingClosestMosque by remember { mutableStateOf<Mosque?>(null) }
     var forceClosestMosquePrompt by remember { mutableStateOf(false) }
     var closestMosqueCheckTrigger by remember { mutableIntStateOf(0) }
+    val openMosqueTabIds = settingsStore.openMosqueTabIds.ifEmpty {
+        listOfNotNull(settingsStore.selectedMosqueId ?: state.selectedMosque?.id)
+    }
     var showAddMosqueTab by remember { mutableStateOf(false) }
     var addTabSelectedMosqueId by remember { mutableStateOf("") }
     LaunchedEffect(state.mosques) {
@@ -185,6 +188,7 @@ fun HomeScreen(
         onboardingStep,
         state.mosques,
         state.selectedMosque?.id,
+        openMosqueTabIds,
         closestMosqueCheckTrigger,
     ) {
         if (forceClosestMosquePrompt) return@LaunchedEffect
@@ -205,6 +209,7 @@ fun HomeScreen(
                 selectedMosqueId = state.selectedMosque?.id ?: settingsStore.selectedMosqueId,
                 dismissedClosestMosqueId = settingsStore.dismissedClosestMosqueId,
                 visibleMosqueCount = MosqueSelection.visibleMosques(state.mosques).size,
+                openMosqueTabIds = openMosqueTabIds,
             )
         }
     }
@@ -419,7 +424,8 @@ fun HomeScreen(
         }
 
         pendingClosestMosque?.takeIf {
-            onboardingStep == null && !showReviewPrompt && !showReviewFeedbackPrompt
+            onboardingStep == null && !showReviewPrompt && !showReviewFeedbackPrompt &&
+                (forceClosestMosquePrompt || it.id !in openMosqueTabIds)
         }?.let { closest ->
             ClosestMosquePromptOverlay(
                 theme = theme,
