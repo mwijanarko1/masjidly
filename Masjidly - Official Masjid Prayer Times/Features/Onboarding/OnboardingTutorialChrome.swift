@@ -96,3 +96,30 @@ extension View {
             .shadow(color: HomeDesign.Colors.accent.opacity(0.35), radius: 15, y: 8)
     }
 }
+
+private struct OnboardingEntrance: ViewModifier {
+    let index: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(y: shown || reduceMotion ? 0 : 14)
+            .onAppear {
+                guard !shown else { return }
+                withAnimation(
+                    reduceMotion
+                        ? .easeOut(duration: 0.2)
+                        : .spring(response: 0.5, dampingFraction: 0.85).delay(0.06 + Double(index) * 0.08)
+                ) { shown = true }
+            }
+    }
+}
+
+extension View {
+    /// Fade-up on first appearance; `index` staggers siblings (title 0, content 1, buttons 2).
+    func onboardingEntrance(_ index: Int) -> some View {
+        modifier(OnboardingEntrance(index: index))
+    }
+}

@@ -66,8 +66,30 @@ final class PrayerFocusController {
     @ObservationIgnored private var registeredTimeZone: TimeZone?
     @ObservationIgnored private weak var appSettings: SettingsStore?
     @ObservationIgnored private var refreshSnapshot: (() async -> Void)?
+    /// Latest monitor registration; lets a failed older registration skip clearing a newer schedule.
+    @ObservationIgnored private var registrationRequest = 0
+    private static let registrationQueue = DispatchQueue(label: "prayerFocus.registration", qos: .utility)
 
-    var selectedAppCount: Int { selection.applicationTokens.count }
+    /// Apps, categories (e.g. Social), and web domains from the system picker.
+    var selectedAppCount: Int { Self.selectionCount(selection) }
+
+    static func selectionCount(_ selection: FamilyActivitySelection) -> Int {
+        selection.applicationTokens.count
+            + selection.categoryTokens.count
+            + selection.webDomainTokens.count
+    }
+
+    /// iOS does not expose how many apps a category contains, so show each token kind separately.
+    static func selectionSummary(_ selection: FamilyActivitySelection, locale: Locale, localized: (String) -> String) -> String {
+        [
+            ("apps", selection.applicationTokens.count),
+            ("categories", selection.categoryTokens.count),
+            ("websites", selection.webDomainTokens.count),
+        ]
+        .filter { $0.1 > 0 }
+        .map { String(format: localized("settings.prayer_focus.count.\($0.0)"), locale: locale, arguments: [$0.1]) }
+        .joined(separator: " · ")
+    }
 
     /// Takes `now` so views can re-evaluate at window boundaries (time passing is not observable).
     func status(at now: Date) -> Status {
@@ -189,22 +211,38 @@ final class PrayerFocusController {
         // Publish first: stopping ongoing monitors sends end callbacks that the extension
         // checks against these windows/generations, so stale callbacks cannot clear or restore shields.
         let scheduled = publish(planned)
-        center.stopMonitoring()
         registeredTimeZone = deviceTimeZone
-        do {
-            for item in scheduled {
-                try center.startMonitoring(
-                    DeviceActivityName(PrayerFocusMonitorReconcile.activityName(generation: item.generation, start: item.window.start)),
-                    during: Self.schedule(for: item.window, in: deviceTimeZone)
-                )
-            }
-            scheduleFailed = invalidMosqueTimeZone
-        } catch {
-            _ = publish([])
-            center.stopMonitoring()
-            scheduleFailed = true
-        }
+        scheduleFailed = invalidMosqueTimeZone
         reconcileShield(now: now)
+
+        let monitors = scheduled.map { item in
+            (
+                name: DeviceActivityName(PrayerFocusMonitorReconcile.activityName(generation: item.generation, start: item.window.start)),
+                schedule: Self.schedule(for: item.window, in: deviceTimeZone)
+            )
+        }
+        registrationRequest += 1
+        let request = registrationRequest
+        let center = center
+        // Stop/start are synchronous XPC calls (up to 20 per run, on every cold launch); off the main
+        // thread they no longer freeze the first screen. The serial queue applies requests in publish order.
+        Self.registrationQueue.async {
+            center.stopMonitoring()
+            do {
+                for monitor in monitors {
+                    try center.startMonitoring(monitor.name, during: monitor.schedule)
+                }
+            } catch {
+                center.stopMonitoring()
+                Task { @MainActor [weak self] in
+                    // A newer request has already replaced this schedule.
+                    guard let self, self.registrationRequest == request else { return }
+                    _ = self.publish([])
+                    self.scheduleFailed = true
+                    self.reconcileShield(now: Date())
+                }
+            }
+        }
     }
 
     /// Only a snapshot for the current active mosque and Asr preference may drive blocking.
@@ -247,10 +285,24 @@ final class PrayerFocusController {
 
     private func reconcileShield(now: Date) {
         if windows.contains(where: { $0.contains(now) }) {
-            store.shield.applications = selection.applicationTokens
+            Self.applyShield(selection, to: store)
         } else {
             store.clearAllSettings()
         }
+    }
+
+    /// Categories like Social live in `categoryTokens`, not `applicationTokens`.
+    static func applyShield(_ selection: FamilyActivitySelection, to store: ManagedSettingsStore) {
+        let apps = selection.applicationTokens
+        let categories = selection.categoryTokens
+        let webDomains = selection.webDomainTokens
+        guard !apps.isEmpty || !categories.isEmpty || !webDomains.isEmpty else {
+            store.clearAllSettings()
+            return
+        }
+        store.shield.applications = apps.isEmpty ? nil : apps
+        store.shield.applicationCategories = categories.isEmpty ? nil : .specific(categories)
+        store.shield.webDomains = webDomains.isEmpty ? nil : webDomains
     }
 
     /// Writes each prayer's resolved sky color for the Shield Configuration extension.

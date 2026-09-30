@@ -68,12 +68,22 @@ final class PrayerFocusMonitor: DeviceActivityMonitor {
     }
 
     private func applyShield(isActive: Bool) {
-        let apps = decode(FamilyActivitySelection.self, forKey: "prayerFocus.selection.v1")?.applicationTokens ?? []
-        if isActive, !apps.isEmpty {
-            store.shield.applications = apps
-        } else {
+        guard isActive,
+              let selection = decode(FamilyActivitySelection.self, forKey: "prayerFocus.selection.v1") else {
             store.clearAllSettings()
+            return
         }
+        let apps = selection.applicationTokens
+        let categories = selection.categoryTokens
+        let webDomains = selection.webDomainTokens
+        // Keep in sync with PrayerFocusController.applyShield.
+        guard !apps.isEmpty || !categories.isEmpty || !webDomains.isEmpty else {
+            store.clearAllSettings()
+            return
+        }
+        store.shield.applications = apps.isEmpty ? nil : apps
+        store.shield.applicationCategories = categories.isEmpty ? nil : .specific(categories)
+        store.shield.webDomains = webDomains.isEmpty ? nil : webDomains
     }
 
     private func save(_ value: some Encodable, forKey key: String) {

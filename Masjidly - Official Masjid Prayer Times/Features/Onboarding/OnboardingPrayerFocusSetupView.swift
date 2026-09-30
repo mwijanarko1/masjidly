@@ -9,24 +9,25 @@ struct OnboardingPrayerFocusIntroView: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
-        prayerFocusOnboardingChrome(timeTheme: timeTheme, compact: true) {
-            VStack(spacing: 16) {
-                VStack(spacing: 8) {
+        prayerFocusOnboardingChrome(timeTheme: timeTheme) {
+            VStack(spacing: 22) {
+                VStack(spacing: 10) {
                     Text(localized("onboarding.prayer_focus.intro.title"))
-                        .appFont(size: 22, weight: .semibold)
+                        .appFont(size: 23, weight: .semibold)
                         .foregroundStyle(timeTheme.textColor)
                         .kerning(-0.5)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
 
                     Text(localized("onboarding.prayer_focus.intro.message"))
-                        .appFont(size: 15)
+                        .appFont(size: 16)
                         .foregroundStyle(timeTheme.textColor.opacity(0.72))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
+                .onboardingEntrance(0)
 
-                VStack(spacing: 8) {
+                VStack(spacing: 12) {
                     Button(action: onTurnOn) {
                         Text(localized("onboarding.prayer_focus.intro.turn_on"))
                             .onboardingPrimaryCapsule()
@@ -44,9 +45,9 @@ struct OnboardingPrayerFocusIntroView: View {
                     .buttonStyle(.hapticPlain)
                     .accessibilityIdentifier("Onboarding.PrayerFocusIntroSkip")
                 }
+                .onboardingEntrance(1)
             }
-            .padding(.horizontal, 22)
-            .padding(.vertical, 20)
+            .padding(24)
         }
     }
 
@@ -69,20 +70,20 @@ struct OnboardingPrayerFocusAppsView: View {
     @State private var isPickerPresented = false
     @State private var pickerSelection = FamilyActivitySelection()
 
-    private var selectedAppCount: Int { pickerSelection.applicationTokens.count }
+    private var selectedAppCount: Int { PrayerFocusController.selectionCount(pickerSelection) }
 
     private var canContinue: Bool {
         prayerFocus.isAuthorized && selectedAppCount > 0
     }
 
     var body: some View {
-        prayerFocusOnboardingChrome(timeTheme: timeTheme, compact: true) {
-            VStack(spacing: 16) {
-                VStack(spacing: 8) {
+        prayerFocusOnboardingChrome(timeTheme: timeTheme) {
+            VStack(spacing: 22) {
+                VStack(spacing: 10) {
                     Text(localized(prayerFocus.isAuthorized
                         ? "onboarding.prayer_focus.apps.title"
                         : "onboarding.prayer_focus.screen_time.title"))
-                        .appFont(size: 22, weight: .semibold)
+                        .appFont(size: 23, weight: .semibold)
                         .foregroundStyle(timeTheme.textColor)
                         .kerning(-0.5)
                         .multilineTextAlignment(.center)
@@ -91,13 +92,14 @@ struct OnboardingPrayerFocusAppsView: View {
                     Text(localized(prayerFocus.isAuthorized
                         ? "onboarding.prayer_focus.apps.message"
                         : "onboarding.prayer_focus.screen_time.message"))
-                        .appFont(size: 15)
+                        .appFont(size: 16)
                         .foregroundStyle(timeTheme.textColor.opacity(0.72))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
+                .onboardingEntrance(0)
 
-                VStack(spacing: 8) {
+                VStack(spacing: 12) {
                     if !prayerFocus.isAuthorized {
                         Button {
                             guard !isRequestingAuthorization else { return }
@@ -140,10 +142,31 @@ struct OnboardingPrayerFocusAppsView: View {
                                 .accessibilityIdentifier("Onboarding.PrayerFocusAuthorizationError")
                         }
                     } else if canContinue {
-                        Text(String(format: localized("settings.prayer_focus.apps_count_format"), locale: locale, arguments: [selectedAppCount]))
-                            .appFont(size: 15, weight: .medium)
-                            .foregroundStyle(timeTheme.textColor.opacity(0.72))
-                            .frame(maxWidth: .infinity)
+                        // Tapping the selection card reopens the picker, so no separate "Choose apps" button.
+                        Button {
+                            isPickerPresented = true
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text(PrayerFocusController.selectionSummary(pickerSelection, locale: locale, localized: localized))
+                                    .appFont(size: 16, weight: .medium)
+                                    .foregroundStyle(timeTheme.textColor)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(timeTheme.textColor.opacity(0.5))
+                            }
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 16)
+                            .background(timeTheme.textColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .strokeBorder(timeTheme.textColor.opacity(0.14), lineWidth: 1)
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.hapticPlain)
+                        .accessibilityLabel(localized("settings.prayer_focus.choose_apps"))
+                        .accessibilityIdentifier("Onboarding.PrayerFocusChooseApps")
 
                         Button(action: onContinue) {
                             Text(localized("onboarding.continue"))
@@ -151,18 +174,7 @@ struct OnboardingPrayerFocusAppsView: View {
                         }
                         .buttonStyle(.hapticPlain)
                         .accessibilityIdentifier("Onboarding.PrayerFocusAppsContinue")
-
-                        Button {
-                            isPickerPresented = true
-                        } label: {
-                            Text(localized("settings.prayer_focus.choose_apps"))
-                                .appFont(size: 16, weight: .semibold)
-                                .foregroundStyle(timeTheme.textColor.opacity(0.72))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                        }
-                        .buttonStyle(.hapticPlain)
-                        .accessibilityIdentifier("Onboarding.PrayerFocusChooseApps")
+                        .padding(.top, 6)
                     } else {
                         Button {
                             isPickerPresented = true
@@ -184,9 +196,10 @@ struct OnboardingPrayerFocusAppsView: View {
                     .buttonStyle(.hapticPlain)
                     .accessibilityIdentifier("Onboarding.PrayerFocusAppsSkip")
                 }
+                .animation(.easeInOut(duration: 0.25), value: canContinue)
+                .onboardingEntrance(1)
             }
-            .padding(.horizontal, 22)
-            .padding(.vertical, 20)
+            .padding(24)
         }
         .familyActivityPicker(isPresented: $isPickerPresented, selection: $pickerSelection)
         .onAppear {
@@ -195,10 +208,8 @@ struct OnboardingPrayerFocusAppsView: View {
         .onChange(of: isPickerPresented) { _, presented in
             guard !presented else { return }
             // Commit selection after Done; FamilyControls often won't write through @Observable bindings.
+            // The user advances explicitly with Continue.
             prayerFocus.selection = pickerSelection
-            if prayerFocus.isAuthorized, pickerSelection.applicationTokens.count > 0 {
-                onContinue()
-            }
         }
     }
 
@@ -215,6 +226,7 @@ struct OnboardingPrayerFocusScheduleView: View {
     /// Draft locally so toggles do not hit DeviceActivity on every change.
     @State private var draft = PrayerFocusController.shared.settings
     @State private var scheduleFailed = false
+    @State private var rowsHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { proxy in
@@ -248,11 +260,12 @@ struct OnboardingPrayerFocusScheduleView: View {
                                     .lineSpacing(4)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
+                            .onboardingEntrance(0)
 
                             ScrollView(.vertical, showsIndicators: false) {
                                 VStack(alignment: .leading, spacing: 16) {
                                     scheduleRow(title: localized("settings.prayer_focus.start.title")) {
-                                        Picker("", selection: $draft.start) {
+                                        Picker(localized("settings.prayer_focus.start.title"), selection: $draft.start) {
                                             Text(localized("notification.channel.adhan")).tag(PrayerFocusStart.adhan)
                                             Text(localized("notification.channel.iqamah")).tag(PrayerFocusStart.iqamah)
                                         }
@@ -261,7 +274,7 @@ struct OnboardingPrayerFocusScheduleView: View {
                                     }
 
                                     scheduleRow(title: localized("settings.prayer_focus.duration.title")) {
-                                        Picker("", selection: $draft.durationMinutes) {
+                                        Picker(localized("settings.prayer_focus.duration.title"), selection: $draft.durationMinutes) {
                                             ForEach(PrayerFocusSettings.durationOptions, id: \.self) { minutes in
                                                 Text(durationLabel(minutes)).tag(minutes)
                                             }
@@ -273,21 +286,38 @@ struct OnboardingPrayerFocusScheduleView: View {
                                     Text(localized("settings.prayer_focus.prayers.title"))
                                         .appFont(size: 16, weight: .semibold)
                                         .foregroundStyle(timeTheme.textColor.opacity(0.6))
+                                        .kerning(0.5)
 
-                                    ForEach(Array(PrayerFocusPrayer.allCases.enumerated()), id: \.element.rawValue) { index, prayer in
-                                        if index > 0 {
-                                            Divider().background(timeTheme.textColor.opacity(0.12))
+                                    VStack(spacing: 0) {
+                                        ForEach(Array(PrayerFocusPrayer.allCases.enumerated()), id: \.element.rawValue) { index, prayer in
+                                            if index > 0 {
+                                                Divider()
+                                                    .background(timeTheme.textColor.opacity(0.12))
+                                                    .padding(.vertical, 2)
+                                            }
+                                            Toggle(isOn: prayerBinding(prayer)) {
+                                                Text(localized(prayer.labelKey))
+                                                    .appFont(size: 16, weight: .medium)
+                                                    .foregroundStyle(timeTheme.textColor)
+                                            }
+                                            .tint(HomeDesign.Colors.accent)
+                                            .frame(minHeight: 48)
+                                            .padding(.vertical, 4)
+                                            .padding(.trailing, 2)
                                         }
-                                        Toggle(isOn: prayerBinding(prayer)) {
-                                            Text(localized(prayer.labelKey))
-                                                .appFont(size: 16, weight: .medium)
-                                                .foregroundStyle(timeTheme.textColor)
-                                        }
-                                        .tint(HomeDesign.Colors.accent)
-                                        .frame(minHeight: 48)
                                     }
                                 }
+                                .background(
+                                    GeometryReader { geo in
+                                        Color.clear
+                                            .onAppear { rowsHeight = geo.size.height }
+                                            .onChange(of: geo.size.height) { _, height in rowsHeight = height }
+                                    }
+                                )
                             }
+                            // Hug the rows; still scrolls when the card hits the screen limit.
+                            .frame(maxHeight: rowsHeight > 0 ? rowsHeight : .infinity)
+                            .onboardingEntrance(1)
 
                             if scheduleFailed {
                                 Text(localized("settings.prayer_focus.status.failed"))
@@ -315,6 +345,7 @@ struct OnboardingPrayerFocusScheduleView: View {
                             }
                             .buttonStyle(.hapticPlain)
                             .accessibilityIdentifier("Onboarding.PrayerFocusFinish")
+                            .onboardingEntrance(2)
                         }
                         .toggleStyle(.switch)
                         .padding(24)
@@ -369,7 +400,6 @@ struct OnboardingPrayerFocusScheduleView: View {
 @ViewBuilder
 private func prayerFocusOnboardingChrome<Content: View>(
     timeTheme: HomeDesign.TimeTheme,
-    compact: Bool = false,
     @ViewBuilder content: () -> Content
 ) -> some View {
     ZStack {
@@ -387,8 +417,8 @@ private func prayerFocusOnboardingChrome<Content: View>(
             content()
         }
         .fixedSize(horizontal: false, vertical: true)
-        .frame(maxWidth: compact ? 320 : 400)
-        .padding(.horizontal, compact ? 28 : 18)
+        .frame(maxWidth: 400)
+        .padding(.horizontal, 18)
     }
     .preferredColorScheme(timeTheme.usesLightForeground ? .dark : .light)
 }

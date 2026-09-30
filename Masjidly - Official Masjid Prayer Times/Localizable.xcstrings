@@ -7905,34 +7905,6 @@
         }
       }
     },
-    "settings.prayer_focus.description": {
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يستخدم مدة استخدام الجهاز لإيقاف التطبيقات التي تختارها خلال أوقات الصلاة لمسجدك النشط. يمكنك إيقافه من هنا أو إزالة صلاحية مدة استخدام الجهاز من إعدادات iOS."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Uses Screen Time to pause the apps you choose during prayer windows for your active mosque. You can stop it here or remove Screen Time access in iOS Settings."
-          }
-        },
-        "id": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Menggunakan Durasi Layar untuk menjeda aplikasi pilihan Anda selama waktu salat di masjid aktif. Anda bisa menghentikannya di sini atau mencabut akses Durasi Layar di Pengaturan iOS."
-          }
-        },
-        "ur": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "اسکرین ٹائم کے ذریعے آپ کی فعال مسجد کے نماز کے اوقات میں منتخب ایپس روکی جاتی ہیں۔ آپ اسے یہاں روک سکتے ہیں یا iOS سیٹنگز میں اسکرین ٹائم کی اجازت ہٹا سکتے ہیں۔"
-          }
-        }
-      }
-    },
     "settings.prayer_focus.allow_access": {
       "localizations": {
         "ar": {
@@ -7989,58 +7961,86 @@
         }
       }
     },
-    "settings.prayer_focus.apps_count_format": {
+    "settings.prayer_focus.count.apps": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld تطبيقات"
+            "value": "التطبيقات: %lld"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld apps"
+            "value": "Apps: %lld"
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld aplikasi"
+            "value": "Aplikasi: %lld"
           }
         },
         "ur": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld ایپس"
+            "value": "ایپس: %lld"
           }
         }
       }
     },
-    "settings.prayer_focus.apps_only_note": {
+    "settings.prayer_focus.count.categories": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "يتم إيقاف التطبيقات المختارة فرديًا فقط. يتم تجاهل الفئات والمواقع."
+            "value": "الفئات: %lld"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only individually selected apps are paused. Categories and websites are ignored."
+            "value": "Categories: %lld"
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hanya aplikasi yang dipilih satu per satu yang dijeda. Kategori dan situs web diabaikan."
+            "value": "Kategori: %lld"
           }
         },
         "ur": {
           "stringUnit": {
             "state": "translated",
-            "value": "صرف انفرادی طور پر منتخب ایپس روکی جاتی ہیں۔ زمرے اور ویب سائٹس نظر انداز کی جاتی ہیں۔"
+            "value": "زمرے: %lld"
+          }
+        }
+      }
+    },
+    "settings.prayer_focus.count.websites": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المواقع: %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Websites: %lld"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Situs web: %lld"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ویب سائٹس: %lld"
           }
         }
       }
@@ -8181,34 +8181,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ تک فعال"
-          }
-        }
-      }
-    },
-    "settings.prayer_focus.status.scheduled_format": {
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "مجدول حتى %@. افتح مسجدلي بانتظام للتمديد."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Scheduled through %@. Open Masjidly regularly to extend."
-          }
-        },
-        "id": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Terjadwal hingga %@. Buka Masjidly secara rutin untuk memperpanjang."
-          }
-        },
-        "ur": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ تک شیڈول ہے۔ توسیع کے لیے مسجدلی باقاعدگی سے کھولیں۔"
           }
         }
       }

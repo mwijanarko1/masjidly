@@ -38,11 +38,13 @@ struct LanguageSelectionOnboardingView: View {
                             .foregroundStyle(timeTheme.textColor)
                             .multilineTextAlignment(.center)
                     }
+                    .onboardingEntrance(0)
 
                     Text("You can change this later in Settings.")
                         .appFont(size: 15, weight: .regular)
                         .foregroundStyle(timeTheme.textColor.opacity(0.75))
                         .multilineTextAlignment(.center)
+                        .onboardingEntrance(0)
 
                     VStack(spacing: 10) {
                         ForEach(AppLanguage.allCases) { language in
@@ -70,6 +72,8 @@ struct LanguageSelectionOnboardingView: View {
                             .accessibilityIdentifier("Onboarding.Language.\(language.resolvedLanguageCode)")
                         }
                     }
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selectedLanguage)
+                    .onboardingEntrance(1)
 
                     Button {
                         onContinue(selectedLanguage)
@@ -79,6 +83,7 @@ struct LanguageSelectionOnboardingView: View {
                     }
                     .buttonStyle(.hapticPlain)
                     .accessibilityIdentifier("Onboarding.LanguageContinue")
+                    .onboardingEntrance(2)
                 }
                 .padding(24)
             }
@@ -134,6 +139,7 @@ struct LocationPermissionOnboardingView: View {
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
                     }
+                    .onboardingEntrance(0)
 
                     VStack(spacing: 12) {
                         Button(action: onAllow) {
@@ -153,6 +159,7 @@ struct LocationPermissionOnboardingView: View {
                         .buttonStyle(.hapticPlain)
                         .accessibilityIdentifier("Onboarding.LocationSkip")
                     }
+                    .onboardingEntrance(1)
                 }
                 .padding(24)
             }
@@ -322,6 +329,7 @@ struct MosqueSelectionOnboardingView: View {
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                .onboardingEntrance(0)
 
                 VStack(spacing: 0) {
                     pickerSection(
@@ -361,6 +369,7 @@ struct MosqueSelectionOnboardingView: View {
                         onSelect: { selectedMosqueId = $0 }
                     )
                 }
+                .onboardingEntrance(1)
 
                 Button {
                     guard let mosque = mosquesInSelectedCity.first(where: { $0.id == selectedMosqueId }) else { return }
@@ -373,6 +382,7 @@ struct MosqueSelectionOnboardingView: View {
                 .disabled(selectedMosqueId.isEmpty || mosquesInSelectedCity.isEmpty || isContinuing)
                 .opacity(selectedMosqueId.isEmpty || mosquesInSelectedCity.isEmpty || isContinuing ? 0.45 : 1)
                 .accessibilityIdentifier("Onboarding.MosqueContinue")
+                .onboardingEntrance(2)
             }
             .padding(24)
         }

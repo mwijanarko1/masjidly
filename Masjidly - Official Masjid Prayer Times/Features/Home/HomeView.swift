@@ -340,7 +340,11 @@ struct HomeView: View {
                         .padding(.bottom, max(metrics.safeBottom, 12) + 20)
                 }
 
-                onboardingOverlay
+                ZStack {
+                    onboardingOverlay
+                        .transition(.opacity)
+                }
+                .animation(.easeInOut(duration: reduceMotion ? 0.15 : 0.35), value: onboarding.currentStep)
 
                 if let mosque = tabPendingClose {
                     OnboardingCoachMarkView(

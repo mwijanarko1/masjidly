@@ -53,6 +53,7 @@ struct OnboardingNotificationSetupView: View {
                             .lineSpacing(4)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    .onboardingEntrance(0)
 
                     // Scrollable prayer sections
                     ScrollView(.vertical, showsIndicators: false) {
@@ -125,6 +126,7 @@ struct OnboardingNotificationSetupView: View {
                             }
                         }
                     }
+                    .onboardingEntrance(1)
 
                     Button {
                         onContinue()
@@ -145,6 +147,7 @@ struct OnboardingNotificationSetupView: View {
                     .buttonStyle(.hapticPlain)
                     .disabled(isSaving)
                     .accessibilityIdentifier("Onboarding.NotificationFinish")
+                    .onboardingEntrance(2)
                 }
                         .toggleStyle(.switch)
                         .padding(24)

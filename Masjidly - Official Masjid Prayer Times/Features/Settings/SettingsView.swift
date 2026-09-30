@@ -1363,17 +1363,22 @@ struct SettingsView: View {
             )
             .padding(.vertical, 12)
 
-            prayerFocusCaption(localized("settings.prayer_focus.description"))
-                .padding(.bottom, 12)
-
             if prayerFocus.settings.isEnabled {
                 settingsRowDivider
                 // Status depends on the clock; redraw at each minute, when windows start and end.
                 TimelineView(.everyMinute) { context in
-                    prayerFocusStatusRow(prayerFocus.status(at: context.date))
+                    let status = prayerFocus.status(at: context.date)
+                    // Scheduled is the normal state; only surface states that need attention.
+                    if case .scheduled = status {
+                        EmptyView()
+                    } else {
+                        VStack(alignment: .leading, spacing: 0) {
+                            prayerFocusStatusRow(status)
+                                .padding(.vertical, 12)
+                            settingsRowDivider
+                        }
+                    }
                 }
-                .padding(.vertical, 12)
-                settingsRowDivider
                 prayerFocusAppsRow
                     .padding(.vertical, 12)
                 settingsRowDivider
@@ -1421,8 +1426,8 @@ struct SettingsView: View {
             prayerFocusCaption(localized("settings.prayer_focus.status.no_times"))
         case .failed:
             prayerFocusCaption(localized("settings.prayer_focus.status.failed"))
-        case .scheduled(let until):
-            prayerFocusCaption(prayerFocusFormat("settings.prayer_focus.status.scheduled_format", until))
+        case .scheduled:
+            EmptyView()
         case .active(let until):
             VStack(alignment: .leading, spacing: 10) {
                 prayerFocusCaption(prayerFocusFormat("settings.prayer_focus.status.active_format", until))
@@ -1434,25 +1439,22 @@ struct SettingsView: View {
     }
 
     private var prayerFocusAppsRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                prayerFocus.isPickerPresented = true
-            } label: {
-                HStack(alignment: .center, spacing: 16) {
-                    Text(localized("settings.prayer_focus.choose_apps"))
-                        .appFont(size: 17, weight: .regular)
-                        .foregroundColor(currentAppearance.textColor)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(String(format: localized("settings.prayer_focus.apps_count_format"), locale: locale, arguments: [prayerFocus.selectedAppCount]))
-                        .appFont(size: 17, weight: .regular)
-                        .foregroundColor(currentAppearance.textColor.opacity(0.6))
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+        Button {
+            prayerFocus.isPickerPresented = true
+        } label: {
+            HStack(alignment: .center, spacing: 16) {
+                Text(localized("settings.prayer_focus.choose_apps"))
+                    .appFont(size: 17, weight: .regular)
+                    .foregroundColor(currentAppearance.textColor)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(PrayerFocusController.selectionSummary(prayerFocus.selection, locale: locale, localized: localized))
+                    .appFont(size: 17, weight: .regular)
+                    .foregroundColor(currentAppearance.textColor.opacity(0.6))
             }
-            .buttonStyle(.hapticPlain)
-            prayerFocusCaption(localized("settings.prayer_focus.apps_only_note"))
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.hapticPlain)
     }
 
     private var prayerFocusStartPickerRow: some View {

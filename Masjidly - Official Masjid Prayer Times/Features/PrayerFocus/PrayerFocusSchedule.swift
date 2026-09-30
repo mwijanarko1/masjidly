@@ -27,7 +27,7 @@ struct PrayerFocusSettings: Codable, Equatable, Sendable {
     static let durationOptions = [15, 20, 30, 45, 60]
 
     var isEnabled = false
-    var start: PrayerFocusStart = .iqamah
+    var start: PrayerFocusStart = .adhan
     var durationMinutes = 15
     var prayers = Set(PrayerFocusPrayer.allCases)
 }

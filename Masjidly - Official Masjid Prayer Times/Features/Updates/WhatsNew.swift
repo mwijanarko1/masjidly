@@ -24,7 +24,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "التركيز للصلاة",
-                    description: "أوقف التطبيقات المشتتة التي تختارها أثناء الصلاة. فعّل التركيز للصلاة من الإعدادات واختر ما تريد حظره.",
+                    description: "أوقف التطبيقات التي تختارها حول أوقات الصلاة.",
                     icon: "hourglass"
                 ),
             ]
@@ -32,7 +32,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "نماز فوکس",
-                    description: "نماز کے دوران منتخب کردہ توجہ ہٹانے والی ایپس روکیں۔ سیٹنگز میں نماز فوکس فعال کریں اور منتخب کریں کہ کیا روکنا ہے۔",
+                    description: "نماز کے اوقات کے قریب اپنی منتخب ایپس روکیں۔",
                     icon: "hourglass"
                 ),
             ]
@@ -40,7 +40,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "Fokus Salat",
-                    description: "Jeda aplikasi pengganggu yang Anda pilih saat salat. Aktifkan Fokus Salat di Pengaturan dan pilih apa yang ingin diblokir.",
+                    description: "Jeda aplikasi pilihan Anda sekitar waktu salat.",
                     icon: "hourglass"
                 ),
             ]
@@ -48,7 +48,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "Prayer Focus",
-                    description: "Pause selected distracting apps during prayer. Enable Prayer Focus in Settings and choose what to block.",
+                    description: "Pause the apps you choose around prayer times.",
                     icon: "hourglass"
                 ),
             ]
