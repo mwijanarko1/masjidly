@@ -25,7 +25,7 @@ BEATS = [
     {"l1": [["calculated times drift."]], "t1": 2.9, "l2": [["yours come from "], ["your masjid.", 1]], "t2": 4.6, "erase": 7.4, "cut": 1, "top": GAP, "inks": [[0, W, GOLD]]},
     {"l1": [["prayer times, "], ["redesigned.", 1]], "t1": 7.8, "l2": [["adhan and iqamah at a glance."]], "t2": 8.6, "erase": 13.4, "cut": 1, "top": GAP, "inks": [[0, W, GOLD], [9.35, K, NAVY], [12.55, W, GOLD]]},
     {"l1": [["in "], ["your", 1], [" language."]], "t1": 14.4, "l2": [["right to left, too."]], "t2": 15.5, "erase": 19.6, "cut": 1, "top": GAP, "inks": [[0, K, NAVY]]},
-    {"l1": [["add all your "], ["masjids.", 1]], "t1": 20.5, "l2": [["switch in "], ["one tap.", 1]], "t2": 21.4, "erase": 26.2, "cut": 1, "top": GAP - 160, "inks": [[0, K, NAVY]]},
+    {"l1": [["add all your "], ["masjids.", 1]], "t1": 20.5, "l2": [["switch in "], ["one tap.", 1]], "t2": 21.4, "erase": 26.2, "cut": 1, "top": 1680, "inks": [[0, K, NAVY]]},
     {"l1": [["make it "], ["yours.", 1]], "t1": 26.6, "l2": [["your theme, or your own colours."]], "t2": 27.4, "erase": 31.3, "cut": 1, "top": 150, "inks": [[0, K, NAVY]]},
     {"l1": [["never miss "], ["iqamah.", 1]], "t1": 32.9, "l2": [["the "], ["adhan", 1], [", right on time."]], "t2": 34.5, "erase": 36.3, "cut": 1, "top": 1440, "inks": [[0, K, NAVY]]},
     {"l1": [["on your "], ["home screen", 1], ["."]], "t1": 36.9, "l2": [["and your "], ["lock screen.", 1]], "t2": 40.3, "erase": 42.6, "cut": 1, "top": 110, "inks": [[0, W, GOLD]]},
