@@ -25,6 +25,7 @@ struct HomeView: View {
     @State private var showingDatePicker = false
     @State private var datePickerSelection = Date()
     @State private var showUpdateAlert = false
+    @State private var tabPendingClose: Mosque?
     @State private var showReviewFeedbackPrompt = false
     @State private var pendingRelease: MasjidlyRelease?
     @State private var hasCheckedForUpdate = false
@@ -340,6 +341,24 @@ struct HomeView: View {
                 }
 
                 onboardingOverlay
+
+                if let mosque = tabPendingClose {
+                    OnboardingCoachMarkView(
+                        title: "Remove tab?",
+                        message: "Remove \(mosque.name) from your tabs?",
+                        timeTheme: currentTheme,
+                        appearance: currentAppearance,
+                        variant: .center,
+                        primaryButtonTitle: "Remove",
+                        onPrimaryButton: {
+                            closeTab(mosque.id, in: openMosqueTabIds)
+                            tabPendingClose = nil
+                        },
+                        secondaryButtonTitle: "Cancel",
+                        onSecondaryButton: { tabPendingClose = nil },
+                        isDestructiveConfirmation: true
+                    )
+                }
             }
             .contentShape(Rectangle())
             .simultaneousGesture(homeDaySwipeGesture(maxStartY: metrics.height - max(metrics.safeBottom, 12) - 80))
@@ -367,7 +386,7 @@ struct HomeView: View {
                                     .buttonStyle(.hapticPlain)
                                     if ids.count > 1 {
                                         Button {
-                                            closeTab(id, in: ids)
+                                            tabPendingClose = mosque
                                         } label: {
                                             Image(systemName: "xmark")
                                                 .font(.system(size: 10, weight: .bold))
