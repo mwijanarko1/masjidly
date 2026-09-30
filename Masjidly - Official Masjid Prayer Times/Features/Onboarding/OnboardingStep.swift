@@ -5,6 +5,9 @@ enum OnboardingStep: Equatable, Sendable {
     case requestLocation
     case chooseMosque
     case notifications
+    case prayerFocusIntro
+    case prayerFocusApps
+    case prayerFocusSchedule
 }
 
 struct OnboardingNotificationDraft: Equatable, Sendable {

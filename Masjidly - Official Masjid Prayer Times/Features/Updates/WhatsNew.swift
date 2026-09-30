@@ -23,33 +23,33 @@ struct WhatsNew {
         case "ar":
             return [
                 WhatsNewItem(
-                    title: "تبويبات المساجد",
-                    description: "اعرض أوقات أكثر من مسجد عبر التبويبات. افتحها، انتقل بينها، أو أغلقها في أي وقت. المسجد النشط يتحكم في الإشعارات والودجت.",
-                    icon: "rectangle.on.rectangle"
+                    title: "التركيز للصلاة",
+                    description: "أوقف التطبيقات المشتتة التي تختارها أثناء الصلاة. فعّل التركيز للصلاة من الإعدادات واختر ما تريد حظره.",
+                    icon: "hourglass"
                 ),
             ]
         case "ur":
             return [
                 WhatsNewItem(
-                    title: "مسجد کے ٹیبز",
-                    description: "ٹیبز سے ایک سے زیادہ مساجد کے اوقات دیکھیں۔ کسی بھی وقت کھولیں، سوئچ کریں، یا بند کریں۔ فعال مسجد اطلاعات اور ویجٹ کو کنٹرول کرتی ہے۔",
-                    icon: "rectangle.on.rectangle"
+                    title: "نماز فوکس",
+                    description: "نماز کے دوران منتخب کردہ توجہ ہٹانے والی ایپس روکیں۔ سیٹنگز میں نماز فوکس فعال کریں اور منتخب کریں کہ کیا روکنا ہے۔",
+                    icon: "hourglass"
                 ),
             ]
         case "id":
             return [
                 WhatsNewItem(
-                    title: "Tab masjid",
-                    description: "Lihat jadwal lebih dari satu masjid lewat tab. Buka, beralih, atau tutup tab kapan saja. Masjid aktif mengontrol notifikasi dan widget.",
-                    icon: "rectangle.on.rectangle"
+                    title: "Fokus Salat",
+                    description: "Jeda aplikasi pengganggu yang Anda pilih saat salat. Aktifkan Fokus Salat di Pengaturan dan pilih apa yang ingin diblokir.",
+                    icon: "hourglass"
                 ),
             ]
         default:
             return [
                 WhatsNewItem(
-                    title: "Mosque tabs",
-                    description: "Mosque tabs let you see times for more than one mosque. Open, switch, or close them anytime. The active mosque controls notifications and the widget.",
-                    icon: "rectangle.on.rectangle"
+                    title: "Prayer Focus",
+                    description: "Pause selected distracting apps during prayer. Enable Prayer Focus in Settings and choose what to block.",
+                    icon: "hourglass"
                 ),
             ]
         }

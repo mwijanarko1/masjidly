@@ -183,7 +183,7 @@ struct HomeView: View {
     }
 
     private var homeLifecycleChrome: some View {
-        homeContent
+        AnyView(homeClosestMosquePromptChrome)
             .task {
                 if model.loadState == .idle { await model.load() }
                 await settingsViewModel.load()
@@ -238,10 +238,17 @@ struct HomeView: View {
             .onChange(of: onboardingLocationSignal) { _, _ in
                 handleOnboardingLocationSignal()
             }
+    }
+
+    private var homeClosestMosquePromptChrome: some View {
+        homeContent
             .onChange(of: model.mosques.count) { _, _ in
                 evaluateClosestMosquePromptCandidate()
             }
             .onChange(of: settings.selectedMosqueId) { _, _ in
+                evaluateClosestMosquePromptCandidate()
+            }
+            .onChange(of: settings.openMosqueTabIds) { _, _ in
                 evaluateClosestMosquePromptCandidate()
             }
             .onChange(of: showingWhatsNew) { _, showing in
@@ -806,8 +813,14 @@ struct HomeView: View {
         withAnimation(.easeInOut(duration: 0.18)) {
             showingWhatsNew = false
         }
+        presentPrayerFocusOnboardingIfNeeded()
+        guard !onboarding.isActive else { return }
         presentUpdateAlertIfReady()
         presentClosestMosquePromptIfReady()
+    }
+
+    private func presentPrayerFocusOnboardingIfNeeded() {
+        onboarding.startPrayerFocusOnboardingIfNeeded(prayerFocus: .shared)
     }
 
     @ViewBuilder
@@ -962,7 +975,8 @@ struct HomeView: View {
             closestMosqueId: closest.id,
             selectedMosqueId: model.selectedMosque?.id ?? settings.selectedMosqueId,
             dismissedClosestMosqueId: settings.dismissedClosestMosqueId,
-            visibleMosqueCount: MosqueDefaults.visibleMosques(model.mosques).count
+            visibleMosqueCount: MosqueDefaults.visibleMosques(model.mosques).count,
+            openMosqueTabIds: openMosqueTabIds
         )
         guard shouldPresent else {
             if pendingClosestMosque?.id == closest.id, !showingClosestMosquePrompt {
@@ -976,7 +990,7 @@ struct HomeView: View {
     }
 
     private func presentClosestMosquePromptIfReady() {
-        guard pendingClosestMosque != nil else { return }
+        guard let pendingClosestMosque else { return }
         guard settings.hasCompletedOnboarding else { return }
         guard !onboarding.isActive else { return }
         guard !showingWhatsNew else { return }
@@ -986,6 +1000,10 @@ struct HomeView: View {
         guard !showingSettings else { return }
         guard !showingTimetable else { return }
         guard !showingClosestMosquePrompt else { return }
+        guard !openMosqueTabIds.contains(pendingClosestMosque.id) else {
+            self.pendingClosestMosque = nil
+            return
+        }
         withAnimation(.easeInOut(duration: 0.18)) {
             showingClosestMosquePrompt = true
         }
@@ -1175,6 +1193,32 @@ struct HomeView: View {
                     Task { await onboarding.completeNotificationSetup() }
                 }
             )
+        case .prayerFocusIntro:
+            OnboardingPrayerFocusIntroView(
+                timeTheme: currentTheme,
+                onTurnOn: { onboarding.turnOnPrayerFocusFromOnboarding() },
+                onSkip: {
+                    onboarding.skipPrayerFocusOnboarding(prayerFocus: .shared)
+                    presentClosestMosquePromptIfReady()
+                }
+            )
+        case .prayerFocusApps:
+            OnboardingPrayerFocusAppsView(
+                timeTheme: currentTheme,
+                onContinue: { onboarding.continuePrayerFocusAfterApps() },
+                onSkip: {
+                    onboarding.skipPrayerFocusOnboarding(prayerFocus: .shared)
+                    presentClosestMosquePromptIfReady()
+                }
+            )
+        case .prayerFocusSchedule:
+            OnboardingPrayerFocusScheduleView(
+                timeTheme: currentTheme,
+                onFinish: {
+                    onboarding.completePrayerFocusSchedule(prayerFocus: .shared)
+                    presentClosestMosquePromptIfReady()
+                }
+            )
         case nil:
             EmptyView()
         }
@@ -1322,10 +1366,14 @@ struct HomeView: View {
 
     private func checkWhatsNew() {
         let currentBuild = WhatsNew.fullVersionString
-        guard settings.lastSeenBuildVersion != currentBuild else { return }
         guard settings.hasCompletedOnboarding else { return }
         guard !onboarding.isActive else { return }
-        showingWhatsNew = true
+        if settings.lastSeenBuildVersion != currentBuild {
+            showingWhatsNew = true
+            return
+        }
+        // What’s New already seen for this build — still offer Prayer Focus once if needed.
+        presentPrayerFocusOnboardingIfNeeded()
     }
 
     private func checkForUpdateIfNeeded() {

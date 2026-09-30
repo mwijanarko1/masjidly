@@ -137,7 +137,7 @@ struct OnboardingNotificationSetupView: View {
                                     .padding(.vertical, 16)
                                     .background(HomeDesign.Colors.activeGradient, in: Capsule())
                             } else {
-                                Text(localized("onboarding.finish"))
+                                Text(localized("onboarding.continue"))
                                     .onboardingPrimaryCapsule()
                             }
                         }

@@ -14,6 +14,8 @@ final class AppEnvironment {
     let settingsViewModel: SettingsViewModel
     let onboardingFlowController: OnboardingFlowController
     let appReviewPromptCoordinator: AppReviewPromptCoordinator
+    /// Attached at launch so Prayer Focus follows the active mosque and reconciles on every activation.
+    let prayerFocus = PrayerFocusController.shared
 
     init() {
         let s = SettingsStore()
@@ -37,5 +39,7 @@ final class AppEnvironment {
             notificationScheduler: sched
         )
         appReviewPromptCoordinator = AppReviewPromptCoordinator(settings: s)
+        let home = homeViewModel
+        prayerFocus.attach(settings: s) { await home.refreshWidgetSnapshotForCurrentMosque() }
     }
 }
