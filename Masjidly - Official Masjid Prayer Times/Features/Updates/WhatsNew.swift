@@ -23,33 +23,53 @@ struct WhatsNew {
         case "ar":
             return [
                 WhatsNewItem(
-                    title: "التركيز للصلاة",
-                    description: "أوقف التطبيقات التي تختارها حول أوقات الصلاة.",
-                    icon: "hourglass"
+                    title: "شعارات جديدة",
+                    description: "أربع مظاهر جديدة لمسجدلي: فجر، سماء، ظهيرة، ووردي.",
+                    icon: "paintpalette.fill"
+                ),
+                WhatsNewItem(
+                    title: "اختيار أيقونة التطبيق",
+                    description: "اختر شعارك المفضل في أي وقت من الإعدادات.",
+                    icon: "square.grid.2x2.fill"
                 ),
             ]
         case "ur":
             return [
                 WhatsNewItem(
-                    title: "نماز فوکس",
-                    description: "نماز کے اوقات کے قریب اپنی منتخب ایپس روکیں۔",
-                    icon: "hourglass"
+                    title: "نئے لوگو",
+                    description: "مسجدلی کے چار نئے انداز: فجر، آسمان، سہ پہر، اور گلابی۔",
+                    icon: "paintpalette.fill"
+                ),
+                WhatsNewItem(
+                    title: "ایپ آئیکن منتخب کریں",
+                    description: "سیٹنگز سے کسی بھی وقت اپنا پسندیدہ لوگو چنیں۔",
+                    icon: "square.grid.2x2.fill"
                 ),
             ]
         case "id":
             return [
                 WhatsNewItem(
-                    title: "Fokus Salat",
-                    description: "Jeda aplikasi pilihan Anda sekitar waktu salat.",
-                    icon: "hourglass"
+                    title: "Logo baru",
+                    description: "Empat tampilan baru untuk Masjidly: Fajar, Langit, Sore, dan Mawar.",
+                    icon: "paintpalette.fill"
+                ),
+                WhatsNewItem(
+                    title: "Pilih ikon aplikasi",
+                    description: "Pilih logo favorit Anda kapan saja dari Pengaturan.",
+                    icon: "square.grid.2x2.fill"
                 ),
             ]
         default:
             return [
                 WhatsNewItem(
-                    title: "Prayer Focus",
-                    description: "Pause the apps you choose around prayer times.",
-                    icon: "hourglass"
+                    title: "New logos",
+                    description: "Four fresh looks for Masjidly: Dawn, Sky, Afternoon, and Rose.",
+                    icon: "paintpalette.fill"
+                ),
+                WhatsNewItem(
+                    title: "App icon picker",
+                    description: "Choose your favourite logo anytime in Settings.",
+                    icon: "square.grid.2x2.fill"
                 ),
             ]
         }

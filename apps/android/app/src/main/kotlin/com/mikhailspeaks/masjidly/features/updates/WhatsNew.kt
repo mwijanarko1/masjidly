@@ -13,6 +13,7 @@ data class WhatsNewItem(
 
 enum class WhatsNewIcon {
     BUG_FIX,
+    GRID,
     MAP,
     PALETTE,
     WIDGET,
@@ -37,30 +38,50 @@ object WhatsNew {
         return when (code) {
             "ar" -> listOf(
                 WhatsNewItem(
-                    title = "إصلاحات أخطاء",
-                    description = "تحسينات وإصلاحات لجعل التطبيق أكثر موثوقية.",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "شعارات جديدة",
+                    description = "أربع مظاهر جديدة لمسجدلي: فجر، سماء، ظهيرة، ووردي.",
+                    icon = WhatsNewIcon.PALETTE,
+                ),
+                WhatsNewItem(
+                    title = "اختيار أيقونة التطبيق",
+                    description = "اختر شعارك المفضل في أي وقت من الإعدادات.",
+                    icon = WhatsNewIcon.GRID,
                 ),
             )
             "ur" -> listOf(
                 WhatsNewItem(
-                    title = "بگ فکسز",
-                    description = "ایپ کو زیادہ قابلِ اعتماد بنانے کے لیے اصلاحات اور بہتریاں۔",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "نئے لوگو",
+                    description = "مسجدلی کے چار نئے انداز: فجر، آسمان، سہ پہر، اور گلابی۔",
+                    icon = WhatsNewIcon.PALETTE,
+                ),
+                WhatsNewItem(
+                    title = "ایپ آئیکن منتخب کریں",
+                    description = "سیٹنگز سے کسی بھی وقت اپنا پسندیدہ لوگو چنیں۔",
+                    icon = WhatsNewIcon.GRID,
                 ),
             )
             "id" -> listOf(
                 WhatsNewItem(
-                    title = "Perbaikan bug",
-                    description = "Peningkatan dan perbaikan agar aplikasi lebih andal.",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "Logo baru",
+                    description = "Empat tampilan baru untuk Masjidly: Fajar, Langit, Sore, dan Mawar.",
+                    icon = WhatsNewIcon.PALETTE,
+                ),
+                WhatsNewItem(
+                    title = "Pilih ikon aplikasi",
+                    description = "Pilih logo favorit Anda kapan saja dari Pengaturan.",
+                    icon = WhatsNewIcon.GRID,
                 ),
             )
             else -> listOf(
                 WhatsNewItem(
-                    title = "Bug fixes",
-                    description = "Improvements and fixes to make the app more reliable.",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "New logos",
+                    description = "Four fresh looks for Masjidly: Dawn, Sky, Afternoon, and Rose.",
+                    icon = WhatsNewIcon.PALETTE,
+                ),
+                WhatsNewItem(
+                    title = "App icon picker",
+                    description = "Choose your favourite logo anytime in Settings.",
+                    icon = WhatsNewIcon.GRID,
                 ),
             )
         }

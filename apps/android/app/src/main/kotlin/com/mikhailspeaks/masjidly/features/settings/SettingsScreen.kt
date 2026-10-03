@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import com.mikhailspeaks.masjidly.ui.haptic.hapticClickable
 import com.mikhailspeaks.masjidly.ui.haptic.rememberHapticOnClick
@@ -63,6 +64,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -183,6 +185,7 @@ fun SettingsScreen(
     var hasLocationPermission by remember {
         mutableStateOf(locationProvider.hasLocationPermission())
     }
+    var selectedAppIcon by remember { mutableStateOf(AppIconOption.current(context)) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -462,6 +465,20 @@ fun SettingsScreen(
                         settingsStore = settingsStore,
                         onGradientChanged = {
                             scope.launch { updateAllMasjidlyWidgets(context) }
+                        },
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                SettingsPlainSection(LocaleStrings.t("settings.section.app_icon.title", language), theme) {
+                    AppIconPickerRow(
+                        selected = selectedAppIcon,
+                        language = language,
+                        theme = theme,
+                        onSelect = { option ->
+                            selectedAppIcon = option
+                            AppIconOption.apply(context, option)
                         },
                     )
                 }
@@ -1180,6 +1197,60 @@ private fun SettingsPlainSection(
 ) {
     SettingsSectionTitle(title, theme)
     Column(content = content)
+}
+
+@Composable
+private fun AppIconPickerRow(
+    selected: AppIconOption,
+    language: AppLanguage,
+    theme: ResolvedTheme,
+    onSelect: (AppIconOption) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        AppIconOption.entries.forEach { option ->
+            val isSelected = selected == option
+            val label = LocaleStrings.t(option.titleKey, language)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .hapticClickable(onClick = { onSelect(option) }),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Image(
+                    painter = painterResource(option.previewResId),
+                    contentDescription = label,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .border(
+                            width = if (isSelected) 2.5.dp else 1.dp,
+                            color = if (isSelected) {
+                                theme.textColor
+                            } else {
+                                theme.textColor.copy(alpha = 0.18f)
+                            },
+                            shape = RoundedCornerShape(13.dp),
+                        ),
+                )
+                Text(
+                    text = label,
+                    style = rememberAppTextStyle(
+                        12f,
+                        if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    ),
+                    color = theme.textColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
 }
 
 @Composable

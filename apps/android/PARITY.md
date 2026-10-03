@@ -89,6 +89,7 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 | Language (en/ar/ur/id) + RTL | yes | persisted + `LayoutDirection` | **partial** | — |
 | Theme mode (dynamic / fixed) | yes | yes | **done** | — |
 | Per-prayer sky gradients (Original / Modern) | yes | yes | **done** | — |
+| Selectable app icons (Dawn / Sky / Afternoon / Rose) | `AppIconOption` + Settings picker | `AppIconOption` + activity-alias launcher icons | **done** | — |
 | Asr iqamah preference (1st/2nd) | yes | yes | **done** | — |
 | Qibla hide / location recovery | yes | toggle + open settings; orb stays, pointer hidden | **done** | — |
 | Per-prayer notification toggles | yes | persisted UI (no scheduler) | **partial** | — |

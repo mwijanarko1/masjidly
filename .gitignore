@@ -54,3 +54,7 @@ context.md
 
 # ASC CLI local artifacts
 .asc/
+
+# Local device build output and icon design scratch
+.derivedData*/
+.icon-previews/

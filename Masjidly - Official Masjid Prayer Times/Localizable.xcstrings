@@ -3248,6 +3248,7 @@
       }
     },
     "onboarding.prayer_focus.apps.message" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3276,6 +3277,7 @@
       }
     },
     "onboarding.prayer_focus.apps.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3304,6 +3306,7 @@
       }
     },
     "onboarding.prayer_focus.intro.message" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3332,6 +3335,7 @@
       }
     },
     "onboarding.prayer_focus.intro.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3360,6 +3364,7 @@
       }
     },
     "onboarding.prayer_focus.intro.turn_on" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3388,6 +3393,7 @@
       }
     },
     "onboarding.prayer_focus.schedule.message" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3416,6 +3422,7 @@
       }
     },
     "onboarding.prayer_focus.schedule.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3444,6 +3451,7 @@
       }
     },
     "onboarding.prayer_focus.screen_time.message" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3472,6 +3480,7 @@
       }
     },
     "onboarding.prayer_focus.screen_time.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6017,6 +6026,7 @@
       }
     },
     "settings.prayer_focus.allow_access" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6045,6 +6055,7 @@
       }
     },
     "settings.prayer_focus.choose_apps" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6073,6 +6084,7 @@
       }
     },
     "settings.prayer_focus.count.apps" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6101,6 +6113,7 @@
       }
     },
     "settings.prayer_focus.count.categories" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6129,6 +6142,7 @@
       }
     },
     "settings.prayer_focus.count.websites" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6157,6 +6171,7 @@
       }
     },
     "settings.prayer_focus.duration.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6185,6 +6200,7 @@
       }
     },
     "settings.prayer_focus.enabled.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6213,6 +6229,7 @@
       }
     },
     "settings.prayer_focus.prayers.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6241,6 +6258,7 @@
       }
     },
     "settings.prayer_focus.start.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6269,6 +6287,7 @@
       }
     },
     "settings.prayer_focus.status.active_format" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6297,6 +6316,7 @@
       }
     },
     "settings.prayer_focus.status.failed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6325,6 +6345,7 @@
       }
     },
     "settings.prayer_focus.status.needs_authorization" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6353,6 +6374,7 @@
       }
     },
     "settings.prayer_focus.status.needs_selection" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6381,6 +6403,7 @@
       }
     },
     "settings.prayer_focus.status.no_times" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6409,6 +6432,7 @@
       }
     },
     "settings.prayer_focus.stop" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6437,6 +6461,7 @@
       }
     },
     "settings.prayer_focus.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
