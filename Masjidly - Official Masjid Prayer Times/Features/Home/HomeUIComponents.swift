@@ -362,6 +362,10 @@ struct MinimalistPrayerPage: View {
     let onSelectPrayer: (Int) -> Void
     var highlightedShortcutIndex: Int? = nil
     var onShortcutTapped: ((Int) -> Void)? = nil
+    /// When set, lays out side by side for short, wide viewports (landscape phone); insets reserve space for home chrome.
+    var landscapeInsets: EdgeInsets? = nil
+    /// Multiplier for fonts, orb and spacing so large screens (iPad) are not phone-sized.
+    var scale: CGFloat = 1
 
     @Environment(\.locale) private var locale
 
@@ -382,48 +386,86 @@ struct MinimalistPrayerPage: View {
     }
 
     var body: some View {
+        if let landscapeInsets {
+            landscapeBody(insets: landscapeInsets)
+        } else {
+            portraitBody
+        }
+    }
+
+    private var portraitBody: some View {
         VStack(spacing: 0) {
             Spacer()
-                .frame(height: 140)
+                .frame(height: 140 * scale)
 
             heroOrb
                 .onboardingHighlight(qiblaOnboardingHighlighted, timeTheme: theme)
-                .padding(.bottom, 60)
+                .padding(.bottom, 60 * scale)
 
-            VStack(spacing: 6) {
-                Text(prayerTime)
-                    .appFont(size: 88, weight: .light)
-                    .kerning(-1.76) // -0.02em * 88
-                    .foregroundColor(appearance.textColor)
-                    .shadow(color: appearance.textColor.opacity(0.1), radius: 10, x: 0, y: 5)
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-
-                if let iq = iqamahTime, !iq.isEmpty {
-                    Text(iq)
-                        .appFont(size: 26, weight: .regular)
-                        .tracking(usesArabicScript ? 0 : 0.6)
-                        .foregroundColor(appearance.textColor.opacity(0.78))
-                        .minimumScaleFactor(0.65)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
-                }
-            }
-            .accessibilityElement(children: .combine)
+            timeBlock(timeSize: 88 * scale, iqamahSize: 26 * scale)
 
             Spacer()
 
-            VStack(spacing: 24) {
-                Text(prayerName)
-                    .appFont(size: 36, weight: .regular)
-                    .kerning(-0.36) // -0.01em * 36
-                    .foregroundColor(appearance.textColor)
+            VStack(spacing: 24 * scale) {
+                prayerNameText(size: 36 * scale)
 
                 prayerLetterPicker
             }
-            .padding(.bottom, 160)
+            .padding(.bottom, 160 * scale)
         }
     }
+
+    private func landscapeBody(insets: EdgeInsets) -> some View {
+        HStack(spacing: 48) {
+            heroOrb
+                .onboardingHighlight(qiblaOnboardingHighlighted, timeTheme: theme)
+
+            VStack(spacing: 8) {
+                prayerNameText(size: 28)
+
+                timeBlock(timeSize: 64, iqamahSize: 20)
+
+                prayerLetterPicker
+            }
+            .frame(maxWidth: 380)
+        }
+        .padding(insets)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func prayerNameText(size: CGFloat) -> some View {
+        Text(prayerName)
+            .appFont(size: size, weight: .regular)
+            .kerning(-size * 0.01)
+            .foregroundColor(appearance.textColor)
+            .minimumScaleFactor(0.6)
+            .lineLimit(1)
+    }
+
+    private func timeBlock(timeSize: CGFloat, iqamahSize: CGFloat) -> some View {
+        VStack(spacing: 6 * scale) {
+            Text(prayerTime)
+                .appFont(size: timeSize, weight: .light)
+                .kerning(-timeSize * 0.02)
+                .foregroundColor(appearance.textColor)
+                .shadow(color: appearance.textColor.opacity(0.1), radius: 10, x: 0, y: 5)
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+
+            if let iq = iqamahTime, !iq.isEmpty {
+                Text(iq)
+                    .appFont(size: iqamahSize, weight: .regular)
+                    .tracking(usesArabicScript ? 0 : 0.6)
+                    .foregroundColor(appearance.textColor.opacity(0.78))
+                    .minimumScaleFactor(0.65)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var orbSize: CGFloat { 120 * scale }
 
     @ViewBuilder
     private var heroOrb: some View {
@@ -447,7 +489,7 @@ struct MinimalistPrayerPage: View {
                         theme: theme,
                         iconColor: appearance.iconColor,
                         rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil,
-                        size: 120,
+                        size: orbSize,
                         showCountdown: showHeroCountdown,
                         countdownLabel: labelText,
                         countdownTime: timeStr,
@@ -459,13 +501,13 @@ struct MinimalistPrayerPage: View {
                     .accessibilityIdentifier("HeroPrayerOrb")
                     .accessibilityHint(Text(LocaleBundle.string(forKey: "home.countdown.a11y.hint", locale: locale)))
                 } else {
-                    QiblaPrayerIcon(theme: theme, iconColor: appearance.iconColor, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
+                    QiblaPrayerIcon(theme: theme, iconColor: appearance.iconColor, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: orbSize)
                         .contentShape(Circle())
                         .accessibilityIdentifier("HeroPrayerOrb")
                 }
             }
         } else {
-            QiblaPrayerIcon(theme: theme, iconColor: appearance.iconColor, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: 120)
+            QiblaPrayerIcon(theme: theme, iconColor: appearance.iconColor, rotationDegrees: showQiblaCompass ? qiblaRotationDegrees : nil, size: orbSize)
                 .contentShape(Circle())
         }
     }
@@ -537,7 +579,7 @@ struct MinimalistPrayerPage: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
                         Spacer(minLength: 0)
-                        HStack(spacing: 14) {
+                        HStack(spacing: 14 * scale) {
                             ForEach(0..<totalCount, id: \.self) { index in
                                 let fallbackTemplate = componentLS("carousel.prayer_fallback", locale: locale)
                                 let nameLabel = index < prayerLabels.count
@@ -552,13 +594,13 @@ struct MinimalistPrayerPage: View {
                                 } label: {
                                     VStack(spacing: 4) {
                                         Text(letter)
-                                            .appFont(size: 20, weight: isSelected ? .semibold : .regular)
+                                            .appFont(size: 20 * scale, weight: isSelected ? .semibold : .regular)
                                             .foregroundColor(appearance.textColor.opacity(isSelected ? 1.0 : 0.38))
                                         Circle()
                                             .fill(appearance.textColor.opacity(isCurrent ? 0.9 : 0))
-                                            .frame(width: 4, height: 4)
+                                            .frame(width: 4 * scale, height: 4 * scale)
                                     }
-                                    .frame(minWidth: 28, minHeight: 36)
+                                    .frame(minWidth: 28 * scale, minHeight: 36 * scale)
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.hapticPlain)
@@ -584,7 +626,7 @@ struct MinimalistPrayerPage: View {
                     proxy.scrollTo(selectedIndex, anchor: .center)
                 }
             }
-            .frame(height: 48)
+            .frame(height: 48 * scale)
             .frame(maxWidth: .infinity)
         }
     }

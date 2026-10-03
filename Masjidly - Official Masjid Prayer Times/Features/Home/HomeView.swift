@@ -279,23 +279,27 @@ struct HomeView: View {
     }
 
     private var homeContent: some View {
-        GeometryReader { geo in
-            let metrics = HomeViewportMetrics(geometry: geo)
-            homeMainZStack(metrics: metrics)
-                .frame(width: geo.size.width, height: geo.size.height)
-        }
-        .ignoresSafeArea()
-        .navigationBarHidden(true)
-        .accessibilityIdentifier("tabHome")
-        .overlay {
-            if showingWhatsNew {
-                whatsNewOverlay
-            } else if showingClosestMosquePrompt, let pendingClosestMosque {
-                closestMosquePromptOverlay(closest: pendingClosestMosque)
-            } else {
-                addMosqueTabOverlay
+        // The inner reader ignores the safe area, so its insets are zero; read side insets
+        // (Dynamic Island / notch in landscape) from an outer reader that respects them.
+        GeometryReader { safeGeo in
+            GeometryReader { geo in
+                let metrics = HomeViewportMetrics(geometry: geo, sideInsets: safeGeo.safeAreaInsets)
+                homeMainZStack(metrics: metrics)
+                    .frame(width: geo.size.width, height: geo.size.height)
+            }
+            .ignoresSafeArea()
+            .overlay {
+                if showingWhatsNew {
+                    whatsNewOverlay
+                } else if showingClosestMosquePrompt, let pendingClosestMosque {
+                    closestMosquePromptOverlay(closest: pendingClosestMosque)
+                } else {
+                    addMosqueTabOverlay
+                }
             }
         }
+        .navigationBarHidden(true)
+        .accessibilityIdentifier("tabHome")
     }
 
     private func homeMainZStack(metrics: HomeViewportMetrics) -> AnyView {
@@ -304,7 +308,7 @@ struct HomeView: View {
                 backgroundLayer(metrics: metrics)
 
                 if let d = model.displayedPrayerTimes {
-                    homePrayerPage(for: d)
+                    homePrayerPage(for: d, metrics: metrics)
                 } else if model.isLoadingDisplayedDate || model.loadState == .loading || model.loadState == .idle {
                     ProgressView()
                         .tint(currentAppearance.textColor)
@@ -321,6 +325,7 @@ struct HomeView: View {
                             .padding(.leading, metrics.leadingChromeInset)
 
                         dateDisplay
+                            .frame(maxWidth: 560)
                             .frame(maxWidth: .infinity)
 
                         settingsButton
@@ -335,7 +340,8 @@ struct HomeView: View {
 
                 if !onboarding.isActive, !model.mosques.isEmpty {
                     mosqueTabs
-                        .padding(.horizontal, 12)
+                        .padding(.leading, max(metrics.safeLeading, 12))
+                        .padding(.trailing, max(metrics.safeTrailing, 12))
                         // Extra lift above home indicator so tab taps do not fight app switcher.
                         .padding(.bottom, max(metrics.safeBottom, 12) + 20)
                 }
@@ -635,7 +641,7 @@ struct HomeView: View {
         openURL(url)
     }
 
-    private func homePrayerPage(for daily: DailyPrayerTimes) -> AnyView {
+    private func homePrayerPage(for daily: DailyPrayerTimes, metrics: HomeViewportMetrics) -> AnyView {
         let isFriday = isFridayInSheffield(model.displayedDate)
         let jummahTime = displayJummahTime(raw: model.iqamahTimes?.jummah, fallbackDhuhr: daily.dhuhr)
         let prayers: [(canonical: String, time: String, theme: HomeDesign.TimeTheme)] = [
@@ -699,7 +705,9 @@ struct HomeView: View {
                 totalCount: prayers.count,
                 onSelectPrayer: { model.selectedPrayerIndex = $0 },
                 highlightedShortcutIndex: nil,
-                onShortcutTapped: { _ in }
+                onShortcutTapped: { _ in },
+                landscapeInsets: metrics.isCompactLandscape ? metrics.landscapeContentInsets : nil,
+                scale: metrics.contentScale
             )
             .onAppear {
                 let deferAuth = !settings.hasCompletedOnboarding || settings.hideQiblaCompass
@@ -1669,14 +1677,14 @@ private struct HomeViewportMetrics: Sendable {
     let safeTrailing: CGFloat
     let safeLeading: CGFloat
 
-    init(geometry: GeometryProxy) {
+    init(geometry: GeometryProxy, sideInsets: EdgeInsets) {
         let s = geometry.size
         width = s.width
         height = s.height
         safeTop = geometry.safeAreaInsets.top
         safeBottom = geometry.safeAreaInsets.bottom
-        safeTrailing = geometry.safeAreaInsets.trailing
-        safeLeading = geometry.safeAreaInsets.leading
+        safeTrailing = sideInsets.trailing
+        safeLeading = sideInsets.leading
     }
 
     private var contentWidth: CGFloat { min(width, 560) }
@@ -1691,8 +1699,27 @@ private struct HomeViewportMetrics: Sendable {
 
     var backgroundGlowOffsetY: CGFloat { -max(80, width * 0.22) }
 
+    /// Short, wide viewport (landscape phone) where the stacked portrait layout cannot fit.
+    var isCompactLandscape: Bool { width > height && height < 600 }
+
     var topChromeInset: CGFloat {
-        max(safeTop, 56) + 12
+        isCompactLandscape ? max(safeTop, 12) + 4 : max(safeTop, 56) + 12
+    }
+
+    /// Grows the prayer page on large screens (iPad); phones stay at 1.
+    var contentScale: CGFloat {
+        guard !isCompactLandscape else { return 1 }
+        return min(max(min(width / 430, height / 760), 1), 1.6)
+    }
+
+    /// Space the landscape prayer page leaves for the top bar (44pt buttons) and bottom mosque tabs.
+    var landscapeContentInsets: EdgeInsets {
+        EdgeInsets(
+            top: topChromeInset + 44 + 8,
+            leading: leadingChromeInset,
+            bottom: max(safeBottom, 12) + 20 + 44 + 8,
+            trailing: trailingChromeInset
+        )
     }
 
     var trailingChromeInset: CGFloat {
