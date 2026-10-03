@@ -10,11 +10,13 @@ object ClosestMosquePromptDecision {
         selectedMosqueId: String?,
         dismissedClosestMosqueId: String?,
         visibleMosqueCount: Int,
+        openMosqueTabIds: List<String> = emptyList(),
     ): Boolean {
         if (visibleMosqueCount < 2) return false
         if (closestMosqueId == null || selectedMosqueId == null) return false
         if (closestMosqueId == selectedMosqueId) return false
         if (closestMosqueId == dismissedClosestMosqueId) return false
+        if (closestMosqueId in openMosqueTabIds) return false
         return true
     }
 

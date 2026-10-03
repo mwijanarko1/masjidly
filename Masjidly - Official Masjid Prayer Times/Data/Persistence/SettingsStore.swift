@@ -44,6 +44,7 @@ final class SettingsStore: SettingsPersisting {
         case notificationsJSON
         case appLanguage
         case hasCompletedOnboarding
+        case hasCompletedPrayerFocusOnboarding
         case appFontName
         case themeMode
         case fixedTheme
@@ -108,6 +109,11 @@ final class SettingsStore: SettingsPersisting {
 
     var hasCompletedOnboarding: Bool {
         didSet { defaults.set(hasCompletedOnboarding, forKey: Key.hasCompletedOnboarding.rawValue) }
+    }
+
+    /// One-shot Prayer Focus setup for updaters and new tutorial graduates.
+    var hasCompletedPrayerFocusOnboarding: Bool {
+        didSet { defaults.set(hasCompletedPrayerFocusOnboarding, forKey: Key.hasCompletedPrayerFocusOnboarding.rawValue) }
     }
 
     var appFontName: String {
@@ -289,6 +295,11 @@ final class SettingsStore: SettingsPersisting {
             hasCompletedOnboarding = false
         } else {
             hasCompletedOnboarding = defaults.bool(forKey: Key.hasCompletedOnboarding.rawValue)
+        }
+        if defaults.object(forKey: Key.hasCompletedPrayerFocusOnboarding.rawValue) == nil {
+            hasCompletedPrayerFocusOnboarding = false
+        } else {
+            hasCompletedPrayerFocusOnboarding = defaults.bool(forKey: Key.hasCompletedPrayerFocusOnboarding.rawValue)
         }
         appFontName = defaults.string(forKey: Key.appFontName.rawValue) ?? "Gill Sans"
         themeMode = HomeDesign.ThemeMode(rawValue: defaults.string(forKey: Key.themeMode.rawValue) ?? "") ?? .dynamic

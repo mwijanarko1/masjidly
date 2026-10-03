@@ -902,4 +902,21 @@ struct ClosestMosquePromptDecisionTests {
             visibleMosqueCount: 2
         ))
     }
+
+    @Test func suppressesClosestMosqueAlreadyOpenInAnotherTab() {
+        #expect(!ClosestMosquePromptDecision.shouldPresent(
+            closestMosqueId: "risalah",
+            selectedMosqueId: "sunnah",
+            dismissedClosestMosqueId: nil,
+            visibleMosqueCount: 2,
+            openMosqueTabIds: ["risalah", "sunnah"]
+        ))
+        #expect(ClosestMosquePromptDecision.shouldPresent(
+            closestMosqueId: "risalah",
+            selectedMosqueId: "sunnah",
+            dismissedClosestMosqueId: nil,
+            visibleMosqueCount: 3,
+            openMosqueTabIds: ["sunnah", "other"]
+        ))
+    }
 }

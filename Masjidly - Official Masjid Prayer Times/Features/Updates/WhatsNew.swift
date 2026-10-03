@@ -23,33 +23,33 @@ struct WhatsNew {
         case "ar":
             return [
                 WhatsNewItem(
-                    title: "تبويبات المساجد",
-                    description: "اعرض أوقات أكثر من مسجد عبر التبويبات. افتحها، انتقل بينها، أو أغلقها في أي وقت. المسجد النشط يتحكم في الإشعارات والودجت.",
-                    icon: "rectangle.on.rectangle"
+                    title: "التركيز للصلاة",
+                    description: "أوقف التطبيقات التي تختارها حول أوقات الصلاة.",
+                    icon: "hourglass"
                 ),
             ]
         case "ur":
             return [
                 WhatsNewItem(
-                    title: "مسجد کے ٹیبز",
-                    description: "ٹیبز سے ایک سے زیادہ مساجد کے اوقات دیکھیں۔ کسی بھی وقت کھولیں، سوئچ کریں، یا بند کریں۔ فعال مسجد اطلاعات اور ویجٹ کو کنٹرول کرتی ہے۔",
-                    icon: "rectangle.on.rectangle"
+                    title: "نماز فوکس",
+                    description: "نماز کے اوقات کے قریب اپنی منتخب ایپس روکیں۔",
+                    icon: "hourglass"
                 ),
             ]
         case "id":
             return [
                 WhatsNewItem(
-                    title: "Tab masjid",
-                    description: "Lihat jadwal lebih dari satu masjid lewat tab. Buka, beralih, atau tutup tab kapan saja. Masjid aktif mengontrol notifikasi dan widget.",
-                    icon: "rectangle.on.rectangle"
+                    title: "Fokus Salat",
+                    description: "Jeda aplikasi pilihan Anda sekitar waktu salat.",
+                    icon: "hourglass"
                 ),
             ]
         default:
             return [
                 WhatsNewItem(
-                    title: "Mosque tabs",
-                    description: "Mosque tabs let you see times for more than one mosque. Open, switch, or close them anytime. The active mosque controls notifications and the widget.",
-                    icon: "rectangle.on.rectangle"
+                    title: "Prayer Focus",
+                    description: "Pause the apps you choose around prayer times.",
+                    icon: "hourglass"
                 ),
             ]
         }

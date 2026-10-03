@@ -1,3 +1,4 @@
+import FamilyControls
 import Observation
 import SwiftUI
 import CoreLocation
@@ -29,6 +30,8 @@ struct SettingsView: View {
     @State private var prayerGradientSettingsExpanded = false
     @State private var openMosquePicker: MosqueSettingsPicker?
     @State private var selectedAppIcon: AppIconOption = .current
+    @State private var prayerFocus = PrayerFocusController.shared
+    @State private var prayerFocusPrayersExpanded = false
 
     private enum MosqueSettingsPicker: String, Identifiable {
         case country, city, mosque
@@ -214,6 +217,10 @@ struct SettingsView: View {
                                 .padding(.vertical, 12)
                         }
                     }
+                }
+
+                settingsSectionBlock(titleKey: "settings.prayer_focus.title") {
+                    prayerFocusSection
                 }
 
                 settingsSectionBlock(titleKey: "settings.section.contact.title") {
@@ -1388,6 +1395,188 @@ struct SettingsView: View {
                                   n.preIqamahReminderMinutes != nil
                 settings.notifications = n
                 Task { await model.onNotificationsChanged() }
+            }
+        )
+    }
+
+    // MARK: - Prayer Focus
+
+    private var prayerFocusSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SettingsToggleRow(
+                title: localized("settings.prayer_focus.enabled.title"),
+                isOn: prayerFocusEnabledBinding,
+                appearance: currentAppearance
+            )
+            .padding(.vertical, 12)
+
+            if prayerFocus.settings.isEnabled {
+                settingsRowDivider
+                // Status depends on the clock; redraw at each minute, when windows start and end.
+                TimelineView(.everyMinute) { context in
+                    let status = prayerFocus.status(at: context.date)
+                    // Scheduled is the normal state; only surface states that need attention.
+                    if case .scheduled = status {
+                        EmptyView()
+                    } else {
+                        VStack(alignment: .leading, spacing: 0) {
+                            prayerFocusStatusRow(status)
+                                .padding(.vertical, 12)
+                            settingsRowDivider
+                        }
+                    }
+                }
+                prayerFocusAppsRow
+                    .padding(.vertical, 12)
+                settingsRowDivider
+                prayerFocusStartPickerRow
+                    .padding(.vertical, 12)
+                settingsRowDivider
+                prayerFocusDurationPickerRow
+                    .padding(.vertical, 12)
+                settingsRowDivider
+                CollapsibleSettingsSection(
+                    title: localized("settings.prayer_focus.prayers.title"),
+                    isExpanded: $prayerFocusPrayersExpanded,
+                    appearance: currentAppearance
+                ) {
+                    ForEach(Array(PrayerFocusPrayer.allCases.enumerated()), id: \.element.rawValue) { index, prayer in
+                        if index > 0 { settingsRowDivider }
+                        NotificationToggleRow(
+                            title: localized(prayer.labelKey),
+                            isOn: prayerFocusPrayerBinding(prayer),
+                            appearance: currentAppearance
+                        )
+                        .padding(.vertical, 12)
+                    }
+                }
+            }
+        }
+        .familyActivityPicker(isPresented: $prayerFocus.isPickerPresented, selection: $prayerFocus.selection)
+    }
+
+    @ViewBuilder
+    private func prayerFocusStatusRow(_ status: PrayerFocusController.Status) -> some View {
+        switch status {
+        case .off:
+            EmptyView()
+        case .needsAuthorization:
+            VStack(alignment: .leading, spacing: 10) {
+                prayerFocusCaption(localized("settings.prayer_focus.status.needs_authorization"))
+                contactActionButton(title: localized("settings.prayer_focus.allow_access")) {
+                    Task { await prayerFocus.enable() }
+                }
+            }
+        case .needsSelection:
+            prayerFocusCaption(localized("settings.prayer_focus.status.needs_selection"))
+        case .noUpcomingTimes:
+            prayerFocusCaption(localized("settings.prayer_focus.status.no_times"))
+        case .failed:
+            prayerFocusCaption(localized("settings.prayer_focus.status.failed"))
+        case .scheduled:
+            EmptyView()
+        case .active(let until):
+            VStack(alignment: .leading, spacing: 10) {
+                prayerFocusCaption(prayerFocusFormat("settings.prayer_focus.status.active_format", until))
+                contactActionButton(title: localized("settings.prayer_focus.stop")) {
+                    prayerFocus.stopCurrentWindow()
+                }
+            }
+        }
+    }
+
+    private var prayerFocusAppsRow: some View {
+        Button {
+            prayerFocus.isPickerPresented = true
+        } label: {
+            HStack(alignment: .center, spacing: 16) {
+                Text(localized("settings.prayer_focus.choose_apps"))
+                    .appFont(size: 17, weight: .regular)
+                    .foregroundColor(currentAppearance.textColor)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(PrayerFocusController.selectionSummary(prayerFocus.selection, locale: locale, localized: localized))
+                    .appFont(size: 17, weight: .regular)
+                    .foregroundColor(currentAppearance.textColor.opacity(0.6))
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.hapticPlain)
+    }
+
+    private var prayerFocusStartPickerRow: some View {
+        HStack(alignment: .center, spacing: 16) {
+            Text(localized("settings.prayer_focus.start.title"))
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(currentAppearance.textColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Picker("", selection: $prayerFocus.settings.start) {
+                Text(localized("notification.channel.adhan")).appFont(size: 17).tag(PrayerFocusStart.adhan)
+                Text(localized("notification.channel.iqamah")).appFont(size: 17).tag(PrayerFocusStart.iqamah)
+            }
+            .pickerStyle(.menu)
+            .tint(currentAppearance.textColor)
+            .fixedSize()
+        }
+        .frame(minHeight: 44)
+    }
+
+    private var prayerFocusDurationPickerRow: some View {
+        HStack(alignment: .center, spacing: 16) {
+            Text(localized("settings.prayer_focus.duration.title"))
+                .appFont(size: 17, weight: .regular)
+                .foregroundColor(currentAppearance.textColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Picker("", selection: $prayerFocus.settings.durationMinutes) {
+                ForEach(PrayerFocusSettings.durationOptions, id: \.self) { minutes in
+                    reminderOptionText(minutes).tag(minutes)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(currentAppearance.textColor)
+            .fixedSize()
+        }
+        .frame(minHeight: 44)
+    }
+
+    private func prayerFocusCaption(_ text: String) -> some View {
+        Text(text)
+            .appFont(size: 13, weight: .regular)
+            .foregroundColor(currentAppearance.textColor.opacity(0.6))
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func prayerFocusFormat(_ key: String, _ date: Date) -> String {
+        // Device zone with its name shown, so travellers see local time (e.g. "18:30 GMT+3").
+        let time = date.formatted(.dateTime.weekday(.abbreviated).hour().minute().timeZone(.specificName(.short)).locale(locale))
+        return String(format: localized(key), locale: locale, arguments: [time])
+    }
+
+    private var prayerFocusEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { prayerFocus.settings.isEnabled },
+            set: { isOn in
+                if isOn {
+                    Task { await prayerFocus.enable() }
+                } else {
+                    prayerFocus.disable()
+                }
+            }
+        )
+    }
+
+    private func prayerFocusPrayerBinding(_ prayer: PrayerFocusPrayer) -> Binding<Bool> {
+        Binding(
+            get: { prayerFocus.settings.prayers.contains(prayer) },
+            set: { isOn in
+                if isOn {
+                    prayerFocus.settings.prayers.insert(prayer)
+                } else {
+                    prayerFocus.settings.prayers.remove(prayer)
+                }
             }
         )
     }

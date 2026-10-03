@@ -276,7 +276,8 @@
   gsap.set("#lt-en-r0", { opacity: 0 });
   gsap.set(["#s-cam", "#tt-sheet"], { transformOrigin: "540px 960px" });
   gsap.set("#s-cam", { opacity: 0, transformPerspective: 2600 });
-  gsap.set("#lg", { y: 560 });
+  gsap.set("#lg", { y: 500 });
+  gsap.set(["#am-v1", "#am-v2", "#am-v3", "#am-v4", "#am-panel"], { opacity: 0 });
 
   // ===== 0-1.9 · logo, zoom through into the app =====
   tl.fromTo("#s-intro-icon", { opacity: 0, scale: 0.5, rotation: -10 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.7, ease: "back.out(1.7)" }, 0.05);
@@ -309,8 +310,8 @@
   tl.to(["#h-tabs", "#h-letters-wrap"], { opacity: 0, duration: 0.3 }, 14.3);
   tl.to(["#h-tabs", "#h-letters-wrap"], { opacity: 1, duration: 0.3 }, 19.7);
   const lgSel = function (row, at) {
-    tl.to("#lg-hl", { y: row * 100, duration: 0.3, ease: "power3.out" }, at);
-    tl.to("#lg-check", { y: row * 100, duration: 0.3, ease: "power3.out" }, at);
+    tl.to("#lg-hl", { y: row * 88, duration: 0.3, ease: "power3.out" }, at);
+    tl.to("#lg-check", { y: row * 88, duration: 0.3, ease: "power3.out" }, at);
     tl.fromTo("#lg-check", { scale: 0.6 }, { scale: 1, duration: 0.3, ease: "back.out(2.5)", immediateRender: false }, at + 0.05);
   };
   const dissolve = function (sel, at) { tl.to(sel, { opacity: 0, scaleX: 1.4, filter: "blur(12px)", duration: 0.3, ease: "power2.in" }, at); };
@@ -337,7 +338,7 @@
   tl.fromTo("#h-p2", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, immediateRender: false }, 19.35);
   restore("#h-p2-name", 19.35);
   tl.to("#s-cam", { scale: 1, duration: 0.4 }, 19.35);
-  tl.to("#lg", { opacity: 0, y: 560, duration: 0.4, ease: "power3.in" }, 19.45);
+  tl.to("#lg", { opacity: 0, y: 500, duration: 0.4, ease: "power3.in" }, 19.45);
   curPage = 2;
 
   // ===== D 19.8-26.4 · add 4 masjids, switch in one tap =====
@@ -345,27 +346,61 @@
   select(3, 3, 20.0);
   move("#s-cam", 20.3, 0.5, { y: -160 }, "power3.inOut");
   const TAB_PAGES = [3, 6, 6, 10, 11];
-  [21.2, 22.3, 23.4, 24.5].forEach(function (tp, k) {
-    const idx = k + 1;
+  // The app's add-tab card (MosqueSelectionOnboardingView) at 2.2x: closed it is 771px tall at top 575 (h-ui);
+  // the open Mosque dropdown grows it to 1364px at top 278. It springs out of the + button and fades back out.
+  const amIn = function (at) {
     const L = tabLayout(tabState);
-    tap(L.plusX + trackX, 1762 - 160, tp);
-    tl.fromTo("#am-dim", { opacity: 0 }, { opacity: 1, duration: 0.2, immediateRender: false }, tp + 0.08);
-    tl.fromTo("#am", { opacity: 0, scale: 0.2, transformOrigin: "50% 100%" }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.4)", immediateRender: false }, tp + 0.08);
-    tl.fromTo("#am-h" + idx, { opacity: 0 }, { opacity: 1, duration: 0.12, immediateRender: false }, tp + 0.4);
-    tap(420, 330 + 30 + 42 + 48 - 160, tp + 0.4);
-    tl.to("#am", { opacity: 0, scale: 0.9, duration: 0.18, ease: "power2.in" }, tp + 0.56);
-    tl.to("#am-dim", { opacity: 0, duration: 0.2 }, tp + 0.56);
-    tl.set("#am-r" + idx, { height: 0 }, tp + 0.8);
+    tap(L.plusX + trackX, 1762 - 160, at);
+    tl.fromTo("#am-dim", { opacity: 0 }, { opacity: 1, duration: 0.24, ease: "power1.out", immediateRender: false }, at + 0.06);
+    tl.fromTo("#am", { opacity: 0, scale: 0.08, x: L.plusX + trackX - 540, y: 802, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.45, ease: "back.out(1.1)", immediateRender: false }, at + 0.06);
+  };
+  const amOut = function (at) {
+    tap(540, 1237 - 160, at);
+    tl.to(["#am", "#am-dim"], { opacity: 0, duration: 0.24, ease: "power1.out" }, at + 0.05);
+    tl.to("#am", { scale: 0.96, duration: 0.24, ease: "power1.out" }, at + 0.05);
+  };
+  const addTab = function (idx, at) {
     const added = tabState.added.slice(); added[idx] = true;
-    setTabs({ added: added, sel: idx }, tp + 0.62);
-    select(TAB_PAGES[idx], null, tp + 0.72);
+    setTabs({ added: added, sel: idx }, at);
+    select(TAB_PAGES[idx], null, at + 0.1);
+  };
+  const amDrop = function (open, at) {
+    tl.to("#am", { clipPath: open ? "inset(0px 0px 0px 0px round 53px)" : "inset(297px 0px 296px 0px round 53px)", duration: 0.22, ease: "power1.inOut" }, at);
+    tl.to("#am-in", { y: open ? 0 : 297, duration: 0.22, ease: "power1.inOut" }, at);
+    tl.to("#am-go", { y: open ? 0 : -296, duration: 0.22, ease: "power1.inOut" }, at);
+    tl.to("#am-chev", { rotation: open ? 180 : 0, duration: 0.22, ease: "power1.inOut" }, at);
+    tl.to("#am-panel", { opacity: open ? 1 : 0, y: open ? 0 : -40, scale: open ? 1 : 0.98, duration: 0.22, ease: "power1.inOut" }, at);
+  };
+  gsap.set("#am-panel", { y: -40, scale: 0.98 });
+  gsap.set("#am-in", { y: 297 });
+  gsap.set("#am-go", { y: -296 });
+  gsap.set("#am-chev", { transformOrigin: "50% 50%" });
+  // 1: open the Mosque dropdown, scroll to Masjid Risalah, pick it, Continue
+  amIn(20.75);
+  tap(700, 1080 - 160, 21.3);
+  amDrop(true, 21.35);
+  tl.to("#am-items", { y: -616, duration: 0.5, ease: "power2.inOut" }, 21.62);
+  tap(500, 1261 - 160, 22.15);
+  tl.set("#am-sel", { y: 880 }, 22.18);
+  tl.set("#am-v0", { opacity: 0 }, 22.2);
+  tl.set("#am-v1", { opacity: 1 }, 22.2);
+  amDrop(false, 22.22);
+  amOut(22.55);
+  addTab(1, 22.65);
+  // 2-4: the next masjid is already picked, so it is one tap on Continue
+  [[2, 23.1], [3, 24.0], [4, 24.9]].forEach(function (a) {
+    tl.set("#am-v" + (a[0] - 1), { opacity: 0 }, a[1] - 0.2);
+    tl.set("#am-v" + a[0], { opacity: 1 }, a[1] - 0.2);
+    amIn(a[1]);
+    amOut(a[1] + 0.5);
+    addTab(a[0], a[1] + 0.6);
   });
   // swipe the tab bar back and tap Masjid Faizul Islam
-  tl.to("#h-track", { x: 0, duration: 0.4, ease: "power2.inOut" }, 25.3);
+  tl.to("#h-track", { x: 0, duration: 0.35, ease: "power2.inOut" }, 25.75);
   trackX = 0;
-  tap(26 + UNSEL / 2, 1762 - 160, 25.7);
-  setTabs({ added: [true, true, true, true, true], sel: 0 }, 25.8, true);
-  select(3, null, 25.85);
+  tap(26 + UNSEL / 2, 1762 - 160, 25.95);
+  setTabs({ added: [true, true, true, true, true], sel: 0 }, 26.0, true);
+  select(3, null, 26.05);
   move("#s-cam", 26.15, 0.4, { y: 0 }, "power3.inOut");
 
   // ===== E 26.4-31.6 · make it yours: the three theme styles, then your own colours =====

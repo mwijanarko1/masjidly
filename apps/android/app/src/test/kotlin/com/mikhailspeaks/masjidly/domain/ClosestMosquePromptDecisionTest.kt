@@ -32,4 +32,26 @@ class ClosestMosquePromptDecisionTest {
             ),
         )
     }
+
+    @Test
+    fun suppressesClosestMosqueAlreadyOpenInAnotherTab() {
+        assertFalse(
+            ClosestMosquePromptDecision.shouldPresent(
+                closestMosqueId = "risalah",
+                selectedMosqueId = "sunnah",
+                dismissedClosestMosqueId = null,
+                visibleMosqueCount = 2,
+                openMosqueTabIds = listOf("risalah", "sunnah"),
+            ),
+        )
+        assertTrue(
+            ClosestMosquePromptDecision.shouldPresent(
+                closestMosqueId = "risalah",
+                selectedMosqueId = "sunnah",
+                dismissedClosestMosqueId = null,
+                visibleMosqueCount = 3,
+                openMosqueTabIds = listOf("sunnah", "other"),
+            ),
+        )
+    }
 }

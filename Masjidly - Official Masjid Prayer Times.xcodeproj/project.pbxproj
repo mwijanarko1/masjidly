@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		74100D572FAB9EED00CFBC47 /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = 74100D562FAB9EED00CFBC47 /* ConvexMobile */; };
 		8A10E0012FB0000000000001 /* MasjidlyWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A10E0022FB0000000000001 /* MasjidlyWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8A10E1012FB0000000000001 /* MasjidlyPrayerFocusMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A10E1022FB0000000000001 /* MasjidlyPrayerFocusMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8A10E2012FB0000000000001 /* MasjidlyPrayerFocusShield.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A10E2022FB0000000000001 /* MasjidlyPrayerFocusShield.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8A10E3012FB0000000000001 /* MasjidlyPrayerFocusShieldAction.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A10E3022FB0000000000001 /* MasjidlyPrayerFocusShieldAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +36,27 @@
 			remoteGlobalIDString = 8A10E0042FB0000000000001;
 			remoteInfo = MasjidlyWidgets;
 		};
+		8A10E1032FB0000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 74100D212FAB9EEA00CFBC47 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A10E1042FB0000000000001;
+			remoteInfo = MasjidlyPrayerFocusMonitor;
+		};
+		8A10E2032FB0000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 74100D212FAB9EEA00CFBC47 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A10E2042FB0000000000001;
+			remoteInfo = MasjidlyPrayerFocusShield;
+		};
+		8A10E3032FB0000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 74100D212FAB9EEA00CFBC47 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A10E3042FB0000000000001;
+			remoteInfo = MasjidlyPrayerFocusShieldAction;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -43,6 +67,9 @@
 			dstSubfolderSpec = 13;
 			files = (
 				8A10E0012FB0000000000001 /* MasjidlyWidgets.appex in Embed Foundation Extensions */,
+				8A10E1012FB0000000000001 /* MasjidlyPrayerFocusMonitor.appex in Embed Foundation Extensions */,
+				8A10E2012FB0000000000001 /* MasjidlyPrayerFocusShield.appex in Embed Foundation Extensions */,
+				8A10E3012FB0000000000001 /* MasjidlyPrayerFocusShieldAction.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -54,6 +81,9 @@
 		74100D382FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Masjidly - Official Masjid Prayer TimesTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		74100D422FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Masjidly - Official Masjid Prayer TimesUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A10E0022FB0000000000001 /* MasjidlyWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MasjidlyWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8A10E1022FB0000000000001 /* MasjidlyPrayerFocusMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MasjidlyPrayerFocusMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8A10E2022FB0000000000001 /* MasjidlyPrayerFocusShield.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MasjidlyPrayerFocusShield.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8A10E3022FB0000000000001 /* MasjidlyPrayerFocusShieldAction.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MasjidlyPrayerFocusShieldAction.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +105,21 @@
 		8A10E0062FB0000000000001 /* MasjidlyWidgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = MasjidlyWidgets;
+			sourceTree = "<group>";
+		};
+		8A10E1062FB0000000000001 /* MasjidlyPrayerFocusMonitor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MasjidlyPrayerFocusMonitor;
+			sourceTree = "<group>";
+		};
+		8A10E2062FB0000000000001 /* MasjidlyPrayerFocusShield */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MasjidlyPrayerFocusShield;
+			sourceTree = "<group>";
+		};
+		8A10E3062FB0000000000001 /* MasjidlyPrayerFocusShieldAction */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MasjidlyPrayerFocusShieldAction;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -109,6 +154,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8A10E1072FB0000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A10E2072FB0000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A10E3072FB0000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -119,6 +185,9 @@
 				74100D3B2FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesTests */,
 				74100D452FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests */,
 				8A10E0062FB0000000000001 /* MasjidlyWidgets */,
+				8A10E1062FB0000000000001 /* MasjidlyPrayerFocusMonitor */,
+				8A10E2062FB0000000000001 /* MasjidlyPrayerFocusShield */,
+				8A10E3062FB0000000000001 /* MasjidlyPrayerFocusShieldAction */,
 				74100D2A2FAB9EEA00CFBC47 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -130,6 +199,9 @@
 				74100D382FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesTests.xctest */,
 				74100D422FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests.xctest */,
 				8A10E0022FB0000000000001 /* MasjidlyWidgets.appex */,
+				8A10E1022FB0000000000001 /* MasjidlyPrayerFocusMonitor.appex */,
+				8A10E2022FB0000000000001 /* MasjidlyPrayerFocusShield.appex */,
+				8A10E3022FB0000000000001 /* MasjidlyPrayerFocusShieldAction.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -150,6 +222,9 @@
 			);
 			dependencies = (
 				8A10E0082FB0000000000001 /* PBXTargetDependency */,
+				8A10E1082FB0000000000001 /* PBXTargetDependency */,
+				8A10E2082FB0000000000001 /* PBXTargetDependency */,
+				8A10E3082FB0000000000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				74100D2B2FAB9EEA00CFBC47 /* Masjidly - Official Masjid Prayer Times */,
@@ -230,6 +305,72 @@
 			productReference = 8A10E0022FB0000000000001 /* MasjidlyWidgets.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		8A10E1042FB0000000000001 /* MasjidlyPrayerFocusMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A10E1092FB0000000000001 /* Build configuration list for PBXNativeTarget "MasjidlyPrayerFocusMonitor" */;
+			buildPhases = (
+				8A10E10A2FB0000000000001 /* Sources */,
+				8A10E1072FB0000000000001 /* Frameworks */,
+				8A10E10B2FB0000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8A10E1062FB0000000000001 /* MasjidlyPrayerFocusMonitor */,
+			);
+			name = MasjidlyPrayerFocusMonitor;
+			packageProductDependencies = (
+			);
+			productName = MasjidlyPrayerFocusMonitor;
+			productReference = 8A10E1022FB0000000000001 /* MasjidlyPrayerFocusMonitor.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		8A10E2042FB0000000000001 /* MasjidlyPrayerFocusShield */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A10E20B2FB0000000000001 /* Build configuration list for PBXNativeTarget "MasjidlyPrayerFocusShield" */;
+			buildPhases = (
+				8A10E2092FB0000000000001 /* Sources */,
+				8A10E2072FB0000000000001 /* Frameworks */,
+				8A10E20A2FB0000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8A10E2062FB0000000000001 /* MasjidlyPrayerFocusShield */,
+			);
+			name = MasjidlyPrayerFocusShield;
+			packageProductDependencies = (
+			);
+			productName = MasjidlyPrayerFocusShield;
+			productReference = 8A10E2022FB0000000000001 /* MasjidlyPrayerFocusShield.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		8A10E3042FB0000000000001 /* MasjidlyPrayerFocusShieldAction */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A10E30B2FB0000000000001 /* Build configuration list for PBXNativeTarget "MasjidlyPrayerFocusShieldAction" */;
+			buildPhases = (
+				8A10E3092FB0000000000001 /* Sources */,
+				8A10E3072FB0000000000001 /* Frameworks */,
+				8A10E30A2FB0000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8A10E3062FB0000000000001 /* MasjidlyPrayerFocusShieldAction */,
+			);
+			name = MasjidlyPrayerFocusShieldAction;
+			packageProductDependencies = (
+			);
+			productName = MasjidlyPrayerFocusShieldAction;
+			productReference = 8A10E3022FB0000000000001 /* MasjidlyPrayerFocusShieldAction.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -252,6 +393,15 @@
 						TestTargetID = 74100D282FAB9EEA00CFBC47;
 					};
 					8A10E0042FB0000000000001 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					8A10E1042FB0000000000001 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					8A10E2042FB0000000000001 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					8A10E3042FB0000000000001 = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
 				};
@@ -279,6 +429,9 @@
 				74100D372FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesTests */,
 				74100D412FAB9EED00CFBC47 /* Masjidly - Official Masjid Prayer TimesUITests */,
 				8A10E0042FB0000000000001 /* MasjidlyWidgets */,
+				8A10E1042FB0000000000001 /* MasjidlyPrayerFocusMonitor */,
+				8A10E2042FB0000000000001 /* MasjidlyPrayerFocusShield */,
+				8A10E3042FB0000000000001 /* MasjidlyPrayerFocusShieldAction */,
 			);
 		};
 /* End PBXProject section */
@@ -306,6 +459,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8A10E00B2FB0000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A10E10B2FB0000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A10E20A2FB0000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A10E30A2FB0000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -343,6 +517,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8A10E10A2FB0000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A10E2092FB0000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A10E3092FB0000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -360,6 +555,21 @@
 			isa = PBXTargetDependency;
 			target = 8A10E0042FB0000000000001 /* MasjidlyWidgets */;
 			targetProxy = 8A10E0032FB0000000000001 /* PBXContainerItemProxy */;
+		};
+		8A10E1082FB0000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A10E1042FB0000000000001 /* MasjidlyPrayerFocusMonitor */;
+			targetProxy = 8A10E1032FB0000000000001 /* PBXContainerItemProxy */;
+		};
+		8A10E2082FB0000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A10E2042FB0000000000001 /* MasjidlyPrayerFocusShield */;
+			targetProxy = 8A10E2032FB0000000000001 /* PBXContainerItemProxy */;
+		};
+		8A10E3082FB0000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A10E3042FB0000000000001 /* MasjidlyPrayerFocusShieldAction */;
+			targetProxy = 8A10E3032FB0000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -490,243 +700,399 @@
 			name = Release;
 		};
 		74100D4D2FAB9EED00CFBC47 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Rose AppIcon-Afternoon AppIcon-Dawn";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CODE_SIGN_ENTITLEMENTS = "Masjidly - Official Masjid Prayer Times/Masjidly.entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
-				DEVELOPMENT_TEAM = WH4MT5Z44S;
-				ENABLE_PREVIEWS = YES;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Config/Masjidly-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = Masjidly;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Use your current location and device heading to point the Qibla indicator toward Makkah.";
-				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Schedule local reminders for upcoming prayer and iqamah times for your selected mosque.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = audio;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times";
-				PRODUCT_MODULE_NAME = Masjidly;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
+	buildSettings = {
+		"ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES" = "AppIcon-Rose AppIcon-Afternoon AppIcon-Dawn";
+		"ASSETCATALOG_COMPILER_APPICON_NAME" = AppIcon;
+		"ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME" = AccentColor;
+		"ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "Masjidly - Official Masjid Prayer Times/Masjidly.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"ENABLE_PREVIEWS" = YES;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = YES;
+		"INFOPLIST_FILE" = "Config/Masjidly-Info.plist";
+		"INFOPLIST_KEY_CFBundleDisplayName" = Masjidly;
+		"INFOPLIST_KEY_ITSAppUsesNonExemptEncryption" = NO;
+		"INFOPLIST_KEY_LSApplicationCategoryType" = "public.app-category.reference";
+		"INFOPLIST_KEY_NSLocationWhenInUseUsageDescription" = "Use your current location and device heading to point the Qibla indicator toward Makkah.";
+		"INFOPLIST_KEY_NSUserNotificationsUsageDescription" = "Schedule local reminders for upcoming prayer and iqamah times for your selected mosque.";
+		"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = YES;
+		"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents" = YES;
+		"INFOPLIST_KEY_UIBackgroundModes" = audio;
+		"INFOPLIST_KEY_UILaunchScreen_Generation" = YES;
+		"INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+		"INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times";
+		"PRODUCT_MODULE_NAME" = Masjidly;
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"STRING_CATALOG_GENERATE_SYMBOLS" = YES;
+		"SWIFT_APPROACHABLE_CONCURRENCY" = YES;
+		"SWIFT_DEFAULT_ACTOR_ISOLATION" = MainActor;
+		"SWIFT_EMIT_LOC_STRINGS" = YES;
+		"SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Debug;
+};
 		74100D4E2FAB9EED00CFBC47 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Rose AppIcon-Afternoon AppIcon-Dawn";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CODE_SIGN_ENTITLEMENTS = "Masjidly - Official Masjid Prayer Times/Masjidly.entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
-				DEVELOPMENT_TEAM = WH4MT5Z44S;
-				ENABLE_PREVIEWS = YES;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Config/Masjidly-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = Masjidly;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Use your current location and device heading to point the Qibla indicator toward Makkah.";
-				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Schedule local reminders for upcoming prayer and iqamah times for your selected mosque.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = audio;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times";
-				PRODUCT_MODULE_NAME = Masjidly;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
+	buildSettings = {
+		"ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES" = "AppIcon-Rose AppIcon-Afternoon AppIcon-Dawn";
+		"ASSETCATALOG_COMPILER_APPICON_NAME" = AppIcon;
+		"ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME" = AccentColor;
+		"ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "Masjidly - Official Masjid Prayer Times/Masjidly.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"ENABLE_PREVIEWS" = YES;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = YES;
+		"INFOPLIST_FILE" = "Config/Masjidly-Info.plist";
+		"INFOPLIST_KEY_CFBundleDisplayName" = Masjidly;
+		"INFOPLIST_KEY_ITSAppUsesNonExemptEncryption" = NO;
+		"INFOPLIST_KEY_LSApplicationCategoryType" = "public.app-category.reference";
+		"INFOPLIST_KEY_NSLocationWhenInUseUsageDescription" = "Use your current location and device heading to point the Qibla indicator toward Makkah.";
+		"INFOPLIST_KEY_NSUserNotificationsUsageDescription" = "Schedule local reminders for upcoming prayer and iqamah times for your selected mosque.";
+		"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = YES;
+		"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents" = YES;
+		"INFOPLIST_KEY_UIBackgroundModes" = audio;
+		"INFOPLIST_KEY_UILaunchScreen_Generation" = YES;
+		"INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+		"INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times";
+		"PRODUCT_MODULE_NAME" = Masjidly;
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"STRING_CATALOG_GENERATE_SYMBOLS" = YES;
+		"SWIFT_APPROACHABLE_CONCURRENCY" = YES;
+		"SWIFT_DEFAULT_ACTOR_ISOLATION" = MainActor;
+		"SWIFT_EMIT_LOC_STRINGS" = YES;
+		"SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Release;
+};
 		74100D502FAB9EED00CFBC47 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
-				DEVELOPMENT_TEAM = WH4MT5Z44S;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-TimesTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Masjidly - Official Masjid Prayer Times.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Masjidly - Official Masjid Prayer Times";
-			};
-			name = Debug;
-		};
+	buildSettings = {
+		"BUNDLE_LOADER" = "$(TEST_HOST)";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = YES;
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-TimesTests";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"STRING_CATALOG_GENERATE_SYMBOLS" = NO;
+		"SWIFT_APPROACHABLE_CONCURRENCY" = YES;
+		"SWIFT_EMIT_LOC_STRINGS" = NO;
+		"SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+		"TEST_HOST" = "$(BUILT_PRODUCTS_DIR)/Masjidly - Official Masjid Prayer Times.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Masjidly - Official Masjid Prayer Times";
+	};
+	isa = XCBuildConfiguration;
+	name = Debug;
+};
 		74100D512FAB9EED00CFBC47 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
-				DEVELOPMENT_TEAM = WH4MT5Z44S;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-TimesTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Masjidly - Official Masjid Prayer Times.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Masjidly - Official Masjid Prayer Times";
-			};
-			name = Release;
-		};
+	buildSettings = {
+		"BUNDLE_LOADER" = "$(TEST_HOST)";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = YES;
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-TimesTests";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"STRING_CATALOG_GENERATE_SYMBOLS" = NO;
+		"SWIFT_APPROACHABLE_CONCURRENCY" = YES;
+		"SWIFT_EMIT_LOC_STRINGS" = NO;
+		"SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+		"TEST_HOST" = "$(BUILT_PRODUCTS_DIR)/Masjidly - Official Masjid Prayer Times.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Masjidly - Official Masjid Prayer Times";
+	};
+	isa = XCBuildConfiguration;
+	name = Release;
+};
 		74100D532FAB9EED00CFBC47 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
-				DEVELOPMENT_TEAM = WH4MT5Z44S;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-TimesUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "Masjidly - Official Masjid Prayer Times";
-			};
-			name = Debug;
-		};
+	buildSettings = {
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = YES;
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-TimesUITests";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"STRING_CATALOG_GENERATE_SYMBOLS" = NO;
+		"SWIFT_APPROACHABLE_CONCURRENCY" = YES;
+		"SWIFT_EMIT_LOC_STRINGS" = NO;
+		"SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+		"TEST_TARGET_NAME" = "Masjidly - Official Masjid Prayer Times";
+	};
+	isa = XCBuildConfiguration;
+	name = Debug;
+};
 		74100D542FAB9EED00CFBC47 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
-				DEVELOPMENT_TEAM = WH4MT5Z44S;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-TimesUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "Masjidly - Official Masjid Prayer Times";
-			};
-			name = Release;
-		};
+	buildSettings = {
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = YES;
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-TimesUITests";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"STRING_CATALOG_GENERATE_SYMBOLS" = NO;
+		"SWIFT_APPROACHABLE_CONCURRENCY" = YES;
+		"SWIFT_EMIT_LOC_STRINGS" = NO;
+		"SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+		"TEST_TARGET_NAME" = "Masjidly - Official Masjid Prayer Times";
+	};
+	isa = XCBuildConfiguration;
+	name = Release;
+};
 		8A10E00C2FB0000000000001 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = MasjidlyWidgets/MasjidlyWidgets.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
-				DEVELOPMENT_TEAM = WH4MT5Z44S;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "MasjidlyWidgetSupport/MasjidlyWidgets-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.Widgets";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
+	buildSettings = {
+		"APPLICATION_EXTENSION_API_ONLY" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "MasjidlyWidgets/MasjidlyWidgets.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = NO;
+		"INFOPLIST_FILE" = "MasjidlyWidgetSupport/MasjidlyWidgets-Info.plist";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+			"@executable_path/../../Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.Widgets";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"SKIP_INSTALL" = YES;
+		"SWIFT_APPROACHABLE_CONCURRENCY" = YES;
+		"SWIFT_DEFAULT_ACTOR_ISOLATION" = MainActor;
+		"SWIFT_EMIT_LOC_STRINGS" = YES;
+		"SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Debug;
+};
 		8A10E00D2FB0000000000001 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = MasjidlyWidgets/MasjidlyWidgets.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
-				DEVELOPMENT_TEAM = WH4MT5Z44S;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "MasjidlyWidgetSupport/MasjidlyWidgets-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.Widgets";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
+	buildSettings = {
+		"APPLICATION_EXTENSION_API_ONLY" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "MasjidlyWidgets/MasjidlyWidgets.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = NO;
+		"INFOPLIST_FILE" = "MasjidlyWidgetSupport/MasjidlyWidgets-Info.plist";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+			"@executable_path/../../Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.Widgets";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"SKIP_INSTALL" = YES;
+		"SWIFT_APPROACHABLE_CONCURRENCY" = YES;
+		"SWIFT_DEFAULT_ACTOR_ISOLATION" = MainActor;
+		"SWIFT_EMIT_LOC_STRINGS" = YES;
+		"SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Release;
+};
+		8A10E10C2FB0000000000001 /* Debug */ = {
+	buildSettings = {
+		"APPLICATION_EXTENSION_API_ONLY" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "MasjidlyPrayerFocusMonitor/MasjidlyPrayerFocusMonitor.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = NO;
+		"INFOPLIST_FILE" = "Config/MasjidlyPrayerFocusMonitor-Info.plist";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+			"@executable_path/../../Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.PrayerFocusMonitor";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"SKIP_INSTALL" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Debug;
+};
+		8A10E10D2FB0000000000001 /* Release */ = {
+	buildSettings = {
+		"APPLICATION_EXTENSION_API_ONLY" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "MasjidlyPrayerFocusMonitor/MasjidlyPrayerFocusMonitor.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = NO;
+		"INFOPLIST_FILE" = "Config/MasjidlyPrayerFocusMonitor-Info.plist";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+			"@executable_path/../../Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.PrayerFocusMonitor";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"SKIP_INSTALL" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Release;
+};
+		8A10E20C2FB0000000000001 /* Debug */ = {
+	buildSettings = {
+		"APPLICATION_EXTENSION_API_ONLY" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "MasjidlyPrayerFocusShield/MasjidlyPrayerFocusShield.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = NO;
+		"INFOPLIST_FILE" = "Config/MasjidlyPrayerFocusShield-Info.plist";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+			"@executable_path/../../Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.PrayerFocusShield";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"SKIP_INSTALL" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Debug;
+};
+		8A10E20D2FB0000000000001 /* Release */ = {
+	buildSettings = {
+		"APPLICATION_EXTENSION_API_ONLY" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "MasjidlyPrayerFocusShield/MasjidlyPrayerFocusShield.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = NO;
+		"INFOPLIST_FILE" = "Config/MasjidlyPrayerFocusShield-Info.plist";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+			"@executable_path/../../Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.PrayerFocusShield";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"SKIP_INSTALL" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Release;
+};
+		8A10E30C2FB0000000000001 /* Debug */ = {
+	buildSettings = {
+		"APPLICATION_EXTENSION_API_ONLY" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "MasjidlyPrayerFocusShieldAction/MasjidlyPrayerFocusShieldAction.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = NO;
+		"INFOPLIST_FILE" = "Config/MasjidlyPrayerFocusShieldAction-Info.plist";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+			"@executable_path/../../Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.PrayerFocusShieldAction";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"SKIP_INSTALL" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Debug;
+};
+		8A10E30D2FB0000000000001 /* Release */ = {
+	buildSettings = {
+		"APPLICATION_EXTENSION_API_ONLY" = YES;
+		"CODE_SIGN_ENTITLEMENTS" = "MasjidlyPrayerFocusShieldAction/MasjidlyPrayerFocusShieldAction.entitlements";
+		"CODE_SIGN_STYLE" = Automatic;
+		"CURRENT_PROJECT_VERSION" = 1;
+		"DEVELOPMENT_TEAM" = WH4MT5Z44S;
+		"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "x86_64";
+		"GENERATE_INFOPLIST_FILE" = NO;
+		"INFOPLIST_FILE" = "Config/MasjidlyPrayerFocusShieldAction-Info.plist";
+		"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+		"LD_RUNPATH_SEARCH_PATHS" = (
+			"$(inherited)",
+			"@executable_path/Frameworks",
+			"@executable_path/../../Frameworks",
+		);
+		"MARKETING_VERSION" = "1.4.1";
+		"PRODUCT_BUNDLE_IDENTIFIER" = "mikhailspeaks.Masjidly---Official-Masjid-Prayer-Times.PrayerFocusShieldAction";
+		"PRODUCT_NAME" = "$(TARGET_NAME)";
+		"SKIP_INSTALL" = YES;
+		"SWIFT_VERSION" = "5.0";
+		"TARGETED_DEVICE_FAMILY" = "1,2";
+	};
+	isa = XCBuildConfiguration;
+	name = Release;
+};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -771,6 +1137,33 @@
 			buildConfigurations = (
 				8A10E00C2FB0000000000001 /* Debug */,
 				8A10E00D2FB0000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8A10E1092FB0000000000001 /* Build configuration list for PBXNativeTarget "MasjidlyPrayerFocusMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A10E10C2FB0000000000001 /* Debug */,
+				8A10E10D2FB0000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8A10E20B2FB0000000000001 /* Build configuration list for PBXNativeTarget "MasjidlyPrayerFocusShield" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A10E20C2FB0000000000001 /* Debug */,
+				8A10E20D2FB0000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8A10E30B2FB0000000000001 /* Build configuration list for PBXNativeTarget "MasjidlyPrayerFocusShieldAction" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A10E30C2FB0000000000001 /* Debug */,
+				8A10E30D2FB0000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

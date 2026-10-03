@@ -20,6 +20,16 @@ struct WidgetMosqueSnapshot: Codable, Equatable, Sendable {
     let cityName: String?
     let countryCode: String?
     let countryName: String?
+    /// IANA identifier from `Mosque.timezone`; optional so older snapshots still decode.
+    var timezone: String? = nil
+
+    /// The zone timetable clock times are written in. Missing means a legacy Sheffield record
+    /// (Android maps it to Europe/London too); an unknown identifier returns nil rather than guessing.
+    var prayerTimeZone: TimeZone? {
+        guard let timezone, !timezone.isEmpty else { return PrayerTimesEngine.sheffieldTimeZone }
+        guard TimeZone.knownTimeZoneIdentifiers.contains(timezone) else { return nil }
+        return TimeZone(identifier: timezone)
+    }
 }
 
 struct WidgetPrayerDaySnapshot: Codable, Equatable, Sendable {

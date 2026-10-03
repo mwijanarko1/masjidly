@@ -38,6 +38,7 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
             }
             WidgetCenter.shared.reloadAllTimelines()
             WatchPrayerSnapshotTransferService.shared.sendLatestSnapshot()
+            PrayerFocusController.shared.reschedule()
         } catch {
             // Widgets keep rendering their last valid snapshot if a refresh fails.
         }
@@ -126,7 +127,8 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
                 citySlug: mosque.citySlug,
                 cityName: mosque.cityName,
                 countryCode: mosque.countryCode,
-                countryName: mosque.countryName
+                countryName: mosque.countryName,
+                timezone: mosque.timezone
             ),
             days: daySnapshots,
             uses24HourTime: settings.uses24HourTime,

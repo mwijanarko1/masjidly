@@ -20,6 +20,8 @@ struct OnboardingCoachMarkView: View {
     let secondaryButtonTitle: String?
     let onSecondaryButton: (() -> Void)?
     let secondaryButtonAccessibilityIdentifier: String?
+    /// Confirmation layout: red primary on the left, neutral secondary on the right, equal width.
+    let isDestructiveConfirmation: Bool
 
     enum Variant {
         /// Hint sits just under the top chrome (calendar / date / settings stay clear and tappable).
@@ -32,6 +34,8 @@ struct OnboardingCoachMarkView: View {
         case belowQiblaIconLower
         /// Hint pinned to the bottom; no dimming so the sheet behind stays fully interactive (timetable / settings explore).
         case floatingBottom
+        /// Hint centered on screen (confirmations).
+        case center
     }
 
     init(
@@ -46,7 +50,8 @@ struct OnboardingCoachMarkView: View {
         blocksBackgroundInteractions: Bool = true,
         secondaryButtonTitle: String? = nil,
         onSecondaryButton: (() -> Void)? = nil,
-        secondaryButtonAccessibilityIdentifier: String? = nil
+        secondaryButtonAccessibilityIdentifier: String? = nil,
+        isDestructiveConfirmation: Bool = false
     ) {
         self.title = title
         self.message = message
@@ -60,6 +65,7 @@ struct OnboardingCoachMarkView: View {
         self.secondaryButtonTitle = secondaryButtonTitle
         self.onSecondaryButton = onSecondaryButton
         self.secondaryButtonAccessibilityIdentifier = secondaryButtonAccessibilityIdentifier
+        self.isDestructiveConfirmation = isDestructiveConfirmation
     }
 
     private var textColor: Color {
@@ -110,6 +116,10 @@ struct OnboardingCoachMarkView: View {
                         switch variant {
                         case .floatingBottom:
                             EmptyView()
+                        case .center:
+                            hintCard
+                                .padding(.horizontal, 24)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                         case .belowTopChrome:
                             VStack(spacing: 0) {
                                 hintCard
@@ -185,7 +195,30 @@ struct OnboardingCoachMarkView: View {
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if let primaryButtonTitle, let onPrimaryButton {
+            if isDestructiveConfirmation, let primaryButtonTitle, let onPrimaryButton,
+               let secondaryButtonTitle, let onSecondaryButton {
+                HStack(spacing: 12) {
+                    Button(action: onPrimaryButton) {
+                        Text(primaryButtonTitle)
+                            .appFont(size: 16, weight: .semibold)
+                            .foregroundStyle(Color.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.red, in: Capsule())
+                    }
+                    .buttonStyle(.hapticPlain)
+                    Button(action: onSecondaryButton) {
+                        Text(secondaryButtonTitle)
+                            .appFont(size: 16, weight: .semibold)
+                            .foregroundStyle(textColor)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(textColor.opacity(0.12), in: Capsule())
+                    }
+                    .buttonStyle(.hapticPlain)
+                }
+                .padding(.top, 6)
+            } else if let primaryButtonTitle, let onPrimaryButton {
                 Button(action: onPrimaryButton) {
                     Text(primaryButtonTitle)
                         .onboardingPrimaryCapsule()

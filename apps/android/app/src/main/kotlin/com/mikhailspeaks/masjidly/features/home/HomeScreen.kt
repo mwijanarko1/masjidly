@@ -99,7 +99,9 @@ import com.mikhailspeaks.masjidly.features.settings.AppReviewPromptCoordinator
 import com.mikhailspeaks.masjidly.features.settings.MasjidlySupportMail
 import com.mikhailspeaks.masjidly.features.settings.SettingsClosestMosqueLocationProvider
 import com.mikhailspeaks.masjidly.features.onboarding.HomeOnboardingOverlay
+import com.mikhailspeaks.masjidly.features.onboarding.CoachMarkVariant
 import com.mikhailspeaks.masjidly.features.onboarding.MosqueSelectionOnboardingScreen
+import com.mikhailspeaks.masjidly.features.onboarding.OnboardingCoachMarkView
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingScrim
@@ -166,8 +168,12 @@ fun HomeScreen(
     var pendingClosestMosque by remember { mutableStateOf<Mosque?>(null) }
     var forceClosestMosquePrompt by remember { mutableStateOf(false) }
     var closestMosqueCheckTrigger by remember { mutableIntStateOf(0) }
+    val openMosqueTabIds = settingsStore.openMosqueTabIds.ifEmpty {
+        listOfNotNull(settingsStore.selectedMosqueId ?: state.selectedMosque?.id)
+    }
     var showAddMosqueTab by remember { mutableStateOf(false) }
     var addTabSelectedMosqueId by remember { mutableStateOf("") }
+    var pendingCloseTab by remember { mutableStateOf<Mosque?>(null) }
     LaunchedEffect(state.mosques) {
         onboardingViewModel.startIfNeeded(state.mosques)
     }
@@ -185,6 +191,7 @@ fun HomeScreen(
         onboardingStep,
         state.mosques,
         state.selectedMosque?.id,
+        openMosqueTabIds,
         closestMosqueCheckTrigger,
     ) {
         if (forceClosestMosquePrompt) return@LaunchedEffect
@@ -205,6 +212,7 @@ fun HomeScreen(
                 selectedMosqueId = state.selectedMosque?.id ?: settingsStore.selectedMosqueId,
                 dismissedClosestMosqueId = settingsStore.dismissedClosestMosqueId,
                 visibleMosqueCount = MosqueSelection.visibleMosques(state.mosques).size,
+                openMosqueTabIds = openMosqueTabIds,
             )
         }
     }
@@ -352,15 +360,7 @@ fun HomeScreen(
                 usesLightForeground = theme.usesLightForeground,
                 showAdd = available.isNotEmpty(),
                 onSelect = ::selectTab,
-                onClose = { id ->
-                    val remaining = ids.filter { it != id }
-                    settingsStore.openMosqueTabIds = remaining
-                    if (settingsStore.activeMosqueTabId == id ||
-                        (settingsStore.activeMosqueTabId == null && state.selectedMosque?.id == id)
-                    ) {
-                        state.mosques.firstOrNull { it.id == remaining.firstOrNull() }?.let(::selectTab)
-                    }
-                },
+                onClose = { id -> pendingCloseTab = state.mosques.firstOrNull { it.id == id } },
                 onAdd = {
                     addTabSelectedMosqueId = defaultAddTabMosqueId(
                         available = available,
@@ -374,6 +374,28 @@ fun HomeScreen(
                     .navigationBarsPadding()
                     .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 20.dp),
             )
+            pendingCloseTab?.let { mosque ->
+                OnboardingCoachMarkView(
+                    title = "Remove tab?",
+                    message = "Remove ${mosque.name} from your tabs?",
+                    theme = theme,
+                    variant = CoachMarkVariant.Center,
+                    primaryButtonTitle = "Remove",
+                    onPrimaryButton = {
+                        val remaining = ids.filter { it != mosque.id }
+                        settingsStore.openMosqueTabIds = remaining
+                        if (settingsStore.activeMosqueTabId == mosque.id ||
+                            (settingsStore.activeMosqueTabId == null && state.selectedMosque?.id == mosque.id)
+                        ) {
+                            state.mosques.firstOrNull { it.id == remaining.firstOrNull() }?.let(::selectTab)
+                        }
+                        pendingCloseTab = null
+                    },
+                    secondaryButtonTitle = "Cancel",
+                    onSecondaryButton = { pendingCloseTab = null },
+                    isDestructiveConfirmation = true,
+                )
+            }
             if (showAddMosqueTab) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     OnboardingScrim(
@@ -419,7 +441,8 @@ fun HomeScreen(
         }
 
         pendingClosestMosque?.takeIf {
-            onboardingStep == null && !showReviewPrompt && !showReviewFeedbackPrompt
+            onboardingStep == null && !showReviewPrompt && !showReviewFeedbackPrompt &&
+                (forceClosestMosquePrompt || it.id !in openMosqueTabIds)
         }?.let { closest ->
             ClosestMosquePromptOverlay(
                 theme = theme,

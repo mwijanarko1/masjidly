@@ -6,12 +6,14 @@ enum ClosestMosquePromptDecision {
         closestMosqueId: String?,
         selectedMosqueId: String?,
         dismissedClosestMosqueId: String?,
-        visibleMosqueCount: Int
+        visibleMosqueCount: Int,
+        openMosqueTabIds: [String] = []
     ) -> Bool {
         guard visibleMosqueCount >= 2 else { return false }
         guard let closestMosqueId, let selectedMosqueId else { return false }
         guard closestMosqueId != selectedMosqueId else { return false }
         guard closestMosqueId != dismissedClosestMosqueId else { return false }
+        guard !openMosqueTabIds.contains(closestMosqueId) else { return false }
         return true
     }
 

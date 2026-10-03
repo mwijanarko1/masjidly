@@ -38,8 +38,14 @@ final class OnboardingFlowController {
 
     func startIfNeeded() {
         guard !settings.hasCompletedOnboarding else {
-            currentStep = nil
-            return
+            // Keep an in-progress Prayer Focus update flow (after What’s New).
+            switch currentStep {
+            case .prayerFocusIntro, .prayerFocusApps, .prayerFocusSchedule:
+                return
+            default:
+                currentStep = nil
+                return
+            }
         }
         guard !homeViewModel.mosques.isEmpty || !settingsViewModel.mosques.isEmpty else {
             currentStep = nil
@@ -49,6 +55,18 @@ final class OnboardingFlowController {
         selectedMosqueId = ""
         notificationDraft = .defaultEnabled
         currentStep = .chooseLanguage
+    }
+
+    /// After What’s New (or when What’s New is already seen), offer Prayer Focus once to existing users.
+    func startPrayerFocusOnboardingIfNeeded(prayerFocus: PrayerFocusController) {
+        guard settings.hasCompletedOnboarding else { return }
+        guard currentStep == nil else { return }
+        if prayerFocus.settings.isEnabled, prayerFocus.isAuthorized, prayerFocus.selectedAppCount > 0 {
+            settings.hasCompletedPrayerFocusOnboarding = true
+            return
+        }
+        guard !settings.hasCompletedPrayerFocusOnboarding else { return }
+        currentStep = .prayerFocusIntro
     }
 
     func selectLanguage(_ language: AppLanguage) {
@@ -152,15 +170,51 @@ final class OnboardingFlowController {
 
         settings.lastSeenBuildVersion = WhatsNew.fullVersionString
         settings.hasCompletedOnboarding = true
+        currentStep = .prayerFocusIntro
+    }
+
+    func turnOnPrayerFocusFromOnboarding() {
+        guard currentStep == .prayerFocusIntro else { return }
+        currentStep = .prayerFocusApps
+    }
+
+    func skipPrayerFocusOnboarding(prayerFocus: PrayerFocusController) {
+        guard let step = currentStep else { return }
+        switch step {
+        case .prayerFocusIntro, .prayerFocusApps:
+            if step == .prayerFocusApps {
+                prayerFocus.disable()
+            }
+            finishPrayerFocusOnboarding()
+        default:
+            break
+        }
+    }
+
+    func continuePrayerFocusAfterApps() {
+        guard currentStep == .prayerFocusApps else { return }
+        currentStep = .prayerFocusSchedule
+    }
+
+    func completePrayerFocusSchedule(prayerFocus: PrayerFocusController) {
+        guard currentStep == .prayerFocusSchedule else { return }
+        // Schedule view commits settings before calling finish; one reschedule is enough.
+        prayerFocus.reschedule()
+        finishPrayerFocusOnboarding()
+    }
+
+    private func finishPrayerFocusOnboarding() {
+        settings.hasCompletedPrayerFocusOnboarding = true
         currentStep = nil
     }
 }
 
 #if DEBUG
 extension OnboardingFlowController {
-    /// Resets onboarding so language + location + mosque + notifications can be exercised again.
+    /// Resets onboarding so language + location + mosque + notifications + Prayer Focus can be exercised again.
     func restartTutorialFromDeveloperTools() {
         settings.hasCompletedOnboarding = false
+        settings.hasCompletedPrayerFocusOnboarding = false
         selectedMosqueId = ""
         notificationDraft = .defaultEnabled
         selectedLanguage = settings.appLanguage

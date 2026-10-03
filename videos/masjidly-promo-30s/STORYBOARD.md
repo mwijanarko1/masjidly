@@ -32,7 +32,7 @@ version: v6 (the app never leaves the screen; captions overlay its empty space; 
 | 1.9-7.6 | Fajr | calculated times drift. / yours come from your masjid. | "Calculated" pill; the time ticks live 5:06 to 5:26 with a bass thud; "Your masjid" pill and "+20 min" badge |
 | 7.6-13.6 | Sunrise to Isha | prayer times, redesigned. / adhan and iqamah at a glance. | Taps on S D A M I; page, icon, ink and sky change (not mentioned) |
 | 13.6-19.8 | Dhuhr (Original) | in your language. / right to left, too. | "Choose your language" sheet; العربية, اردو, Bahasa Indonesia; names stroke-draw on |
-| 19.8-26.4 | Asr | add all your masjids. / switch in one tap. | + four times: Masjid Risalah, Sheffield Grand Mosque, Masjid Umar (YMA), Madina Masjid Sheffield; tab bar scrolls; back to Masjid Faizul Islam |
+| 19.8-26.4 | Asr | add all your masjids. / switch in one tap. | + opens the app's "Pick your mosque" card; Mosque dropdown scrolls to Masjid Risalah, then Continue; Sheffield Grand Mosque, Masjid Umar (YMA), Madina Masjid Sheffield one Continue each; tab bar scrolls; back to Masjid Faizul Islam |
 | 26.4-31.6 | Asr, Original, Custom | make it yours. / your theme, or your own colours. | Original / Modern / Custom cards, custom colours change, 3D tilt away |
 | 31.6-36.6 | Maghrib | never miss iqamah. / the adhan, right on time. | Lock screen, 6:47 iqamah reminder then 6:54 adhan, with chimes |
 | 36.6-43.2 | Isha | on your home screen. / and your lock screen. | Small + large widgets (live countdown to Isha), then lock screen inline, circular and rectangular widgets |

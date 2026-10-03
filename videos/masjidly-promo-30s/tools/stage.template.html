@@ -57,20 +57,34 @@
     .hk-badge { position: absolute; left: 700px; top: 604px; padding: 12px 22px; border-radius: 100px; background: #FFD27A; color: #10214F; font-weight: 700; font-size: 34px; box-shadow: 0 16px 44px rgba(255,210,122,0.4); white-space: nowrap; }
 
     /* language picker (onboarding card, as a sheet) */
-    .lg { position: absolute; left: 40px; top: 1440px; width: 1000px; height: 560px; border-radius: 52px; background: rgba(255,255,255,0.92); border: 2px solid rgba(255,255,255,0.7); box-shadow: 0 -20px 80px rgba(15,27,51,0.18); color: #111; }
-    .lg h4 { position: absolute; left: 44px; top: 30px; margin: 0; font-weight: 600; font-size: 44px; }
-    .lg-row { position: absolute; left: 30px; right: 30px; height: 80px; border-radius: 35px; background: rgba(17,17,17,0.07); line-height: 80px; padding: 0 34px; font-weight: 600; font-size: 36px; }
-    .lg-hl { position: absolute; left: 30px; right: 30px; top: 112px; height: 80px; border-radius: 35px; background: rgba(17,17,17,0.12); }
-    .lg-check { position: absolute; right: 60px; top: 132px; width: 42px; height: 42px; border-radius: 50%; background: #111; }
-    .lg-check svg { position: absolute; left: 9px; top: 11px; }
+    .lg { position: absolute; left: 40px; top: 1426px; width: 1000px; height: 466px; border-radius: 52px; background: rgba(255,255,255,0.92); border: 2px solid rgba(255,255,255,0.7); box-shadow: 0 -20px 80px rgba(15,27,51,0.18); color: #111; }
+    .lg h4 { position: absolute; left: 44px; top: 24px; margin: 0; font-weight: 600; font-size: 44px; }
+    .lg-row { position: absolute; left: 30px; right: 30px; height: 74px; border-radius: 35px; background: rgba(17,17,17,0.07); line-height: 74px; padding: 0 34px; font-weight: 600; font-size: 37px; }
+    .lg-hl { position: absolute; left: 30px; right: 30px; top: 100px; height: 74px; border-radius: 35px; background: rgba(17,17,17,0.10); }
+    .lg-check { position: absolute; right: 64px; top: 115px; width: 44px; height: 44px; border-radius: 50%; background: #47A6FF; }
+    .lg-check svg { position: absolute; left: 10px; top: 12px; }
 
-    /* add-a-masjid card */
-    .am-dim { position: absolute; left: 0; top: -200px; width: 1080px; height: 2400px; background: rgba(0,0,0,0.28); opacity: 0; }
-    .am { position: absolute; left: 180px; top: 330px; width: 720px; border-radius: 52px; background: rgba(255,255,255,0.96); box-shadow: 0 40px 90px rgba(15,27,51,0.3); padding: 30px 0 16px; color: #111; opacity: 0; }
-    .am h4 { margin: 0 40px 12px; font-weight: 600; font-size: 30px; letter-spacing: 0.04em; opacity: 0.55; }
-    .am-row { position: relative; height: 96px; line-height: 96px; padding: 0 40px; font-weight: 400; font-size: 38px; overflow: hidden; white-space: nowrap; }
-    .am-row small { float: right; font-weight: 400; font-size: 28px; opacity: 0.55; }
-    .am-row .am-hl { position: absolute; inset: 0; background: rgba(17,17,17,0.09); opacity: 0; }
+    /* add-a-masjid: the app's MosqueSelectionOnboardingView card over the sky-tinted backdrop (HomeView.addMosqueTabOverlay) */
+    .am-dim { position: absolute; left: 0; top: -200px; width: 1080px; height: 2400px; background-color: rgba(0,0,0,0.4); background-image: linear-gradient(180deg, rgba(96,239,255,0.55) 0%, rgba(243,249,138,0.55) 100%); opacity: 0; }
+    /* sized for the open dropdown (1364px at top 278); clip-path shows the closed 771px card, centred the same way */
+    .am { position: absolute; left: 137px; top: 278px; width: 805px; height: 1364px; overflow: hidden; background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.9) 100%); clip-path: inset(297px 0px 296px 0px round 53px); color: #111; opacity: 0; }
+    .am-in { position: absolute; left: 0; top: 0; width: 805px; height: 1364px; }
+    .am-title { position: absolute; left: 0; right: 0; top: 53px; text-align: center; font-weight: 600; font-size: 51px; line-height: 61px; letter-spacing: -1.1px; }
+    .am-msg { position: absolute; left: 0; right: 0; top: 132px; text-align: center; font-weight: 400; font-size: 35px; line-height: 42px; opacity: 0.8; }
+    .am-row { position: absolute; left: 106px; right: 106px; height: 114px; display: flex; align-items: center; font-weight: 400; font-size: 40px; white-space: nowrap; }
+    .am-row em { position: relative; flex: 1; height: 50px; margin-left: 26px; font-style: normal; text-align: right; }
+    .am-row em i { position: absolute; right: 0; top: 0; font-style: normal; line-height: 50px; }
+    .am-row svg { margin-left: 13px; opacity: 0.7; }
+    .am-div { position: absolute; left: 106px; right: 106px; height: 1px; background: rgba(17,17,17,0.12); }
+    .am-panel { position: absolute; left: 106px; top: 580px; width: 593px; height: 575px; border-radius: 31px; overflow: hidden; background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.78) 100%); border: 2px solid rgba(17,17,17,0.12); box-shadow: 0 18px 35px rgba(0,0,0,0.12); opacity: 0; transform-origin: 50% 0; }
+    .am-search { position: absolute; left: 0; right: 0; top: 0; height: 86px; border-bottom: 2px solid rgba(17,17,17,0.12); font-size: 31px; line-height: 86px; padding-left: 83px; color: rgba(17,17,17,0.3); }
+    .am-search svg { position: absolute; left: 26px; top: 27px; }
+    .am-list { position: absolute; left: 0; right: 0; top: 88px; height: 487px; overflow: hidden; }
+    .am-items { position: absolute; left: 9px; right: 9px; top: 9px; }
+    .am-it { position: relative; height: 84px; margin-bottom: 4px; line-height: 84px; padding-left: 75px; font-size: 31px; white-space: nowrap; }
+    .am-sel { position: absolute; left: 0; right: 0; top: 0; height: 84px; border-radius: 22px; background: rgba(71,166,255,0.16); }
+    .am-sel svg { position: absolute; left: 25px; top: 29px; }
+    .am-go { position: absolute; left: 53px; right: 53px; top: 1199px; height: 112px; border-radius: 56px; background: linear-gradient(180deg, #47A6FF 0%, #2E8DFF 100%); border: 2px solid rgba(255,255,255,0.25); box-shadow: 0 18px 50px rgba(71,166,255,0.35); color: #fff; text-align: center; line-height: 108px; font-weight: 600; font-size: 35px; }
 
     /* theme cards */
     .t-card { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; border-radius: 150px; overflow: hidden; box-shadow: 0 60px 160px rgba(15,27,51,0.35); color: #111; }
@@ -203,20 +217,50 @@
           <div class="lg" id="lg">
             <h4>Choose your language</h4>
             <div class="lg-hl" id="lg-hl"></div>
-            <div class="lg-row" style="top: 112px;">English</div>
-            <div class="lg-row" style="top: 212px; font-family: 'HF Arabic', 'HF Gill', sans-serif;">العربية</div>
-            <div class="lg-row" style="top: 312px; font-family: 'HF Urdu', 'HF Gill', sans-serif;">اردو</div>
-            <div class="lg-row" style="top: 412px;">Bahasa Indonesia</div>
+            <div class="lg-row" style="top: 100px;">English</div>
+            <div class="lg-row" style="top: 188px; font-family: 'HF Arabic', 'HF Gill', sans-serif;">العربية</div>
+            <div class="lg-row" style="top: 276px; font-family: 'HF Urdu', 'HF Gill', sans-serif;">اردو</div>
+            <div class="lg-row" style="top: 364px;">Bahasa Indonesia</div>
             <div class="lg-check" id="lg-check"><svg width="24" height="20" viewBox="0 0 24 20" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,10 9,16 21,3"/></svg></div>
           </div>
 
           <div class="am-dim" id="am-dim"></div>
           <div class="am" id="am">
-            <h4>Add a masjid</h4>
-            <div class="am-row" id="am-r1">Masjid Risalah <small>Sheffield</small><div class="am-hl" id="am-h1"></div></div>
-            <div class="am-row" id="am-r2">Sheffield Grand Mosque <small>Sheffield</small><div class="am-hl" id="am-h2"></div></div>
-            <div class="am-row" id="am-r3">Masjid Umar (YMA) <small>Sheffield</small><div class="am-hl" id="am-h3"></div></div>
-            <div class="am-row" id="am-r4">Madina Masjid Sheffield <small>Sheffield</small><div class="am-hl" id="am-h4"></div></div>
+            <div class="am-in" id="am-in">
+            <div class="am-title">Pick your mosque</div>
+            <div class="am-msg">Select your country, city, and mosque.</div>
+            <div class="am-row" style="top: 218px;">Country<em><i>United Kingdom</i></em><svg width="26" height="16" viewBox="0 0 26 16" fill="none" stroke="#111" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,3 13,13 23,3"/></svg></div>
+            <div class="am-div" style="top: 332px;"></div>
+            <div class="am-row" style="top: 333px;">City<em><i>Sheffield</i></em><svg width="26" height="16" viewBox="0 0 26 16" fill="none" stroke="#111" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,3 13,13 23,3"/></svg></div>
+            <div class="am-div" style="top: 447px;"></div>
+            <div class="am-row" style="top: 448px;">Mosque<em><i id="am-v0">Al-Huda Academy</i><i id="am-v1" style="opacity: 0;">Masjid Risalah</i><i id="am-v2" style="opacity: 0;">Sheffield Grand Mosque</i><i id="am-v3" style="opacity: 0;">Masjid Umar (YMA)</i><i id="am-v4" style="opacity: 0;">Madina Masjid Sheffield</i></em><svg id="am-chev" width="26" height="16" viewBox="0 0 26 16" fill="none" stroke="#111" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,3 13,13 23,3"/></svg></div>
+            <div class="am-panel" id="am-panel">
+              <div class="am-search"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="rgba(17,17,17,0.45)" stroke-width="3.6" stroke-linecap="round"><circle cx="13" cy="13" r="9.5"/><line x1="20.5" y1="20.5" x2="29" y2="29"/></svg>Search mosques…</div>
+              <div class="am-list">
+                <div class="am-items" id="am-items">
+                  <div class="am-sel" id="am-sel"><svg width="28" height="24" viewBox="0 0 28 24" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,12 10,19 25,4"/></svg></div>
+                  <div class="am-it">Al-Huda Academy</div>
+                  <div class="am-it">Al-Rahman Mosque</div>
+                  <div class="am-it">At-Taqwa Mosque Sheffield</div>
+                  <div class="am-it">Dar Ul Uloom Siddiqia Masjid</div>
+                  <div class="am-it">Fatima Community Centre</div>
+                  <div class="am-it">Firth Park Cultural Centre</div>
+                  <div class="am-it">Jamia Masjid Ghausia</div>
+                  <div class="am-it">Madina Masjid Sheffield</div>
+                  <div class="am-it">Masjid al Huda Sheffield</div>
+                  <div class="am-it">Masjid Quba Education Centre</div>
+                  <div class="am-it">Masjid Risalah</div>
+                  <div class="am-it">Masjid Sunnah Sheffield</div>
+                  <div class="am-it">Masjid Umar (YMA)</div>
+                  <div class="am-it">Muslim Welfare House Sheffield</div>
+                  <div class="am-it">Sheffield Grand Mosque</div>
+                  <div class="am-it">Sheffield Ummah Center</div>
+                  <div class="am-it">Wybourn Islamic Centre</div>
+                </div>
+              </div>
+            </div>
+            </div>
+            <div class="am-go" id="am-go">Continue</div>
           </div>
         </div>
       </div>

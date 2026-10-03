@@ -123,6 +123,7 @@ enum class CoachMarkVariant {
     AboveShortcutRow,
     BelowQiblaIconLower,
     FloatingBottom,
+    Center,
 }
 
 @Composable
@@ -229,6 +230,8 @@ fun OnboardingCoachMarkView(
     secondaryButtonTitle: String? = null,
     onSecondaryButton: (() -> Unit)? = null,
     blocksBackgroundInteractions: Boolean = true,
+    /** Red primary left, neutral secondary right, equal width. */
+    isDestructiveConfirmation: Boolean = false,
 ) {
     val hasButtons = primaryButtonTitle != null && onPrimaryButton != null
     val blocksBackground = variant != CoachMarkVariant.FloatingBottom &&
@@ -278,7 +281,33 @@ fun OnboardingCoachMarkView(
                         style = rememberAppTextStyle(16f),
                         lineHeight = 22.sp,
                     )
-                    if (primaryButtonTitle != null && onPrimaryButton != null) {
+                    if (isDestructiveConfirmation && primaryButtonTitle != null && onPrimaryButton != null &&
+                        secondaryButtonTitle != null && onSecondaryButton != null
+                    ) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            listOf(
+                                Triple(primaryButtonTitle, onPrimaryButton, true),
+                                Triple(secondaryButtonTitle, onSecondaryButton, false),
+                            ).forEach { (label, action, destructive) ->
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .heightIn(min = 52.dp)
+                                        .clip(RoundedCornerShape(percent = 50))
+                                        .background(if (destructive) Color(0xFFE53935) else cardTextColor.copy(alpha = 0.12f))
+                                        .hapticClickable(onClick = action),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = label,
+                                        color = if (destructive) Color.White else cardTextColor,
+                                        style = rememberAppTextStyle(16f, FontWeight.SemiBold),
+                                    )
+                                }
+                            }
+                        }
+                    } else if (primaryButtonTitle != null && onPrimaryButton != null) {
                         Spacer(modifier = Modifier.height(6.dp))
                         OnboardingPrimaryButton(
                             text = primaryButtonTitle,
@@ -286,7 +315,7 @@ fun OnboardingCoachMarkView(
                             onClick = onPrimaryButton,
                         )
                     }
-                    if (secondaryButtonTitle != null && onSecondaryButton != null) {
+                    if (!isDestructiveConfirmation && secondaryButtonTitle != null && onSecondaryButton != null) {
                         HapticTextButton(
                             onClick = onSecondaryButton,
                             modifier = Modifier.fillMaxWidth(),
@@ -318,6 +347,16 @@ fun OnboardingCoachMarkView(
                             .navigationBarsPadding()
                             .padding(horizontal = 24.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.Bottom,
+                    ) {
+                        card()
+                    }
+                }
+                CoachMarkVariant.Center -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp),
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         card()
                     }
