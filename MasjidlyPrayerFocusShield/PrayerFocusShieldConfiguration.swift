@@ -38,13 +38,17 @@ final class PrayerFocusShieldConfiguration: ShieldConfigurationDataSource {
         let prayer = activePrayerRawValue()
         let theme = theme(for: prayer)
         let background = UIColor(rgbHex: theme.backgroundHex) ?? UIColor(red: 0.06, green: 0.22, blue: 0.51, alpha: 1)
-        let foreground = UIColor(rgbHex: theme.foregroundHex) ?? .white
+        // Pick text from the tint itself (not the stored gradient-average hint) so custom skies stay readable.
+        let usesLightForeground = Self.prefersLightForeground(on: background)
+        let foreground: UIColor = usesLightForeground ? .white : UIColor(red: 0x11 / 255, green: 0x11 / 255, blue: 0x11 / 255, alpha: 1)
         let name = displayName(for: prayer)
 
         // Apple applies backgroundColor as a tint on the blur; nil blur falls back to white.
+        // Pin the material to the text's polarity: the adaptive material goes dark in system
+        // dark mode and swallows dark text (and washes out white text in light mode).
         // Apple only fills one control (primary). Secondary is always text-style.
         return ShieldConfiguration(
-            backgroundBlurStyle: .systemThickMaterial,
+            backgroundBlurStyle: usesLightForeground ? .systemThickMaterialDark : .systemThickMaterialLight,
             backgroundColor: background,
             title: .init(text: "\(name) Prayer Focus", color: foreground),
             subtitle: .init(
@@ -81,6 +85,20 @@ final class PrayerFocusShieldConfiguration: ShieldConfigurationDataSource {
         case "isha": "Isha"
         default: "Prayer"
         }
+    }
+
+    /// Chooses white or near-black text, whichever has the higher WCAG contrast against `color`.
+    private static func prefersLightForeground(on color: UIColor) -> Bool {
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        guard color.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else { return true }
+        func linear(_ c: CGFloat) -> CGFloat {
+            c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+        }
+        let luminance = 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+        let darkLuminance = linear(0x11 / 255)
+        let contrastWithWhite = 1.05 / (luminance + 0.05)
+        let contrastWithDark = (luminance + 0.05) / (darkLuminance + 0.05)
+        return contrastWithWhite >= contrastWithDark
     }
 
     private func decode<T: Decodable>(_ type: T.Type, forKey key: String) -> T? {
