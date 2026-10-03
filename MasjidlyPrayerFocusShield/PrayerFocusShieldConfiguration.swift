@@ -50,6 +50,8 @@ final class PrayerFocusShieldConfiguration: ShieldConfigurationDataSource {
         return ShieldConfiguration(
             backgroundBlurStyle: usesLightForeground ? .systemThickMaterialDark : .systemThickMaterialLight,
             backgroundColor: background,
+            // Without an explicit icon the system draws its own glyph in a fixed tint that ignores the sky.
+            icon: icon(for: prayer, color: foreground),
             title: .init(text: "\(name) Prayer Focus", color: foreground),
             subtitle: .init(
                 text: "Take a few minutes for \(name). Tap I've prayed when you're finished.",
@@ -74,6 +76,21 @@ final class PrayerFocusShieldConfiguration: ShieldConfigurationDataSource {
         let colors = decode([String: Theme].self, forKey: "prayerFocus.themeColors.v1") ?? [:]
         if let theme = colors[prayer] { return theme }
         return Self.defaultThemes[prayer] ?? Theme(backgroundHex: "103783", foregroundHex: "FFFFFF")
+    }
+
+    /// Same per-prayer symbols as the widgets, drawn in the shield's text color.
+    private func icon(for prayer: String, color: UIColor) -> UIImage? {
+        let symbolName = switch prayer {
+        case "fajr": "sun.horizon.fill"
+        case "dhuhr": "sun.max.fill"
+        case "asr": "sun.dust.fill"
+        case "maghrib": "sunset.fill"
+        case "isha": "moon.stars.fill"
+        default: "sun.max.fill"
+        }
+        let configuration = UIImage.SymbolConfiguration(pointSize: 56, weight: .semibold)
+        return UIImage(systemName: symbolName, withConfiguration: configuration)?
+            .withTintColor(color, renderingMode: .alwaysOriginal)
     }
 
     private func displayName(for prayer: String) -> String {
