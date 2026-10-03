@@ -28,6 +28,7 @@ struct SettingsView: View {
     @State private var iqamahPrayerSettingsExpanded = false
     @State private var prayerGradientSettingsExpanded = false
     @State private var openMosquePicker: MosqueSettingsPicker?
+    @State private var selectedAppIcon: AppIconOption = .current
 
     private enum MosqueSettingsPicker: String, Identifiable {
         case country, city, mosque
@@ -133,6 +134,12 @@ struct SettingsView: View {
                     }
                 }
 
+                if UIApplication.shared.supportsAlternateIcons {
+                    settingsSectionBlock(titleKey: "settings.section.app_icon.title") {
+                        appIconPickerRow
+                            .padding(.vertical, 12)
+                    }
+                }
 
                 settingsSectionBlock(titleKey: "settings.section.qibla.title") {
                     SettingsToggleRow(
@@ -884,6 +891,46 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(minHeight: 44)
+    }
+
+    private var appIconPickerRow: some View {
+        HStack(spacing: 10) {
+            ForEach(AppIconOption.allCases) { option in
+                Button {
+                    selectedAppIcon = option
+                    AppIconOption.apply(option)
+                } label: {
+                    VStack(spacing: 8) {
+                        Image(option.previewAssetName)
+                            .resizable()
+                            .aspectRatio(1, contentMode: .fit)
+                            .frame(width: 56, height: 56)
+                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                    .strokeBorder(
+                                        selectedAppIcon == option
+                                            ? currentAppearance.textColor
+                                            : currentAppearance.textColor.opacity(0.18),
+                                        lineWidth: selectedAppIcon == option ? 2.5 : 1
+                                    )
+                            }
+                            .shadow(color: .black.opacity(0.12), radius: 6, y: 3)
+
+                        Text(localized(option.titleKey))
+                            .appFont(size: 12, weight: selectedAppIcon == option ? .semibold : .regular)
+                            .foregroundColor(currentAppearance.textColor)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(localized(option.titleKey))
+                .accessibilityAddTraits(selectedAppIcon == option ? .isSelected : [])
+            }
+        }
+        .onAppear { selectedAppIcon = .current }
     }
 
     private var prayerGradientSettingsSection: some View {
