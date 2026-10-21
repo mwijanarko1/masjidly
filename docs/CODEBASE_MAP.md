@@ -22,7 +22,7 @@ Masjidly - Official Masjid Prayer Times/              # Native iOS target
 │   ├── AppEnvironment.swift                           # @Observable root DI container (settings, convex, repos, notification scheduler)
 │   └── ConvexConfiguration.swift                      # Convex deployment URL constants
 ├── Domain/                                            # Business models & rules
-│   ├── PrayerModels.swift                             # Mosque, PrayerTime, IqamahTimeRange, RamadanPrayerData, DailyPrayerTimes, UkDstCalendar
+│   ├── PrayerModels.swift                             # Mosque, PrayerTime, IqamahTimeRange, RamadanPrayerData, DailyPrayerTimes
 │   ├── PrayerRepository.swift                         # Protocol for prayer data access
 │   ├── PrayerLocalization.swift                       # Canonical prayer name → localization key mapping
 │   ├── MosqueDefaults.swift                           # Default mosque selection logic
@@ -35,7 +35,7 @@ Masjidly - Official Masjid Prayer Times/              # Native iOS target
 │   │   └── ConvexClient+SubscribeFirst.swift          # Convex subscription helper extension
 │   └── Persistence/
 │       ├── SettingsStore.swift                        # @Observable UserDefaults-backed user preferences
-│       └── PrayerTimesDiskCache.swift                 # Atomic JSON file cache (mosques, monthly, ramadan, UK DST) in Application Support
+│       └── PrayerTimesDiskCache.swift                 # Atomic JSON file cache (mosques, monthly, ramadan) in Application Support
 ├── Features/
 │   ├── Home/                                          # Main prayer times screen
 │   ├── Settings/                                      # Mosque picker, notifications, language, Qibla
@@ -90,7 +90,7 @@ MasjidlyWidgetSupport/                                 # Shared support for widg
 ### App Boot (Native Android)
 1. `MasjidlyApp` initializes `SettingsStore` and notification channels
 2. `MainActivity` hosts `MasjidlyNavHost` (Compose Navigation)
-3. `HomeViewModel` loads mosque list via `ConvexPrayerRepository`, resolves selected mosque, fetches month/Ramadan/DST data
+3. `HomeViewModel` loads mosque list via `ConvexPrayerRepository`, resolves selected mosque, fetches month/Ramadan data
 4. `PrayerTimesEngine` computes next prayer; `HomeScreen` renders hero, carousel, and Qibla
 5. `OnboardingFlowViewModel` presents tutorial when `hasCompletedOnboarding` is false
 6. `PrayerNotificationScheduler` schedules alarms; `UpdateChecker` fetches `latest.json` on launch
@@ -164,7 +164,7 @@ MasjidlyWidgetSupport/                                 # Shared support for widg
 ## Known Risks
 
 - **`xcuserdata` tracked in git** — Xcode user data is committed; consider adding to `.gitignore`
-- **PrayerTimesEngine** handles DST, time parsing, and next-prayer logic; the largest single domain module in both codebases
+- **PrayerTimesEngine** handles time parsing, and next-prayer logic; the largest single domain module in both codebases
 - **iOS tests**: 3 test files (`MasjidlyTests`, `PrayerNotificationSchedulerTests`, `WidgetPrayerSnapshotTests`)
 - **Convex backend** is external; no local Convex functions or schema definitions in this repo
 - **PrayerTimesDiskCache** uses atomic writes via temp file + `replaceItemAt`; cache invalidation / staleness logic is manual (no TTL)

@@ -353,8 +353,4 @@ private final class SchedulerPrayerRepository: PrayerRepository {
     func getRamadanTimetable(mosqueSlug: String, date: String?) async throws -> RamadanPrayerData? {
         nil
     }
-
-    func getUkDstDates() async throws -> UkDstCalendar? {
-        UkDstCalendar(ukDstDates: [])
-    }
 }

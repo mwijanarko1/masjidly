@@ -65,8 +65,6 @@ class WidgetPrayerSnapshotService(
 
     private suspend fun buildSnapshot(mosque: Mosque, days: Int): WidgetPrayerSnapshot {
         val now = Instant.now()
-        val dstCalendar = fetchUkDstCalendar()
-        val dst = dstCalendar?.ukDstDates.orEmpty()
         val monthlyCache = mutableMapOf<String, com.mikhailspeaks.masjidly.domain.MonthPrayerData?>()
         val daySnapshots = mutableListOf<WidgetPrayerDaySnapshot>()
 
@@ -82,25 +80,20 @@ class WidgetPrayerSnapshotService(
             val dateString = PrayerTimesEngine.isoDateString(parts.year, parts.month, parts.day)
             val ramadan = fetchRamadan(mosqueSlug = mosque.slug, date = dateString)
             try {
-                val raw = PrayerTimesEngine.resolvePrayerTimes(
-                    slug = mosque.slug,
+                val prayers = PrayerTimesEngine.resolvePrayerTimes(
                     on = date,
                     monthly = monthly,
                     ramadan = ramadan,
-                    ukDst = dst,
                     asrTimingPreference = settings.asrIqamahPreference,
                 )
-                val displayed = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date = date, mosqueSlug = mosque.slug)
-                val iqamah = PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
-                    slug = mosque.slug,
+                val iqamah = PrayerTimesEngine.resolveIqamahTimes(
                     on = date,
                     monthly = monthly,
                     ramadan = ramadan,
-                    ukDst = dst,
                 )
                 daySnapshots += WidgetPrayerDaySnapshot(
                     date = dateString,
-                    prayers = displayed.toWidgetDailyPrayerTimes(),
+                    prayers = prayers.toWidgetDailyPrayerTimes(),
                     iqamah = iqamah.toWidgetDailyIqamahTimes(),
                 )
             } catch (error: Throwable) {
@@ -127,10 +120,6 @@ class WidgetPrayerSnapshotService(
             asrIqamahPreference = settings.asrIqamahPreference.wireValue,
         )
     }
-
-    private suspend fun fetchUkDstCalendar() = diskCache.loadUkDst() ?: runCatching {
-        repository.getUkDstDates()?.also { diskCache.saveUkDst(it) }
-    }.getOrNull()
 
     private suspend fun fetchMonthly(
         mosqueSlug: String,

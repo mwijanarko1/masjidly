@@ -7,7 +7,6 @@ import Foundation
 /// Application Support/PrayerTimesCache/
 ///   mosques.json
 ///   data_revision.json
-///   uk_dst.json
 ///   monthly_{slug}_{month}_{year}.json
 ///   ramadan_{slug}_{date}.json
 ///   versions_{slug}_{month}_{year}.json
@@ -90,18 +89,6 @@ final class PrayerTimesDiskCache: Sendable {
 
     func saveDataRevision(_ revision: DataRevision) throws {
         try saveJSON(revision, to: url(for: Self.dataRevisionFile))
-    }
-
-    // MARK: - UK DST
-
-    private static let ukDstFile = "uk_dst.json"
-
-    func loadUkDst() -> UkDstCalendar? {
-        loadJSON(from: url(for: Self.ukDstFile))
-    }
-
-    func saveUkDst(_ dst: UkDstCalendar) throws {
-        try saveJSON(dst, to: url(for: Self.ukDstFile))
     }
 
     // MARK: - Versions

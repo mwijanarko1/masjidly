@@ -80,9 +80,6 @@ class PrayerNotificationScheduler(
 
         addBudget = MAX_PENDING_NOTIFICATIONS
 
-        val ukDst = diskCache.loadUkDst()?.ukDstDates
-            ?: runCatching { repository.getUkDstDates()?.also { diskCache.saveUkDst(it) }?.ukDstDates }.getOrNull()
-            ?: emptyList()
         val slug = mosque.slug
         val mosqueName = mosque.name
         val nowParts = PrayerTimesEngine.getDateInSheffield(Instant.now())
@@ -118,25 +115,20 @@ class PrayerNotificationScheduler(
                 }.getOrNull()
 
             val displayed = try {
-                val raw = PrayerTimesEngine.resolvePrayerTimes(
-                    slug = slug,
+                PrayerTimesEngine.resolvePrayerTimes(
                     on = dayDate,
                     monthly = monthly,
                     ramadan = ramadan,
-                    ukDst = ukDst,
                     asrTimingPreference = asrIqamahPreference,
                 )
-                PrayerTimesEngine.getDisplayedPrayerTimes(raw, date = dayDate, mosqueSlug = slug)
             } catch (_: Exception) {
                 continue
             }
             val iq = try {
-                PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
-                    slug = slug,
+                PrayerTimesEngine.resolveIqamahTimes(
                     on = dayDate,
                     monthly = monthly,
                     ramadan = ramadan,
-                    ukDst = ukDst,
                 )
             } catch (_: Exception) {
                 continue

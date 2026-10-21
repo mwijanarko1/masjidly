@@ -72,8 +72,6 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
 
     private func buildSnapshot(for mosque: Mosque, days: Int) async throws -> WidgetPrayerSnapshot {
         let now = Date()
-        let dstCalendar = try await fetchUkDstCalendar()
-        let dst = dstCalendar?.ukDstDates ?? []
         var monthlyCache: [String: MonthPrayerData?] = [:]
         var daySnapshots: [WidgetPrayerDaySnapshot] = []
 
@@ -94,23 +92,18 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
             let dateString = PrayerTimesEngine.isoDateString(year: parts.year, month: parts.month, day: parts.day)
             let ramadan = try await fetchRamadan(mosqueSlug: mosque.slug, date: dateString)
             do {
-                let raw = try PrayerTimesEngine.resolvePrayerTimes(
-                    slug: mosque.slug,
+                let prayers = try PrayerTimesEngine.resolvePrayerTimes(
                     on: date,
                     monthly: monthly,
                     ramadan: ramadan,
-                    ukDst: dst,
                     asrTimingPreference: settings.asrIqamahPreference
                 )
-                let displayed = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date: date, mosqueSlug: mosque.slug)
-                let iqamah = try PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
-                    slug: mosque.slug,
+                let iqamah = try PrayerTimesEngine.resolveIqamahTimes(
                     on: date,
                     monthly: monthly,
-                    ramadan: ramadan,
-                    ukDst: dst
+                    ramadan: ramadan
                 )
-                daySnapshots.append(WidgetPrayerDaySnapshot(date: dateString, prayers: displayed, iqamah: iqamah))
+                daySnapshots.append(WidgetPrayerDaySnapshot(date: dateString, prayers: prayers, iqamah: iqamah))
             } catch {
                 if offset == 0 { throw error }
                 break
@@ -135,13 +128,6 @@ final class WidgetPrayerSnapshotService: WidgetPrayerSnapshotWriting {
             appLanguageRawValue: AppLanguage.english.rawValue,
             asrIqamahPreference: settings.asrIqamahPreference
         )
-    }
-
-    private func fetchUkDstCalendar() async throws -> UkDstCalendar? {
-        if let cached = diskCache.loadUkDst() { return cached }
-        let calendar = try await repository.getUkDstDates()
-        if let calendar { try? diskCache.saveUkDst(calendar) }
-        return calendar
     }
 
     private func fetchMonthly(mosqueSlug: String, month: MonthName, year: Int) async throws -> MonthPrayerData? {

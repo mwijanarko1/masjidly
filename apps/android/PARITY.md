@@ -14,7 +14,6 @@ Status key: **done** · **partial** · **missing**
 | `mosques:list` | `{}` | Home load, settings mosque list, onboarding |
 | `prayerTimes:getMonthly` | `mosqueSlug`, `month` (string enum), `year` (number as double) | Home, timetable, notifications |
 | `prayerTimes:getRamadan` | `mosqueSlug`, optional `date` (ISO) | Home, timetable (Ramadan rows) |
-| `prayerTimes:getUkDstDates` | `{}` | Engine DST / iqamah mapping |
 
 Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query` (same paths/args as iOS ConvexMobile). No alternate API.
 
@@ -39,7 +38,7 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 | Feature | iOS | Android | Status | Convex |
 |---------|-----|---------|--------|--------|
 | Load mosques + resolve selection | `HomeViewModel.load` | `HomeViewModel.load` | **done** | `mosques:list` |
-| Monthly + Ramadan + UK DST fetch | `refreshPrayerPayload` | `refreshPrayerPayload` | **done** | all four queries |
+| Monthly + Ramadan fetch | `refreshPrayerPayload` | `refreshPrayerPayload` | **done** | monthly + Ramadan queries |
 | `PrayerTimesEngine` resolution | Swift engine | Kotlin port of Swift engine | **done** | — |
 | Prayer hero + sky theme per selected prayer | `HomeDesign.TimeTheme` | `TimeTheme` + settings fixed/dynamic | **done** | — |
 | Horizontal prayer carousel (6 incl. Sunrise) | `PrayerCarouselItem` | letter picker strip | **partial** | — |
@@ -66,7 +65,6 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 | Prayer rows (adhan + iqamah) | yes | yes | **done** | — |
 | Ramadan timetable mode | yes | via engine on monthly rows | **partial** | `getRamadan` |
 | Friday / Jummah iqamah slots | yes | yes | **done** | — |
-| DST embedded timetable (Al-Huda) | engine | engine ported | **done** | — |
 | Pull to refresh | yes | `PullToRefreshBox` | **done** | — |
 | Next-prayer highlight / past dimming | yes | yes | **done** | — |
 | Midnight / last third rows | yes | yes | **done** | — |

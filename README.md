@@ -13,7 +13,7 @@ A beautifully designed, time-adaptive prayer times app that displays **official 
 
 - **Official Prayer Times** - Accurate adhan and iqamah times sourced directly from participating mosques
 - **Time-Adaptive Atmosphere** - Full-bleed gradients that change based on the current prayer (Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha)
-- **Next Prayer Countdown** - Live countdown to the next adhan or iqamah with smart DST handling
+- **Next Prayer Countdown** - Live countdown to the next adhan or iqamah with timezone-aware scheduling
 - **Monthly Timetable** - Complete month view with prayer times, iqamah ranges, and Ramadan overrides
 - **Local Notifications** - Customizable prayer reminders with adhan sound, snooze, and quick actions
 - **Qibla Direction** - Compass-based Qibla indicator using device heading and location
@@ -152,7 +152,7 @@ cd apps/android
 
 - **[Design System](docs/DESIGN.md)** - Colors, gradients, typography, and layout tokens
 - **[Codebase Map](docs/CODEBASE_MAP.md)** - Architecture overview, key workflows, and navigation guide
-- **[Glossary](docs/GLOSSARY.md)** - Shared domain vocabulary (mosque, iqamah, jummah, DST calendar, etc.)
+- **[Glossary](docs/GLOSSARY.md)** - Shared domain vocabulary (mosque, iqamah, jummah, Ramadan timetable, etc.)
 
 ---
 

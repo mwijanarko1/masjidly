@@ -10,8 +10,6 @@ import com.mikhailspeaks.masjidly.domain.PrayerRepository
 import com.mikhailspeaks.masjidly.domain.PrayerTime
 import com.mikhailspeaks.masjidly.domain.RamadanPrayerData
 import com.mikhailspeaks.masjidly.domain.RamadanPrayerDay
-import com.mikhailspeaks.masjidly.domain.UkDstCalendar
-import com.mikhailspeaks.masjidly.domain.UkDstYear
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -90,12 +88,6 @@ class ConvexPrayerRepository(
         if (value is JsonNull) return null
         return json.decodeFromJsonElement<RamadanPrayerDataWire>(value).toDomain()
     }
-
-    override suspend fun getUkDstDates(): UkDstCalendar? {
-        val value = client.query("prayerTimes:getUkDstDates", emptyMap())
-        if (value is JsonNull) return null
-        return json.decodeFromJsonElement<UkDstCalendarWire>(value).toDomain()
-    }
 }
 
 private fun MosqueWire.toDomain(): Mosque {
@@ -164,10 +156,4 @@ private fun RamadanPrayerDataWire.toDomain() = RamadanPrayerData(
     prayerTimes = prayerTimes.map { it.toDomain() },
     iqamahTimes = iqamahTimes.map { it.toDomain() },
     jummahIqamah = jummahIqamah,
-)
-
-private fun UkDstCalendarWire.toDomain() = UkDstCalendar(
-    ukDstDates = ukDstDates.map {
-        UkDstYear(year = it.year.toInt(), startDate = it.startDate, endDate = it.endDate)
-    },
 )

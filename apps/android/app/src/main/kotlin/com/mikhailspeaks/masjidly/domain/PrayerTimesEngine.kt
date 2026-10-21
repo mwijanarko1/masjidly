@@ -3,7 +3,6 @@ package com.mikhailspeaks.masjidly.domain
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -20,7 +19,6 @@ object PrayerTimesEngine {
     val sheffieldTimeZone: ZoneId = ZoneId.of("Europe/London")
 
     private const val RISALAH_SLUG = "masjid-risalah"
-    private val dstMosqueSlugs: Set<String> = setOf("masjid-al-huda-sheffield")
 
     private val whitespaceBetweenTimesRegex =
         Regex("""(\d{1,2}:\d{2})\s+(?=\d{1,2}:\d{2})""")
@@ -112,9 +110,6 @@ object PrayerTimesEngine {
 
     private fun isMuslimWelfareHouse(slug: String): Boolean =
         normalizeMosqueSlug(slug) == normalizeMosqueSlug(MosqueDefaults.DEFAULT_MOSQUE_SLUG)
-
-    fun mosqueTimetableAlreadyIncludesDst(slug: String): Boolean =
-        dstMosqueSlugs.contains(normalizeMosqueSlug(slug))
 
     // MARK: - Sparse rows
 
@@ -294,174 +289,6 @@ object PrayerTimesEngine {
         return iqamahValue
     }
 
-    // MARK: - Embedded DST table remap (Masjid Al-Huda)
-
-    private fun dhuhrToMinutes(t: PrayerTime): Int? {
-        val parts = t.dhuhr.split(":").mapNotNull { it.trim().toIntOrNull() }
-        if (parts.size != 2) return null
-        return parts[0] * 60 + parts[1]
-    }
-
-    fun detectMarchSummerStartDayInTable(prayerTimes: List<PrayerTime>): Int? {
-        val sorted = prayerTimes.sortedBy { it.date }
-        var bestDay: Int? = null
-        var bestJump = 0
-        for (i in 1 until sorted.size) {
-            val a = dhuhrToMinutes(sorted[i - 1]) ?: continue
-            val b = dhuhrToMinutes(sorted[i]) ?: continue
-            val jump = b - a
-            if (jump > bestJump) {
-                bestJump = jump
-                bestDay = sorted[i].date
-            }
-        }
-        return if (bestJump >= 45) bestDay else null
-    }
-
-    fun detectOctoberWinterStartDayInTable(prayerTimes: List<PrayerTime>): Int? {
-        val sorted = prayerTimes.sortedBy { it.date }
-        var bestDay: Int? = null
-        var bestFall = 0
-        for (i in 1 until sorted.size) {
-            val a = dhuhrToMinutes(sorted[i - 1]) ?: continue
-            val b = dhuhrToMinutes(sorted[i]) ?: continue
-            val fall = a - b
-            if (fall > bestFall) {
-                bestFall = fall
-                bestDay = sorted[i].date
-            }
-        }
-        return if (bestFall >= 45) bestDay else null
-    }
-
-    fun resolveTimetableDayForUkEmbeddedDst(
-        calendarDay: Int,
-        transitionDayInTable: Int,
-        ukTransitionDay: Int,
-        maxTableDay: Int,
-    ): Int {
-        val t = transitionDayInTable
-        val u = ukTransitionDay
-        if (t == u) return calendarDay
-        val low = minOf(t, u)
-        val high = maxOf(t, u) - 1
-        if (calendarDay < low || calendarDay > high) return calendarDay
-        return minOf(maxTableDay, maxOf(1, calendarDay + (t - u)))
-    }
-
-    private fun maxPrayerTableDay(prayerTimes: List<PrayerTime>, year: Int, month: Int): Int {
-        val m = maxOf(0, prayerTimes.maxOfOrNull { it.date } ?: 0)
-        if (m > 0) return m
-        return YearMonth.of(year, month).lengthOfMonth()
-    }
-
-    private fun getLastSundayOfMonth(year: Int, month: Int): Int {
-        val lastDay = YearMonth.of(year, month).atEndOfMonth()
-        val wd = lastDay.dayOfWeek.value % 7 + 1 // Sunday=1 … Saturday=7 (Swift weekday)
-        val last = lastDay.dayOfMonth
-        val sunday = 1
-        val offset = (wd - sunday + 7) % 7
-        return last - offset
-    }
-
-    fun getUkMarchSpringForwardDay(year: Int, dstDates: List<UkDstYear>): Int {
-        val row = dstDates.firstOrNull { it.year == year }
-        if (row != null) {
-            val seg = row.startDate.split("-")
-            if (seg.size == 3) {
-                val mo = seg[1].toIntOrNull()
-                val d = seg[2].toIntOrNull()
-                if (mo == 3 && d != null && d in 1..31) return d
-            }
-        }
-        return getLastSundayOfMonth(year, 3)
-    }
-
-    fun resolveEmbeddedDstTimetableDayOfMonth(
-        slug: String,
-        month: Int,
-        year: Int,
-        calendarDay: Int,
-        prayerTimes: List<PrayerTime>,
-        dstDates: List<UkDstYear>,
-    ): Int {
-        if (!mosqueTimetableAlreadyIncludesDst(slug) || (month != 3 && month != 10)) {
-            return calendarDay
-        }
-        val maxDay = maxPrayerTableDay(prayerTimes, year, month)
-        if (month == 3) {
-            val t = detectMarchSummerStartDayInTable(prayerTimes) ?: return calendarDay
-            val u = getUkMarchSpringForwardDay(year, dstDates)
-            return resolveTimetableDayForUkEmbeddedDst(calendarDay, t, u, maxDay)
-        }
-        val t = detectOctoberWinterStartDayInTable(prayerTimes) ?: return calendarDay
-        var u = getLastSundayOfMonth(year, 10)
-        dstDates.firstOrNull { it.year == year }?.let { row ->
-            val seg = row.endDate.split("-")
-            if (seg.size == 3) {
-                val mo = seg[1].toIntOrNull()
-                val d = seg[2].toIntOrNull()
-                if (mo == 10 && d != null && d in 1..31) u = d
-            }
-        }
-        return resolveTimetableDayForUkEmbeddedDst(calendarDay, t, u, maxDay)
-    }
-
-    data class MonthlyDayDisplay(val adhan: PrayerTime, val iqamahLookupDay: Int)
-
-    fun resolveMonthlyDayDisplay(
-        slug: String,
-        year: Int,
-        month: Int,
-        calendarDay: Int,
-        monthlyData: MonthPrayerData,
-        dstDates: List<UkDstYear>,
-    ): MonthlyDayDisplay? {
-        val iqamahLookupDay = resolveEmbeddedDstTimetableDayOfMonth(
-            slug = slug,
-            month = month,
-            year = year,
-            calendarDay = calendarDay,
-            prayerTimes = monthlyData.prayerTimes,
-            dstDates = dstDates,
-        )
-        val adhan = findDayData(monthlyData.prayerTimes, iqamahLookupDay) ?: return null
-        return MonthlyDayDisplay(adhan, iqamahLookupDay)
-    }
-
-    // MARK: - Risalah March iqāmah override
-
-    private fun buildMasjidRisalahMarchIqamahTimes(springForwardMarchDay: Int): List<IqamahTimeRange> {
-        val maghrib = "5 mins after adhan"
-        val fajrLate = "20 minutes after adhan"
-        val d = minOf(31, maxOf(1, springForwardMarchDay))
-        val rows = mutableListOf(
-            IqamahTimeRange("1-10", "05:30", "12:45", "15:30", maghrib, "19:45", null),
-            IqamahTimeRange("11-20", "05:15", "12:45", "15:45", maghrib, "20:00", null),
-        )
-        if (d > 21) {
-            rows.add(
-                IqamahTimeRange("21-${d - 1}", fajrLate, "12:45", "16:00", maghrib, "20:30", null),
-            )
-        }
-        rows.add(IqamahTimeRange("$d-31", fajrLate, "13:30", "17:00", maghrib, "21:30", null))
-        return rows
-    }
-
-    fun applyMasjidRisalahMarchIqamahIfNeeded(
-        slug: String,
-        monthNum: Int,
-        year: Int,
-        data: MonthPrayerData,
-        dstDates: List<UkDstYear>,
-    ): MonthPrayerData {
-        if (normalizeMosqueSlug(slug) != RISALAH_SLUG || monthNum != 3) return data
-        val spring = getUkMarchSpringForwardDay(year, dstDates)
-        return data.copy(
-            iqamahTimes = buildMasjidRisalahMarchIqamahTimes(spring),
-        )
-    }
-
     // MARK: - Ramadan
 
     fun isDateWithinRamadanRange(date: Instant, ramadan: RamadanPrayerData): Boolean {
@@ -485,138 +312,12 @@ object PrayerTimesEngine {
         return sheffieldNoonUTC(parts[0], parts[1], parts[2])
     }
 
-    // MARK: - DST adjustment (iqāmah month remap)
-
-    fun isInDSTAdjustmentPeriod(date: Instant, dstDates: List<UkDstYear>): Boolean {
-        val zdt = date.atZone(sheffieldTimeZone)
-        val y = zdt.year
-        val row = dstDates.firstOrNull { it.year == y } ?: return false
-        val start = parseISODate(row.startDate)
-        val end = parseISODate(row.endDate)
-        val checkMonth = zdt.monthValue
-        val checkDay = zdt.dayOfMonth
-
-        if (checkMonth == 10) {
-            val endZdt = end.atZone(sheffieldTimeZone)
-            val endY = endZdt.year
-            val endM = endZdt.monthValue
-            val endD = endZdt.dayOfMonth
-            val isAfter = y > endY ||
-                (y == endY && checkMonth > endM) ||
-                (y == endY && checkMonth == endM && checkDay >= endD)
-            return isAfter && checkMonth == 10
-        }
-        if (checkMonth == 3) {
-            val startZdt = start.atZone(sheffieldTimeZone)
-            val sY = startZdt.year
-            val sM = startZdt.monthValue
-            val sD = startZdt.dayOfMonth
-            val isAfter = y > sY ||
-                (y == sY && checkMonth > sM) ||
-                (y == sY && checkMonth == sM && checkDay >= sD)
-            return isAfter && checkMonth == 3
-        }
-        return false
-    }
-
-    private fun parseISODate(s: String): Instant {
-        val p = s.split("-").mapNotNull { it.trim().toIntOrNull() }
-        if (p.size != 3) return Instant.EPOCH
-        return LocalDate.of(p[0], p[1], p[2])
-            .atStartOfDay(sheffieldTimeZone)
-            .toInstant()
-    }
-
-    data class DstAdjustmentIqamahDate(val month: Int, val day: Int)
-
-    fun getDSTAdjustmentIqamahDate(date: Instant, dstDates: List<UkDstYear>): DstAdjustmentIqamahDate? {
-        val (year, checkMonth, checkDay) = getDateInSheffield(date)
-        val anchor = sheffieldNoonUTC(year, checkMonth, checkDay)
-        if (!isInDSTAdjustmentPeriod(anchor, dstDates)) return null
-        val yearData = dstDates.firstOrNull { it.year == year } ?: return null
-        val dstStartDay = yearData.startDate.takeLast(2).toIntOrNull() ?: 0
-        val dstEndDay = yearData.endDate.takeLast(2).toIntOrNull() ?: 0
-        if (checkMonth == 10) {
-            val dayOffset = checkDay - dstEndDay
-            if (dayOffset >= 0) {
-                val novemberDate = minOf(dayOffset + 1, 30)
-                return DstAdjustmentIqamahDate(11, novemberDate)
-            }
-        }
-        if (checkMonth == 3) {
-            val dayOffset = checkDay - dstStartDay
-            if (dayOffset >= 0) {
-                val aprilDate = minOf(dayOffset + 1, 30)
-                return DstAdjustmentIqamahDate(4, aprilDate)
-            }
-        }
-        return null
-    }
-
-    // MARK: - Display adhān (DST ±1h in Mar/Oct adjustment)
-
-    /** Matches Swift: Gregorian calendar without explicit timezone (system default). */
-    private fun isInOctoberTransition(date: Instant): Boolean {
-        val zdt = date.atZone(ZoneId.systemDefault())
-        return zdt.monthValue == 10 && zdt.dayOfMonth >= 22
-    }
-
-    /** Matches Swift: Gregorian calendar without explicit timezone (system default). */
-    private fun isInMarchTransition(date: Instant): Boolean {
-        val zdt = date.atZone(ZoneId.systemDefault())
-        return zdt.monthValue == 3 && zdt.dayOfMonth >= 21
-    }
-
-    private fun subtractOneHour(time: String): String {
-        val p = time.split(":").mapNotNull { it.trim().toIntOrNull() }
-        if (p.size != 2) return time
-        var h = p[0] - 1
-        if (h < 0) h = 23
-        return String.format(Locale.ROOT, "%02d:%02d", h, p[1])
-    }
-
-    private fun addOneHour(time: String): String {
-        val p = time.split(":").mapNotNull { it.trim().toIntOrNull() }
-        if (p.size != 2) return time
-        var h = p[0] + 1
-        if (h >= 24) h = 0
-        return String.format(Locale.ROOT, "%02d:%02d", h, p[1])
-    }
-
-    private fun adjustPrayerTimeForDSTSync(time: String, date: Instant): String {
-        if (isInOctoberTransition(date)) return subtractOneHour(time)
-        if (isInMarchTransition(date)) return addOneHour(time)
-        return time
-    }
-
-    fun isInDSTAdjustmentPeriodSync(date: Instant): Boolean =
-        isInOctoberTransition(date) || isInMarchTransition(date)
-
-    fun getDisplayedPrayerTimes(
-        prayerTimes: DailyPrayerTimes,
-        date: Instant,
-        mosqueSlug: String,
-    ): DailyPrayerTimes {
-        if (mosqueTimetableAlreadyIncludesDst(mosqueSlug)) return prayerTimes
-        if (!isInDSTAdjustmentPeriodSync(date)) return prayerTimes
-        return prayerTimes.copy(
-            fajr = adjustPrayerTimeForDSTSync(prayerTimes.fajr, date),
-            sunrise = adjustPrayerTimeForDSTSync(prayerTimes.sunrise, date),
-            dhuhr = adjustPrayerTimeForDSTSync(prayerTimes.dhuhr, date),
-            asr = adjustPrayerTimeForDSTSync(prayerTimes.asr, date),
-            maghrib = adjustPrayerTimeForDSTSync(prayerTimes.maghrib, date),
-            isha = adjustPrayerTimeForDSTSync(prayerTimes.isha, date),
-        )
-    }
-
     // MARK: - Resolve day (monthly vs Ramadan)
 
     fun resolvePrayerTimes(
-        slug: String,
         on: Instant,
         monthly: MonthPrayerData?,
         ramadan: RamadanPrayerData?,
-        ukDst: List<UkDstYear>,
         asrTimingPreference: AsrIqamahPreference = AsrIqamahPreference.FIRST,
     ): DailyPrayerTimes {
         val (y, m, d) = getDateInSheffield(on)
@@ -638,10 +339,7 @@ object PrayerTimesEngine {
         }
 
         val monthlyData = monthly ?: throw PrayerEngineError.MissingMonthly
-        val adjustedMonthly = applyMasjidRisalahMarchIqamahIfNeeded(slug, m, y, monthlyData, ukDst)
-        val resolved = resolveMonthlyDayDisplay(slug, y, m, d, adjustedMonthly, ukDst)
-            ?: throw PrayerEngineError.MissingDayRow
-        val adhan = resolved.adhan
+        val adhan = findDayData(monthlyData.prayerTimes, d) ?: throw PrayerEngineError.MissingDayRow
         return DailyPrayerTimes(
             date = dateStr,
             fajr = adhan.fajr,
@@ -654,13 +352,11 @@ object PrayerTimesEngine {
     }
 
     fun resolveIqamahTimes(
-        slug: String,
         on: Instant,
         monthly: MonthPrayerData?,
         ramadan: RamadanPrayerData?,
-        ukDst: List<UkDstYear>,
     ): DailyIqamahTimes {
-        val (y, m, d) = getDateInSheffield(on)
+        val (_, _, d) = getDateInSheffield(on)
 
         if (ramadan != null && isDateWithinRamadanRange(on, ramadan)) {
             val ramadanDay = getRamadanDay(on, ramadan)
@@ -670,32 +366,10 @@ object PrayerTimesEngine {
         }
 
         val monthlyData = monthly ?: throw PrayerEngineError.MissingMonthly
-        val adjustedMonthly = applyMasjidRisalahMarchIqamahIfNeeded(slug, m, y, monthlyData, ukDst)
-        val resolved = resolveMonthlyDayDisplay(slug, y, m, d, adjustedMonthly, ukDst)
-            ?: throw PrayerEngineError.MissingDayRow
-        val iq = getIqamahTimesForDate(resolved.iqamahLookupDay, adjustedMonthly.iqamahTimes)
-        val j = if (iq.jummah.trim().isEmpty()) adjustedMonthly.jummahIqamah else iq.jummah
+        findDayData(monthlyData.prayerTimes, d) ?: throw PrayerEngineError.MissingDayRow
+        val iq = getIqamahTimesForDate(d, monthlyData.iqamahTimes)
+        val j = if (iq.jummah.trim().isEmpty()) monthlyData.jummahIqamah else iq.jummah
         return iq.copy(jummah = j)
-    }
-
-    /** MWHS-style iqāmah mapping in Mar/Oct DST bands (uses April/November rows). */
-    fun resolveIqamahTimesWithDstMapping(
-        slug: String,
-        on: Instant,
-        monthly: MonthPrayerData?,
-        ramadan: RamadanPrayerData?,
-        ukDst: List<UkDstYear>,
-    ): DailyIqamahTimes {
-        if (mosqueTimetableAlreadyIncludesDst(slug)) {
-            return resolveIqamahTimes(slug, on, monthly, ramadan, ukDst)
-        }
-        val mapped = getDSTAdjustmentIqamahDate(on, ukDst)
-        if (mapped != null) {
-            val (y, _, _) = getDateInSheffield(on)
-            val adj = sheffieldNoonUTC(y, mapped.month, mapped.day)
-            return resolveIqamahTimes(slug, adj, monthly, ramadan, ukDst)
-        }
-        return resolveIqamahTimes(slug, on, monthly, ramadan, ukDst)
     }
 
     // MARK: - Hero circle countdown (widget-aligned)

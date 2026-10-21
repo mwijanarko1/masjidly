@@ -39,18 +39,11 @@ The Friday congregational prayer that replaces Dhuhr. In next-prayer and notific
 
 A special prayer schedule used during Ramadan. Overrides regular monthly prayer times for days within the Ramadan date range. Includes separate iqamah ranges and may have different adhan times.
 
-## UK DST Calendar
-
-A record of UK Daylight Saving Time start/end dates per year. Used by `PrayerTimesEngine` to:
-- Detect March/October DST transition weeks
-- Remap embedded DST timetables (e.g., Masjid Al-Huda)
-- Adjust iqamah lookups to April/November rows during transition periods
-
 ## PrayerTimesEngine
 
 The core calculation module (Swift enum / TypeScript namespace) that:
 - Resolves daily prayer times from monthly or Ramadan data
-- Computes iqamah times with DST mapping
+- Resolves iqamah times from the published ranges for the same date
 - Determines the next upcoming prayer and countdown
 - Formats times to 12-hour or 24-hour display
 - Handles Masjid Risalah special cases and summer Isha overrides

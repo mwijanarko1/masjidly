@@ -6,7 +6,6 @@ protocol PrayerRepository: AnyObject {
     func getPrayerDataVersions(mosqueSlug: String, month: MonthName, year: Int) async throws -> PrayerDataVersions
     func getMonthlyPrayerTimes(mosqueSlug: String, month: MonthName, year: Int) async throws -> MonthPrayerData?
     func getRamadanTimetable(mosqueSlug: String, date: String?) async throws -> RamadanPrayerData?
-    func getUkDstDates() async throws -> UkDstCalendar?
 }
 
 extension PrayerRepository {
