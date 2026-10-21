@@ -14,7 +14,6 @@ import com.mikhailspeaks.masjidly.domain.NextPrayerCountdownResult
 import com.mikhailspeaks.masjidly.domain.PrayerRepository
 import com.mikhailspeaks.masjidly.domain.PrayerTimesEngine
 import com.mikhailspeaks.masjidly.domain.RamadanPrayerData
-import com.mikhailspeaks.masjidly.domain.UkDstYear
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationScheduler
 import java.time.Instant
 import java.time.ZoneId
@@ -53,7 +52,6 @@ class HomeViewModel(
         val selectedMosque: Mosque? = null,
         val monthData: MonthPrayerData? = null,
         val ramadanData: RamadanPrayerData? = null,
-        val ukDst: List<UkDstYear> = emptyList(),
         val displayedPrayerTimes: DailyPrayerTimes? = null,
         val iqamahTimes: DailyIqamahTimes? = null,
         val nextCountdown: NextPrayerCountdownResult? = null,
@@ -310,7 +308,6 @@ class HomeViewModel(
         val isoDate = PrayerTimesEngine.isoDateString(sh.year, sh.month, sh.day)
         val cachedMonthly = diskCache.loadMonthly(mosque.slug, monthName.rawValue, sh.year)
         val cachedRamadan = diskCache.loadRamadan(mosque.slug, isoDate)
-        val cachedDst = diskCache.loadUkDst()
         val cachedVersions = diskCache.loadVersions(mosque.slug, monthName.rawValue, sh.year)
 
         if (!checkVersions && cachedMonthly != null) {
@@ -319,7 +316,6 @@ class HomeViewModel(
                 it.copy(
                     monthData = cachedMonthly,
                     ramadanData = cachedRamadan,
-                    ukDst = cachedDst?.ukDstDates ?: emptyList(),
                     lastPrayerPayloadRefreshAt = Instant.now(),
                 )
             }
@@ -343,7 +339,6 @@ class HomeViewModel(
                 it.copy(
                     monthData = cachedMonthly,
                     ramadanData = cachedRamadan,
-                    ukDst = cachedDst?.ukDstDates ?: emptyList(),
                     lastPrayerPayloadRefreshAt = Instant.now(),
                 )
             }
@@ -358,11 +353,10 @@ class HomeViewModel(
         }
 
         // Parallel like iOS `async let`; sequential round trips made new tabs slow.
-        val (monthly, ramadan, dstCalendar) = coroutineScope {
+        val (monthly, ramadan) = coroutineScope {
             val monthly = async { repository.getMonthlyPrayerTimes(mosque.slug, monthName, sh.year) }
             val ramadan = async { repository.getRamadanTimetable(mosque.slug, isoDate) }
-            val dst = async { repository.getUkDstDates() }
-            Triple(monthly.await(), ramadan.await(), dst.await())
+            monthly.await() to ramadan.await()
         }
 
         if (_uiState.value.selectedMosque?.id != mosque.id) return
@@ -373,14 +367,12 @@ class HomeViewModel(
             diskCache.removeMonthly(mosque.slug, monthName.rawValue, sh.year)
         }
         ramadan?.let { diskCache.saveRamadan(mosque.slug, isoDate, it) }
-        dstCalendar?.let { diskCache.saveUkDst(it) }
         versions?.let { diskCache.saveVersions(mosque.slug, monthName.rawValue, sh.year, it) }
 
         _uiState.update {
             it.copy(
                 monthData = monthly,
                 ramadanData = ramadan,
-                ukDst = dstCalendar?.ukDstDates ?: emptyList(),
                 lastPrayerPayloadRefreshAt = Instant.now(),
             )
         }
@@ -405,7 +397,6 @@ class HomeViewModel(
                 selectedMosque = mosque,
                 monthData = monthly,
                 ramadanData = diskCache.loadRamadan(mosque.slug, isoDate),
-                ukDst = diskCache.loadUkDst()?.ukDstDates ?: emptyList(),
                 loadState = LoadState.LOADED,
             )
         }
@@ -435,11 +426,10 @@ class HomeViewModel(
         val isoDate = PrayerTimesEngine.isoDateString(parts.year, parts.month, parts.day)
 
         try {
-            val (monthly, ramadan, dst) = coroutineScope {
+            val (monthly, ramadan) = coroutineScope {
                 val monthly = async { repository.getMonthlyPrayerTimes(mosque.slug, monthName, parts.year) }
                 val ramadan = async { repository.getRamadanTimetable(mosque.slug, isoDate) }
-                val dst = async { repository.getUkDstDates() }
-                Triple(monthly.await(), ramadan.await(), dst.await())
+                monthly.await() to ramadan.await()
             }
 
             if (monthly != null && monthly.prayerTimes.isNotEmpty()) {
@@ -448,7 +438,6 @@ class HomeViewModel(
                 diskCache.removeMonthly(mosque.slug, monthName.rawValue, parts.year)
             }
             ramadan?.let { diskCache.saveRamadan(mosque.slug, isoDate, it) }
-            dst?.let { diskCache.saveUkDst(it) }
 
             val displayedParts = PrayerTimesEngine.getDateInSheffield(_uiState.value.displayedDate)
             if (_uiState.value.selectedMosque?.slug != mosque.slug) return
@@ -458,7 +447,6 @@ class HomeViewModel(
                 it.copy(
                     monthData = monthly,
                     ramadanData = ramadan,
-                    ukDst = dst?.ukDstDates ?: it.ukDst,
                     lastPrayerPayloadRefreshAt = Instant.now(),
                 )
             }
@@ -473,7 +461,6 @@ class HomeViewModel(
                     it.copy(
                         monthData = cached,
                         ramadanData = diskCache.loadRamadan(mosque.slug, isoDate),
-                        ukDst = diskCache.loadUkDst()?.ukDstDates ?: it.ukDst,
                     )
                 }
                 loadedMonthNumber = parts.month
@@ -491,25 +478,20 @@ class HomeViewModel(
         }
         val monthly = state.monthData
         val displayed = try {
-            val raw = PrayerTimesEngine.resolvePrayerTimes(
-                slug = mosque.slug,
+            PrayerTimesEngine.resolvePrayerTimes(
                 on = date,
                 monthly = monthly,
                 ramadan = state.ramadanData,
-                ukDst = state.ukDst,
                 asrTimingPreference = settings.asrIqamahPreference,
             )
-            PrayerTimesEngine.getDisplayedPrayerTimes(raw, date = date, mosqueSlug = mosque.slug)
         } catch (_: Exception) {
             null
         }
         val iqamah = try {
-            PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
-                slug = mosque.slug,
+            PrayerTimesEngine.resolveIqamahTimes(
                 on = date,
                 monthly = monthly,
                 ramadan = state.ramadanData,
-                ukDst = state.ukDst,
             )
         } catch (_: Exception) {
             null

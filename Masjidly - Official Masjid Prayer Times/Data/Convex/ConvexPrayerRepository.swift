@@ -54,8 +54,4 @@ final class ConvexPrayerRepository: PrayerRepository {
             as: RamadanPrayerData?.self
         )
     }
-
-    func getUkDstDates() async throws -> UkDstCalendar? {
-        try await service.client.subscribeFirstValue(to: "prayerTimes:getUkDstDates", with: [:], as: UkDstCalendar?.self)
-    }
 }

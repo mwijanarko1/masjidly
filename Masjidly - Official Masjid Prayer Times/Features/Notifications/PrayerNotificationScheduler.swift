@@ -150,14 +150,6 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
 
         prayerNotificationAddBudget = 64
 
-        let ukDst: [UkDstYear]
-        if let cached = diskCache?.loadUkDst() {
-            ukDst = cached.ukDstDates
-        } else {
-            let calendar = try? await repository.getUkDstDates()
-            if let calendar { try? diskCache?.saveUkDst(calendar) }
-            ukDst = calendar?.ukDstDates ?? []
-        }
         let slug = mosque.slug
         let mosqueName = mosque.name
         var cal = Calendar(identifier: .gregorian)
@@ -197,9 +189,8 @@ final class PrayerNotificationScheduler: PrayerNotificationScheduling {
             let displayed: DailyPrayerTimes
             let iq: DailyIqamahTimes
             do {
-                let raw = try PrayerTimesEngine.resolvePrayerTimes(slug: slug, on: dayDate, monthly: monthly, ramadan: ramadan, ukDst: ukDst, asrTimingPreference: asrIqamahPreference)
-                displayed = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date: dayDate, mosqueSlug: slug)
-                iq = try PrayerTimesEngine.resolveIqamahTimesWithDstMapping(slug: slug, on: dayDate, monthly: monthly, ramadan: ramadan, ukDst: ukDst)
+                displayed = try PrayerTimesEngine.resolvePrayerTimes(on: dayDate, monthly: monthly, ramadan: ramadan, asrTimingPreference: asrIqamahPreference)
+                iq = try PrayerTimesEngine.resolveIqamahTimes(on: dayDate, monthly: monthly, ramadan: ramadan)
             } catch {
                 continue
             }

@@ -100,7 +100,7 @@ struct PrayerFocusScheduleTests {
         #expect(windows.map(\.start) == [utc(2026, 10, 24, 2, 20), utc(2026, 10, 25, 2, 20)])
     }
 
-    @Test func explicitLondonZoneFollowsUkDst() {
+    @Test func explicitLondonZoneFollowsSeasonalOffsets() {
         let windows = build([day("2026-10-24"), day("2026-10-25")], settings(start: .iqamah, prayers: [.fajr]), timezone: "Europe/London")
         #expect(windows.map(\.start) == [utc(2026, 10, 24, 4, 20), utc(2026, 10, 25, 5, 20)])
     }

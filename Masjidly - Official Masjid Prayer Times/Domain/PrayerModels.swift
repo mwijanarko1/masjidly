@@ -199,23 +199,3 @@ struct DailyIqamahTimes: Codable, Equatable, Sendable {
     var isha: String
     var jummah: String
 }
-
-struct UkDstYear: Codable, Equatable, Sendable {
-    let year: Int
-    let startDate: String
-    let endDate: String
-
-    enum CodingKeys: String, CodingKey {
-        case year
-        case startDate = "start_date"
-        case endDate = "end_date"
-    }
-}
-
-struct UkDstCalendar: Codable, Equatable, Sendable {
-    let ukDstDates: [UkDstYear]
-
-    enum CodingKeys: String, CodingKey {
-        case ukDstDates = "uk_dst_dates"
-    }
-}

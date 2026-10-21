@@ -23,7 +23,6 @@ final class HomeViewModel {
     }
     var monthData: MonthPrayerData?
     var ramadanData: RamadanPrayerData?
-    var ukDst: [UkDstYear] = []
 
     private var loadedMonthNumber: Int?
     private var loadedMonthYear: Int?
@@ -104,14 +103,12 @@ final class HomeViewModel {
         let isoDate = PrayerTimesEngine.isoDateString(year: sh.year, month: sh.month, day: sh.day)
         let cachedMonthly = diskCache.loadMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year)
         let cachedRamadan = diskCache.loadRamadan(slug: mosque.slug, date: isoDate)
-        let cachedDst = diskCache.loadUkDst()
         let cachedVersions = diskCache.loadVersions(slug: mosque.slug, month: monthName.rawValue, year: sh.year)
 
         if !checkVersions, let cachedMonthly {
             guard selectedMosque?.id == mosque.id else { return }
             monthData = cachedMonthly
             ramadanData = cachedRamadan
-            ukDst = cachedDst?.ukDstDates ?? []
             loadedMonthNumber = sh.month
             loadedMonthYear = sh.year
             applyPrayerTimes(for: displayedDate, mosque: mosque)
@@ -127,7 +124,6 @@ final class HomeViewModel {
             try? diskCache.saveVersions(slug: mosque.slug, month: monthName.rawValue, year: sh.year, versions: versions)
             monthData = cachedMonthly
             ramadanData = cachedRamadan
-            ukDst = cachedDst?.ukDstDates ?? []
             loadedMonthNumber = sh.month
             loadedMonthYear = sh.year
             applyPrayerTimes(for: displayedDate, mosque: mosque)
@@ -137,11 +133,8 @@ final class HomeViewModel {
 
         async let monthly = repository.getMonthlyPrayerTimes(mosqueSlug: mosque.slug, month: monthName, year: sh.year)
         async let ramadan = repository.getRamadanTimetable(mosqueSlug: mosque.slug, date: isoDate)
-        async let dst = repository.getUkDstDates()
         let monthData = try await monthly
         let ramadanData = try await ramadan
-        let dstCalendar = try await dst
-        let ukDst = dstCalendar?.ukDstDates ?? []
 
         guard selectedMosque?.id == mosque.id else { return }
 
@@ -153,16 +146,12 @@ final class HomeViewModel {
         if let ramadanData {
             try? diskCache.saveRamadan(slug: mosque.slug, date: isoDate, data: ramadanData)
         }
-        if let dstCalendar {
-            try? diskCache.saveUkDst(dstCalendar)
-        }
         if let versions {
             try? diskCache.saveVersions(slug: mosque.slug, month: monthName.rawValue, year: sh.year, versions: versions)
         }
 
         self.monthData = monthData
         self.ramadanData = ramadanData
-        self.ukDst = ukDst
         self.loadedMonthNumber = sh.month
         self.loadedMonthYear = sh.year
 
@@ -229,25 +218,20 @@ final class HomeViewModel {
             return
         }
         do {
-            let raw = try PrayerTimesEngine.resolvePrayerTimes(
-                slug: mosque.slug,
+            displayedPrayerTimes = try PrayerTimesEngine.resolvePrayerTimes(
                 on: date,
                 monthly: monthly,
                 ramadan: ramadanData,
-                ukDst: ukDst,
                 asrTimingPreference: settings.asrIqamahPreference
             )
-            displayedPrayerTimes = PrayerTimesEngine.getDisplayedPrayerTimes(raw, date: date, mosqueSlug: mosque.slug)
             lastAvailablePrayerDate = date
         } catch {
             displayedPrayerTimes = nil
         }
-        if let iq = try? PrayerTimesEngine.resolveIqamahTimesWithDstMapping(
-            slug: mosque.slug,
+        if let iq = try? PrayerTimesEngine.resolveIqamahTimes(
             on: date,
             monthly: monthly,
-            ramadan: ramadanData,
-            ukDst: ukDst
+            ramadan: ramadanData
         ) {
             iqamahTimes = iq
         } else {
@@ -333,10 +317,8 @@ final class HomeViewModel {
         do {
             async let monthly = repository.getMonthlyPrayerTimes(mosqueSlug: mosque.slug, month: monthName, year: parts.year)
             async let ramadan = repository.getRamadanTimetable(mosqueSlug: mosque.slug, date: isoDate)
-            async let dst = repository.getUkDstDates()
             let fetchedMonthly = try await monthly
             let fetchedRamadan = try await ramadan
-            let dstCalendar = try await dst
 
             if let fetchedMonthly, !fetchedMonthly.prayerTimes.isEmpty {
                 try? diskCache.saveMonthly(slug: mosque.slug, month: monthName.rawValue, year: parts.year, data: fetchedMonthly)
@@ -344,7 +326,6 @@ final class HomeViewModel {
                 diskCache.removeMonthly(slug: mosque.slug, month: monthName.rawValue, year: parts.year)
             }
             if let fetchedRamadan { try? diskCache.saveRamadan(slug: mosque.slug, date: isoDate, data: fetchedRamadan) }
-            if let dstCalendar { try? diskCache.saveUkDst(dstCalendar) }
 
             guard PrayerTimesEngine.getDateInSheffield(displayedDate).month == parts.month,
                   PrayerTimesEngine.getDateInSheffield(displayedDate).year == parts.year,
@@ -352,7 +333,6 @@ final class HomeViewModel {
 
             monthData = fetchedMonthly
             ramadanData = fetchedRamadan
-            ukDst = dstCalendar?.ukDstDates ?? ukDst
             loadedMonthNumber = parts.month
             loadedMonthYear = parts.year
             applyPrayerTimes(for: displayedDate, mosque: mosque)
@@ -361,7 +341,6 @@ final class HomeViewModel {
             if let cached = diskCache.loadMonthly(slug: mosque.slug, month: monthName.rawValue, year: parts.year) {
                 monthData = cached
                 ramadanData = diskCache.loadRamadan(slug: mosque.slug, date: isoDate)
-                ukDst = diskCache.loadUkDst()?.ukDstDates ?? ukDst
                 loadedMonthNumber = parts.month
                 loadedMonthYear = parts.year
                 applyPrayerTimes(for: displayedDate, mosque: mosque)
@@ -465,7 +444,6 @@ final class HomeViewModel {
 
         monthData = monthly
         ramadanData = diskCache.loadRamadan(slug: mosque.slug, date: isoDate)
-        ukDst = diskCache.loadUkDst()?.ukDstDates ?? ukDst
         loadedMonthNumber = sh.month
         loadedMonthYear = sh.year
         applyPrayerTimes(for: date, mosque: mosque)

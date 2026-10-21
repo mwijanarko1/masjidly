@@ -7,7 +7,6 @@ import com.mikhailspeaks.masjidly.domain.MonthPrayerData
 import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.PrayerDataVersions
 import com.mikhailspeaks.masjidly.domain.RamadanPrayerData
-import com.mikhailspeaks.masjidly.domain.UkDstCalendar
 import java.io.File
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -52,13 +51,6 @@ class PrayerTimesDiskCache(context: Context) {
         save(DATA_REVISION_FILE, revision)
     }
 
-    fun loadUkDst(): UkDstCalendar? =
-        load<UkDstCalendarCache>(UK_DST_FILE)?.toDomain()
-
-    fun saveUkDst(dst: UkDstCalendar) {
-        save(UK_DST_FILE, dst.toCache())
-    }
-
     fun loadVersions(slug: String, month: String, year: Int): CachedPrayerDataVersions? =
         load<CachedPrayerDataVersions>(versionsFilename(slug, month, year))
 
@@ -100,6 +92,5 @@ class PrayerTimesDiskCache(context: Context) {
     companion object {
         private const val MOSQUES_FILE = "mosques.json"
         private const val DATA_REVISION_FILE = "data_revision.json"
-        private const val UK_DST_FILE = "uk_dst.json"
     }
 }

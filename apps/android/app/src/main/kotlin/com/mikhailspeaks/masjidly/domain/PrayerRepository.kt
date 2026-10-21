@@ -15,6 +15,4 @@ interface PrayerRepository {
         mosqueSlug: String,
         date: String?,
     ): RamadanPrayerData?
-
-    suspend fun getUkDstDates(): UkDstCalendar?
 }

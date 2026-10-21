@@ -93,18 +93,6 @@ data class RamadanPrayerDataWire(
     @SerialName("jummah_iqamah") val jummahIqamah: String,
 )
 
-@Serializable
-data class UkDstYearWire(
-    val year: Double,
-    @SerialName("start_date") val startDate: String,
-    @SerialName("end_date") val endDate: String,
-)
-
-@Serializable
-data class UkDstCalendarWire(
-    @SerialName("uk_dst_dates") val ukDstDates: List<UkDstYearWire>,
-)
-
 fun decodeIqamahValue(element: JsonElement): String {
     if (element is JsonNull) return ""
     return when (element) {
