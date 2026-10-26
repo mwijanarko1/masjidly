@@ -100,6 +100,14 @@ import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingHighlight
 import com.mikhailspeaks.masjidly.features.onboarding.OnboardingStep
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermissions
+import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationContent
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusController
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusPermissions
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusPrayer
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusSettings
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusStart
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusWindow
+import com.mikhailspeaks.masjidly.features.prayerfocus.formatPrayerFocusClock
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.home.SkyGradientSet
 import com.mikhailspeaks.masjidly.ui.home.ThemeMode
@@ -568,6 +576,12 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                SettingsPlainSection(LocaleStrings.t("settings.prayer_focus.title", language), theme) {
+                    PrayerFocusSettingsSection(settingsStore, language, theme)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
                 SettingsSectionTitle(LocaleStrings.t("settings.section.contact.title", language), theme)
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     InsetActionButton(LocaleStrings.t("settings.contact.feedback.title", language), theme) {
@@ -793,6 +807,207 @@ private fun NotificationSettingsSection(
             persistWithMasterSync(notifications.copy(preIqamahReminderMinutes = minutes))
         }
     }
+}
+
+@Composable
+private fun PrayerFocusSettingsSection(
+    settingsStore: SettingsStore,
+    language: AppLanguage,
+    theme: ResolvedTheme,
+) {
+    val context = LocalContext.current
+    val revision by settingsStore.revision.collectAsState()
+    val settings = remember(revision) { settingsStore.prayerFocus }
+    var pickerOpen by remember { mutableStateOf(false) }
+    var prayersExpanded by remember { mutableStateOf(false) }
+    // Grants change in system Settings and windows change with time; neither is observable here.
+    var refreshTick by remember { mutableStateOf(0) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshTick += 1
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(settings.isEnabled) {
+        while (settings.isEnabled) {
+            kotlinx.coroutines.delay(30_000)
+            refreshTick += 1
+        }
+    }
+
+    val status = remember(revision, refreshTick) {
+        PrayerFocusController.status(context, settings)
+    }
+
+    fun update(updated: PrayerFocusSettings) {
+        settingsStore.prayerFocus = updated
+        PrayerFocusController.reconcile(context)
+        refreshTick += 1
+    }
+
+    SettingsToggleRow(LocaleStrings.t("settings.prayer_focus.enabled.title", language), settings.isEnabled, theme) { enabled ->
+        update(settings.copy(isEnabled = enabled))
+        if (enabled && settings.selectedPackages.isEmpty()) pickerOpen = true
+    }
+
+    if (settings.isEnabled) {
+        PrayerFocusStatusRow(status, settingsStore, language, theme) {
+            PrayerFocusController.stopCurrentWindow(context)
+            refreshTick += 1
+        }
+
+        SettingsDivider(theme)
+        SettingsReminderMenuPickerRow(
+            label = LocaleStrings.t("settings.prayer_focus.choose_apps", language),
+            displayValue = LocaleStrings.format(
+                "settings.prayer_focus.count.apps",
+                language,
+                settings.selectedPackages.size,
+            ),
+            theme = theme,
+            onClick = { pickerOpen = true },
+        )
+
+        SettingsDivider(theme)
+        PickerRow(
+            label = LocaleStrings.t("settings.prayer_focus.start.title", language),
+            options = listOf(
+                PrayerFocusStart.ADHAN.name to LocaleStrings.t("notification.channel.adhan", language),
+                PrayerFocusStart.IQAMAH.name to LocaleStrings.t("notification.channel.iqamah", language),
+            ),
+            selectedKey = settings.start.name,
+            language = language,
+            theme = theme,
+        ) { key ->
+            update(settings.copy(start = PrayerFocusStart.valueOf(key)))
+        }
+
+        SettingsDivider(theme)
+        PickerRow(
+            label = LocaleStrings.t("settings.prayer_focus.duration.title", language),
+            options = PrayerFocusSettings.durationOptions.map { minutes ->
+                minutes.toString() to LocaleStrings.format("settings.reminder.minutes_format", language, minutes)
+            },
+            selectedKey = settings.durationMinutes.toString(),
+            language = language,
+            theme = theme,
+        ) { key ->
+            key.toIntOrNull()?.let { update(settings.copy(durationMinutes = it)) }
+        }
+
+        SettingsDivider(theme)
+        CollapsibleSettingsSubsection(
+            title = LocaleStrings.t("settings.prayer_focus.prayers.title", language),
+            expanded = prayersExpanded,
+            theme = theme,
+            language = language,
+            onToggle = { prayersExpanded = !prayersExpanded },
+        ) {
+            PrayerFocusPrayer.entries.forEachIndexed { index, prayer ->
+                if (index > 0) SettingsDivider(theme)
+                SettingsToggleRow(LocaleStrings.t(prayer.labelKey, language), prayer in settings.prayers, theme) { on ->
+                    update(settings.copy(prayers = if (on) settings.prayers + prayer else settings.prayers - prayer))
+                }
+            }
+        }
+    }
+
+    PrayerFocusAppPickerSheet(
+        visible = pickerOpen,
+        selectedPackages = settings.selectedPackages,
+        theme = theme,
+        language = language,
+        onDismiss = { pickerOpen = false },
+        onToggle = { packageName, selected ->
+            val current = settingsStore.prayerFocus
+            val packages = if (selected) current.selectedPackages + packageName else current.selectedPackages - packageName
+            update(current.copy(selectedPackages = packages))
+        },
+    )
+}
+
+@Composable
+private fun PrayerFocusStatusRow(
+    status: PrayerFocusController.Status,
+    settingsStore: SettingsStore,
+    language: AppLanguage,
+    theme: ResolvedTheme,
+    onStop: () -> Unit,
+) {
+    val context = LocalContext.current
+    fun clock(millis: Long) = formatPrayerFocusClock(millis, settingsStore.uses24HourTime, settingsStore.resolvedLocale())
+    fun prayerName(window: PrayerFocusWindow) =
+        PrayerNotificationContent.prayerDisplayName(window.prayer.wireValue, window.isFriday, language)
+
+    when (status) {
+        PrayerFocusController.Status.Off -> Unit
+        PrayerFocusController.Status.NeedsUsageAccess -> {
+            PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.status.needs_usage_access", language), theme)
+            PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.howto.usage", language), theme)
+            LocationRecoveryButton(LocaleStrings.t("settings.prayer_focus.allow_usage_access", language), theme) {
+                PrayerFocusPermissions.openUsageAccessSettings(context)
+            }
+        }
+        PrayerFocusController.Status.NeedsOverlay -> {
+            PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.status.needs_overlay", language), theme)
+            PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.howto.overlay", language), theme)
+            LocationRecoveryButton(LocaleStrings.t("settings.prayer_focus.allow_overlay", language), theme) {
+                PrayerFocusPermissions.openOverlaySettings(context)
+            }
+        }
+        PrayerFocusController.Status.NeedsExactAlarm -> {
+            PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.status.needs_exact_alarm", language), theme)
+            PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.howto.exact_alarm", language), theme)
+            LocationRecoveryButton(LocaleStrings.t("settings.prayer_focus.allow_exact_alarm", language), theme) {
+                PrayerFocusPermissions.openExactAlarmSettings(context)
+            }
+        }
+        PrayerFocusController.Status.NeedsSelection ->
+            PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.status.needs_selection", language), theme)
+        PrayerFocusController.Status.NoUpcomingTimes ->
+            PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.status.no_times", language), theme)
+        PrayerFocusController.Status.Failed ->
+            PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.status.failed", language), theme)
+        is PrayerFocusController.Status.Scheduled ->
+            PrayerFocusCaption(
+                LocaleStrings.format(
+                    "settings.prayer_focus.status.next_format",
+                    language,
+                    prayerName(status.next),
+                    clock(status.next.startEpochMillis),
+                ),
+                theme,
+            )
+        is PrayerFocusController.Status.Active -> {
+            PrayerFocusCaption(
+                LocaleStrings.format("settings.prayer_focus.status.active_format", language, clock(status.window.endEpochMillis)),
+                theme,
+            )
+            InsetActionButton(LocaleStrings.t("settings.prayer_focus.stop", language), theme, onStop)
+        }
+    }
+
+    val enforcing = status is PrayerFocusController.Status.Active || status is PrayerFocusController.Status.Scheduled
+    if (enforcing && !PrayerFocusPermissions.hasNotificationPermission(context)) {
+        Spacer(modifier = Modifier.height(8.dp))
+        PrayerFocusCaption(LocaleStrings.t("settings.prayer_focus.status.notifications_off", language), theme)
+        LocationRecoveryButton(LocaleStrings.t("settings.prayer_focus.open_notification_settings", language), theme) {
+            PrayerFocusPermissions.openNotificationSettings(context)
+        }
+    }
+}
+
+@Composable
+private fun PrayerFocusCaption(text: String, theme: ResolvedTheme) {
+    Text(
+        text = text,
+        style = rememberAppTextStyle(15f),
+        color = theme.textColor.copy(alpha = 0.8f),
+        modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+    )
 }
 
 @Composable

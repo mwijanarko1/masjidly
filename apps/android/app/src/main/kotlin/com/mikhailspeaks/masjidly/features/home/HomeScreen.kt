@@ -436,6 +436,7 @@ fun HomeScreen(
                     mosques = state.mosques,
                     onboarding = onboardingViewModel,
                     onboardingState = onboardingState,
+                    settingsStore = settingsStore,
                 )
             }
         }

@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mikhailspeaks.masjidly.data.SettingsStore
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.LocaleStrings
 import com.mikhailspeaks.masjidly.domain.Mosque
@@ -90,7 +91,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 
-private val Accent = Color(0xFF47A6FF)
+internal val OnboardingAccent = Color(0xFF47A6FF)
+private val Accent = OnboardingAccent
 private val AccentDark = Color(0xFF2E8DFF)
 
 enum class OnboardingTutorialCardStyle {
@@ -141,7 +143,7 @@ fun OnboardingScrim(theme: ResolvedTheme, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun OnboardingFullScreenShell(
+internal fun OnboardingFullScreenShell(
     theme: ResolvedTheme,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
@@ -726,7 +728,7 @@ fun MosqueSelectionOnboardingScreen(
 }
 
 @Composable
-private fun OnboardingPickerDivider(textColor: Color) {
+internal fun OnboardingPickerDivider(textColor: Color) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -811,6 +813,7 @@ fun HomeOnboardingOverlay(
     mosques: List<Mosque>,
     onboarding: OnboardingFlowViewModel,
     onboardingState: OnboardingFlowViewModel.UiState,
+    settingsStore: SettingsStore,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -894,6 +897,25 @@ fun HomeOnboardingOverlay(
             isSaving = onboardingState.isCompletingNotifications,
             onDraftChange = { draft -> onboarding.updateNotificationDraft { draft } },
             onContinue = onboarding::completeNotificationSetup,
+        )
+        OnboardingStep.PrayerFocusIntro -> OnboardingPrayerFocusIntroScreen(
+            theme = theme,
+            language = language,
+            onTurnOn = onboarding::turnOnPrayerFocusFromOnboarding,
+            onSkip = { onboarding.skipPrayerFocusOnboarding(context) },
+        )
+        OnboardingStep.PrayerFocusApps -> OnboardingPrayerFocusAppsScreen(
+            theme = theme,
+            language = language,
+            settingsStore = settingsStore,
+            onContinue = onboarding::continuePrayerFocusAfterApps,
+            onSkip = { onboarding.skipPrayerFocusOnboarding(context) },
+        )
+        OnboardingStep.PrayerFocusSchedule -> OnboardingPrayerFocusScheduleScreen(
+            theme = theme,
+            language = language,
+            settingsStore = settingsStore,
+            onFinish = onboarding::completePrayerFocusSchedule,
         )
     }
 }

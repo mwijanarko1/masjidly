@@ -10,6 +10,7 @@ import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.MosqueSelection
 import com.mikhailspeaks.masjidly.domain.PrayerRepository
 import com.mikhailspeaks.masjidly.domain.PrayerTimesEngine
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusController
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -32,6 +33,8 @@ class WidgetPrayerSnapshotService(
             if (settings.selectedMosqueId != null && settings.selectedMosqueId != mosque.id) return
             store.writeSnapshot(snapshot)
             updateAllMasjidlyWidgets(context)
+            // Prayer Focus plans from this snapshot (iOS reschedules on each snapshot refresh too).
+            PrayerFocusController.reconcile(context)
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             throw cancelled
         } catch (_: Throwable) {

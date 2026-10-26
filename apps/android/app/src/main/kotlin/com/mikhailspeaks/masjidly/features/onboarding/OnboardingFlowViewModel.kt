@@ -1,5 +1,6 @@
 package com.mikhailspeaks.masjidly.features.onboarding
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mikhailspeaks.masjidly.data.SettingsStore
@@ -9,6 +10,7 @@ import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.MosqueSelection
 import com.mikhailspeaks.masjidly.features.home.HomeViewModel
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationScheduler
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusController
 import com.mikhailspeaks.masjidly.features.updates.WhatsNew
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +20,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Android counterpart to iOS `OnboardingFlowController.swift`.
- * Language → location → mosque → notifications, then done.
+ * Language → location → mosque → notifications → Prayer Focus (intro, apps, schedule).
+ * Existing users are offered the Prayer Focus steps once, after What's New.
  */
 class OnboardingFlowViewModel(
     private val settings: SettingsStore,
@@ -53,7 +56,9 @@ class OnboardingFlowViewModel(
 
     fun startIfNeeded(mosques: List<Mosque>) {
         if (settings.hasCompletedOnboarding) {
-            if (_uiState.value.currentStep != null) {
+            // Keep an in-progress Prayer Focus flow (new-user tail or the update offer).
+            val step = _uiState.value.currentStep
+            if (step != null && !step.isPrayerFocus) {
                 _uiState.update { it.copy(currentStep = null) }
             }
             return
@@ -190,7 +195,7 @@ class OnboardingFlowViewModel(
                 settings.lastSeenBuildVersion = WhatsNew.fullVersionString
                 settings.hasCompletedOnboarding = true
                 _uiState.update {
-                    it.copy(currentStep = null, isCompletingNotifications = false)
+                    it.copy(currentStep = OnboardingStep.PrayerFocusIntro, isCompletingNotifications = false)
                 }
             } catch (e: Exception) {
                 homeViewModel.setLastError(e.localizedMessage)
@@ -199,8 +204,59 @@ class OnboardingFlowViewModel(
         }
     }
 
+    /**
+     * After What's New (or when it was already seen), offer Prayer Focus once to existing users.
+     * Skipped, and remembered as done, when Prayer Focus is already fully set up.
+     */
+    fun startPrayerFocusOnboardingIfNeeded(context: Context) {
+        if (!settings.hasCompletedOnboarding) return
+        if (_uiState.value.currentStep != null) return
+        val prayerFocus = settings.prayerFocus
+        if (settings.hasCompletedPrayerFocusOnboarding) return
+        if (prayerFocus.isEnabled && PrayerFocusController.isReady(context, prayerFocus)) {
+            // Write only once: the flag bumps settings revision, which re-runs this check.
+            settings.hasCompletedPrayerFocusOnboarding = true
+            return
+        }
+        _uiState.update { it.copy(currentStep = OnboardingStep.PrayerFocusIntro) }
+    }
+
+    fun turnOnPrayerFocusFromOnboarding() {
+        if (_uiState.value.currentStep != OnboardingStep.PrayerFocusIntro) return
+        _uiState.update { it.copy(currentStep = OnboardingStep.PrayerFocusApps) }
+    }
+
+    fun skipPrayerFocusOnboarding(context: Context) {
+        when (_uiState.value.currentStep) {
+            OnboardingStep.PrayerFocusIntro -> finishPrayerFocusOnboarding()
+            OnboardingStep.PrayerFocusApps -> {
+                settings.prayerFocus = settings.prayerFocus.copy(isEnabled = false)
+                PrayerFocusController.reconcile(context)
+                finishPrayerFocusOnboarding()
+            }
+            else -> Unit
+        }
+    }
+
+    fun continuePrayerFocusAfterApps() {
+        if (_uiState.value.currentStep != OnboardingStep.PrayerFocusApps) return
+        _uiState.update { it.copy(currentStep = OnboardingStep.PrayerFocusSchedule) }
+    }
+
+    /** The schedule step commits and reconciles its draft before calling this. */
+    fun completePrayerFocusSchedule() {
+        if (_uiState.value.currentStep != OnboardingStep.PrayerFocusSchedule) return
+        finishPrayerFocusOnboarding()
+    }
+
+    private fun finishPrayerFocusOnboarding() {
+        settings.hasCompletedPrayerFocusOnboarding = true
+        _uiState.update { it.copy(currentStep = null) }
+    }
+
     fun restartTutorialFromDeveloperTools() {
         settings.hasCompletedOnboarding = false
+        settings.hasCompletedPrayerFocusOnboarding = false
         _uiState.update {
             it.copy(
                 selectedMosqueId = "",

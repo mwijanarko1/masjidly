@@ -4,6 +4,7 @@ import android.content.Context
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.AsrIqamahPreference
 import com.mikhailspeaks.masjidly.domain.NotificationSettings
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusSettings
 import com.mikhailspeaks.masjidly.ui.home.CustomSkyGradientColors
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
 import com.mikhailspeaks.masjidly.ui.home.toHexString
@@ -113,6 +114,14 @@ class SettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_HAS_COMPLETED_ONBOARDING, false)
         set(value) {
             prefs.edit().putBoolean(KEY_HAS_COMPLETED_ONBOARDING, value).apply()
+            bump()
+        }
+
+    /** Mirrors iOS `hasCompletedPrayerFocusOnboarding`: the Prayer Focus offer is shown once. */
+    var hasCompletedPrayerFocusOnboarding: Boolean
+        get() = prefs.getBoolean(KEY_HAS_COMPLETED_PRAYER_FOCUS_ONBOARDING, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_HAS_COMPLETED_PRAYER_FOCUS_ONBOARDING, value).apply()
             bump()
         }
 
@@ -238,6 +247,18 @@ class SettingsStore(context: Context) {
             bump()
         }
 
+    /** Mirrors iOS `prayerFocus.settings.v1`. Selected packages never leave the device. */
+    var prayerFocus: PrayerFocusSettings
+        get() {
+            val raw = prefs.getString(KEY_PRAYER_FOCUS_JSON, null) ?: return PrayerFocusSettings()
+            return runCatching { json.decodeFromString<PrayerFocusSettings>(raw) }
+                .getOrDefault(PrayerFocusSettings())
+        }
+        set(value) {
+            prefs.edit().putString(KEY_PRAYER_FOCUS_JSON, json.encodeToString(value)).apply()
+            bump()
+        }
+
     fun resolvedLocale() = appLanguage.resolvedLocale()
 
     fun resolvedTheme(dynamicTheme: TimeTheme): ResolvedTheme {
@@ -360,6 +381,7 @@ class SettingsStore(context: Context) {
         private const val KEY_ASR_IQAMAH_PREF = "asrIqamahPreference"
         private const val KEY_HAS_COMPLETED_ONBOARDING = "hasCompletedOnboarding"
         private const val KEY_APP_LANGUAGE = "appLanguage"
+        private const val KEY_HAS_COMPLETED_PRAYER_FOCUS_ONBOARDING = "hasCompletedPrayerFocusOnboarding"
         private const val KEY_THEME_MODE = "themeMode"
         private const val KEY_FIXED_THEME = "fixedTheme"
         private const val KEY_DIRECTIONS_APP_PACKAGE = "directionsAppPackage"
@@ -372,6 +394,7 @@ class SettingsStore(context: Context) {
         private const val KEY_LAST_SEEN_BUILD_VERSION = "lastSeenBuildVersion"
         private const val KEY_DISMISSED_CLOSEST_MOSQUE_ID = "dismissedClosestMosqueId"
         private const val KEY_NOTIFICATIONS_JSON = "notificationsJSON"
+        private const val KEY_PRAYER_FOCUS_JSON = "prayerFocusJSON"
         private const val KEY_PRAYER_GRADIENT_STYLES_JSON = "prayerGradientStylesJSON"
         private const val KEY_PRAYER_CUSTOM_GRADIENT_COLORS_JSON = "prayerCustomGradientColorsJSON"
     }

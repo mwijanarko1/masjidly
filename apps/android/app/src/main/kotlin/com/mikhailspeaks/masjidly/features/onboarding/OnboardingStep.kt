@@ -8,6 +8,12 @@ sealed class OnboardingStep {
     data object RequestLocation : OnboardingStep()
     data object ChooseMosque : OnboardingStep()
     data object Notifications : OnboardingStep()
+    data object PrayerFocusIntro : OnboardingStep()
+    data object PrayerFocusApps : OnboardingStep()
+    data object PrayerFocusSchedule : OnboardingStep()
+
+    val isPrayerFocus: Boolean
+        get() = this == PrayerFocusIntro || this == PrayerFocusApps || this == PrayerFocusSchedule
 }
 
 /** Mirrors iOS `OnboardingNotificationDraft`. */

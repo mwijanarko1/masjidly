@@ -36,6 +36,8 @@ import com.mikhailspeaks.masjidly.features.notifications.ExactAlarmPromptDialog
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationContent
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermissions
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationScheduler
+import com.mikhailspeaks.masjidly.features.onboarding.OnboardingFlowViewModel
+import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusController
 import com.mikhailspeaks.masjidly.ui.home.TimeTheme
 import com.mikhailspeaks.masjidly.ui.navigation.MasjidlyNavHost
 import com.mikhailspeaks.masjidly.ui.theme.LocalMasjidlyLocale
@@ -61,6 +63,11 @@ fun MasjidlyApp(
     var pendingRelease by remember { mutableStateOf<MasjidlyRelease?>(null) }
     var hasCheckedForUpdate by remember { mutableStateOf(false) }
     var showExactAlarmPrompt by remember { mutableStateOf(false) }
+    // Owned here (not in the NavHost) so What's New can hand off to the Prayer Focus offer.
+    val onboardingViewModel = remember(homeViewModel, settingsStore, notificationScheduler) {
+        OnboardingFlowViewModel(settingsStore, homeViewModel, notificationScheduler)
+    }
+    val onboardingState by onboardingViewModel.uiState.collectAsState()
 
     @Suppress("UNUSED_VARIABLE")
     val _tick = settingsRevision
@@ -68,24 +75,29 @@ fun MasjidlyApp(
     val dynamicTheme = TimeTheme.homeHeroTheme(homeState.displayedPrayerTimes, homeState.selectedPrayerIndex)
     val theme = settingsStore.resolvedTheme(dynamicTheme)
 
-    fun dismissWhatsNew() {
-        settingsStore.lastSeenBuildVersion = WhatsNew.fullVersionString
-        showingWhatsNew = false
-        if (pendingRelease != null) {
-            showUpdateAlert = true
-        }
-    }
-
     fun presentUpdateAlertIfReady() {
         if (pendingRelease == null) return
         if (!settingsStore.hasCompletedOnboarding) return
         if (showingWhatsNew) return
+        if (onboardingViewModel.uiState.value.isActive) return
         showUpdateAlert = true
+    }
+
+    fun dismissWhatsNew() {
+        settingsStore.lastSeenBuildVersion = WhatsNew.fullVersionString
+        showingWhatsNew = false
+        // iOS parity: existing users are offered Prayer Focus once, right after What's New.
+        onboardingViewModel.startPrayerFocusOnboardingIfNeeded(context)
+        presentUpdateAlertIfReady()
     }
 
     fun checkWhatsNew() {
         if (!settingsStore.hasCompletedOnboarding) return
-        if (settingsStore.lastSeenBuildVersion == WhatsNew.fullVersionString) return
+        if (onboardingViewModel.uiState.value.isActive) return
+        if (settingsStore.lastSeenBuildVersion == WhatsNew.fullVersionString) {
+            onboardingViewModel.startPrayerFocusOnboardingIfNeeded(context)
+            return
+        }
         showingWhatsNew = true
     }
 
@@ -114,6 +126,16 @@ fun MasjidlyApp(
 
     LaunchedEffect(settingsStore.hasCompletedOnboarding, settingsRevision) {
         maybeShowExactAlarmPrompt()
+    }
+
+    // A pending update alert waits for onboarding (including the Prayer Focus offer) to finish.
+    LaunchedEffect(onboardingState.isActive) {
+        if (!onboardingState.isActive) presentUpdateAlertIfReady()
+    }
+
+    // Mosque, Asr, or Prayer Focus changes can invalidate the current windows at once.
+    LaunchedEffect(settingsRevision) {
+        PrayerFocusController.reconcile(context)
     }
 
     LaunchedEffect(settingsStore.hasCompletedOnboarding, homeState.loadState, settingsRevision) {
@@ -150,6 +172,7 @@ fun MasjidlyApp(
                 if (event == Lifecycle.Event.ON_RESUME) {
                     homeViewModel.refreshFromNetworkIfStale()
                     maybeShowExactAlarmPrompt()
+                    PrayerFocusController.reconcile(context)
                     scope.launch { homeViewModel.resyncNotificationsIfNeeded() }
                 }
             }
@@ -165,6 +188,7 @@ fun MasjidlyApp(
                         settingsStore = settingsStore,
                         viewModelFactory = viewModelFactory,
                         notificationScheduler = notificationScheduler,
+                        onboardingViewModel = onboardingViewModel,
                         onTestWhatsNew = { showingWhatsNew = true },
                         onTestUpdatePrompt = {
                             scope.launch { presentTestUpdateAlert() }

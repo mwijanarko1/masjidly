@@ -14,7 +14,6 @@ Status key: **done** · **partial** · **missing**
 | `mosques:list` | `{}` | Home load, settings mosque list, onboarding |
 | `prayerTimes:getMonthly` | `mosqueSlug`, `month` (string enum), `year` (number as double) | Home, timetable, notifications |
 | `prayerTimes:getRamadan` | `mosqueSlug`, optional `date` (ISO) | Home, timetable (Ramadan rows) |
-| `prayerTimes:getUkDstDates` | `{}` | Engine DST / iqamah mapping |
 
 Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query` (same paths/args as iOS ConvexMobile). No alternate API.
 
@@ -39,7 +38,7 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 | Feature | iOS | Android | Status | Convex |
 |---------|-----|---------|--------|--------|
 | Load mosques + resolve selection | `HomeViewModel.load` | `HomeViewModel.load` | **done** | `mosques:list` |
-| Monthly + Ramadan + UK DST fetch | `refreshPrayerPayload` | `refreshPrayerPayload` | **done** | all four queries |
+| Monthly + Ramadan fetch | `refreshPrayerPayload` | `refreshPrayerPayload` | **done** | monthly + Ramadan queries |
 | `PrayerTimesEngine` resolution | Swift engine | Kotlin port of Swift engine | **done** | — |
 | Prayer hero + sky theme per selected prayer | `HomeDesign.TimeTheme` | `TimeTheme` + settings fixed/dynamic | **done** | — |
 | Horizontal prayer carousel (6 incl. Sunrise) | `PrayerCarouselItem` | letter picker strip | **partial** | — |
@@ -66,7 +65,6 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 | Prayer rows (adhan + iqamah) | yes | yes | **done** | — |
 | Ramadan timetable mode | yes | via engine on monthly rows | **partial** | `getRamadan` |
 | Friday / Jummah iqamah slots | yes | yes | **done** | — |
-| DST embedded timetable (Al-Huda) | engine | engine ported | **done** | — |
 | Pull to refresh | yes | `PullToRefreshBox` | **done** | — |
 | Next-prayer highlight / past dimming | yes | yes | **done** | — |
 | Midnight / last third rows | yes | yes | **done** | — |
@@ -127,6 +125,26 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 | Snooze / quick actions | yes | notification actions + 10-min snooze | **done** | — |
 | Reschedule on settings change | yes | yes | **done** | — |
 | Android notification channels | N/A | `prayer-times` channel | **done** | — |
+
+---
+
+## Prayer Focus (issue #5, feasibility build)
+
+Best effort only. Android has no third-party equivalent of ManagedSettings shielding; people can revoke grants, force-stop Masjidly, or leave the overlay.
+
+| Feature | iOS | Android | Status | Convex |
+|---------|-----|---------|--------|--------|
+| Settings: enable, start (adhan/iqamah), duration, prayers | `PrayerFocusController` + `SettingsView` | `PrayerFocusSettingsSection` in `SettingsScreen.kt` | **done** | None |
+| Window builder (merge overlaps, skip non-clock times, Jummah) | `PrayerFocusScheduleBuilder` | `PrayerFocusSchedule.kt` + JUnit | **done** | widget snapshot |
+| App selection | `FamilyActivityPicker` (apps, categories, websites) | launchable-app picker (apps only) | **partial** | None |
+| Start/end at window boundaries | DeviceActivity monitors | exact alarm → `specialUse` foreground service | **done** (needs device verification) | None |
+| Blocking surface | system shield | UsageStats polling + `TYPE_APPLICATION_OVERLAY` | **done** (needs device verification) | None |
+| Stop current window ("I've prayed") | shield action | overlay button + notification action | **done** | None |
+| Onboarding: new users (intro → apps → schedule after notifications) | `OnboardingPrayerFocusSetupView` | `OnboardingPrayerFocusUi.kt` | **done** (Android grants replace Screen Time) | None |
+| Onboarding: one-time offer to existing users after What's New | `startPrayerFocusOnboardingIfNeeded` | same, from `MasjidlyApp` | **done** | None |
+| Blocking screen layout (prayer icon, OK and I've prayed at bottom) | shield configuration | `PrayerFocusOverlay` with `QiblaPrayerIcon` | **done** | None |
+
+Needs Usage Access, Display over other apps, and Alarms & reminders. Status never shows Scheduled or Active unless all three are granted.
 
 ---
 

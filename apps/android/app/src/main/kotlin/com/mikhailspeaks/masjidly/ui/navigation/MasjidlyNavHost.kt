@@ -27,15 +27,13 @@ fun MasjidlyNavHost(
     settingsStore: SettingsStore,
     viewModelFactory: ViewModelProvider.Factory,
     notificationScheduler: PrayerNotificationScheduler,
+    onboardingViewModel: OnboardingFlowViewModel,
     onTestWhatsNew: () -> Unit = {},
     onTestUpdatePrompt: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     var closestMosquePromptTestTrigger by remember { mutableIntStateOf(0) }
     val settingsRevision by settingsStore.revision.collectAsState()
-    val onboardingViewModel = remember(homeViewModel, settingsStore, notificationScheduler) {
-        OnboardingFlowViewModel(settingsStore, homeViewModel, notificationScheduler)
-    }
 
     @Suppress("UNUSED_VARIABLE")
     val _tick = settingsRevision

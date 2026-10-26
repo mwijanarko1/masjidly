@@ -14,6 +14,7 @@ data class WhatsNewItem(
 enum class WhatsNewIcon {
     BUG_FIX,
     GRID,
+    HOURGLASS,
     MAP,
     PALETTE,
     WIDGET,
