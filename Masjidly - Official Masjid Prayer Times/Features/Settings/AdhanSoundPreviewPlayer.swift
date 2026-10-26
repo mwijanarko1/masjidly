@@ -160,9 +160,10 @@ final class AdhanSoundPreviewPlayer {
 
     private func startProgressTimerIfNeeded() {
         progressTimer?.invalidate()
-        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
-            Task { @MainActor [weak self] in
-                self?.tickProgress()
+        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                self.tickProgress()
             }
         }
         if let t = progressTimer {

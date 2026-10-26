@@ -1,4 +1,4 @@
-import DeviceActivity
+@preconcurrency import DeviceActivity
 import FamilyControls
 import Foundation
 import ManagedSettings
@@ -226,7 +226,7 @@ final class PrayerFocusController {
         let center = center
         // Stop/start are synchronous XPC calls (up to 20 per run, on every cold launch); off the main
         // thread they no longer freeze the first screen. The serial queue applies requests in publish order.
-        Self.registrationQueue.async {
+        Self.registrationQueue.async { [weak self] in
             center.stopMonitoring()
             do {
                 for monitor in monitors {
@@ -234,9 +234,10 @@ final class PrayerFocusController {
                 }
             } catch {
                 center.stopMonitoring()
-                Task { @MainActor [weak self] in
+                guard let self else { return }
+                Task { @MainActor in
                     // A newer request has already replaced this schedule.
-                    guard let self, self.registrationRequest == request else { return }
+                    guard self.registrationRequest == request else { return }
                     _ = self.publish([])
                     self.scheduleFailed = true
                     self.reconcileShield(now: Date())
