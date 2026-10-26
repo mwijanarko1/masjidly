@@ -129,11 +129,6 @@ struct PrayerEngineTests {
         #expect(s == "21:10")
     }
 
-    @Test func dstEmbeddedRemap() {
-        let day = PrayerTimesEngine.resolveTimetableDayForUkEmbeddedDst(calendarDay: 28, transitionDayInTable: 30, ukTransitionDay: 29, maxTableDay: 31)
-        #expect(day == 29)
-    }
-
     @Test func formatPrayerTimeUsesLocaleForTwentyFourHour() {
         let ar = Locale(identifier: "ar")
         let s = PrayerTimesEngine.formatPrayerTimeForDisplay("13:05", uses24Hour: true, locale: ar)
@@ -681,10 +676,6 @@ private final class MockPrayerRepository: PrayerRepository {
     func getRamadanTimetable(mosqueSlug: String, date: String?) async throws -> RamadanPrayerData? {
         nil
     }
-
-    func getUkDstDates() async throws -> UkDstCalendar? {
-        UkDstCalendar(ukDstDates: [])
-    }
 }
 
 private final class MockPrayerNotificationScheduler: PrayerNotificationScheduling {
@@ -760,16 +751,6 @@ struct PrayerTimesDiskCacheTests {
         try? cache.saveRamadan(slug: "test-masjid", date: "2026-02-17", data: data)
         let loaded: RamadanPrayerData? = cache.loadRamadan(slug: "test-masjid", date: "2026-02-17")
         #expect(loaded?.prayerTimes.first?.ramadanDay == 1)
-    }
-
-    @Test func roundTripUkDst() {
-        let cache = PrayerTimesDiskCache()
-        let dst = UkDstCalendar(ukDstDates: [
-            UkDstYear(year: 2026, startDate: "2026-03-29", endDate: "2026-10-25")
-        ])
-        try? cache.saveUkDst(dst)
-        let loaded: UkDstCalendar? = cache.loadUkDst()
-        #expect(loaded?.ukDstDates.first?.year == 2026)
     }
 
     @Test func loadMosquesReturnsNilWhenMissing() {

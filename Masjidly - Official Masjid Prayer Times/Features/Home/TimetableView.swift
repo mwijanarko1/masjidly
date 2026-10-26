@@ -668,7 +668,6 @@ private final class TimetablePreviewPrayerRepository: PrayerRepository {
     }
     func getMonthlyPrayerTimes(mosqueSlug: String, month: MonthName, year: Int) async throws -> MonthPrayerData? { nil }
     func getRamadanTimetable(mosqueSlug: String, date: String?) async throws -> RamadanPrayerData? { nil }
-    func getUkDstDates() async throws -> UkDstCalendar? { nil }
 }
 
 private final class TimetablePreviewNotificationScheduler: PrayerNotificationScheduling {

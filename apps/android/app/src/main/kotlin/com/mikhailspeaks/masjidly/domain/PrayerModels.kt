@@ -126,16 +126,6 @@ data class DailyIqamahTimes(
     var jummah: String,
 )
 
-data class UkDstYear(
-    val year: Int,
-    val startDate: String,
-    val endDate: String,
-)
-
-data class UkDstCalendar(
-    val ukDstDates: List<UkDstYear>,
-)
-
 enum class AsrIqamahPreference {
     FIRST,
     SECOND,

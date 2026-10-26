@@ -6,8 +6,6 @@ import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.PrayerTime
 import com.mikhailspeaks.masjidly.domain.RamadanPrayerData
 import com.mikhailspeaks.masjidly.domain.RamadanPrayerDay
-import com.mikhailspeaks.masjidly.domain.UkDstCalendar
-import com.mikhailspeaks.masjidly.domain.UkDstYear
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -82,18 +80,6 @@ data class RamadanPrayerDataCache(
     @SerialName("jummah_iqamah") val jummahIqamah: String,
 )
 
-@Serializable
-data class UkDstYearCache(
-    val year: Int,
-    @SerialName("start_date") val startDate: String,
-    @SerialName("end_date") val endDate: String,
-)
-
-@Serializable
-data class UkDstCalendarCache(
-    @SerialName("uk_dst_dates") val ukDstDates: List<UkDstYearCache>,
-)
-
 fun Mosque.toCache() = MosqueCache(
     id = id, name = name, address = address, lat = lat, lng = lng, slug = slug,
     citySlug = citySlug, cityName = cityName, countryCode = countryCode,
@@ -163,11 +149,3 @@ fun RamadanPrayerDataCache.toDomain() = RamadanPrayerData(
     iqamahTimes = iqamahTimes.map { it.toDomain() },
     jummahIqamah = jummahIqamah,
 )
-
-fun UkDstYear.toCache() = UkDstYearCache(year = year, startDate = startDate, endDate = endDate)
-
-fun UkDstYearCache.toDomain() = UkDstYear(year = year, startDate = startDate, endDate = endDate)
-
-fun UkDstCalendar.toCache() = UkDstCalendarCache(ukDstDates = ukDstDates.map { it.toCache() })
-
-fun UkDstCalendarCache.toDomain() = UkDstCalendar(ukDstDates = ukDstDates.map { it.toDomain() })
