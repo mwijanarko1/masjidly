@@ -2,7 +2,7 @@
 
 ## Overview
 
-Masjidly is a **multi-platform app** (iOS native SwiftUI + native Android Kotlin/Compose) with a shared Convex backend. This document defines the exact procedures for building, publishing, and maintaining the in-app update infrastructure.
+Masjidly is a **multi-platform app** (iOS native SwiftUI + native Android Kotlin/Compose) with a shared Convex backend. This document defines procedures for local prod builds (APK/AAB), website sideload releases, store release notes, and the in-app update infrastructure.
 
 ---
 
@@ -60,11 +60,63 @@ Schema:
 
 ---
 
-## 2. Releasing a New Android APK
+## 2. Android local build environment
+
+Do **not** use Android Studio for routine builds. Use Gradle CLI.
+
+Toolchain lives on the Seagate drive (not always on the Mac). Ensure the volume is mounted first.
+
+```bash
+export JAVA_HOME="$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home"
+export GRADLE_USER_HOME="/Volumes/Mikhail Seagate 2TB SSD/AndroidDev/gradle"
+export ANDROID_HOME="/Volumes/Mikhail Seagate 2TB SSD/AndroidDev/sdk"
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
+```
+
+- **JDK:** Homebrew `openjdk@17` if missing (`brew install openjdk@17`).
+- **Signing:** `apps/android/keystore.properties` (release signing for APK + AAB).
+- **Versions:** `apps/android/app/build.gradle.kts` → `versionName` + `versionCode`.
+
+### Prod vs debug
+
+| Goal | Command | Output |
+|------|---------|--------|
+| **Prod / test-on-device APK** | `./gradlew :app:assembleRelease` | `app/build/outputs/apk/release/app-release.apk` |
+| **Play Store upload** | `./gradlew :app:bundleRelease` | `app/build/outputs/bundle/release/app-release.aab` |
+| Debug (avoid unless asked) | `./gradlew :app:assembleDebug` | `app/build/outputs/apk/debug/app-debug.apk` |
+
+Default when the user says “build Android” / “install for test”: **release APK**, not debug.
+
+```bash
+cd apps/android
+./gradlew :app:assembleRelease --no-daemon
+adb uninstall com.mikhailspeaks.masjidly   # if INSTALL_FAILED_UPDATE_INCOMPATIBLE
+adb install app/build/outputs/apk/release/app-release.apk
+```
+
+Reveal artifacts in Finder when asked: `open -R <path-to-apk-or-aab>`.
+
+### Cleanup
+
+After a release (or when asked), delete **stray** APKs:
+
+- Versioned copies left in `apps/android/Masjidly-*.apk` (keep only what is still needed for website publish)
+- Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
+- Temp pulls under `.asc/artifacts/**/*.apk`
+
+Keep the current release AAB (and optionally the matching `app-release.apk`) until uploaded/published. Do not leave old versioned APKs lying around in the app repo.
+
+---
+
+## 3. Releasing a New Android APK (sideload / website)
+
+Website sideload updates use the **APK**, not the AAB. Play Store uses the **AAB**.
 
 Every new build **must** increment `versionCode` in `apps/android/app/build.gradle.kts`.
 
 ```bash
+# 0. Export JAVA_HOME / GRADLE_USER_HOME / ANDROID_HOME (see §2)
+
 # 1. Bump versionCode
 #    Edit apps/android/app/build.gradle.kts → increment versionCode by 1
 
@@ -106,9 +158,20 @@ cd <path-to-masjidly>
 git add apps/android/app/build.gradle.kts
 git commit -m "chore: bump Android versionCode to <code>"
 git push origin main
+
+# 11. Remove the local Masjidly-<version>.apk copy from apps/android/ once published
 ```
 
-### Full example
+### Play Store AAB
+
+```bash
+# Same env as §2; versionName / versionCode already bumped
+cd apps/android && ./gradlew :app:bundleRelease --no-daemon
+# Upload: app/build/outputs/bundle/release/app-release.aab
+open -R app/build/outputs/bundle/release/app-release.aab
+```
+
+### Full example (website APK)
 
 ```bash
 # From the masjidly repo:
@@ -139,7 +202,47 @@ git push origin main
 
 ---
 
-## 3. iOS development builds (USB device)
+## 4. Release notes (store + What’s New)
+
+Source of truth for copy: in-app What’s New.
+
+| Platform | File |
+|----------|------|
+| iOS | `Masjidly - Official Masjid Prayer Times/Features/Updates/WhatsNew.swift` |
+| Android | `apps/android/.../features/updates/WhatsNew.kt` |
+
+**Rules:**
+- Derive store release notes from the **English** What’s New items (and matching locales).
+- **No em dashes or en dashes.** Use colons or plain sentences.
+- Ship notes in all **four** app languages: `en-GB`, `ar`, `ur`, `id`.
+- Android What’s New may omit iOS-only features (e.g. Prayer Focus). Play Store notes follow **Android** What’s New; App Store notes follow **iOS** What’s New.
+- Format for quick paste (Play Console / ASC):
+
+```xml
+<en-GB>
+New logos: Four fresh looks for Masjidly: Dawn, Sky, Afternoon, and Rose.
+
+App icon picker: Choose your favourite logo anytime in Settings.
+</en-GB>
+
+<ar>
+…matching Arabic What’s New…
+</ar>
+
+<ur>
+…matching Urdu What’s New…
+</ur>
+
+<id>
+…matching Indonesian What’s New…
+</id>
+```
+
+Style: `Title: description` per bullet, blank line between items. Keep `latest.json` `notes` short (“New update available” / locale equivalents) unless asked to expand.
+
+---
+
+## 5. iOS development builds (USB device)
 
 **Default for iOS work:** build and install on the physical iPhone over USB. Do not use the Simulator unless the user asks for it, or the device is unavailable.
 
@@ -172,10 +275,10 @@ Notes:
 
 ---
 
-## 4. Releasing a New iOS Version
+## 6. Releasing a New iOS Version
 
 1. Bump `MARKETING_VERSION` in Xcode project settings
-2. Submit to App Store Connect
+2. Submit to App Store Connect (What’s New copy: see §4; match iOS `WhatsNew.swift`)
 3. Update `latest.json` in website repo:
    - Set `ios.version` to new version
    - Update `pub_date`
@@ -183,7 +286,7 @@ Notes:
 
 ---
 
-## 5. In-App Update Infrastructure
+## 7. In-App Update Infrastructure
 
 ### iOS (`MasjidlyRootView.swift`)
 - On launch, calls `AppUpdateChecker.checkForUpdate()`
@@ -205,7 +308,7 @@ Both trigger a live check against `latest.json` (or show a test release if fetch
 
 ---
 
-## 6. Version Bumping Rules
+## 8. Version Bumping Rules
 
 - **Android versionCode**: increment by 1 for every build. Used for update comparison.
 - **Android versionName** (`build.gradle.kts`): bump for meaningful feature releases.
@@ -214,16 +317,21 @@ Both trigger a live check against `latest.json` (or show a test release if fetch
 
 ---
 
-## 7. Important Paths
+## 9. Important Paths
 
 ### App repo (`mwijanarko1/masjidly`)
 ```
 apps/android/app/build.gradle.kts           # Android versionName + versionCode
+apps/android/keystore.properties            # Release signing (APK + AAB)
 apps/android/README.md                      # Native Android build instructions
 apps/android/PARITY.md                      # iOS ↔ Kotlin parity tracker
+apps/android/app/build/outputs/apk/release/app-release.apk
+apps/android/app/build/outputs/bundle/release/app-release.aab
 Masjidly - Official Masjid Prayer Times/App/MasjidlyRootView.swift  # Update check + alert (iOS)
 Masjidly - Official Masjid Prayer Times/Features/Updates/AppUpdateChecker.swift  # Update check logic (iOS)
+Masjidly - Official Masjid Prayer Times/Features/Updates/WhatsNew.swift  # iOS What’s New + store notes source
 apps/android/.../features/updates/UpdateChecker.kt  # Update check logic (Android)
+apps/android/.../features/updates/WhatsNew.kt       # Android What’s New + Play notes source
 ```
 
 ### Website repo (`mwijanarko1/Sheffield-Masjids`)

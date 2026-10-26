@@ -39,50 +39,30 @@ object WhatsNew {
         return when (code) {
             "ar" -> listOf(
                 WhatsNewItem(
-                    title = "شعارات جديدة",
-                    description = "أربع مظاهر جديدة لمسجدلي: فجر، سماء، ظهيرة، ووردي.",
-                    icon = WhatsNewIcon.PALETTE,
-                ),
-                WhatsNewItem(
-                    title = "اختيار أيقونة التطبيق",
-                    description = "اختر شعارك المفضل في أي وقت من الإعدادات.",
-                    icon = WhatsNewIcon.GRID,
+                    title = "إصلاح الأخطاء",
+                    description = "تم إصلاح أخطاء متعلقة بالتوقيت الصيفي.",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
             "ur" -> listOf(
                 WhatsNewItem(
-                    title = "نئے لوگو",
-                    description = "مسجدلی کے چار نئے انداز: فجر، آسمان، سہ پہر، اور گلابی۔",
-                    icon = WhatsNewIcon.PALETTE,
-                ),
-                WhatsNewItem(
-                    title = "ایپ آئیکن منتخب کریں",
-                    description = "سیٹنگز سے کسی بھی وقت اپنا پسندیدہ لوگو چنیں۔",
-                    icon = WhatsNewIcon.GRID,
+                    title = "بگ فکسز",
+                    description = "ڈے لائٹ سیونگ ٹائم سے متعلق خرابیاں ٹھیک کر دی گئیں۔",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
             "id" -> listOf(
                 WhatsNewItem(
-                    title = "Logo baru",
-                    description = "Empat tampilan baru untuk Masjidly: Fajar, Langit, Sore, dan Mawar.",
-                    icon = WhatsNewIcon.PALETTE,
-                ),
-                WhatsNewItem(
-                    title = "Pilih ikon aplikasi",
-                    description = "Pilih logo favorit Anda kapan saja dari Pengaturan.",
-                    icon = WhatsNewIcon.GRID,
+                    title = "Perbaikan bug",
+                    description = "Memperbaiki bug terkait Daylight Saving Time.",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
             else -> listOf(
                 WhatsNewItem(
-                    title = "New logos",
-                    description = "Four fresh looks for Masjidly: Dawn, Sky, Afternoon, and Rose.",
-                    icon = WhatsNewIcon.PALETTE,
-                ),
-                WhatsNewItem(
-                    title = "App icon picker",
-                    description = "Choose your favourite logo anytime in Settings.",
-                    icon = WhatsNewIcon.GRID,
+                    title = "Bug Fixes",
+                    description = "Fixed bugs relating to Daylight Saving Time.",
+                    icon = WhatsNewIcon.BUG_FIX,
                 ),
             )
         }

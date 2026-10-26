@@ -23,53 +23,33 @@ struct WhatsNew {
         case "ar":
             return [
                 WhatsNewItem(
-                    title: "شعارات جديدة",
-                    description: "أربع مظاهر جديدة لمسجدلي: فجر، سماء، ظهيرة، ووردي.",
-                    icon: "paintpalette.fill"
-                ),
-                WhatsNewItem(
-                    title: "اختيار أيقونة التطبيق",
-                    description: "اختر شعارك المفضل في أي وقت من الإعدادات.",
-                    icon: "square.grid.2x2.fill"
+                    title: "إصلاح الأخطاء",
+                    description: "تم إصلاح أخطاء متعلقة بالتوقيت الصيفي.",
+                    icon: "ladybug"
                 ),
             ]
         case "ur":
             return [
                 WhatsNewItem(
-                    title: "نئے لوگو",
-                    description: "مسجدلی کے چار نئے انداز: فجر، آسمان، سہ پہر، اور گلابی۔",
-                    icon: "paintpalette.fill"
-                ),
-                WhatsNewItem(
-                    title: "ایپ آئیکن منتخب کریں",
-                    description: "سیٹنگز سے کسی بھی وقت اپنا پسندیدہ لوگو چنیں۔",
-                    icon: "square.grid.2x2.fill"
+                    title: "بگ فکسز",
+                    description: "ڈے لائٹ سیونگ ٹائم سے متعلق خرابیاں ٹھیک کر دی گئیں۔",
+                    icon: "ladybug"
                 ),
             ]
         case "id":
             return [
                 WhatsNewItem(
-                    title: "Logo baru",
-                    description: "Empat tampilan baru untuk Masjidly: Fajar, Langit, Sore, dan Mawar.",
-                    icon: "paintpalette.fill"
-                ),
-                WhatsNewItem(
-                    title: "Pilih ikon aplikasi",
-                    description: "Pilih logo favorit Anda kapan saja dari Pengaturan.",
-                    icon: "square.grid.2x2.fill"
+                    title: "Perbaikan bug",
+                    description: "Memperbaiki bug terkait Daylight Saving Time.",
+                    icon: "ladybug"
                 ),
             ]
         default:
             return [
                 WhatsNewItem(
-                    title: "New logos",
-                    description: "Four fresh looks for Masjidly: Dawn, Sky, Afternoon, and Rose.",
-                    icon: "paintpalette.fill"
-                ),
-                WhatsNewItem(
-                    title: "App icon picker",
-                    description: "Choose your favourite logo anytime in Settings.",
-                    icon: "square.grid.2x2.fill"
+                    title: "Bug Fixes",
+                    description: "Fixed bugs relating to Daylight Saving Time.",
+                    icon: "ladybug"
                 ),
             ]
         }

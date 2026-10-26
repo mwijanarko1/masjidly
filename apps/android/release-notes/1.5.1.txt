@@ -1,0 +1,39 @@
+<en-GB>
+Prayer Focus: Pause the apps you choose around prayer times.
+
+New logos: Four fresh looks for Masjidly: Dawn, Sky, Afternoon, and Rose.
+
+App icon picker: Choose your favourite logo anytime in Settings.
+
+Notification icon: Prayer notifications now show a recognisable Masjidly icon.
+</en-GB>
+
+<ar>
+التركيز للصلاة: أوقف التطبيقات التي تختارها حول أوقات الصلاة.
+
+شعارات جديدة: أربع مظاهر جديدة لمسجدلي: فجر، سماء، ظهيرة، ووردي.
+
+اختيار أيقونة التطبيق: اختر شعارك المفضل في أي وقت من الإعدادات.
+
+أيقونة الإشعارات: تعرض إشعارات الصلاة الآن أيقونة مسجدلي المميزة.
+</ar>
+
+<ur>
+نماز فوکس: نماز کے اوقات کے قریب اپنی منتخب ایپس روکیں۔
+
+نئے لوگو: مسجدلی کے چار نئے انداز: فجر، آسمان، سہ پہر، اور گلابی۔
+
+ایپ آئیکن منتخب کریں: سیٹنگز سے کسی بھی وقت اپنا پسندیدہ لوگو چنیں۔
+
+نوٹیفکیشن آئیکن: نماز کی نوٹیفکیشنز اب پہچانا جانے والا مسجدلی آئیکن دکھاتی ہیں۔
+</ur>
+
+<id>
+Fokus Salat: Jeda aplikasi pilihan Anda sekitar waktu salat.
+
+Logo baru: Empat tampilan baru untuk Masjidly: Fajar, Langit, Sore, dan Mawar.
+
+Pilih ikon aplikasi: Pilih logo favorit Anda kapan saja dari Pengaturan.
+
+Ikon notifikasi: Notifikasi salat kini menampilkan ikon Masjidly yang mudah dikenali.
+</id>
