@@ -1276,7 +1276,8 @@ private fun MissingMonthState(
                 onClick = onGoToAvailable,
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(textColor.copy(alpha = 0.92f)),
+                    .background(textColor.copy(alpha = 0.92f))
+                    .padding(horizontal = 28.dp, vertical = 12.dp),
             ) {
                 Text(
                     text = LocaleStrings.t("home.go_to_available_times", language),
@@ -1330,7 +1331,8 @@ private fun HomeErrorState(
             onClick = onRetry,
             modifier = Modifier
                 .clip(CircleShape)
-                .background(textColor.copy(alpha = 0.92f)),
+                .background(textColor.copy(alpha = 0.92f))
+                .padding(horizontal = 28.dp, vertical = 12.dp),
         ) {
             Text(
                 text = LocaleStrings.t("action.retry", language),

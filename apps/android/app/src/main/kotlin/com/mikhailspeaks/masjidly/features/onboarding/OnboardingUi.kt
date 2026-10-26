@@ -976,6 +976,7 @@ fun OnboardingNotificationSetupScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(top = 80.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
             contentAlignment = Alignment.TopCenter,
         ) {

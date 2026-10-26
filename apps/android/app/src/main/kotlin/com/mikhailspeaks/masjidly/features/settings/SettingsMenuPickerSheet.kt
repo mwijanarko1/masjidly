@@ -81,14 +81,14 @@ internal object MenuPickerMetrics {
         horizontalPadding = 0.dp,
         verticalPadding = 12.dp,
         multilineValue = false,
-        alignment = MenuPickerRowAlignment.FirstTextBaseline,
+        alignment = MenuPickerRowAlignment.Center,
         valueExpands = true,
         labelExpands = false,
     )
 
     val SettingsMosque = SettingsStandard.copy(
-        minRowHeight = 52.dp,
-        verticalPadding = 14.dp,
+        minRowHeight = 24.dp,
+        verticalPadding = 22.dp,
         multilineValue = true,
         alignment = MenuPickerRowAlignment.Top,
         chevronTopPadding = 2.dp,
@@ -111,18 +111,22 @@ internal object MenuPickerMetrics {
         labelValueSpacing = 14.dp,
         valueChevronSpacing = 7.dp,
         chevronSize = 14.dp,
-        chevronTopPadding = 3.dp,
+        chevronTopPadding = 0.dp,
         chevronWeight = FontWeight.SemiBold,
         minRowHeight = 52.dp,
         horizontalPadding = 24.dp,
         verticalPadding = 0.dp,
         multilineValue = false,
-        alignment = MenuPickerRowAlignment.FirstTextBaseline,
+        alignment = MenuPickerRowAlignment.Center,
         valueExpands = true,
         labelExpands = false,
     )
 
     val OnboardingMosque = Onboarding.copy(
+        minRowHeight = 24.dp,
+        verticalPadding = 14.dp,
+        chevronTopPadding = 3.dp,
+        alignment = MenuPickerRowAlignment.Top,
         multilineValue = true,
     )
 

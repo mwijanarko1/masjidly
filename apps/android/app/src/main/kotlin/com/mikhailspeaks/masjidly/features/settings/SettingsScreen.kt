@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -1259,7 +1260,7 @@ private fun SelectedMosqueQuickLinks(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1287,7 +1288,6 @@ private fun SelectedMosqueQuickLinkButton(
 ) {
     Row(
         modifier = Modifier
-            .heightIn(min = 40.dp)
             .padding(horizontal = 10.dp, vertical = 10.dp)
             .hapticClickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
@@ -1440,6 +1440,7 @@ private fun AppIconPickerRow(
                 Image(
                     painter = painterResource(option.previewResId),
                     contentDescription = label,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(13.dp))
