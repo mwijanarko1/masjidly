@@ -19,6 +19,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import com.mikhailspeaks.masjidly.widget.WidgetPrayerSnapshotService
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -61,7 +62,6 @@ class HomeViewModel(
         val displayedDate: Instant = Instant.now(),
         val lastError: String? = null,
         val hasAvailablePrayerTimesFallback: Boolean = false,
-        val lastPrayerPayloadRefreshAt: Instant? = null,
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -72,6 +72,9 @@ class HomeViewModel(
     private var lastAvailablePrayerDate: Instant? = null
     private var refreshTask: Job? = null
     private var selectionJob: Job? = null
+
+    /** Bumped on every selection change so a response for an earlier selection (A -> B -> A) is never published. */
+    private var selectionGeneration = 0
 
     private fun defaultMosque(mosques: List<Mosque> = _uiState.value.mosques): Mosque? =
         MosqueSelection.resolveSelectedMosque(mosques, settings.selectedMosqueId, settings.selectedMosqueSlug)
@@ -106,8 +109,10 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(loadState = LoadState.LOADING) }
             try {
-                refreshPrayerPayload(mosque, checkVersions = true)
+                refreshPrayerPayload(mosque)
                 _uiState.update { it.copy(loadState = LoadState.LOADED, lastError = null) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(loadState = LoadState.LOADED, lastError = e.localizedMessage)
@@ -118,26 +123,24 @@ class HomeViewModel(
 
     fun applySelectionFromSettings(tabSwitch: Boolean = false) {
         selectionJob?.cancel()
+        selectionGeneration++
         selectionJob = viewModelScope.launch {
             val mosque = displayedMosque(_uiState.value.mosques) ?: return@launch
             val switching = _uiState.value.selectedMosque?.id != mosque.id
             // Select + hydrate before clearing so cache hits never flash empty prayer content.
             _uiState.update { it.copy(selectedMosque = mosque, lastError = null) }
             val hasCachedTimes = hydrateFromCache(mosque)
-            if (tabSwitch && hasCachedTimes) {
-                // Match iOS `applySelectionFromSettings(tabSwitch:)` cache-hit early path —
-                // widget/notifications are refreshed below (HomeView.activateTab does the same).
-                _uiState.update { it.copy(lastPrayerPayloadRefreshAt = null) }
-            } else {
-                if (switching && !hasCachedTimes) {
-                    clearDisplayedPrayerTimes()
-                    _uiState.update { it.copy(monthData = null) }
-                }
-                try {
-                    refreshPrayerPayload(mosque, updateWidget = false)
-                } catch (e: Exception) {
-                    _uiState.update { it.copy(lastError = e.localizedMessage) }
-                }
+            if (switching && !hasCachedTimes) {
+                clearDisplayedPrayerTimes()
+                _uiState.update { it.copy(monthData = null) }
+            }
+            // Cached content stays visible while the selected mosque is revalidated.
+            try {
+                refreshPrayerPayload(mosque, updateWidget = false)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(lastError = e.localizedMessage) }
             }
             // Still the active/default mosque? (rapid tab switches cancel prior jobs)
             if (settings.activeMosqueTabId != mosque.id && settings.selectedMosqueId != mosque.id) {
@@ -152,7 +155,7 @@ class HomeViewModel(
     /** Used by onboarding mosque selection — mirrors iOS `selectMosque`. */
     suspend fun switchToMosque(mosque: Mosque) {
         _uiState.update { it.copy(selectedMosque = mosque, lastError = null) }
-        refreshPrayerPayload(mosque, checkVersions = true, updateWidget = false)
+        refreshPrayerPayload(mosque, updateWidget = false)
         refreshWidgetSnapshotForCurrentMosque()
         runCatching { resyncNotificationsIfNeeded() }
         _uiState.update { it.copy(loadState = LoadState.LOADED) }
@@ -162,11 +165,9 @@ class HomeViewModel(
         _uiState.update { it.copy(lastError = message) }
     }
 
+    /** Called on resume. Revalidates the selected mosque; concurrent calls share one flight. */
     fun refreshFromNetworkIfStale() {
-        val stalenessSeconds = 5 * 60L
-        val last = _uiState.value.lastPrayerPayloadRefreshAt
-        if (last != null && Instant.now().epochSecond - last.epochSecond < stalenessSeconds) return
-        val mosque = _uiState.value.selectedMosque ?: return
+        if (_uiState.value.selectedMosque == null) return
         if (refreshTask?.isActive == true) return
 
         refreshTask = viewModelScope.launch {
@@ -261,9 +262,11 @@ class HomeViewModel(
             }
 
             _uiState.update { it.copy(mosques = visible, selectedMosque = mosque) }
-            refreshPrayerPayload(mosque, checkVersions = !revisionUnchanged)
+            refreshPrayerPayload(mosque)
             if (revision != null) diskCache.saveDataRevision(revision)
             _uiState.update { it.copy(loadState = LoadState.LOADED, lastError = null) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             val mosques = _uiState.value.mosques
             _uiState.update {
@@ -297,28 +300,30 @@ class HomeViewModel(
         )
     }
 
+    /**
+     * Revalidates the displayed month against the server's per-mosque data versions.
+     * Cached content stays visible until a newer payload replaces it.
+     */
     private suspend fun refreshPrayerPayload(
         mosque: Mosque,
-        checkVersions: Boolean = true,
         updateWidget: Boolean = true,
     ) {
-        val now = Instant.now()
-        val sh = PrayerTimesEngine.getDateInSheffield(now)
+        val generation = selectionGeneration
+        val sh = PrayerTimesEngine.getDateInSheffield(_uiState.value.displayedDate)
         val monthName = MonthName.from(sh.month) ?: return
         val isoDate = PrayerTimesEngine.isoDateString(sh.year, sh.month, sh.day)
         val cachedMonthly = diskCache.loadMonthly(mosque.slug, monthName.rawValue, sh.year)
         val cachedRamadan = diskCache.loadRamadan(mosque.slug, isoDate)
         val cachedVersions = diskCache.loadVersions(mosque.slug, monthName.rawValue, sh.year)
 
-        if (!checkVersions && cachedMonthly != null) {
-            if (_uiState.value.selectedMosque?.id != mosque.id) return
-            _uiState.update {
-                it.copy(
-                    monthData = cachedMonthly,
-                    ramadanData = cachedRamadan,
-                    lastPrayerPayloadRefreshAt = Instant.now(),
-                )
-            }
+        fun isCurrent() = selectionGeneration == generation && _uiState.value.selectedMosque?.id == mosque.id
+        fun showsRequestedMonth(): Boolean {
+            val shown = PrayerTimesEngine.getDateInSheffield(_uiState.value.displayedDate)
+            return shown.month == sh.month && shown.year == sh.year
+        }
+
+        suspend fun publish(monthly: MonthPrayerData?, ramadan: RamadanPrayerData?) {
+            _uiState.update { it.copy(monthData = monthly, ramadanData = ramadan) }
             loadedMonthNumber = sh.month
             loadedMonthYear = sh.year
             applyPrayerTimes(_uiState.value.displayedDate, mosque)
@@ -326,40 +331,40 @@ class HomeViewModel(
                 refreshWidgetSnapshotForCurrentMosque()
                 runCatching { resyncNotificationsIfNeeded() }
             }
-            return
         }
 
         val versions = if (cachedMonthly != null) {
-            runCatching { repository.getPrayerDataVersions(mosque.slug, monthName, sh.year) }.getOrNull()
+            try {
+                repository.getPrayerDataVersions(mosque.slug, monthName, sh.year)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
         } else null
         if (versions != null && cachedVersions?.versions == versions && cachedMonthly != null) {
-            if (_uiState.value.selectedMosque?.id != mosque.id) return
+            if (!isCurrent()) return
             diskCache.saveVersions(mosque.slug, monthName.rawValue, sh.year, versions)
-            _uiState.update {
-                it.copy(
-                    monthData = cachedMonthly,
-                    ramadanData = cachedRamadan,
-                    lastPrayerPayloadRefreshAt = Instant.now(),
-                )
-            }
-            loadedMonthNumber = sh.month
-            loadedMonthYear = sh.year
-            applyPrayerTimes(_uiState.value.displayedDate, mosque)
-            if (updateWidget) {
-                refreshWidgetSnapshotForCurrentMosque()
-                runCatching { resyncNotificationsIfNeeded() }
-            }
+            if (!showsRequestedMonth()) return
+            publish(cachedMonthly, cachedRamadan)
             return
         }
 
         // Parallel like iOS `async let`; sequential round trips made new tabs slow.
-        val (monthly, ramadan) = coroutineScope {
-            val monthly = async { repository.getMonthlyPrayerTimes(mosque.slug, monthName, sh.year) }
-            val ramadan = async { repository.getRamadanTimetable(mosque.slug, isoDate) }
-            monthly.await() to ramadan.await()
+        val (monthly, ramadan) = try {
+            coroutineScope {
+                val monthly = async { repository.getMonthlyPrayerTimes(mosque.slug, monthName, sh.year) }
+                val ramadan = async { repository.getRamadanTimetable(mosque.slug, isoDate) }
+                monthly.await() to ramadan.await()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (!isCurrent()) return
+            throw e
         }
 
-        if (_uiState.value.selectedMosque?.id != mosque.id) return
+        if (!isCurrent()) return
 
         if (monthly != null && monthly.prayerTimes.isNotEmpty()) {
             diskCache.saveMonthly(mosque.slug, monthName.rawValue, sh.year, monthly)
@@ -369,20 +374,8 @@ class HomeViewModel(
         ramadan?.let { diskCache.saveRamadan(mosque.slug, isoDate, it) }
         versions?.let { diskCache.saveVersions(mosque.slug, monthName.rawValue, sh.year, it) }
 
-        _uiState.update {
-            it.copy(
-                monthData = monthly,
-                ramadanData = ramadan,
-                lastPrayerPayloadRefreshAt = Instant.now(),
-            )
-        }
-        loadedMonthNumber = sh.month
-        loadedMonthYear = sh.year
-        applyPrayerTimes(_uiState.value.displayedDate, mosque)
-        if (updateWidget) {
-            refreshWidgetSnapshotForCurrentMosque()
-            runCatching { resyncNotificationsIfNeeded() }
-        }
+        if (!showsRequestedMonth()) return
+        publish(monthly, ramadan)
     }
 
     private fun hydrateFromCache(mosque: Mosque): Boolean {
@@ -447,7 +440,6 @@ class HomeViewModel(
                 it.copy(
                     monthData = monthly,
                     ramadanData = ramadan,
-                    lastPrayerPayloadRefreshAt = Instant.now(),
                 )
             }
             loadedMonthNumber = parts.month

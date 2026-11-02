@@ -50,15 +50,15 @@ final class HomeViewModel {
 
     private var activeDisplayedDateLoads = 0
 
-    /// Last time a full prayer payload network refresh succeeded (UTC). Used for foreground throttle.
-    private(set) var lastPrayerPayloadRefreshAt: Date?
-
     enum LoadState: Equatable {
         case idle, loading, loaded, empty
     }
 
     /// Single-flight token — non-nil while a network refresh is in flight.
     private var refreshTask: Task<Void, Never>?
+
+    /// Bumped on every selection change so a response for an earlier selection (A -> B -> A) is never published.
+    private var selectionGeneration = 0
 
     init(
         repository: any PrayerRepository,
@@ -96,68 +96,73 @@ final class HomeViewModel {
 
     // MARK: - Refresh prayer payload
 
-    func refreshPrayerPayload(for mosque: Mosque, checkVersions: Bool = true) async throws {
-        let now = Date()
-        let sh = PrayerTimesEngine.getDateInSheffield(now)
+    /// Revalidates the displayed month against the server's per-mosque data versions.
+    /// Cached content stays visible until a newer payload replaces it.
+    func refreshPrayerPayload(for mosque: Mosque) async throws {
+        let generation = selectionGeneration
+        let sh = PrayerTimesEngine.getDateInSheffield(displayedDate)
         guard let monthName = MonthName.from(monthNumber: sh.month) else { return }
         let isoDate = PrayerTimesEngine.isoDateString(year: sh.year, month: sh.month, day: sh.day)
         let cachedMonthly = diskCache.loadMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year)
         let cachedRamadan = diskCache.loadRamadan(slug: mosque.slug, date: isoDate)
         let cachedVersions = diskCache.loadVersions(slug: mosque.slug, month: monthName.rawValue, year: sh.year)
 
-        if !checkVersions, let cachedMonthly {
-            guard selectedMosque?.id == mosque.id else { return }
-            monthData = cachedMonthly
-            ramadanData = cachedRamadan
-            loadedMonthNumber = sh.month
-            loadedMonthYear = sh.year
-            applyPrayerTimes(for: displayedDate, mosque: mosque)
-            lastPrayerPayloadRefreshAt = Date()
-            return
+        func isCurrent() -> Bool {
+            selectionGeneration == generation && selectedMosque?.id == mosque.id
+        }
+        func showsRequestedMonth() -> Bool {
+            let shown = PrayerTimesEngine.getDateInSheffield(displayedDate)
+            return shown.month == sh.month && shown.year == sh.year
         }
 
         let versions = cachedMonthly == nil
             ? nil
             : try? await repository.getPrayerDataVersions(mosqueSlug: mosque.slug, month: monthName, year: sh.year)
         if let versions, let cachedVersions, cachedVersions.versions == versions, let cachedMonthly {
-            guard selectedMosque?.id == mosque.id else { return }
+            guard isCurrent() else { return }
             try? diskCache.saveVersions(slug: mosque.slug, month: monthName.rawValue, year: sh.year, versions: versions)
+            guard showsRequestedMonth() else { return }
             monthData = cachedMonthly
             ramadanData = cachedRamadan
             loadedMonthNumber = sh.month
             loadedMonthYear = sh.year
             applyPrayerTimes(for: displayedDate, mosque: mosque)
-            lastPrayerPayloadRefreshAt = Date()
             return
         }
 
-        async let monthly = repository.getMonthlyPrayerTimes(mosqueSlug: mosque.slug, month: monthName, year: sh.year)
-        async let ramadan = repository.getRamadanTimetable(mosqueSlug: mosque.slug, date: isoDate)
-        let monthData = try await monthly
-        let ramadanData = try await ramadan
+        let fetchedMonthly: MonthPrayerData?
+        let fetchedRamadan: RamadanPrayerData?
+        do {
+            async let monthly = repository.getMonthlyPrayerTimes(mosqueSlug: mosque.slug, month: monthName, year: sh.year)
+            async let ramadan = repository.getRamadanTimetable(mosqueSlug: mosque.slug, date: isoDate)
+            fetchedMonthly = try await monthly
+            fetchedRamadan = try await ramadan
+        } catch {
+            guard isCurrent() else { return }
+            throw error
+        }
 
-        guard selectedMosque?.id == mosque.id else { return }
+        guard isCurrent() else { return }
 
-        if let monthData, !monthData.prayerTimes.isEmpty {
-            try? diskCache.saveMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year, data: monthData)
+        if let fetchedMonthly, !fetchedMonthly.prayerTimes.isEmpty {
+            try? diskCache.saveMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year, data: fetchedMonthly)
         } else {
             diskCache.removeMonthly(slug: mosque.slug, month: monthName.rawValue, year: sh.year)
         }
-        if let ramadanData {
-            try? diskCache.saveRamadan(slug: mosque.slug, date: isoDate, data: ramadanData)
+        if let fetchedRamadan {
+            try? diskCache.saveRamadan(slug: mosque.slug, date: isoDate, data: fetchedRamadan)
         }
         if let versions {
             try? diskCache.saveVersions(slug: mosque.slug, month: monthName.rawValue, year: sh.year, versions: versions)
         }
 
-        self.monthData = monthData
-        self.ramadanData = ramadanData
-        self.loadedMonthNumber = sh.month
-        self.loadedMonthYear = sh.year
+        guard showsRequestedMonth() else { return }
+        monthData = fetchedMonthly
+        ramadanData = fetchedRamadan
+        loadedMonthNumber = sh.month
+        loadedMonthYear = sh.year
 
         applyPrayerTimes(for: displayedDate, mosque: mosque)
-
-        lastPrayerPayloadRefreshAt = Date()
     }
 
     func manualRefresh() async {
@@ -350,17 +355,13 @@ final class HomeViewModel {
 
     func applySelectionFromSettings(tabSwitch: Bool = false) async {
         guard let mosque = displayedMosque(in: mosques) else { return }
+        selectionGeneration += 1
         if selectedMosque?.id != mosque.id {
             clearDisplayedPrayerTimes()
             monthData = nil
         }
         selectedMosque = mosque
-        let hasCachedTimes = hydrateMonthFromCache(for: displayedDate, mosque: mosque)
-        if hasCachedTimes { loadState = .loaded }
-        if tabSwitch && hasCachedTimes {
-            lastPrayerPayloadRefreshAt = nil
-            return
-        }
+        if hydrateMonthFromCache(for: displayedDate, mosque: mosque) { loadState = .loaded }
 
         do {
             try await refreshPrayerPayload(for: mosque)
@@ -372,12 +373,8 @@ final class HomeViewModel {
 
     // MARK: - Stale-while-revalidate helper
 
-    /// Called on foreground transition — silently re-fetches if last refresh is stale.
+    /// Called on foreground transition. Revalidates the selected mosque; concurrent calls share one flight.
     func refreshFromNetworkIfStale() async {
-        let stalenessInterval: TimeInterval = 5 * 60 // 5 minutes
-        if let last = lastPrayerPayloadRefreshAt, Date().timeIntervalSince(last) < stalenessInterval {
-            return
-        }
         guard selectedMosque != nil else { return }
         // Single-flight: skip if a refresh is already running.
         if refreshTask != nil { return }
@@ -390,7 +387,7 @@ final class HomeViewModel {
 
     // MARK: - Private helpers
 
-    /// Runs network refresh and avoids full calls when global data revision is unchanged.
+    /// Runs network refresh. The global revision only gates the mosque directory read; payload freshness is per-mosque.
     private func runNetworkRefresh() async {
         do {
             let cachedRevision = diskCache.loadDataRevision()
@@ -415,7 +412,7 @@ final class HomeViewModel {
                 settings.selectedCityGroupingKey = defaultMosque.cityGroupingKey
                 settings.selectedCountryGroupingKey = MosqueDefaults.countryGroupingKey(for: defaultMosque)
             }
-            try await refreshPrayerPayload(for: mosque, checkVersions: !revisionUnchanged)
+            try await refreshPrayerPayload(for: mosque)
             if let revision { try? diskCache.saveDataRevision(revision) }
             await refreshWidgetSnapshots(selected: defaultMosque ?? mosque)
             loadState = .loaded
