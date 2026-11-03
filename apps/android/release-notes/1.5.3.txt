@@ -1,0 +1,15 @@
+<en-GB>
+Bug Fixes: Minor bug fixes and improvements.
+</en-GB>
+
+<ar>
+إصلاح الأخطاء: إصلاحات وتحسينات طفيفة.
+</ar>
+
+<ur>
+بگ فکسز: معمولی بگ فکسز اور بہتری۔
+</ur>
+
+<id>
+Perbaikan bug: Perbaikan bug dan peningkatan kecil.
+</id>

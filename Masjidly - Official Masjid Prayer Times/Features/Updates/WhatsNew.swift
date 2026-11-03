@@ -24,7 +24,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "إصلاح الأخطاء",
-                    description: "تم إصلاح أخطاء متعلقة بالتوقيت الصيفي.",
+                    description: "إصلاحات وتحسينات طفيفة.",
                     icon: "ladybug"
                 ),
             ]
@@ -32,7 +32,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "بگ فکسز",
-                    description: "ڈے لائٹ سیونگ ٹائم سے متعلق خرابیاں ٹھیک کر دی گئیں۔",
+                    description: "معمولی بگ فکسز اور بہتری۔",
                     icon: "ladybug"
                 ),
             ]
@@ -40,7 +40,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "Perbaikan bug",
-                    description: "Memperbaiki bug terkait Daylight Saving Time.",
+                    description: "Perbaikan bug dan peningkatan kecil.",
                     icon: "ladybug"
                 ),
             ]
@@ -48,7 +48,7 @@ struct WhatsNew {
             return [
                 WhatsNewItem(
                     title: "Bug Fixes",
-                    description: "Fixed bugs relating to Daylight Saving Time.",
+                    description: "Minor bug fixes and improvements.",
                     icon: "ladybug"
                 ),
             ]
