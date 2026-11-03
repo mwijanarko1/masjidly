@@ -1,0 +1,11 @@
+# workflow
+- Verify mobile changes on real hardware: build the prod/release artifact (signed, minified) and install it over adb to the connected device, rather than relying on debug builds or emulators. Confidence: 0.6
+- Expect store-submission artifacts on demand too: a signed release AAB (`:app:bundleRelease`) for Play Console alongside the release APK, with path/size/version/SHA-256 reported back. Confidence: 0.6
+- Drive Play Console publishing through the `pinchtab` browser-automation skill (CLI against the local pinchtab server) rather than asking the user to upload manually; use the existing `mikhailspeaks` browser profile/account for it. Confidence: 0.6
+- When a login, 2FA, or credential is needed mid-task, stop and ask the user ("lmk") instead of guessing or working around it. Confidence: 0.6
+- For file-upload steps that need a native OS file picker (e.g. the Play Console AAB upload), run the browser headed and hand the manual click/pick step to the user rather than engineering a headless/API workaround. Confidence: 0.6
+- The orchestrating agent should do the code review itself instead of delegating review to another subagent. Confidence: 0.65
+- Delegate implementation to a subagent (e.g. Sonnet at high effort) while the main thread owns regression tests, verification, and review. Confidence: 0.6
+- Ship iOS releases through the `asc` CLI (archive with xcodebuild → export IPA → `asc builds upload --wait`) rather than Xcode UI/Transporter or hand-off; keep build artifacts under `.asc/artifacts` and report build ID and processing state. Confidence: 0.65
+- Expect end-of-session environment cleanup after Android work: kill the adb server and Gradle/Kotlin daemons, confirm nothing holds the external drive, then eject it (`diskutil eject`). Confidence: 0.5
+- The Android toolchain lives on an external SSD, so builds need `JAVA_HOME` (brew openjdk@17), `GRADLE_USER_HOME`, and `ANDROID_HOME` exported from that volume before invoking `./gradlew`. Confidence: 0.5
