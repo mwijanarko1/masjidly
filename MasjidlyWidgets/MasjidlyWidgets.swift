@@ -6,6 +6,12 @@ import WidgetKit
 struct MasjidlyWidgetsBundle: WidgetBundle {
     var body: some Widget {
         MasjidlyPrayerWidget()
+        LockListMorningWidget()
+        LockListEveningWidget()
+        LockStripWidget()
+        LockProgressWidget()
+        LockMinutesWidget()
+        LockCodeWidget()
     }
 }
 
@@ -77,6 +83,12 @@ struct MasjidlyPrayerTimelineProvider: TimelineProvider {
         let entry = MasjidlyPrayerEntry(date: now, state: state, locale: locale)
         var refresh = min(max(now.addingTimeInterval(1_800), target.addingTimeInterval(30)), now.addingTimeInterval(3_600))
         // Far path is only used while remaining >= 2h, so 1h/10m glyph boundaries never fire here.
+        // The Fajr (tmr) label on the lock screen list must clear at London midnight.
+        var london = Calendar(identifier: .gregorian)
+        london.timeZone = TimeZone(identifier: "Europe/London") ?? .current
+        if let midnight = london.date(byAdding: .day, value: 1, to: london.startOfDay(for: now)), midnight > now {
+            refresh = min(refresh, midnight)
+        }
         // iOS 17 still needs the 10h hour-tens prefix flip; iOS 18 padded path does not care.
         if #unavailable(iOS 18.0) {
             let tenHourBoundary = target.addingTimeInterval(-WidgetLiveCountdown.hourTensPadThreshold)
@@ -118,7 +130,9 @@ struct MasjidlyPrayerEntry: TimelineEntry {
 }
 
 extension MasjidlyWidgetState {
-    var iconName: String {
+    var iconName: String { Self.iconName(forPrayerId: prayerId) }
+
+    static func iconName(forPrayerId prayerId: String) -> String {
         switch prayerId.lowercased() {
         case "fajr": return "sun.horizon"
         case "sunrise": return "sunrise"
@@ -1275,9 +1289,19 @@ enum MasjidlyWidgetTheme {
 
 // MARK: - Widget Localization Local Helper
 
-private func widgetLS(_ key: String, locale: Locale) -> String {
+func widgetLS(_ key: String, locale: Locale) -> String {
     let lang = String(locale.identifier.prefix(2))
     switch key {
+    case "widget.tomorrow_short":
+        if lang == "ar" { return "غدًا" }
+        if lang == "ur" { return "کل" }
+        if lang == "id" { return "bsk" }
+        return "tmr"
+    case "widget.in_format":
+        if lang == "ar" { return "بعد %@" }
+        if lang == "ur" { return "%@ میں" }
+        if lang == "id" { return "dalam %@" }
+        return "in %@"
     case "widget.prayer":
         if lang == "ar" { return "الصلاة" }
         if lang == "ur" { return "نماز" }
@@ -1345,7 +1369,7 @@ private func widgetCountdownHeadline(prayerName: String, isIqamah: Bool, locale:
 }
 
 /// Short iqamah labels for the narrow lock-screen rectangular column.
-private func compactAccessoryIqamahLabel(_ iqamah: String) -> String {
+func compactAccessoryIqamahLabel(_ iqamah: String) -> String {
     let trimmed = iqamah.trimmingCharacters(in: .whitespacesAndNewlines)
     if trimmed.compare("After Maghrib", options: .caseInsensitive) == .orderedSame {
         return "AM"
@@ -1416,7 +1440,7 @@ extension View {
     }
 }
 
-private func widgetUIFont(size: CGFloat, weight: Font.Weight) -> UIFont {
+func widgetUIFont(size: CGFloat, weight: Font.Weight) -> UIFont {
     let name: String = switch weight {
     case .bold, .heavy, .black: "GillSans-Bold"
     case .semibold: "GillSans-SemiBold"

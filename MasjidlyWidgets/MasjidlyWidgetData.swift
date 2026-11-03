@@ -147,6 +147,8 @@ struct MasjidlyWidgetPrayerRow: Identifiable, Equatable, Sendable {
     let iqamahs: [String]
     let isPassed: Bool
     let isNext: Bool
+    /// True for the Fajr row after Isha, when it shows tomorrow's time.
+    var isTomorrow: Bool = false
 }
 
 enum MasjidlyWidgetStateKind: Equatable, Sendable {
@@ -171,6 +173,8 @@ struct MasjidlyWidgetState: Equatable, Sendable {
     let iqamahDate: Date?
     let extraJummahCount: Int
     let rows: [MasjidlyWidgetPrayerRow]
+    /// Sunrise is not a prayer, so it stays out of `rows`. Used by the lock screen list widgets.
+    var sunriseRow: MasjidlyWidgetPrayerRow? = nil
     /// Prayer after the current next prayer (e.g. Maghrib when next is Asr). Omitted when unknown.
     let followingPrayerName: String
     let followingAdhanTime: String
@@ -196,6 +200,7 @@ struct MasjidlyWidgetState: Equatable, Sendable {
             MasjidlyWidgetPrayerRow(id: "maghrib", name: "Maghrib", adhan: "8:45pm", iqamahs: ["8:50pm"], isPassed: false, isNext: false),
             MasjidlyWidgetPrayerRow(id: "isha", name: "Isha", adhan: "10:15pm", iqamahs: ["10:30pm"], isPassed: false, isNext: false)
         ],
+        sunriseRow: MasjidlyWidgetPrayerRow(id: "sunrise", name: "Sunrise", adhan: "6:10am", iqamahs: [], isPassed: true, isNext: false),
         followingPrayerName: "Asr",
         followingAdhanTime: "5:30pm",
         followingIqamahTime: "5:45pm",
@@ -533,11 +538,22 @@ enum MasjidlyWidgetResolver {
                 adhan: format(rowAdhan, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
                 iqamahs: rowIqamahs.map { format($0, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now) },
                 isPassed: isPassed,
-                isNext: isNext
+                isNext: isNext,
+                isTomorrow: isNextFajrTomorrow && i == 0
             )]
         }
 
         let extraJummahCount = 0
+
+        let sunriseDate = wallClockToday(resolvedDay.prayers.sunrise)
+        let sunriseRow = MasjidlyWidgetPrayerRow(
+            id: "sunrise",
+            name: names.sunrise,
+            adhan: format(resolvedDay.prayers.sunrise, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
+            iqamahs: [],
+            isPassed: (sunriseDate ?? now) <= now,
+            isNext: false
+        )
 
         return MasjidlyWidgetState(
             kind: .content,
@@ -551,6 +567,7 @@ enum MasjidlyWidgetResolver {
             iqamahDate: iqamahDate,
             extraJummahCount: extraJummahCount,
             rows: rows,
+            sunriseRow: sunriseRow,
             followingPrayerName: followingName,
             followingAdhanTime: followingAdhanRaw.isEmpty ? "" : format(followingAdhanRaw, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
             followingIqamahTime: followingIqamahRaw.isEmpty ? "" : format(followingIqamahRaw, uses24HourTime: snapshot.uses24HourTime, locale: locale, reference: now),
@@ -617,6 +634,7 @@ enum MasjidlyWidgetResolver {
         let maghrib: String
         let isha: String
         let jummah: String
+        let sunrise: String
     }
 
     /// Returns prayer display names in the app's selected language.
@@ -625,13 +643,13 @@ enum MasjidlyWidgetResolver {
     private static func localizedPrayerNames(for lang: AppLanguage) -> LocalizedNames {
         switch lang {
         case .arabic:
-            return LocalizedNames(fajr: "الفجر", dhuhr: "الظهر", asr: "العصر", maghrib: "المغرب", isha: "العشاء", jummah: "الجمعة")
+            return LocalizedNames(fajr: "الفجر", dhuhr: "الظهر", asr: "العصر", maghrib: "المغرب", isha: "العشاء", jummah: "الجمعة", sunrise: "الشروق")
         case .urdu:
-            return LocalizedNames(fajr: "فجر", dhuhr: "ظہر", asr: "عصر", maghrib: "مغرب", isha: "عشاء", jummah: "جمعہ")
+            return LocalizedNames(fajr: "فجر", dhuhr: "ظہر", asr: "عصر", maghrib: "مغرب", isha: "عشاء", jummah: "جمعہ", sunrise: "طلوع آفتاب")
         case .indonesian:
-            return LocalizedNames(fajr: "Fajr", dhuhr: "Dzuhur", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jummah: "Jumat")
+            return LocalizedNames(fajr: "Fajr", dhuhr: "Dzuhur", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jummah: "Jumat", sunrise: "Terbit")
         case .english:
-            return LocalizedNames(fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jummah: "Jummah")
+            return LocalizedNames(fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jummah: "Jummah", sunrise: "Sunrise")
         }
     }
 
