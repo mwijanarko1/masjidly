@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationPermissions
+import com.mikhailspeaks.masjidly.domain.PrayerTimesEngine
 import java.time.Instant
 
 /**
@@ -66,8 +67,14 @@ object WidgetCountdownRefresher {
             remainingSeconds > COUNTDOWN_WINDOW_SECONDS -> targetMillis - COUNTDOWN_WINDOW_SECONDS * 1_000L
             else -> nowMillis + SYNC_INTERVAL_MILLIS
         }
-        scheduleAlarm(appContext, fireAtMillis)
+        scheduleAlarm(appContext, minOf(fireAtMillis, nextLondonMidnightMillis(nowMillis)))
     }
+
+    /** The lock screen list clears its "tmr" Fajr label at midnight, not two hours before Fajr. */
+    private fun nextLondonMidnightMillis(nowMillis: Long): Long =
+        Instant.ofEpochMilli(nowMillis).atZone(PrayerTimesEngine.sheffieldTimeZone)
+            .toLocalDate().plusDays(1).atStartOfDay(PrayerTimesEngine.sheffieldTimeZone)
+            .toInstant().toEpochMilli()
 
     fun cancel(context: Context) {
         val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
@@ -105,11 +112,7 @@ object WidgetCountdownRefresher {
 
     private suspend fun hasAnyPrayerWidget(context: Context): Boolean {
         val manager = GlanceAppWidgetManager(context)
-        return listOf(
-            MasjidlyPrayerSmallWidget::class.java,
-            MasjidlyPrayerMediumWidget::class.java,
-            MasjidlyPrayerLargeWidget::class.java,
-        ).any { manager.getGlanceIds(it).isNotEmpty() }
+        return allMasjidlyWidgets.any { manager.getGlanceIds(it.javaClass).isNotEmpty() }
     }
 
     private fun hasAnyPrayerWidgetBlocking(context: Context): Boolean {

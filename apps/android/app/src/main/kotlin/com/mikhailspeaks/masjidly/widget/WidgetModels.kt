@@ -78,6 +78,8 @@ data class WidgetPrayerRow(
     val iqamahs: List<String>,
     val isPassed: Boolean,
     val isNext: Boolean,
+    /** True for the Fajr row after Isha, when it shows tomorrow's time. */
+    val isTomorrow: Boolean = false,
 )
 
 data class WidgetPrayerState(
@@ -91,6 +93,10 @@ data class WidgetPrayerState(
     val countdownLabelKind: HeroCountdownLabelKind? = null,
     val rows: List<WidgetPrayerRow>,
     val displayDateEpochMillis: Long,
+    /** Sunrise is not a prayer, so it stays out of [rows]. Used by the lock screen list widgets. */
+    val sunriseRow: WidgetPrayerRow? = null,
+    val progressStartEpochMillis: Long? = null,
+    val iqamahEpochMillis: Long? = null,
 ) {
     val mosqueDisplayName: String
         get() = mosqueName.ifBlank { "Masjidly" }
@@ -113,6 +119,9 @@ data class WidgetPrayerState(
                 WidgetPrayerRow("isha", "Isha", "10:15pm", listOf("10:30pm"), isPassed = false, isNext = false),
             ),
             displayDateEpochMillis = System.currentTimeMillis(),
+            sunriseRow = WidgetPrayerRow("sunrise", "Sunrise", "6:10am", emptyList(), isPassed = true, isNext = false),
+            progressStartEpochMillis = System.currentTimeMillis() - 1_800_000,
+            iqamahEpochMillis = System.currentTimeMillis() + 3_900_000,
         )
 
         val missing = WidgetPrayerState(

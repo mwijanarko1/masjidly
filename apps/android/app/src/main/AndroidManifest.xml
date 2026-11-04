@@ -190,6 +190,79 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/masjidly_prayer_widget_large_info" />
         </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyLockProgressWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_lock_progress_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_lock_progress_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyLockStripWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_lock_strip_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_lock_strip_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyLockListMorningWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_lock_list_morning_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_lock_list_morning_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyLockListEveningWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_lock_list_evening_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_lock_list_evening_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyLockMinutesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_lock_minutes_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_lock_minutes_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyLockCodeWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_lock_code_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_lock_code_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>

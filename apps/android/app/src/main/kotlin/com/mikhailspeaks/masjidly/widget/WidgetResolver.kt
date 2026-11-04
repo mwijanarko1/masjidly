@@ -33,6 +33,7 @@ object WidgetResolver {
         val maghrib: String,
         val isha: String,
         val jummah: String,
+        val sunrise: String,
     )
 
     fun resolve(
@@ -252,6 +253,25 @@ object WidgetResolver {
             else -> HeroCountdownLabelKind.NEXT_PRAYER
         }
 
+        val iqamahInstant = wallClockDay(displayIqamahRaw, nextWallClockBase)
+
+        val progressStart = when {
+            nextEventIsIqamah -> next.adhanDate
+            nextPrayerIndex > 0 && !isNextFajrTomorrow -> prayersList[nextPrayerIndex - 1].adhanDate
+            isNextFajrTomorrow -> prayersList.last().adhanDate
+            else -> dayStart.toInstant()
+        }
+
+        val sunriseDate = wallClockToday(resolvedDay.prayers.sunrise)
+        val sunriseRow = WidgetPrayerRow(
+            id = "sunrise",
+            name = names.sunrise,
+            adhan = format(resolvedDay.prayers.sunrise, snapshot.uses24HourTime, locale, now),
+            iqamahs = emptyList(),
+            isPassed = (sunriseDate ?: now) <= now,
+            isNext = false,
+        )
+
         val rows = prayersList.flatMapIndexed { i, p ->
             val isNext = i == nextPrayerIndex && !isNextFajrTomorrow
             val isPassed = when {
@@ -289,6 +309,7 @@ object WidgetResolver {
                         iqamahs = rowIqamahs.map { format(it, snapshot.uses24HourTime, locale, now) },
                         isPassed = isPassed,
                         isNext = isNext,
+                        isTomorrow = isNextFajrTomorrow && i == 0,
                     ),
                 )
             }
@@ -305,14 +326,17 @@ object WidgetResolver {
             countdownLabelKind = countdownLabelKind,
             rows = rows,
             displayDateEpochMillis = dayStart.toInstant().toEpochMilli(),
+            sunriseRow = sunriseRow,
+            progressStartEpochMillis = progressStart?.toEpochMilli(),
+            iqamahEpochMillis = iqamahInstant?.toEpochMilli(),
         )
     }
 
     private fun localizedPrayerNames(language: AppLanguage): LocalizedNames = when (language) {
-        AppLanguage.ARABIC -> LocalizedNames("الفجر", "الظهر", "العصر", "المغرب", "العشاء", "الجمعة")
-        AppLanguage.URDU -> LocalizedNames("فجر", "ظہر", "عصر", "مغرب", "عشاء", "جمعہ")
-        AppLanguage.INDONESIAN -> LocalizedNames("Fajr", "Dzuhur", "Asr", "Maghrib", "Isha", "Jumat")
-        AppLanguage.ENGLISH -> LocalizedNames("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah")
+        AppLanguage.ARABIC -> LocalizedNames("الفجر", "الظهر", "العصر", "المغرب", "العشاء", "الجمعة", "الشروق")
+        AppLanguage.URDU -> LocalizedNames("فجر", "ظہر", "عصر", "مغرب", "عشاء", "جمعہ", "طلوع آفتاب")
+        AppLanguage.INDONESIAN -> LocalizedNames("Fajr", "Dzuhur", "Asr", "Maghrib", "Isha", "Jumat", "Terbit")
+        AppLanguage.ENGLISH -> LocalizedNames("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah", "Sunrise")
     }
 
     private fun jummahDisplayName(base: String, selectedRaw: String, allSlots: List<String>): String {

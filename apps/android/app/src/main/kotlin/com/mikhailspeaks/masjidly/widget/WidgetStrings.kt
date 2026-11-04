@@ -75,6 +75,35 @@ object WidgetStrings {
         AppLanguage.ENGLISH -> "Today"
     }
 
+    /** Countdown connector with a `%s` slot, e.g. "in %s". */
+    fun inFormat(language: AppLanguage): String = when (language) {
+        AppLanguage.ARABIC -> "بعد %s"
+        AppLanguage.URDU -> "%s میں"
+        AppLanguage.INDONESIAN -> "dalam %s"
+        AppLanguage.ENGLISH -> "in %s"
+    }
+
+    fun tomorrowShort(language: AppLanguage): String = when (language) {
+        AppLanguage.ARABIC -> "غدًا"
+        AppLanguage.URDU -> "کل"
+        AppLanguage.INDONESIAN -> "bsk"
+        AppLanguage.ENGLISH -> "tmr"
+    }
+
+    fun hourUnit(language: AppLanguage): String = when (language) {
+        AppLanguage.ARABIC -> "س"
+        AppLanguage.URDU -> "گ"
+        AppLanguage.INDONESIAN -> "j"
+        AppLanguage.ENGLISH -> "h"
+    }
+
+    fun minuteUnit(language: AppLanguage): String = when (language) {
+        AppLanguage.ARABIC -> "د"
+        AppLanguage.URDU -> "م"
+        AppLanguage.INDONESIAN -> "m"
+        AppLanguage.ENGLISH -> "m"
+    }
+
     fun countdownHeadline(language: AppLanguage, prayerName: String, labelKind: HeroCountdownLabelKind?): String {
         val isIqamah = labelKind == HeroCountdownLabelKind.IQAMAH_IN
         return when (language) {

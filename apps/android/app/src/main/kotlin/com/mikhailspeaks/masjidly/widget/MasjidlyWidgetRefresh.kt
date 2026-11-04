@@ -1,12 +1,19 @@
 package com.mikhailspeaks.masjidly.widget
 
 import android.content.Context
+import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.updateAll
 
-private val allMasjidlyWidgets = listOf(
+internal val allMasjidlyWidgets: List<GlanceAppWidget> = listOf(
     MasjidlyPrayerSmallWidget(),
     MasjidlyPrayerMediumWidget(),
     MasjidlyPrayerLargeWidget(),
+    MasjidlyLockProgressWidget(),
+    MasjidlyLockStripWidget(),
+    MasjidlyLockListMorningWidget(),
+    MasjidlyLockListEveningWidget(),
+    MasjidlyLockMinutesWidget(),
+    MasjidlyLockCodeWidget(),
 )
 
 /** Refreshes all Masjidly Glance widgets after theme or snapshot changes. */
