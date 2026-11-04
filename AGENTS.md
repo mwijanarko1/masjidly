@@ -64,13 +64,12 @@ Schema:
 
 Do **not** use Android Studio for routine builds. Use Gradle CLI.
 
-Toolchain lives on the Seagate drive (not always on the Mac). Ensure the volume is mounted first.
+Toolchain lives on the internal disk: SDK at `~/Library/Android/sdk`, AVDs at `~/.android/avd`, Gradle home at the default `~/.gradle`. The Seagate drive is not needed.
 
 ```bash
 export JAVA_HOME="$(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home"
-export GRADLE_USER_HOME="/Volumes/Mikhail Seagate 2TB SSD/AndroidDev/gradle"
-export ANDROID_HOME="/Volumes/Mikhail Seagate 2TB SSD/AndroidDev/sdk"
-export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
 ```
 
 - **JDK:** Homebrew `openjdk@17` if missing (`brew install openjdk@17`).
