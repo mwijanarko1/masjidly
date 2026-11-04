@@ -36,10 +36,10 @@ struct HomeView: View {
     @State private var showingAddMosqueTab = false
     @State private var addTabSelectedMosqueId = ""
     @State private var addMosqueTabButtonFrame = CGRect.zero
-
-    private var openMosqueTabIds: [String] {
     @State private var tabReorder: MosqueTabReorder?
     @State private var tabWidths: [String: CGFloat] = [:]
+
+    private var openMosqueTabIds: [String] {
         settings.openMosqueTabIds.isEmpty
             ? [settings.selectedMosqueId ?? model.selectedMosque?.id].compactMap { $0 }
             : settings.openMosqueTabIds
@@ -424,12 +424,6 @@ struct HomeView: View {
                                     )
                                 )
                                 .accessibilityAddTraits(isSelected ? .isSelected : [])
-                                .id(id)
-                            }
-                        }
-                        if !availableMosqueTabs.isEmpty {
-                            Button {
-                                HapticFeedback.buttonTap()
                                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { tabWidths[id] = $0 }
                                 .scaleEffect(tabReorder?.isLifted(id) == true ? 1.06 : 1)
                                 .shadow(
@@ -440,6 +434,12 @@ struct HomeView: View {
                                 .offset(x: tabReorder?.isDragged(id) == true ? tabReorder?.offset ?? 0 : 0)
                                 .zIndex(tabReorder?.isDragged(id) == true ? 1 : 0)
                                 .simultaneousGesture(reorderGesture(for: id, storedIds: storedIds))
+                                .id(id)
+                            }
+                        }
+                        if !availableMosqueTabs.isEmpty {
+                            Button {
+                                HapticFeedback.buttonTap()
                                 addTabSelectedMosqueId = defaultAddTabMosqueId()
                                 setAddMosqueTabVisible(true)
                             } label: {
@@ -461,15 +461,15 @@ struct HomeView: View {
                         }
                     }
                     .animation(.easeInOut(duration: 0.2), value: model.selectedMosque?.id)
+                    .animation(.spring(duration: 0.28, bounce: 0.12), value: ids)
                 }
+                .scrollDisabled(tabReorder?.isActive == true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .mask(
                     LinearGradient(
                         stops: [
                             .init(color: .white, location: 0),
-                    .animation(.spring(duration: 0.28, bounce: 0.12), value: ids)
                             .init(color: .white, location: 0.96),
-                .scrollDisabled(tabReorder?.isActive == true)
                             .init(color: .white.opacity(0.25), location: 1)
                         ],
                         startPoint: .leading,
@@ -484,12 +484,6 @@ struct HomeView: View {
         }
     }
 
-    private func setAddMosqueTabVisible(_ visible: Bool) {
-        let animation: Animation = reduceMotion
-            ? .easeOut(duration: 0.18)
-            : visible
-                ? .spring(response: 0.48, dampingFraction: 0.88)
-                : .easeOut(duration: 0.24)
     private func reorderGesture(for id: String, storedIds: [String]) -> some Gesture {
         LongPressGesture(minimumDuration: 0.25)
             .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global))
@@ -516,6 +510,12 @@ struct HomeView: View {
             }
     }
 
+    private func setAddMosqueTabVisible(_ visible: Bool) {
+        let animation: Animation = reduceMotion
+            ? .easeOut(duration: 0.18)
+            : visible
+                ? .spring(response: 0.48, dampingFraction: 0.88)
+                : .easeOut(duration: 0.24)
         withAnimation(animation) {
             showingAddMosqueTab = visible
         }
@@ -1710,6 +1710,51 @@ extension Notification.Name {
 
 // MARK: - Viewport-aware layout
 
+private struct MosqueTabReorder {
+    var order: [String]
+    let draggedId: String
+    var offset: CGFloat = 0
+    var isActive = true
+    private var previousTranslation: CGFloat = 0
+
+    func isDragged(_ id: String) -> Bool { id == draggedId }
+    func isLifted(_ id: String) -> Bool { isActive && id == draggedId }
+
+    mutating func drag(to translation: CGFloat, widths: [String: CGFloat], spacing: CGFloat) {
+        offset += translation - previousTranslation
+        previousTranslation = translation
+        guard let index = order.firstIndex(of: draggedId), let width = widths[draggedId] else { return }
+        let leading = leftEdge(of: draggedId, widths: widths, spacing: spacing) + offset
+        let trailing = leading + width
+        if index + 1 < order.count {
+            let next = order[index + 1]
+            let nextWidth = widths[next] ?? 0
+            if trailing > leftEdge(of: next, widths: widths, spacing: spacing) + nextWidth / 2 {
+                order.swapAt(index, index + 1)
+                offset -= nextWidth + spacing
+                return
+            }
+        }
+        if index > 0 {
+            let previous = order[index - 1]
+            let previousWidth = widths[previous] ?? 0
+            if leading < leftEdge(of: previous, widths: widths, spacing: spacing) + previousWidth / 2 {
+                order.swapAt(index, index - 1)
+                offset += previousWidth + spacing
+            }
+        }
+    }
+
+    private func leftEdge(of id: String, widths: [String: CGFloat], spacing: CGFloat) -> CGFloat {
+        var x: CGFloat = 0
+        for other in order {
+            if other == id { return x }
+            x += (widths[other] ?? 0) + spacing
+        }
+        return x
+    }
+}
+
 private struct HomeViewportMetrics: Sendable {
     let width: CGFloat
     let height: CGFloat
@@ -1761,51 +1806,6 @@ private struct HomeViewportMetrics: Sendable {
             bottom: max(safeBottom, 12) + 20 + 44 + 8,
             trailing: trailingChromeInset
         )
-private struct MosqueTabReorder {
-    var order: [String]
-    let draggedId: String
-    var offset: CGFloat = 0
-    var isActive = true
-    private var previousTranslation: CGFloat = 0
-
-    func isDragged(_ id: String) -> Bool { id == draggedId }
-    func isLifted(_ id: String) -> Bool { isActive && id == draggedId }
-
-    mutating func drag(to translation: CGFloat, widths: [String: CGFloat], spacing: CGFloat) {
-        offset += translation - previousTranslation
-        previousTranslation = translation
-        guard let index = order.firstIndex(of: draggedId), let width = widths[draggedId] else { return }
-        let leading = leftEdge(of: draggedId, widths: widths, spacing: spacing) + offset
-        let trailing = leading + width
-        if index + 1 < order.count {
-            let next = order[index + 1]
-            let nextWidth = widths[next] ?? 0
-            if trailing > leftEdge(of: next, widths: widths, spacing: spacing) + nextWidth / 2 {
-                order.swapAt(index, index + 1)
-                offset -= nextWidth + spacing
-                return
-            }
-        }
-        if index > 0 {
-            let previous = order[index - 1]
-            let previousWidth = widths[previous] ?? 0
-            if leading < leftEdge(of: previous, widths: widths, spacing: spacing) + previousWidth / 2 {
-                order.swapAt(index, index - 1)
-                offset += previousWidth + spacing
-            }
-        }
-    }
-
-    private func leftEdge(of id: String, widths: [String: CGFloat], spacing: CGFloat) -> CGFloat {
-        var x: CGFloat = 0
-        for other in order {
-            if other == id { return x }
-            x += (widths[other] ?? 0) + spacing
-        }
-        return x
-    }
-}
-
     }
 
     var trailingChromeInset: CGFloat {
