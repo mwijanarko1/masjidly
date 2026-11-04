@@ -467,6 +467,10 @@ final class HomeViewModel {
         )
     }
 
+    func makeCompareDataStore() -> CompareDataStore {
+        CompareDataStore(repository: repository, diskCache: diskCache)
+    }
+
     func fetchMonthData(mosqueSlug: String, month: Int, year: Int) async -> MonthPrayerData? {
         guard let monthName = MonthName.from(monthNumber: month) else { return nil }
 

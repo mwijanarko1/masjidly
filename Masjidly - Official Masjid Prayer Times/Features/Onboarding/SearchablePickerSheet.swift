@@ -156,6 +156,8 @@ struct SearchablePickerField: View {
     var minRowHeight: CGFloat = 44
     var horizontalPadding: CGFloat = 0
     var multilineValue: Bool = false
+    /// Centres the title, value and chevron on one line. Default keeps the existing top alignment.
+    var centersRow: Bool = false
     let isOpen: Bool
     let onToggle: () -> Void
     let onSelect: (String) -> Void
@@ -163,7 +165,7 @@ struct SearchablePickerField: View {
     var body: some View {
         VStack(spacing: 8) {
             Button(action: onToggle) {
-                HStack(alignment: multilineValue ? .top : .firstTextBaseline, spacing: 12) {
+                HStack(alignment: centersRow ? .center : (multilineValue ? .top : .firstTextBaseline), spacing: 12) {
                     Text(title)
                         .appFont(size: titleFontSize, weight: .regular)
                         .foregroundStyle(timeTheme.textColor)
@@ -173,7 +175,7 @@ struct SearchablePickerField: View {
 
                     Spacer(minLength: 12)
 
-                    HStack(alignment: .top, spacing: 6) {
+                    HStack(alignment: centersRow ? .center : .top, spacing: 6) {
                         Text(value)
                             .appFont(size: valueFontSize, weight: .regular)
                             .foregroundStyle(timeTheme.textColor)

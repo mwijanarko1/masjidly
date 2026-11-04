@@ -59,6 +59,8 @@ final class SettingsStore: SettingsPersisting {
         case hasCompletedEnjoymentReviewFlow
         case lastSeenBuildVersion
         case dismissedClosestMosqueId
+        case compareMosqueIds
+        case compareMode
     }
 
     /// Stored fields so `@Observable` tracks mutations; UserDefaults syncs in `didSet`.
@@ -271,8 +273,19 @@ final class SettingsStore: SettingsPersisting {
         }
     }
 
+    /// Masjids the user compares side by side. Separate from the Home tab list.
+    var compareMosqueIds: [String] {
+        didSet { defaults.set(compareMosqueIds, forKey: Key.compareMosqueIds.rawValue) }
+    }
+
+    var compareMode: CompareMode {
+        didSet { defaults.set(compareMode.rawValue, forKey: Key.compareMode.rawValue) }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        compareMosqueIds = defaults.stringArray(forKey: Key.compareMosqueIds.rawValue) ?? []
+        compareMode = defaults.string(forKey: Key.compareMode.rawValue).flatMap(CompareMode.init(rawValue:)) ?? .masjids
         selectedMosqueId = defaults.string(forKey: Key.selectedMosqueId.rawValue)
         selectedMosqueSlug = defaults.string(forKey: Key.selectedMosqueSlug.rawValue)
         openMosqueTabIds = defaults.stringArray(forKey: Key.openMosqueTabIds.rawValue) ?? []

@@ -19,6 +19,8 @@ struct HomeView: View {
 
     @State private var showingSettings = false
     @State private var showingTimetable = false
+    @State private var showingCompare = false
+    @State private var compareStoreHolder = CompareStoreHolder()
     @State private var showingWhatsNew = false
     @State private var showingClosestMosquePrompt = false
     @State private var pendingClosestMosque: Mosque?
@@ -75,6 +77,7 @@ struct HomeView: View {
     private var homePresentationChrome: some View {
         AnyView(homeNotificationChrome)
             .fullScreenCover(isPresented: $showingTimetable, content: timetableFullScreenView)
+            .fullScreenCover(isPresented: $showingCompare, content: compareFullScreenView)
             .fullScreenCover(isPresented: $showingSettings, content: settingsFullScreenView)
             .sheet(isPresented: $showingDatePicker, content: datePickerSheet)
             .enjoymentReviewAlert(
@@ -321,10 +324,13 @@ struct HomeView: View {
                 }
 
                 VStack(spacing: 0) {
-                    HStack(alignment: .center, spacing: 8) {
-                        calendarButton
-                            .fixedSize()
-                            .padding(.leading, metrics.leadingChromeInset)
+                    HStack(alignment: .top, spacing: 8) {
+                        VStack(spacing: 8) {
+                            calendarButton
+                            compareButton
+                        }
+                        .fixedSize()
+                        .padding(.leading, metrics.leadingChromeInset)
 
                         dateDisplay
                             .frame(maxWidth: 560)
@@ -1071,6 +1077,7 @@ struct HomeView: View {
         guard !showReviewFeedbackPrompt else { return }
         guard !showingSettings else { return }
         guard !showingTimetable else { return }
+        guard !showingCompare else { return }
         guard !showingClosestMosquePrompt else { return }
         guard !openMosqueTabIds.contains(pendingClosestMosque.id) else {
             self.pendingClosestMosque = nil
@@ -1105,6 +1112,10 @@ struct HomeView: View {
         AnyView(timetableFullScreen)
     }
 
+    private func compareFullScreenView() -> AnyView {
+        AnyView(compareFullScreen)
+    }
+
     private func settingsFullScreenView() -> AnyView {
         AnyView(settingsFullScreen)
     }
@@ -1125,6 +1136,30 @@ struct HomeView: View {
             .environment(\.layoutDirection, settings.appLanguage.layoutDirection)
             .environment(\.appFontName, settings.appFontName)
         }
+    }
+
+    @ViewBuilder
+    private var compareFullScreen: some View {
+        CompareView(
+            mosques: model.mosques,
+            homeMosque: model.selectedMosque,
+            timeTheme: currentTheme,
+            settings: settings,
+            store: compareStoreHolder.resolve { model.makeCompareDataStore() },
+            initialDate: model.displayedDate,
+            onOpenMosque: openMosqueFromCompare
+        )
+        .environment(\.locale, settings.resolvedLocale)
+        .environment(\.layoutDirection, settings.appLanguage.layoutDirection)
+        .environment(\.appFontName, settings.appFontName)
+    }
+
+    private func openMosqueFromCompare(_ mosque: Mosque) {
+        if !openMosqueTabIds.contains(mosque.id) {
+            settings.openMosqueTabIds = openMosqueTabIds + [mosque.id]
+        }
+        activateTab(mosque)
+        showingCompare = false
     }
 
     @ViewBuilder
@@ -1186,6 +1221,22 @@ struct HomeView: View {
         }
         .buttonStyle(.hapticPlain)
         .accessibilityLabel(Text(homeLS("accessibility.timetable", locale: locale)))
+    }
+
+    private var compareButton: some View {
+        Button {
+            compareStoreHolder.reset()
+            showingCompare = true
+        } label: {
+            Image(systemName: "clock.badge.checkmark")
+                .appFont(size: 20, weight: .light)
+                .foregroundColor(currentAppearance.textColor)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(Color.white.opacity(0.18)))
+        }
+        .buttonStyle(.hapticPlain)
+        .accessibilityLabel(Text(homeLS("accessibility.compare", locale: locale)))
+        .accessibilityIdentifier("Home.CompareButton")
     }
 
     @ViewBuilder private var onboardingOverlay: some View {
