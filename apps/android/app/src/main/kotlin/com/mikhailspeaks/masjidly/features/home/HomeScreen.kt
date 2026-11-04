@@ -361,6 +361,7 @@ fun HomeScreen(
                 showAdd = available.isNotEmpty(),
                 onSelect = ::selectTab,
                 onClose = { id -> pendingCloseTab = state.mosques.firstOrNull { it.id == id } },
+                onReorder = { reordered -> settingsStore.openMosqueTabIds = reordered },
                 onAdd = {
                     addTabSelectedMosqueId = defaultAddTabMosqueId(
                         available = available,
