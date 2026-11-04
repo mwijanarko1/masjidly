@@ -6,6 +6,9 @@ import WidgetKit
 struct MasjidlyWidgetsBundle: WidgetBundle {
     var body: some Widget {
         MasjidlyPrayerWidget()
+        MasjidCardWidget()
+        PrayerRowWidget()
+        NextPrayerWidget()
         LockListMorningWidget()
         LockListEveningWidget()
         LockStripWidget()
@@ -247,7 +250,7 @@ struct MasjidlyPrayerWidgetView: View {
     }
 
     @ViewBuilder
-    private func backgroundView(
+    func backgroundView(
         for theme: MasjidlyWidgetTheme.TimeTheme,
         gradientSet: MasjidlyWidgetTheme.SkyGradientSet,
         customColors: MasjidlyWidgetTheme.CustomSkyGradientColors?
@@ -351,19 +354,39 @@ struct MasjidlyPrayerWidgetView: View {
             gradientSet: gradientSet,
             customColors: customColors
         )
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: entry.state.iconName)
-                    .widgetFont(size: 16, weight: .medium, locale: entry.locale)
-                    .foregroundStyle(textColor.opacity(0.8))
+        return GeometryReader { geo in
+            smallContent(width: geo.size.width, height: geo.size.height, textColor: textColor)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clipped()
+    }
+
+    /// Same stack as the original small design. The header and iqamah line scale up a little, and the
+    /// adhan time grows until it fills the width, or the height that is left, whichever is smaller.
+    private func smallContent(width: CGFloat, height: CGFloat, textColor: Color) -> some View {
+        let scale: CGFloat = 1.0
+        let spacing = 6 * scale
+        let languageCode = String(entry.locale.identifier.prefix(2))
+        let fontFactor: CGFloat = languageCode == "ur" ? 1.25 : (languageCode == "ar" ? 1.2 : 1)
+        let headerHeight = 28 * scale
+        let iqamahHeight: CGFloat = entry.state.iqamahTime.isEmpty ? 0 : 14 * scale * 1.3 + spacing
+        let heightForTime = height - headerHeight - iqamahHeight - spacing - 2
+        let unitWidth = (entry.state.adhanTime as NSString)
+            .size(withAttributes: [.font: widgetUIFont(size: 100, weight: .light)]).width / 100
+        let timeSize = min(width * 0.98 / max(unitWidth, 1), heightForTime / 1.15, 72) / fontFactor
+
+        return VStack(alignment: .leading, spacing: spacing) {
+            HStack(spacing: 6 * scale) {
+                WidgetPrayerSunPhaseIcon(prayerId: entry.state.prayerId, color: textColor.opacity(0.8), size: headerHeight)
                 Text(entry.state.prayerName)
-                    .widgetFont(size: 15, weight: .medium, locale: entry.locale)
+                    .widgetFont(size: 15 * scale, weight: .medium, locale: entry.locale)
                     .foregroundStyle(textColor.opacity(0.75))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
 
             Text(entry.state.adhanTime)
-                .widgetFont(size: 36, weight: .light, locale: entry.locale)
+                .widgetFont(size: max(timeSize, 24), weight: .light, locale: entry.locale)
                 .foregroundStyle(textColor)
                 .monospacedDigit()
                 .lineLimit(1)
@@ -372,15 +395,25 @@ struct MasjidlyPrayerWidgetView: View {
 
             if !entry.state.iqamahTime.isEmpty {
                 Text(String(format: widgetLS("widget.iqamah_format", locale: entry.locale), entry.state.iqamahTime))
-                    .widgetFont(size: 14, weight: .regular, locale: entry.locale)
-                    .foregroundStyle(textColor.opacity(0.6))
+                    .widgetFont(size: 14 * scale, weight: .regular, locale: entry.locale)
+                    .foregroundStyle(textColor.opacity(0.65))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .clipped()
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    /// Soft rounded panel behind the next prayer row. It bleeds past the row so the layout does not change.
+    @ViewBuilder
+    private func nextRowHighlight(isNext: Bool, textColor: Color) -> some View {
+        if isNext {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(textColor.widgetRowHighlight)
+                .padding(.horizontal, -10)
+                .padding(.vertical, -3)
+        }
     }
 
     private var currentDateMediumString: String {
@@ -417,49 +450,53 @@ struct MasjidlyPrayerWidgetView: View {
             }
             
             HStack {
-                Text(widgetLS("widget.prayer", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .leading)
-                Text(widgetLS("widget.adhan", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .center)
-                Text(widgetLS("widget.iqamah", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .trailing)
+                Text(widgetLS("widget.prayer", locale: entry.locale))
+                    .foregroundStyle(textColor.opacity(0.7))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(widgetLS("widget.adhan", locale: entry.locale))
+                    .foregroundStyle(textColor.opacity(0.7))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                Text(widgetLS("widget.iqamah", locale: entry.locale))
+                    .foregroundStyle(textColor.opacity(0.5))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .widgetFont(size: 11, weight: .bold, locale: entry.locale)
-            .foregroundStyle(textColor.opacity(0.35))
             .textCase(.uppercase)
-            
+
             VStack(spacing: 6) {
                 ForEach(entry.state.rows.prefix(6)) { row in
                     HStack {
                         Text(row.name)
-                            .widgetFont(size: 20, weight: row.isNext ? .bold : .regular, locale: entry.locale)
-                            .foregroundStyle(row.isPassed ? textColor.opacity(0.35) : textColor)
+                            .widgetFont(size: 20, weight: .regular, locale: entry.locale)
+                            .foregroundStyle(textColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
-                        
+
                         Text(row.adhan)
-                            .widgetFont(size: 20, weight: row.isNext ? .bold : .semibold, locale: entry.locale)
+                            .widgetFont(size: 20, weight: .regular, locale: entry.locale)
                             .monospacedDigit()
-                            .foregroundStyle(row.isPassed ? textColor.opacity(0.35) : textColor)
+                            .foregroundStyle(textColor)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                             .frame(maxWidth: .infinity, alignment: .center)
-                        
+
                         HStack {
                             Spacer()
                             Text(row.iqamahs.joined(separator: ", "))
                                 .widgetFont(size: 20, weight: .regular, locale: entry.locale)
                                 .monospacedDigit()
-                                .foregroundStyle(row.isPassed ? textColor.opacity(0.2) : textColor.opacity(0.6))
+                                .foregroundStyle(textColor.opacity(0.65))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)
                         }
                         .frame(maxWidth: .infinity, alignment: .trailing)
                     }
+                    .background { nextRowHighlight(isNext: row.isNext, textColor: textColor) }
                 }
             }
         }
-        .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .clipped()
     }
 
     private var fullDateString: String {
@@ -500,28 +537,33 @@ struct MasjidlyPrayerWidgetView: View {
                 .frame(maxWidth: .infinity)
 
             HStack {
-                Text(widgetLS("widget.prayer", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .leading)
-                Text(widgetLS("widget.adhan", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .center)
-                Text(widgetLS("widget.iqamah", locale: entry.locale)).frame(maxWidth: .infinity, alignment: .trailing)
+                Text(widgetLS("widget.prayer", locale: entry.locale))
+                    .foregroundStyle(textColor.opacity(0.7))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(widgetLS("widget.adhan", locale: entry.locale))
+                    .foregroundStyle(textColor.opacity(0.7))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                Text(widgetLS("widget.iqamah", locale: entry.locale))
+                    .foregroundStyle(textColor.opacity(0.5))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .widgetFont(size: 12, weight: .bold, locale: entry.locale)
-            .foregroundStyle(textColor.opacity(0.35))
             .textCase(.uppercase)
 
             VStack(spacing: 14) {
                 ForEach(entry.state.rows) { row in
                     HStack {
                         Text(row.name)
-                            .widgetFont(size: 24, weight: row.isNext ? .bold : .regular, locale: entry.locale)
-                            .foregroundStyle(row.isPassed ? textColor.opacity(0.35) : textColor)
+                            .widgetFont(size: 24, weight: .regular, locale: entry.locale)
+                            .foregroundStyle(textColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
 
                         Text(row.adhan)
-                            .widgetFont(size: 24, weight: row.isNext ? .bold : .semibold, locale: entry.locale)
+                            .widgetFont(size: 24, weight: .regular, locale: entry.locale)
                             .monospacedDigit()
-                            .foregroundStyle(row.isPassed ? textColor.opacity(0.35) : textColor)
+                            .foregroundStyle(textColor)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -531,18 +573,17 @@ struct MasjidlyPrayerWidgetView: View {
                             Text(row.iqamahs.joined(separator: ", "))
                                 .widgetFont(size: 24, weight: .regular, locale: entry.locale)
                                 .monospacedDigit()
-                                .foregroundStyle(row.isPassed ? textColor.opacity(0.2) : textColor.opacity(0.6))
+                                .foregroundStyle(textColor.opacity(0.65))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.6)
                         }
                         .frame(maxWidth: .infinity, alignment: .trailing)
                     }
+                    .background { nextRowHighlight(isNext: row.isNext, textColor: textColor) }
                 }
             }
         }
-        .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .clipped()
     }
 
     private var accessoryCircularView: some View {
@@ -790,7 +831,7 @@ struct MasjidlyPrayerWidgetView: View {
         let legacy = WidgetLiveCountdown.legacyTimerPrefix(remaining: remaining)
         let timerWidth = legacy.showsHours
             ? widgetCountdownHMSWidth(font: font, hourDigits: legacy.hourDigits)
-            : widgetCountdownMMSSWidth(font: font)
+            : widgetCountdownMMSSWidth(font: font, tensDigit: remaining >= 600)
 
         return HStack(spacing: 0) {
             Text(legacy.prefix)
@@ -806,8 +847,8 @@ struct MasjidlyPrayerWidgetView: View {
         }
     }
 
-    private func widgetCountdownMMSSWidth(font: UIFont) -> CGFloat {
-        let sample = "09:59" as NSString
+    private func widgetCountdownMMSSWidth(font: UIFont, tensDigit: Bool = true) -> CGFloat {
+        let sample = (tensDigit ? "09:59" : "9:59") as NSString
         return ceil(sample.size(withAttributes: [.font: font]).width) + 2
     }
 
@@ -1470,6 +1511,11 @@ private extension Font.Weight {
 }
 
 extension Color {
+    /// Panel behind the highlighted row. `self` is the widget text color: light text means a dark sky.
+    var widgetRowHighlight: Color {
+        Color.white.opacity(widgetRelativeLuminance > 0.5 ? 0.16 : 0.4)
+    }
+
     var widgetRelativeLuminance: Double {
         let uiColor = UIColor(self)
         var red: CGFloat = 0
