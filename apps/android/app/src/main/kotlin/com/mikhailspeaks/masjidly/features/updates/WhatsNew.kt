@@ -13,10 +13,13 @@ data class WhatsNewItem(
 
 enum class WhatsNewIcon {
     BUG_FIX,
+    COMPARE,
     GRID,
     HOURGLASS,
+    LOCK,
     MAP,
     PALETTE,
+    REORDER,
     WIDGET,
 }
 
@@ -39,30 +42,90 @@ object WhatsNew {
         return when (code) {
             "ar" -> listOf(
                 WhatsNewItem(
-                    title = "إصلاح الأخطاء",
-                    description = "إصلاحات وتحسينات طفيفة.",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "مقارنة المساجد",
+                    description = "قارن أوقات الأذان والإقامة بين المساجد، أو ابحث عن المسجد المناسب حسب الوقت.",
+                    icon = WhatsNewIcon.COMPARE,
+                ),
+                WhatsNewItem(
+                    title = "ودجات الشاشة الرئيسية",
+                    description = "ثلاثة تصاميم جديدة تعرض الصلاة القادمة مع العد التنازلي.",
+                    icon = WhatsNewIcon.GRID,
+                ),
+                WhatsNewItem(
+                    title = "ودجات شاشة القفل",
+                    description = "ستة تصاميم جديدة لمتابعة الصلاة القادمة من شاشة القفل.",
+                    icon = WhatsNewIcon.LOCK,
+                ),
+                WhatsNewItem(
+                    title = "ترتيب علامات المساجد",
+                    description = "اضغط مطولاً على علامة المسجد واسحبها لإعادة ترتيبها.",
+                    icon = WhatsNewIcon.REORDER,
                 ),
             )
             "ur" -> listOf(
                 WhatsNewItem(
-                    title = "بگ فکسز",
-                    description = "معمولی بگ فکسز اور بہتری۔",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "مساجد کا موازنہ",
+                    description = "مساجد کے درمیان اذان اور اقامت کے اوقات کا موازنہ کریں، یا وقت کے مطابق مسجد تلاش کریں۔",
+                    icon = WhatsNewIcon.COMPARE,
+                ),
+                WhatsNewItem(
+                    title = "ہوم اسکرین ویجٹس",
+                    description = "اگلی نماز اور کاؤنٹ ڈاؤن دکھانے والے تین نئے ڈیزائن۔",
+                    icon = WhatsNewIcon.GRID,
+                ),
+                WhatsNewItem(
+                    title = "لاک اسکرین ویجٹس",
+                    description = "لاک اسکرین سے اگلی نماز دیکھنے کے لیے چھ نئے ڈیزائن۔",
+                    icon = WhatsNewIcon.LOCK,
+                ),
+                WhatsNewItem(
+                    title = "مساجد کی ترتیب",
+                    description = "مسجد کے ٹیب کو دبائے رکھیں اور گھسیٹ کر ترتیب بدلیں۔",
+                    icon = WhatsNewIcon.REORDER,
                 ),
             )
             "id" -> listOf(
                 WhatsNewItem(
-                    title = "Perbaikan bug",
-                    description = "Perbaikan bug dan peningkatan kecil.",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "Bandingkan masjid",
+                    description = "Bandingkan waktu adzan dan iqamah antar masjid, atau cari masjid berdasarkan waktu.",
+                    icon = WhatsNewIcon.COMPARE,
+                ),
+                WhatsNewItem(
+                    title = "Widget layar utama",
+                    description = "Tiga desain baru yang menampilkan salat berikutnya dengan hitung mundur.",
+                    icon = WhatsNewIcon.GRID,
+                ),
+                WhatsNewItem(
+                    title = "Widget layar kunci",
+                    description = "Enam desain baru untuk melihat salat berikutnya dari layar kunci.",
+                    icon = WhatsNewIcon.LOCK,
+                ),
+                WhatsNewItem(
+                    title = "Urutkan tab masjid",
+                    description = "Tekan lama tab masjid lalu seret untuk mengubah urutannya.",
+                    icon = WhatsNewIcon.REORDER,
                 ),
             )
             else -> listOf(
                 WhatsNewItem(
-                    title = "Bug Fixes",
-                    description = "Minor bug fixes and improvements.",
-                    icon = WhatsNewIcon.BUG_FIX,
+                    title = "Compare Masjids",
+                    description = "Compare adhan and iqamah times across masjids, or find a masjid by time.",
+                    icon = WhatsNewIcon.COMPARE,
+                ),
+                WhatsNewItem(
+                    title = "Home Screen Widgets",
+                    description = "Three new designs showing your next prayer with a live countdown.",
+                    icon = WhatsNewIcon.GRID,
+                ),
+                WhatsNewItem(
+                    title = "Lock Screen Widgets",
+                    description = "Six new designs to check your next prayer from the Lock Screen.",
+                    icon = WhatsNewIcon.LOCK,
+                ),
+                WhatsNewItem(
+                    title = "Reorder Masjid Tabs",
+                    description = "Press and hold a masjid tab, then drag it to reorder.",
+                    icon = WhatsNewIcon.REORDER,
                 ),
             )
         }
@@ -73,7 +136,6 @@ object WhatsNew {
 data class WhatsNewModalCopy(
     val title: String,
     val versionPrefix: String,
-    val swipeHint: String,
     val continueLabel: String,
 ) {
     fun versionLabel(version: String): String = "$versionPrefix $version"
@@ -88,25 +150,21 @@ data class WhatsNewModalCopy(
                 "ar" -> WhatsNewModalCopy(
                     title = "تحديث مسجدلي!",
                     versionPrefix = "الإصدار",
-                    swipeHint = "مرر للمزيد",
                     continueLabel = "متابعة",
                 )
                 "ur" -> WhatsNewModalCopy(
                     title = "مسجدلی اپ ڈیٹ!",
                     versionPrefix = "ورژن",
-                    swipeHint = "مزید کے لیے اسکرول کریں",
                     continueLabel = "جاری رکھیں",
                 )
                 "id" -> WhatsNewModalCopy(
                     title = "Pembaruan Masjidly!",
                     versionPrefix = "Versi",
-                    swipeHint = "Gulir untuk lainnya",
                     continueLabel = "Lanjut",
                 )
                 else -> WhatsNewModalCopy(
                     title = "Masjidly Update!",
                     versionPrefix = "Version",
-                    swipeHint = "Scroll for more",
                     continueLabel = "Continue",
                 )
             }

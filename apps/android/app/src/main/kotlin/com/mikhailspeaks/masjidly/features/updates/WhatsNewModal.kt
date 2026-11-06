@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -20,9 +19,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -109,8 +110,6 @@ private fun WhatsNewModalContent(
     cardMutedColor: Color,
     onDismiss: () -> Unit,
 ) {
-    val shouldScrollItems = items.size > 3
-
     Column(
         modifier = Modifier.padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -136,41 +135,13 @@ private fun WhatsNewModalContent(
                     .background(cardTextColor.copy(alpha = 0.1f))
                     .padding(horizontal = 16.dp, vertical = 6.dp),
             )
-            if (shouldScrollItems) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 2.dp),
-                ) {
-                    Text(
-                        text = copy.swipeHint,
-                        style = rememberAppTextStyle(12f, FontWeight.Medium),
-                        color = cardMutedColor.copy(alpha = 0.6f),
-                    )
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = cardMutedColor.copy(alpha = 0.6f),
-                        modifier = Modifier.size(12.dp),
-                    )
-                }
-            }
         }
 
-        val itemsModifier = Modifier
-            .fillMaxWidth()
-            .then(
-                if (shouldScrollItems) {
-                    Modifier
-                        .heightIn(max = 240.dp)
-                        .verticalScroll(rememberScrollState())
-                } else {
-                    Modifier
-                },
-            )
-
         Column(
-            modifier = itemsModifier,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             items.forEach { item ->
@@ -204,6 +175,9 @@ private fun WhatsNewItemRow(
         Icon(
             imageVector = when (item.icon) {
                 WhatsNewIcon.BUG_FIX -> Icons.Default.Build
+                WhatsNewIcon.COMPARE -> Icons.Default.CompareArrows
+                WhatsNewIcon.LOCK -> Icons.Default.Lock
+                WhatsNewIcon.REORDER -> Icons.Default.SwapHoriz
                 WhatsNewIcon.GRID -> Icons.Default.Apps
                 WhatsNewIcon.HOURGLASS -> Icons.Default.HourglassEmpty
                 WhatsNewIcon.MAP -> Icons.Default.Place

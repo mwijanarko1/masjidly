@@ -17,10 +17,6 @@ struct WhatsNewModalView: View {
         WhatsNewModalCopy(locale: locale)
     }
 
-    private var shouldScrollItems: Bool {
-        items.count > 3
-    }
-
     var body: some View {
         OnboardingTutorialChrome.card(timeTheme: timeTheme) {
             VStack(spacing: 24) {
@@ -37,31 +33,19 @@ struct WhatsNewModalView: View {
                         .padding(.vertical, 6)
                         .background(timeTheme.textColor.opacity(0.1))
                         .clipShape(Capsule())
-
-                    if shouldScrollItems {
-                        // Scroll Indication
-                        HStack(spacing: 4) {
-                            Text(copy.swipeHint)
-                                .appFont(size: 12, weight: .medium)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 10, weight: .semibold))
-                        }
-                        .foregroundStyle(timeTheme.textColor.opacity(0.45))
-                        .padding(.top, 2)
-                    }
                 }
                 .padding(.top, 8)
 
-                if shouldScrollItems {
+                ViewThatFits(in: .vertical) {
+                    itemsList
+                        .padding(.horizontal, 2)
+
                     ScrollView {
                         itemsList
                             .padding(.vertical, 4)
                             .padding(.horizontal, 2)
                     }
                     .scrollIndicators(.visible)
-                } else {
-                    itemsList
-                        .padding(.horizontal, 2)
                 }
 
                 // Continue button — uses the blue-gradient capsule from onboarding
@@ -112,7 +96,6 @@ struct WhatsNewModalView: View {
 private struct WhatsNewModalCopy {
     let title: String
     let versionPrefix: String
-    let swipeHint: String
     let continueLabel: String
 
     init(locale: Locale) {
@@ -121,22 +104,18 @@ private struct WhatsNewModalCopy {
         case "ar":
             title = "تحديث مسجدلي!"
             versionPrefix = "الإصدار"
-            swipeHint = "مرر للمزيد"
             continueLabel = "متابعة"
         case "ur":
             title = "مسجدلی اپ ڈیٹ!"
             versionPrefix = "ورژن"
-            swipeHint = "مزید کے لیے اسکرول کریں"
             continueLabel = "جاری رکھیں"
         case "id":
             title = "Pembaruan Masjidly!"
             versionPrefix = "Versi"
-            swipeHint = "Gulir untuk lainnya"
             continueLabel = "Lanjut"
         default:
             title = "Masjidly Update!"
             versionPrefix = "Version"
-            swipeHint = "Scroll for more"
             continueLabel = "Continue"
         }
     }
