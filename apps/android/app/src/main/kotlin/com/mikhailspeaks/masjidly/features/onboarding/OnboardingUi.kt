@@ -67,6 +67,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.mikhailspeaks.masjidly.data.SettingsStore
 import com.mikhailspeaks.masjidly.domain.AppLanguage
@@ -488,12 +489,16 @@ fun LanguageSelectionOnboardingScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         AppLanguage.entries.forEach { lang ->
+                            // Arabic and Urdu are cursive, so negative tracking breaks the joins and the line wraps.
+                            val isCursive = lang == AppLanguage.ARABIC || lang == AppLanguage.URDU
                             Text(
                                 text = LocaleStrings.t("onboarding.language.title", lang),
                                 color = cardTextColor,
                                 style = rememberAppTextStyle(22f, FontWeight.SemiBold),
                                 textAlign = TextAlign.Center,
-                                letterSpacing = (-0.4f).sp,
+                                letterSpacing = if (isCursive) TextUnit.Unspecified else (-0.4f).sp,
+                                maxLines = 1,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
                     }
