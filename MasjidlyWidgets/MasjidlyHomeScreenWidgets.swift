@@ -150,11 +150,6 @@ private struct HomeScreenModel {
         widgetLS(key, locale: locale).uppercased()
     }
 
-    /// The snapshot formats "5:40AM"; the design wants "5:40 AM".
-    static func spacedMeridiem(_ raw: String) -> String {
-        raw.replacingOccurrences(of: #"(\d)\s*([AaPp][Mm])"#, with: "$1 $2", options: .regularExpression)
-    }
-
     /// Splits "5:40AM" into ("5:40", "AM"). 24 hour times have no meridiem. Only the first of several
     /// comma separated times is used, so five columns stay narrow.
     static func timeParts(_ raw: String) -> (clock: String, meridiem: String) {
@@ -262,8 +257,7 @@ private struct HomeCountdown: View {
         if model.remaining != nil, let target = model.state.targetDate {
             timer(target: target)
         } else {
-            Text(model.state.adhanTime)
-                .font(Font(widgetUIFont(size: fontSize, weight: .light)))
+            WidgetMeridiemText(text: model.state.adhanTime, size: fontSize, weight: .light, meridiemScale: 0.34, locale: model.locale)
                 .foregroundStyle(ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
@@ -349,6 +343,7 @@ private struct HomeCardDesign: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    private let countdownSize: CGFloat = 54
     private let adhanWidth: CGFloat = 92
     private let iqamahWidth: CGFloat = 86
 
@@ -377,28 +372,28 @@ private struct HomeCardDesign: View {
             ProgressRing(
                 prayerId: state.prayerId,
                 progress: model.progress,
-                size: 64,
+                size: 72,
                 lineWidth: 3,
                 ink: ink,
                 track: ink.opacity(0.18)
             )
-            VStack(alignment: .center, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(headline)
-                    .widgetFont(size: 13, weight: .regular, locale: model.locale)
+                    .widgetFont(size: 14, weight: .regular, locale: model.locale)
                     .foregroundStyle(ink.opacity(0.7))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                HomeCountdown(model: model, ink: ink, fontSize: 46)
+                HomeCountdown(model: model, ink: ink, fontSize: countdownSize)
                 if let remaining = model.remaining {
                     unitLabels(remaining: remaining)
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func unitLabels(remaining: TimeInterval) -> some View {
-        let width = HomeCountdown.layout(remaining: remaining, fontSize: 46).totalWidth
+        let width = HomeCountdown.layout(remaining: remaining, fontSize: countdownSize).totalWidth
         return HStack(spacing: 0) {
             ForEach(["widget.unit.hours", "widget.unit.minutes", "widget.unit.seconds"], id: \.self) { key in
                 Text(unitCaption(key))
@@ -435,7 +430,7 @@ private struct HomeCardDesign: View {
                 .foregroundStyle(ink.opacity(0.7))
                 .frame(width: adhanWidth, alignment: .trailing)
             Text(model.caption("widget.iqamah"))
-                .foregroundStyle(ink.opacity(0.5))
+                .foregroundStyle(ink.opacity(0.7))
                 .frame(width: iqamahWidth, alignment: .trailing)
         }
         .widgetFont(size: 10, weight: .medium, locale: model.locale)
@@ -444,24 +439,24 @@ private struct HomeCardDesign: View {
     }
 
     private func prayerRow(_ row: HomeScreenRow) -> some View {
-        HStack(spacing: 0) {
+        // The time being counted down to is the strong one: iqamah once the adhan has passed.
+        let iqamahDue = row.isNext && model.isIqamah
+        return HStack(spacing: 0) {
             WidgetPrayerSunPhaseIcon(prayerId: row.prayerId, color: ink, size: 30)
             Text(row.name)
-                .widgetFont(size: 17, weight: .regular, locale: model.locale)
+                .widgetFont(size: 17, weight: row.isNext ? .bold : .regular, locale: model.locale)
                 .foregroundStyle(ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .padding(.leading, 10)
             Spacer(minLength: 4)
-            Text(HomeScreenModel.spacedMeridiem(row.adhan))
-                .widgetFont(size: 17, weight: .regular, locale: model.locale)
-                .foregroundStyle(ink)
+            WidgetMeridiemText(text: row.adhan, size: 17, weight: row.isNext && !iqamahDue ? .bold : .regular, meridiemScale: 0.6, locale: model.locale)
+                .foregroundStyle(iqamahDue ? ink.opacity(0.85) : ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .frame(width: adhanWidth, alignment: .trailing)
-            Text(HomeScreenModel.spacedMeridiem(row.iqamah))
-                .widgetFont(size: 15, weight: .regular, locale: model.locale)
-                .foregroundStyle(ink.opacity(0.65))
+            WidgetMeridiemText(text: row.iqamah, size: 15, weight: iqamahDue ? .bold : .regular, meridiemScale: 0.6, locale: model.locale)
+                .foregroundStyle(iqamahDue ? ink : ink.opacity(0.85))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .frame(width: iqamahWidth, alignment: .trailing)
@@ -508,35 +503,58 @@ private struct HomeRowDesign: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             if model.remaining != nil {
-                Text(String(format: widgetLS("widget.in_format", locale: model.locale), model.abbreviatedRemaining))
+                Text(countdownPhrase)
                     .widgetFont(size: 14, weight: .regular, locale: model.locale)
                     .foregroundStyle(ink.opacity(0.65))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
             Spacer(minLength: 4)
-            Text(model.caption("widget.adhan"))
-                .foregroundStyle(ink.opacity(0.7))
-                .fixedSize()
-            Text(model.caption("widget.iqamah"))
-                .foregroundStyle(ink.opacity(0.5))
-                .fixedSize()
+            Text(model.state.mosqueDisplayName)
+                .widgetFont(size: 12, weight: .medium, locale: model.locale)
+                .foregroundStyle(ink.opacity(0.6))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
         }
-        .widgetFont(size: 9, weight: .medium, locale: model.locale)
-        .kerning(1.2)
-        .lineLimit(1)
+    }
+
+    /// Names the event being counted down to, for example "adhan in 5m" or "iqamah in 5m".
+    private var countdownPhrase: String {
+        let event = widgetLS(model.isIqamah ? "widget.iqamah" : "widget.adhan", locale: model.locale).lowercased()
+        let remaining = String(format: widgetLS("widget.in_format", locale: model.locale), model.abbreviatedRemaining)
+        return "\(event) \(remaining)"
     }
 
     private func column(_ row: HomeScreenRow) -> some View {
         VStack(spacing: 4) {
             WidgetPrayerSunPhaseIcon(prayerId: row.prayerId, color: ink, size: 48)
+                .overlay {
+                    if row.prayerId == model.state.prayerId {
+                        ProgressRing(
+                            prayerId: row.prayerId,
+                            progress: model.progress,
+                            size: 46,
+                            lineWidth: 2.5,
+                            ink: ink,
+                            track: ink.opacity(0.18),
+                            showsIcon: false
+                        )
+                    }
+                }
             Text(row.name)
-                .widgetFont(size: 14, weight: .regular, locale: model.locale)
+                .widgetFont(size: 14, weight: row.isNext ? .bold : .regular, locale: model.locale)
                 .foregroundStyle(ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-            TimeWithMeridiem(raw: row.adhan, clockSize: 19, meridiemSize: 9, ink: ink, locale: model.locale)
-            TimeWithMeridiem(raw: row.iqamah, clockSize: 15, meridiemSize: 8, ink: ink.opacity(0.65), locale: model.locale)
+            let iqamahDue = row.isNext && model.isIqamah
+            TimeWithMeridiem(
+                raw: row.adhan, clockSize: 19, meridiemSize: 9, ink: iqamahDue ? ink.opacity(0.65) : ink, locale: model.locale,
+                clockWeight: row.isNext && !iqamahDue ? .bold : .regular
+            )
+            TimeWithMeridiem(
+                raw: row.iqamah, clockSize: 15, meridiemSize: 8, ink: iqamahDue ? ink : ink.opacity(0.65), locale: model.locale,
+                clockWeight: iqamahDue ? .bold : .regular
+            )
         }
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
@@ -627,6 +645,7 @@ private struct ProgressRing: View {
     let lineWidth: CGFloat
     let ink: Color
     let track: Color
+    var showsIcon = true
 
     var body: some View {
         ZStack {
@@ -635,7 +654,9 @@ private struct ProgressRing: View {
                 .trim(from: 0, to: max(0.02, progress))
                 .stroke(ink, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            WidgetPrayerSunPhaseIcon(prayerId: prayerId, color: ink, size: size - lineWidth * 2)
+            if showsIcon {
+                WidgetPrayerSunPhaseIcon(prayerId: prayerId, color: ink, size: size - lineWidth * 2)
+            }
         }
         .frame(width: size, height: size)
     }

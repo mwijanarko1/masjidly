@@ -385,8 +385,7 @@ struct MasjidlyPrayerWidgetView: View {
                     .minimumScaleFactor(0.6)
             }
 
-            Text(entry.state.adhanTime)
-                .widgetFont(size: max(timeSize, 24), weight: .light, locale: entry.locale)
+            WidgetMeridiemText(text: entry.state.adhanTime, size: max(timeSize, 24), weight: .light, meridiemScale: 0.4, locale: entry.locale)
                 .foregroundStyle(textColor)
                 .monospacedDigit()
                 .lineLimit(1)
@@ -473,8 +472,7 @@ struct MasjidlyPrayerWidgetView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
 
-                        Text(row.adhan)
-                            .widgetFont(size: 20, weight: .regular, locale: entry.locale)
+                        WidgetMeridiemText(text: row.adhan, size: 20, weight: .regular, meridiemScale: 0.6, locale: entry.locale)
                             .monospacedDigit()
                             .foregroundStyle(textColor)
                             .lineLimit(1)
@@ -560,8 +558,7 @@ struct MasjidlyPrayerWidgetView: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
 
-                        Text(row.adhan)
-                            .widgetFont(size: 24, weight: .regular, locale: entry.locale)
+                        WidgetMeridiemText(text: row.adhan, size: 24, weight: .regular, meridiemScale: 0.6, locale: entry.locale)
                             .monospacedDigit()
                             .foregroundStyle(textColor)
                             .lineLimit(1)
@@ -737,8 +734,7 @@ struct MasjidlyPrayerWidgetView: View {
                 .layoutPriority(1)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
 
-            Text(row.adhan)
-                .widgetFont(size: metrics.bodyFontSize, weight: timeWeight, locale: entry.locale)
+            WidgetMeridiemText(text: row.adhan, size: metrics.bodyFontSize, weight: timeWeight, meridiemScale: 0.7, locale: entry.locale)
                 .monospacedDigit()
                 .foregroundStyle(isNext ? .primary : (isPassed ? .tertiary : .secondary))
                 .widgetFittingLine(minimumScale: 0.85)
@@ -789,8 +785,7 @@ struct MasjidlyPrayerWidgetView: View {
             if showLiveCountdown, let target = state.targetDate {
                 largeHeroCountdownClock(target: target, textColor: textColor)
             } else {
-                Text(state.adhanTime)
-                    .widgetFont(size: 32, weight: .regular, locale: entry.locale)
+                WidgetMeridiemText(text: state.adhanTime, size: 32, weight: .regular, meridiemScale: 0.45, locale: entry.locale)
                     .foregroundStyle(textColor)
                     .monospacedDigit()
                     .multilineTextAlignment(.center)
