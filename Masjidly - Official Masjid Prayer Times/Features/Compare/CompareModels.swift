@@ -197,6 +197,8 @@ struct CompareFindHit: Equatable, Identifiable, Sendable {
 struct CompareFindResult: Equatable, Sendable {
     let hits: [CompareFindHit]
     let noFixedTimeCount: Int
+    /// Slots exactly at the chosen time. Only filled for "before", where they are excluded from `hits`.
+    var atTimeHits: [CompareFindHit] = []
 }
 
 enum CompareFinder {
@@ -208,6 +210,7 @@ enum CompareFinder {
     static func search(query: CompareFindQuery, entries: [Entry]) -> CompareFindResult {
         let scope = query.prayer.map { [$0] } ?? ComparePrayer.allCases
         var hits: [CompareFindHit] = []
+        var atTime: [CompareFindHit] = []
         var noFixed = 0
 
         for entry in entries {
@@ -224,23 +227,29 @@ enum CompareFinder {
                 }
                 for slot in candidates {
                     guard let minutes = slot.minutes else { continue }
-                    let matches = query.direction == .after ? minutes >= query.minutes : minutes <= query.minutes
+                    let matches = query.direction == .after ? minutes >= query.minutes : minutes < query.minutes
                     if matches {
                         hits.append(CompareFindHit(mosque: entry.mosque, prayer: prayer, raw: slot.raw, minutes: minutes))
+                    } else if query.direction == .before && minutes == query.minutes {
+                        atTime.append(CompareFindHit(mosque: entry.mosque, prayer: prayer, raw: slot.raw, minutes: minutes))
                     }
                 }
             }
             if hasNoFixed { noFixed += 1 }
         }
 
-        hits.sort { a, b in
-            if a.minutes != b.minutes {
-                return query.direction == .after ? a.minutes < b.minutes : a.minutes > b.minutes
-            }
+        func byNameThenPrayer(_ a: CompareFindHit, _ b: CompareFindHit) -> Bool {
             let byName = a.mosque.name.localizedCaseInsensitiveCompare(b.mosque.name)
             if byName != .orderedSame { return byName == .orderedAscending }
             return a.prayer.rawValue < b.prayer.rawValue
         }
-        return CompareFindResult(hits: hits, noFixedTimeCount: noFixed)
+        hits.sort { a, b in
+            if a.minutes != b.minutes {
+                return query.direction == .after ? a.minutes < b.minutes : a.minutes > b.minutes
+            }
+            return byNameThenPrayer(a, b)
+        }
+        atTime.sort(by: byNameThenPrayer)
+        return CompareFindResult(hits: hits, noFixedTimeCount: noFixed, atTimeHits: atTime)
     }
 }

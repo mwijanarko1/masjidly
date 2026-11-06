@@ -9,6 +9,8 @@ struct CompareFindView: View {
 
     @State private var showingTimeSheet = false
     @State private var cityOpen = false
+    /// The query whose exact-time matches the user chose to reveal. Any query change hides them again.
+    @State private var revealedAtTimeQuery: CompareFindQuery?
 
     var body: some View {
         let result = model.findResult
@@ -18,7 +20,7 @@ struct CompareFindView: View {
                 controls
                 resultsHeader
                 if result.hits.isEmpty && !model.isLoadingFind {
-                    emptyResults
+                    emptyResults(atTimeHits: result.atTimeHits)
                 } else {
                     ForEach(result.hits) { hit in
                         resultRow(hit)
@@ -265,41 +267,36 @@ struct CompareFindView: View {
         }
     }
 
-    private var emptyKey: String {
-        switch (model.query.type, model.query.direction) {
-        case (.jamaat, .after): return "compare.find.empty"
-        case (.jamaat, .before): return "compare.find.empty.jamaatBefore"
-        case (.adhan, .after): return "compare.find.empty.adhanAfter"
-        case (.adhan, .before): return "compare.find.empty.adhanBefore"
-        }
-    }
-
     private var resultsHeader: some View {
-        Text(String(format: compareLS(headerKey, locale: locale), timeText, model.cityLabel))
-            .appFont(size: 16, weight: .semibold)
+        MeridiemText(text: String(format: compareLS(headerKey, locale: locale), timeText, model.cityLabel), size: 16, weight: .semibold, meridiemScale: 0.75)
             .foregroundStyle(appearance.textColor)
             .padding(.top, 4)
     }
 
-    private var emptyResults: some View {
+    private func emptyResults(atTimeHits: [CompareFindHit]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(String(format: compareLS(emptyKey, locale: locale), timeText))
+            Text(compareLS("compare.find.empty", locale: locale))
                 .appFont(size: 15)
                 .foregroundStyle(appearance.textColor.opacity(0.75))
-            if model.isToday {
-                Button {
-                    HapticFeedback.buttonTap()
-                    model.stepDay(1)
-                } label: {
-                    Text(compareLS("compare.find.nextDay", locale: locale))
-                        .appFont(size: 14, weight: .semibold)
-                        .foregroundStyle(appearance.usesLightForeground ? Color.black : Color.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Capsule().fill(appearance.textColor.opacity(0.92)))
+            if !atTimeHits.isEmpty {
+                if revealedAtTimeQuery == model.query {
+                    ForEach(atTimeHits) { hit in
+                        resultRow(hit)
+                    }
+                } else {
+                    Button {
+                        HapticFeedback.buttonTap()
+                        revealedAtTimeQuery = model.query
+                    } label: {
+                        MeridiemText(text: String(format: compareLS("compare.find.showAtTime", locale: locale), timeText), size: 14, weight: .semibold, meridiemScale: 0.75)
+                            .foregroundStyle(appearance.textColor)
+                            .underline()
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.hapticPlain)
+                    .accessibilityIdentifier("Compare.Find.ShowAtTime")
                 }
-                .buttonStyle(.hapticPlain)
-                .accessibilityIdentifier("Compare.Find.NextDay")
             }
         }
     }
