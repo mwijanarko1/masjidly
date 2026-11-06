@@ -717,7 +717,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Masjidly;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Use your current location and device heading to point the Qibla indicator toward Makkah.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Use your current location to find the nearest mosque, and your device heading to point the Qibla indicator toward Makkah.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Schedule local reminders for upcoming prayer and iqamah times for your selected mosque.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -762,7 +762,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Masjidly;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Use your current location and device heading to point the Qibla indicator toward Makkah.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Use your current location to find the nearest mosque, and your device heading to point the Qibla indicator toward Makkah.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Schedule local reminders for upcoming prayer and iqamah times for your selected mosque.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
