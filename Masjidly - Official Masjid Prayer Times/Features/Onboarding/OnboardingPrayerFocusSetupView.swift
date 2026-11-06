@@ -65,7 +65,6 @@ struct OnboardingPrayerFocusAppsView: View {
     /// Owned here so HomeView does not observe Prayer Focus and re-render on every reschedule.
     @Bindable private var prayerFocus = PrayerFocusController.shared
     @State private var isRequestingAuthorization = false
-    @State private var authorizationFailed = false
     /// Local picker state; binding directly to `@Observable` selection often fails to commit on Done.
     @State private var isPickerPresented = false
     @State private var pickerSelection = FamilyActivitySelection()
@@ -104,16 +103,12 @@ struct OnboardingPrayerFocusAppsView: View {
                         Button {
                             guard !isRequestingAuthorization else { return }
                             isRequestingAuthorization = true
-                            authorizationFailed = false
                             Task {
                                 // Only request access here; Prayer Focus turns on at Finish.
-                                do {
-                                    try await prayerFocus.requestAuthorization()
-                                } catch {
-                                    authorizationFailed = true
-                                }
-                                authorizationFailed = authorizationFailed || !prayerFocus.isAuthorized
+                                try? await prayerFocus.requestAuthorization()
                                 isRequestingAuthorization = false
+                                // A denial ends Prayer Focus setup. The app stays usable without it.
+                                if !prayerFocus.isAuthorized { onSkip() }
                             }
                         } label: {
                             Group {
@@ -124,7 +119,7 @@ struct OnboardingPrayerFocusAppsView: View {
                                         .padding(.vertical, 16)
                                         .background(HomeDesign.Colors.activeGradient, in: Capsule())
                                 } else {
-                                    Text(localized("settings.prayer_focus.allow_access"))
+                                    Text(localized("onboarding.continue"))
                                         .onboardingPrimaryCapsule()
                                 }
                             }
@@ -132,15 +127,6 @@ struct OnboardingPrayerFocusAppsView: View {
                         .buttonStyle(.hapticPlain)
                         .disabled(isRequestingAuthorization)
                         .accessibilityIdentifier("Onboarding.PrayerFocusAllowScreenTime")
-
-                        if authorizationFailed {
-                            Text(localized("settings.prayer_focus.status.needs_authorization"))
-                                .appFont(size: 14, weight: .medium)
-                                .foregroundStyle(timeTheme.textColor.opacity(0.72))
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: .infinity)
-                                .accessibilityIdentifier("Onboarding.PrayerFocusAuthorizationError")
-                        }
                     } else if canContinue {
                         // Tapping the selection card reopens the picker, so no separate "Choose apps" button.
                         Button {
@@ -186,15 +172,19 @@ struct OnboardingPrayerFocusAppsView: View {
                         .accessibilityIdentifier("Onboarding.PrayerFocusChooseApps")
                     }
 
-                    Button(action: onSkip) {
-                        Text(localized("onboarding.location.skip"))
-                            .appFont(size: 16, weight: .semibold)
-                            .foregroundStyle(timeTheme.textColor.opacity(0.72))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                    // The Screen Time explanation must lead to the system request, so Skip only
+                    // appears on the app-picker step, after access was decided.
+                    if prayerFocus.isAuthorized {
+                        Button(action: onSkip) {
+                            Text(localized("onboarding.location.skip"))
+                                .appFont(size: 16, weight: .semibold)
+                                .foregroundStyle(timeTheme.textColor.opacity(0.72))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.hapticPlain)
+                        .accessibilityIdentifier("Onboarding.PrayerFocusAppsSkip")
                     }
-                    .buttonStyle(.hapticPlain)
-                    .accessibilityIdentifier("Onboarding.PrayerFocusAppsSkip")
                 }
                 .animation(.easeInOut(duration: 0.25), value: canContinue)
                 .onboardingEntrance(1)

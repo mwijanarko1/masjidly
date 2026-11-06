@@ -108,7 +108,6 @@ private extension AppLanguage {
 struct LocationPermissionOnboardingView: View {
     let timeTheme: HomeDesign.TimeTheme
     let onAllow: () -> Void
-    let onSkip: () -> Void
     @Environment(\.locale) private var locale
 
     var body: some View {
@@ -141,24 +140,12 @@ struct LocationPermissionOnboardingView: View {
                     }
                     .onboardingEntrance(0)
 
-                    VStack(spacing: 12) {
-                        Button(action: onAllow) {
-                            Text(localized("onboarding.location.turn_on"))
-                                .onboardingPrimaryCapsule()
-                        }
-                        .buttonStyle(.hapticPlain)
-                        .accessibilityIdentifier("Onboarding.LocationAllow")
-
-                        Button(action: onSkip) {
-                            Text(localized("onboarding.location.skip"))
-                                .appFont(size: 16, weight: .semibold)
-                                .foregroundStyle(timeTheme.textColor.opacity(0.72))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                        }
-                        .buttonStyle(.hapticPlain)
-                        .accessibilityIdentifier("Onboarding.LocationSkip")
+                    Button(action: onAllow) {
+                        Text(localized("onboarding.continue"))
+                            .onboardingPrimaryCapsule()
                     }
+                    .buttonStyle(.hapticPlain)
+                    .accessibilityIdentifier("Onboarding.LocationAllow")
                     .onboardingEntrance(1)
                 }
                 .padding(24)

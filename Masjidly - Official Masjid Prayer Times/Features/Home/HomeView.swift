@@ -1252,10 +1252,6 @@ struct HomeView: View {
                             finishOnboardingLocationStep()
                         }
                     }
-                },
-                onSkip: {
-                    awaitingOnboardingLocationPermission = false
-                    onboarding.continueAfterLocationStep()
                 }
             )
         case .chooseMosque:
