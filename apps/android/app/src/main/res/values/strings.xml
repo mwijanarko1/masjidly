@@ -9,6 +9,12 @@
     <string name="masjidly_prayer_widget_small_description">Shows the next prayer time.</string>
     <string name="masjidly_prayer_widget_medium_description">Shows today’s prayer timetable.</string>
     <string name="masjidly_prayer_widget_large_description">Shows the next prayer and full timetable.</string>
+    <string name="masjidly_home_card_name">Masjid Card</string>
+    <string name="masjidly_home_card_description">Live countdown ring with all five prayers, adhan and iqamah.</string>
+    <string name="masjidly_home_row_name">Prayer Row</string>
+    <string name="masjidly_home_row_description">All five prayers in a row with the next one highlighted.</string>
+    <string name="masjidly_home_small_name">Next Prayer</string>
+    <string name="masjidly_home_small_description">The next prayer with a progress ring, its adhan time and the iqamah time.</string>
     <string name="masjidly_lock_progress_name">Prayer Progress</string>
     <string name="masjidly_lock_progress_description">Next prayer with a progress bar and iqamah time.</string>
     <string name="masjidly_lock_strip_name">Prayer Strip</string>

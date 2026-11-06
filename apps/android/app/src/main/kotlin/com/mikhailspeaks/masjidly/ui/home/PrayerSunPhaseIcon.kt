@@ -26,17 +26,22 @@ fun PrayerSunPhaseIcon(
     Canvas(
         modifier = modifier.size(width = 100.dp, height = 88.dp),
     ) {
-        val thin = Stroke(width = 1.8f * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
-        val medium = Stroke(width = 2.2f * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
-        val cx = size.width * 0.5f
-        when (theme.timeTheme) {
-            TimeTheme.FAJR -> drawFajr(cx, color, thin)
-            TimeTheme.SUNRISE -> drawSunrise(cx, color, thin, medium)
-            TimeTheme.DHUHR -> drawDhuhr(cx, color, thin, medium)
-            TimeTheme.ASR -> drawAsr(cx, color, thin, medium)
-            TimeTheme.MAGHRIB -> drawMaghrib(cx, color, thin, medium)
-            TimeTheme.ISHA, TimeTheme.TAHAJJUD -> drawIsha(cx, color, thin, medium)
-        }
+        drawPrayerSunPhase(theme.timeTheme, color)
+    }
+}
+
+/** Draws the sun/moon line art on a 100x88 dp reference canvas. Also used to render widget bitmaps. */
+fun DrawScope.drawPrayerSunPhase(timeTheme: TimeTheme, color: Color) {
+    val thin = Stroke(width = 1.8f * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    val medium = Stroke(width = 2.2f * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    val cx = size.width * 0.5f
+    when (timeTheme) {
+        TimeTheme.FAJR -> drawFajr(cx, color, thin)
+        TimeTheme.SUNRISE -> drawSunrise(cx, color, thin, medium)
+        TimeTheme.DHUHR -> drawDhuhr(cx, color, thin, medium)
+        TimeTheme.ASR -> drawAsr(cx, color, thin, medium)
+        TimeTheme.MAGHRIB -> drawMaghrib(cx, color, thin, medium)
+        TimeTheme.ISHA, TimeTheme.TAHAJJUD -> drawIsha(cx, color, thin, medium)
     }
 }
 

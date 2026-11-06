@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static picker preview for the Masjid Card widget (4x4). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="250dp"
+    android:layout_height="250dp"
+    android:background="@drawable/widget_sky_maghrib_modern"
+    android:orientation="vertical"
+    android:padding="14dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Masjid Al-Huda"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="THURSDAY"
+            android:textColor="#990F172A"
+            android:textSize="8sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+    <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="The Adhan of Asr is in"
+            android:textColor="#B30F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+    <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="23:20"
+            android:textColor="#FF0F172A"
+            android:textSize="28sp"
+            android:textStyle="normal" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_marginTop="5dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Fajr"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="5:18 AM"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="   6:15"
+            android:textColor="#B30F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_marginTop="5dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Dhuhr"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="11:53 AM"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="   1:00"
+            android:textColor="#B30F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_marginTop="5dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Asr"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="2:36 PM"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="   3:15"
+            android:textColor="#B30F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_marginTop="5dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Maghrib"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="4:29 PM"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="   4:29"
+            android:textColor="#B30F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_marginTop="5dp">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Isha"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="6:23 PM"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="normal" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="   6:45"
+            android:textColor="#B30F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+</LinearLayout>

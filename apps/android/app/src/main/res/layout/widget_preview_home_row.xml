@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static picker preview for the Prayer Row widget (4x2). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="250dp"
+    android:layout_height="110dp"
+    android:background="@drawable/widget_sky_dhuhr_modern"
+    android:orientation="vertical"
+    android:padding="10dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Asr  adhan in 24m"
+            android:textColor="#FF0F172A"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Masjid Al-Huda"
+            android:textColor="#990F172A"
+            android:textSize="9sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_marginTop="14dp">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Fajr"
+            android:textColor="#FF0F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="5:18"
+            android:textColor="#FF0F172A"
+            android:textSize="13sp"
+            android:textStyle="normal" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="6:15"
+            android:textColor="#A60F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Dhuhr"
+            android:textColor="#FF0F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="11:53"
+            android:textColor="#FF0F172A"
+            android:textSize="13sp"
+            android:textStyle="normal" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="1:00"
+            android:textColor="#A60F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Asr"
+            android:textColor="#FF0F172A"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="2:36"
+            android:textColor="#FF0F172A"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="3:15"
+            android:textColor="#A60F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Maghrib"
+            android:textColor="#FF0F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="4:29"
+            android:textColor="#FF0F172A"
+            android:textSize="13sp"
+            android:textStyle="normal" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="4:29"
+            android:textColor="#A60F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="Isha"
+            android:textColor="#FF0F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="6:23"
+            android:textColor="#FF0F172A"
+            android:textSize="13sp"
+            android:textStyle="normal" />
+            <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="6:45"
+            android:textColor="#A60F172A"
+            android:textSize="10sp"
+            android:textStyle="normal" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

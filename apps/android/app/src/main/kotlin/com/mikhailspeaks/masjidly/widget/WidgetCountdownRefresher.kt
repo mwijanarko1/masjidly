@@ -121,10 +121,14 @@ object WidgetCountdownRefresher {
         }.getOrDefault(false)
     }
 
+    /** Widgets that show a whole day move to tomorrow after Isha instead of showing tomorrow's Fajr. */
     private suspend fun hasLargeWidget(context: Context): Boolean {
-        return GlanceAppWidgetManager(context)
-            .getGlanceIds(MasjidlyPrayerLargeWidget::class.java)
-            .isNotEmpty()
+        val manager = GlanceAppWidgetManager(context)
+        return listOf(
+            MasjidlyPrayerLargeWidget::class.java,
+            MasjidlyHomeCardWidget::class.java,
+            MasjidlyHomeRowWidget::class.java,
+        ).any { manager.getGlanceIds(it).isNotEmpty() }
     }
 
     private fun pendingIntent(context: Context): PendingIntent {

@@ -192,6 +192,42 @@
         </receiver>
 
         <receiver
+            android:name=".widget.MasjidlyHomeCardWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_home_card_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_home_card_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyHomeRowWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_home_row_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_home_row_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MasjidlyHomeSmallWidgetReceiver"
+            android:exported="true"
+            android:label="@string/masjidly_home_small_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/masjidly_home_small_widget_info" />
+        </receiver>
+
+        <receiver
             android:name=".widget.MasjidlyLockProgressWidgetReceiver"
             android:exported="true"
             android:label="@string/masjidly_lock_progress_name">

@@ -175,6 +175,8 @@ Needs Usage Access, Display over other apps, and Alarms & reminders. Status neve
 | Feature | iOS | Android | Status | Convex |
 |---------|-----|---------|--------|--------|
 | Home screen widget (small / medium / large) | `MasjidlyWidgets` | `MasjidlyPrayerWidget` (Glance) | **done** | prayer payload |
+| Home screen designs (card / row / next prayer) | `MasjidlyHomeScreenWidgets.swift` | `HomeScreenWidgets.kt` + `HomeScreenWidgetContent.kt` | **done** (no HRS/MIN/SEC captions under the card countdown) | snapshot |
+| Lock screen designs (six) | `MasjidlyLockScreenWidgets.swift` | `LockScreenWidgets.kt` | **done**, not checked on a device | snapshot |
 | Widget timeline refresh | `WidgetPrayerSnapshotService` | `WidgetPrayerSnapshotService` | **done** | — |
 
 ---
