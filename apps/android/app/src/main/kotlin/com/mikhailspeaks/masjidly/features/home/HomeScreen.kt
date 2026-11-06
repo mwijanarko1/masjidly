@@ -40,6 +40,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -147,6 +148,7 @@ fun HomeScreen(
     onboardingViewModel: OnboardingFlowViewModel,
     closestMosquePromptTestTrigger: Int = 0,
     onOpenTimetable: () -> Unit,
+    onOpenCompare: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val settingsRevision by settingsStore.revision.collectAsState()
@@ -331,6 +333,7 @@ fun HomeScreen(
             highlightTimetable = highlightTimetable,
             highlightSettings = highlightSettings,
             onOpenTimetable = onOpenTimetable,
+            onOpenCompare = onOpenCompare,
             onOpenSettings = onOpenSettings,
             onPreviousDay = viewModel::goToPreviousDay,
             onNextDay = viewModel::goToNextDay,
@@ -551,6 +554,7 @@ private fun HomeTopChrome(
     highlightTimetable: Boolean,
     highlightSettings: Boolean,
     onOpenTimetable: () -> Unit,
+    onOpenCompare: () -> Unit,
     onOpenSettings: () -> Unit,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
@@ -589,9 +593,12 @@ private fun HomeTopChrome(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
-            Box(modifier = Modifier.padding(start = chromeInset)) {
+            Column(
+                modifier = Modifier.padding(start = chromeInset),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 OnboardingHighlight(
                     highlighted = highlightTimetable,
                     theme = theme,
@@ -612,6 +619,21 @@ private fun HomeTopChrome(
                             modifier = Modifier.size(20.dp),
                         )
                     }
+                }
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.18f))
+                        .hapticClickable(onClick = onOpenCompare),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Default.CompareArrows,
+                        contentDescription = LocaleStrings.t("accessibility.compare", language),
+                        tint = textColor,
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
             }
 

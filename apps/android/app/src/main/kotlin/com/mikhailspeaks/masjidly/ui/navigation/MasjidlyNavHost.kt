@@ -13,6 +13,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mikhailspeaks.masjidly.data.SettingsStore
+import com.mikhailspeaks.masjidly.domain.MosqueSelection
+import com.mikhailspeaks.masjidly.features.compare.CompareScreen
 import com.mikhailspeaks.masjidly.features.home.HomeScreen
 import com.mikhailspeaks.masjidly.features.home.HomeViewModel
 import com.mikhailspeaks.masjidly.features.notifications.PrayerNotificationScheduler
@@ -49,6 +51,7 @@ fun MasjidlyNavHost(
                 onboardingViewModel = onboardingViewModel,
                 closestMosquePromptTestTrigger = closestMosquePromptTestTrigger,
                 onOpenTimetable = { navController.navigate(MasjidlyDestination.Timetable) },
+                onOpenCompare = { navController.navigate(MasjidlyDestination.Compare) },
                 onOpenSettings = { navController.navigate(MasjidlyDestination.Settings) },
             )
         }
@@ -58,6 +61,29 @@ fun MasjidlyNavHost(
                 settingsStore = settingsStore,
                 onboardingViewModel = onboardingViewModel,
                 onBack = {
+                    navController.popBackStack()
+                },
+            )
+        }
+        composable(MasjidlyDestination.Compare) {
+            CompareScreen(
+                homeViewModel = homeViewModel,
+                settingsStore = settingsStore,
+                onBack = { navController.popBackStack() },
+                onOpenMosque = { mosque ->
+                    if (mosque.id !in settingsStore.openMosqueTabIds) {
+                        val current = settingsStore.openMosqueTabIds.ifEmpty {
+                            listOfNotNull(settingsStore.selectedMosqueId)
+                        }
+                        settingsStore.openMosqueTabIds = current + mosque.id
+                    }
+                    settingsStore.activateMosqueSelection(
+                        id = mosque.id,
+                        slug = mosque.slug,
+                        cityGroupingKey = mosque.cityGroupingKey,
+                        countryGroupingKey = MosqueSelection.countryGroupingKey(mosque),
+                    )
+                    homeViewModel.applySelectionFromSettings(tabSwitch = true)
                     navController.popBackStack()
                 },
             )

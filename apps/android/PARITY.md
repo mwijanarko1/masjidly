@@ -56,6 +56,18 @@ Android implementation: `ConvexHttpClient` → official Convex HTTP `/api/query`
 
 ---
 
+## Compare (`Features/Compare`)
+
+| Feature | iOS | Android | Status | Convex |
+|---------|-----|---------|--------|--------|
+| Compare button on Home, full screen | `compareButton` | `CompareScreen` route `compare` | **done** | - |
+| Masjids grid, deltas, sort, Adhan/Iqamah toggle | `CompareMasjidsView` | `CompareMasjidsContent` | **done** | monthly + Ramadan |
+| By time search | `CompareFindView` | `CompareFindContent` | **done** | monthly + Ramadan |
+| Masjid picker (limit 10, home pinned) | `CompareMosquePicker` | `CompareMosquePicker` | **done** | - |
+| Open on Home from a row or result | `openMosqueFromCompare` | `MasjidlyNavHost` | **done** | - |
+
+---
+
 ## Timetable (`TimetableView`)
 
 | Feature | iOS | Android | Status | Convex |

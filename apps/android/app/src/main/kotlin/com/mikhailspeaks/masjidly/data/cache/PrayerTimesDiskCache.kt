@@ -7,6 +7,7 @@ import com.mikhailspeaks.masjidly.domain.MonthPrayerData
 import com.mikhailspeaks.masjidly.domain.Mosque
 import com.mikhailspeaks.masjidly.domain.PrayerDataVersions
 import com.mikhailspeaks.masjidly.domain.RamadanPrayerData
+import com.mikhailspeaks.masjidly.features.compare.CompareCache
 import java.io.File
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -14,7 +15,7 @@ import kotlinx.serialization.json.Json
 /**
  * JSON file cache — mirrors iOS `PrayerTimesDiskCache.swift`.
  */
-class PrayerTimesDiskCache(context: Context) {
+class PrayerTimesDiskCache(context: Context) : CompareCache {
     private val cacheDir = File(context.applicationContext.filesDir, "PrayerTimesCache").also { it.mkdirs() }
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
@@ -51,32 +52,32 @@ class PrayerTimesDiskCache(context: Context) {
         save(DATA_REVISION_FILE, revision)
     }
 
-    fun loadVersions(slug: String, month: String, year: Int): CachedPrayerDataVersions? =
+    override fun loadVersions(slug: String, month: String, year: Int): CachedPrayerDataVersions? =
         load<CachedPrayerDataVersions>(versionsFilename(slug, month, year))
 
-    fun saveVersions(slug: String, month: String, year: Int, versions: PrayerDataVersions) {
+    override fun saveVersions(slug: String, month: String, year: Int, versions: PrayerDataVersions) {
         save(versionsFilename(slug, month, year), CachedPrayerDataVersions(versions, System.currentTimeMillis()))
     }
 
-    fun loadMonthly(slug: String, month: String, year: Int): MonthPrayerData? {
+    override fun loadMonthly(slug: String, month: String, year: Int): MonthPrayerData? {
         val name = monthlyFilename(slug, month, year)
         return load<MonthPrayerDataCache>(name)?.toDomain()
     }
 
-    fun saveMonthly(slug: String, month: String, year: Int, data: MonthPrayerData) {
+    override fun saveMonthly(slug: String, month: String, year: Int, data: MonthPrayerData) {
         save(monthlyFilename(slug, month, year), data.toCache())
     }
 
-    fun removeMonthly(slug: String, month: String, year: Int) {
+    override fun removeMonthly(slug: String, month: String, year: Int) {
         file(monthlyFilename(slug, month, year)).delete()
     }
 
-    fun loadRamadan(slug: String, date: String): RamadanPrayerData? {
+    override fun loadRamadan(slug: String, date: String): RamadanPrayerData? {
         val name = ramadanFilename(slug, date)
         return load<RamadanPrayerDataCache>(name)?.toDomain()
     }
 
-    fun saveRamadan(slug: String, date: String, data: RamadanPrayerData) {
+    override fun saveRamadan(slug: String, date: String, data: RamadanPrayerData) {
         save(ramadanFilename(slug, date), data.toCache())
     }
 

@@ -4,6 +4,8 @@ import android.content.Context
 import com.mikhailspeaks.masjidly.domain.AppLanguage
 import com.mikhailspeaks.masjidly.domain.AsrIqamahPreference
 import com.mikhailspeaks.masjidly.domain.NotificationSettings
+import com.mikhailspeaks.masjidly.features.compare.CompareMode
+import com.mikhailspeaks.masjidly.features.compare.CompareSettings
 import com.mikhailspeaks.masjidly.features.prayerfocus.PrayerFocusSettings
 import com.mikhailspeaks.masjidly.ui.home.CustomSkyGradientColors
 import com.mikhailspeaks.masjidly.ui.home.ResolvedTheme
@@ -21,7 +23,7 @@ import java.time.Instant
 /**
  * Persisted user preferences — mirrors iOS `SettingsStore.swift`.
  */
-class SettingsStore(context: Context) {
+class SettingsStore(context: Context) : CompareSettings {
     private val appContext = context.applicationContext
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -82,7 +84,7 @@ class SettingsStore(context: Context) {
         bump()
     }
 
-    var selectedCityGroupingKey: String?
+    override var selectedCityGroupingKey: String?
         get() = prefs.getString(KEY_SELECTED_CITY_GROUPING, null)
         set(value) {
             prefs.edit().putString(KEY_SELECTED_CITY_GROUPING, value).apply()
@@ -96,6 +98,20 @@ class SettingsStore(context: Context) {
             bump()
         }
 
+    override var compareMosqueIds: List<String>
+        get() = prefs.getString(KEY_COMPARE_MOSQUE_IDS, null)?.let { runCatching { json.decodeFromString<List<String>>(it) }.getOrNull() } ?: emptyList()
+        set(value) {
+            prefs.edit().putString(KEY_COMPARE_MOSQUE_IDS, json.encodeToString(value)).apply()
+            bump()
+        }
+
+    override var compareMode: CompareMode
+        get() = CompareMode.fromWire(prefs.getString(KEY_COMPARE_MODE, null))
+        set(value) {
+            prefs.edit().putString(KEY_COMPARE_MODE, value.wire).apply()
+            bump()
+        }
+
     var uses24HourTime: Boolean
         get() = prefs.getBoolean(KEY_USES_24H, false)
         set(value) {
@@ -103,7 +119,7 @@ class SettingsStore(context: Context) {
             bump()
         }
 
-    var asrIqamahPreference: AsrIqamahPreference
+    override var asrIqamahPreference: AsrIqamahPreference
         get() = AsrIqamahPreference.fromWire(prefs.getString(KEY_ASR_IQAMAH_PREF, null))
         set(value) {
             prefs.edit().putString(KEY_ASR_IQAMAH_PREF, value.wireValue).apply()
@@ -375,6 +391,8 @@ class SettingsStore(context: Context) {
         private const val KEY_SELECTED_MOSQUE_SLUG = "selectedMosqueSlug"
         private const val KEY_OPEN_MOSQUE_TAB_IDS = "openMosqueTabIds"
         private const val KEY_ACTIVE_MOSQUE_TAB_ID = "activeMosqueTabId"
+        private const val KEY_COMPARE_MOSQUE_IDS = "compareMosqueIds"
+        private const val KEY_COMPARE_MODE = "compareMode"
         private const val KEY_SELECTED_CITY_GROUPING = "selectedCityGroupingKey"
         private const val KEY_SELECTED_COUNTRY_GROUPING = "selectedCountryGroupingKey"
         private const val KEY_USES_24H = "uses24HourTime"

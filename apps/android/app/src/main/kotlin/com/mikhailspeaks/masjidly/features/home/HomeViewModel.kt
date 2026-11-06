@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mikhailspeaks.masjidly.data.SettingsStore
 import com.mikhailspeaks.masjidly.data.cache.PrayerTimesDiskCache
+import com.mikhailspeaks.masjidly.features.compare.CompareDataStore
 import com.mikhailspeaks.masjidly.domain.DailyIqamahTimes
 import com.mikhailspeaks.masjidly.domain.DailyPrayerTimes
 import com.mikhailspeaks.masjidly.domain.MonthName
@@ -82,6 +83,9 @@ class HomeViewModel(
     private fun displayedMosque(mosques: List<Mosque>): Mosque? =
         mosques.firstOrNull { it.id == settings.activeMosqueTabId && it.id in settings.openMosqueTabIds }
             ?: defaultMosque(mosques)
+
+    /** A fresh Compare data store over the same repository and disk cache as Home. */
+    fun makeCompareDataStore() = CompareDataStore(repository, diskCache)
 
     init {
         load()
