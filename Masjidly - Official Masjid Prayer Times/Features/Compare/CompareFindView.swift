@@ -132,8 +132,7 @@ struct CompareFindView: View {
                 showingTimeSheet = true
             } label: {
                 HStack(spacing: 8) {
-                    Text(timeText)
-                        .appFont(size: 40, weight: .semibold)
+                    MeridiemText(text: timeText, size: 40, weight: .semibold, meridiemScale: 0.45)
                         .monospacedDigit()
                         .foregroundStyle(appearance.textColor)
                         .lineLimit(1)
@@ -223,8 +222,7 @@ struct CompareFindView: View {
             HapticFeedback.buttonTap()
             model.searchLaterThanYours()
         } label: {
-            Text(String(format: compareLS("compare.find.laterThanYours", locale: locale), shown))
-                .appFont(size: 14, weight: .medium)
+            MeridiemText(text: String(format: compareLS("compare.find.laterThanYours", locale: locale), shown), size: 14, weight: .medium, meridiemScale: 0.75)
                 .foregroundStyle(appearance.textColor.opacity(0.75))
                 .underline()
                 .padding(.vertical, 6)
@@ -317,8 +315,7 @@ struct CompareFindView: View {
                                 .appFont(size: 12, weight: .medium)
                                 .foregroundStyle(appearance.textColor.opacity(0.6))
                         }
-                        Text(time)
-                            .appFont(size: 18, weight: .semibold)
+                        MeridiemText(text: time, size: 18, weight: .semibold, meridiemScale: 0.65)
                             .foregroundStyle(appearance.textColor)
                     }
                     .frame(minWidth: 72, alignment: .leading)
