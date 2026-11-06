@@ -444,8 +444,7 @@ struct MinimalistPrayerPage: View {
 
     private func timeBlock(timeSize: CGFloat, iqamahSize: CGFloat) -> some View {
         VStack(spacing: 6 * scale) {
-            Text(prayerTime)
-                .appFont(size: timeSize, weight: .light)
+            MeridiemText(text: prayerTime, size: timeSize, weight: .light, meridiemScale: 0.34)
                 .kerning(-timeSize * 0.02)
                 .foregroundColor(appearance.textColor)
                 .shadow(color: appearance.textColor.opacity(0.1), radius: 10, x: 0, y: 5)
@@ -453,8 +452,7 @@ struct MinimalistPrayerPage: View {
                 .lineLimit(1)
 
             if let iq = iqamahTime, !iq.isEmpty {
-                Text(iq)
-                    .appFont(size: iqamahSize, weight: .regular)
+                MeridiemText(text: iq, size: iqamahSize, weight: .regular, meridiemScale: 0.62)
                     .tracking(usesArabicScript ? 0 : 0.6)
                     .foregroundColor(appearance.textColor.opacity(0.78))
                     .minimumScaleFactor(0.65)

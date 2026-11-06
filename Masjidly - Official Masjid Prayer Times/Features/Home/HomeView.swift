@@ -708,7 +708,7 @@ struct HomeView: View {
         )
         let prayerTimeDisplay: String = {
             if let meridiem = heroParts.meridiem, !meridiem.isEmpty {
-                return "\(heroParts.clock)\u{2009}\(meridiem)"
+                return "\(heroParts.clock)\(meridiem)"
             }
             return heroParts.clock
         }()

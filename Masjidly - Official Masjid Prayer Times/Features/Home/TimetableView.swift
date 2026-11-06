@@ -530,8 +530,7 @@ struct TimetableView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
 
-            Text(adhanDisplay)
-                .appFont(size: TimetableLayout.rowFontSize, weight: weight)
+            MeridiemText(text: adhanDisplay, size: TimetableLayout.rowFontSize, weight: weight, meridiemScale: 0.7)
                 .monospacedDigit()
                 .foregroundStyle(appearance.textColor.opacity(opacity * 0.75))
                 .lineLimit(1)
@@ -539,8 +538,7 @@ struct TimetableView: View {
                 .multilineTextAlignment(.trailing)
                 .frame(width: layout.timeColumnWidth, alignment: .trailing)
 
-            Text(iqamahDisplay)
-                .appFont(size: TimetableLayout.rowFontSize, weight: iqamahWeight)
+            MeridiemText(text: iqamahDisplay, size: TimetableLayout.rowFontSize, weight: iqamahWeight, meridiemScale: 0.7)
                 .monospacedDigit()
                 .foregroundStyle(appearance.textColor.opacity(opacity))
                 .lineLimit(1)
